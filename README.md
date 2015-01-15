@@ -20,6 +20,10 @@ Precompiled binary for darwin and linux will be provided in the future.
 
 * **GET** `/api/hosts/tags/:tags` Displays list of hosts by tags.
 
+* **GET** `/api/hosts/hardware-addr/:address` Displays 1 host by MAC-48/EUI-48/EUI-64 address.
+
+* **GET** `/api/hosts/ip-addr/:address` Displays list of hosts by IP address.
+
 * **GET** `/api/hosts/:name` Displays full JSON data (readers and writers) on a particular host.
 
 * **GET** `/api/hosts/:name/paths` Displays paths to all readers and writers data on a particular host.
