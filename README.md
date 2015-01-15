@@ -16,7 +16,9 @@ Precompiled binary for darwin and linux will be provided in the future.
 
 * **GET** `/api` Displays top level paths.
 
-* **GET** `/api/hosts` Displays list of all hosts.
+* **GET** `/api/hosts` Displays list of all hosts and their tags.
+
+* **GET** `/api/hosts/tags/:tags` Displays list of hosts by tags.
 
 * **GET** `/api/hosts/:name` Displays full JSON data (readers and writers) on a particular host.
 
