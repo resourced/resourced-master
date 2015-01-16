@@ -51,11 +51,18 @@ Precompiled binary for darwin and linux will be provided in the future.
 
 ### Admin Level Authorization
 
-* **POST** `/api/users` Create a user. Returns: `{"Name":"bob", "AccessToken": "abc123", "Level": "basic", "Enabled": true}`
+* **POST** `/api/users` Create a user.
 
 * **GET** `/api/users` List all users.
 
 * **GET** `/api/users/:name` Display 1 user.
+
+* **PUT** `/api/users/:name` Update user by name.
+
+* **DELETE** `/api/users/:name` Delete user by name.
+
+* **PUT** `/api/users/:name/access-token` Update user's access token.
+
 
 
 Every HTTP request requires OAuth2 `Authorization` header. Example:
