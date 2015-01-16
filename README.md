@@ -2,12 +2,23 @@
 
 **ResourceD Master** receives server data from ResourceD agents and serves them as HTTP+JSON.
 
-ResourceD Master is currently alpha software. Use it at your own risk.
+This project is currently an alpha software. Use it at your own risk.
 
 
 ## Installation
 
 Precompiled binary for darwin and linux will be provided in the future.
+
+
+## Run Instruction
+
+ResourceD Master accepts a few environment variables as configuration:
+
+* **RESOURCED_MASTER_ADDR:** The HTTP server host and port. Default: ":55655"
+
+* **RESOURCED_MASTER_CERT_FILE:** Path to cert file. Default: ""
+
+* **RESOURCED_MASTER_KEY_FILE:** Path to key file. Default: ""
 
 
 ## RESTful Endpoints
