@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/resourced/resourced-master/libstring"
 	resourcedmaster_storage "github.com/resourced/resourced-master/storage"
 	"golang.org/x/crypto/bcrypt"
 	"time"
@@ -23,8 +24,13 @@ func NewUser(store resourcedmaster_storage.Storer, name, password string) (*User
 	if err != nil {
 		return nil, err
 	}
-
 	u.HashedPassword = string(hashedPassword)
+
+	accessToken, err := libstring.GeneratePassword(32)
+	if err != nil {
+		return nil, err
+	}
+	u.AccessToken = accessToken
 
 	return u, nil
 }
@@ -50,9 +56,33 @@ func SaveById(store resourcedmaster_storage.Storer, id int64, data []byte) error
 	return store.Update(fmt.Sprintf("/users/id/%s", id), data)
 }
 
+// SaveByAccessToken saves user data in JSON format with accessToken as key.
+func SaveByAccessToken(store resourcedmaster_storage.Storer, accessToken string, data []byte) error {
+	return store.Update("/users/access-token/"+accessToken, data)
+}
+
 // GetByName returns User struct with name as key.
 func GetByName(store resourcedmaster_storage.Storer, name string) (*User, error) {
 	jsonBytes, err := store.Get("/users/name/" + name)
+	if err != nil {
+		return nil, err
+	}
+
+	u := &User{}
+
+	err = json.Unmarshal(jsonBytes, u)
+	if err != nil {
+		return nil, err
+	}
+
+	u.store = store
+
+	return u, nil
+}
+
+// GetByAccessToken returns User struct with name as key.
+func GetByAccessToken(store resourcedmaster_storage.Storer, accessToken string) (*User, error) {
+	jsonBytes, err := store.Get("/users/access-token/" + accessToken)
 	if err != nil {
 		return nil, err
 	}
@@ -86,6 +116,11 @@ func DeleteByName(store resourcedmaster_storage.Storer, name string) error {
 		return err
 	}
 
+	err = store.Delete("/users/access-token/" + u.AccessToken)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -104,6 +139,10 @@ func Login(store resourcedmaster_storage.Storer, name, password string) (*User, 
 	return u, nil
 }
 
+func LoginByAccessToken(store resourcedmaster_storage.Storer, accessToken string) (*User, error) {
+	return GetByAccessToken(store, accessToken)
+}
+
 type User struct {
 	Id              int64
 	Name            string
@@ -111,6 +150,7 @@ type User struct {
 	Level           string
 	Enabled         bool
 	CreatedUnixNano int64
+	AccessToken     string
 	store           resourcedmaster_storage.Storer
 }
 
@@ -143,6 +183,11 @@ func (u *User) Save() error {
 	}
 
 	err = SaveById(u.store, u.Id, jsonBytes)
+	if err != nil {
+		return err
+	}
+
+	err = SaveByAccessToken(u.store, u.AccessToken, jsonBytes)
 	if err != nil {
 		return err
 	}
