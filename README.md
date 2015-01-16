@@ -20,7 +20,7 @@ Precompiled binary for darwin and linux will be provided in the future.
 
 * **GET** `/api/hosts/tags/:tags` Displays list of hosts by tags.
 
-* **GET** `/api/hosts/hardware-addr/:address` Displays 1 host by MAC-48/EUI-48/EUI-64 address.
+* **GET** `/api/hosts/hardware-addr/:address` Displays list of hosts by MAC-48/EUI-48/EUI-64 address.
 
 * **GET** `/api/hosts/ip-addr/:address` Displays list of hosts by IP address.
 
@@ -32,21 +32,21 @@ Precompiled binary for darwin and linux will be provided in the future.
 
 * **GET** `/api/hosts/:name/r/paths` Displays paths to all readers data on a particular host.
 
-* **GET** `/api/hosts/:name/r/:path` Displays JSON data of 1 reader on a particular host.
+* **GET** `/api/hosts/:name/r/:path` Displays reader JSON data on a particular host.
 
 * **GET** `/api/hosts/:name/w` Displays full JSON data (writers) on a particular host.
 
 * **GET** `/api/hosts/:name/w/paths` Displays paths to all writers data on a particular host.
 
-* **GET** `/api/hosts/:name/w/:path` Displays JSON data of 1 writer on a particular host.
+* **GET** `/api/hosts/:name/w/:path` Displays writer JSON data on a particular host.
 
-* **GET** `/api/r/:path` Displays JSON data of 1 reader on all hosts.
+* **GET** `/api/r/:path` Displays reader JSON data on all hosts.
 
-* **GET** `/api/w/:path` Displays JSON data of 1 writer on all hosts.
+* **GET** `/api/w/:path` Displays writer JSON data on all hosts.
 
-* **POST** `/api/r/:path` Submit JSON data of 1 reader from 1 host.
+* **POST** `/api/r/:path` Submit reader JSON data from 1 host.
 
-* **POST** `/api/w/:path` Submit JSON data of 1 writer from 1 host.
+* **POST** `/api/w/:path` Submit writer JSON data from 1 host.
 
 
 ### Admin Level Authorization
@@ -61,7 +61,9 @@ Precompiled binary for darwin and linux will be provided in the future.
 
 * **DELETE** `/api/users/:name` Delete user by name.
 
-* **PUT** `/api/users/:name/access-token` Update user's access token.
+* **PUT** `/api/users/:name/access-token` Generate a new access token.
+
+* **DELETE** `/api/users/:name/access-token` Remove 1 access token.
 
 
 Every HTTP request requires AccessToken passed as user. Example:
