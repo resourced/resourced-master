@@ -64,8 +64,7 @@ Precompiled binary for darwin and linux will be provided in the future.
 * **PUT** `/api/users/:name/access-token` Update user's access token.
 
 
-
-Every HTTP request requires OAuth2 `Authorization` header. Example:
+Every HTTP request requires AccessToken passed as user. Example:
 ```
-Authorization: Bearer 0b79bab50daca910b000d4f1a2b675d604257e42
+curl https://localhost:55655/api -u 0b79bab50daca910b000d4f1a2b675d604257e42:
 ```
