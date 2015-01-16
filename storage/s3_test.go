@@ -6,7 +6,7 @@ import (
 	"testing"
 )
 
-func S3StorageForTest(t *testing.T) *S3 {
+func s3StorageForTest(t *testing.T) *S3 {
 	env := "test"
 	s3AccessKey := libenv.EnvWithDefault("RESOURCED_MASTER_S3_ACCESS_KEY", "")
 	s3SecretKey := libenv.EnvWithDefault("RESOURCED_MASTER_S3_SECRET_KEY", "")
@@ -32,7 +32,7 @@ func TestS3RootWithDefaultEnvironment(t *testing.T) {
 }
 
 func TestS3CreateGetDelete(t *testing.T) {
-	storage := S3StorageForTest(t)
+	storage := s3StorageForTest(t)
 
 	err := storage.Create("/hello", []byte(`{"Data": "Hello World"}`))
 	if err != nil {
