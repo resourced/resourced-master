@@ -1,4 +1,4 @@
-package users
+package dao
 
 import (
 	"encoding/json"
@@ -46,16 +46,6 @@ func NewAdminUser(store resourcedmaster_storage.Storer, name, password string) (
 	return u, nil
 }
 
-// SaveByName saves user data in JSON format with name as key.
-func SaveByName(store resourcedmaster_storage.Storer, name string, data []byte) error {
-	return store.Update("/users/name/"+name, data)
-}
-
-// SaveById saves user data in JSON format with Id as key.
-func SaveById(store resourcedmaster_storage.Storer, id int64, data []byte) error {
-	return store.Update(fmt.Sprintf("/users/id/%s", id), data)
-}
-
 // SaveByAccessToken saves user data in JSON format with accessToken as key.
 func SaveByAccessToken(store resourcedmaster_storage.Storer, accessToken string, data []byte) error {
 	return store.Update("/users/access-token/"+accessToken, data)
@@ -99,8 +89,8 @@ func GetByAccessToken(store resourcedmaster_storage.Storer, accessToken string) 
 	return u, nil
 }
 
-// DeleteByName deletes user with name as key.
-func DeleteByName(store resourcedmaster_storage.Storer, name string) error {
+// DeleteUserByName deletes user with name as key.
+func DeleteUserByName(store resourcedmaster_storage.Storer, name string) error {
 	u, err := GetByName(store, name)
 	if err != nil {
 		return err
@@ -165,7 +155,7 @@ func (u *User) validateBeforeSave() error {
 	return nil
 }
 
-// Save saves user in JSON format.
+// Save user in JSON format.
 func (u *User) Save() error {
 	err := u.validateBeforeSave()
 	if err != nil {
@@ -177,12 +167,12 @@ func (u *User) Save() error {
 		return err
 	}
 
-	err = SaveByName(u.store, u.Name, jsonBytes)
+	err = CommonSaveByName(u.store, "users", u.Name, jsonBytes)
 	if err != nil {
 		return err
 	}
 
-	err = SaveById(u.store, u.Id, jsonBytes)
+	err = CommonSaveById(u.store, "users", u.Id, jsonBytes)
 	if err != nil {
 		return err
 	}
@@ -195,6 +185,7 @@ func (u *User) Save() error {
 	return nil
 }
 
+// Delete user
 func (u *User) Delete() error {
-	return DeleteByName(u.store, u.Name)
+	return DeleteUserByName(u.store, u.Name)
 }
