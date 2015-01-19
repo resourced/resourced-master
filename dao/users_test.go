@@ -44,9 +44,6 @@ func TestNewUser(t *testing.T) {
 	if user.HashedPassword == "" {
 		t.Errorf("user.HashedPassword should not be empty. user.HashedPassword: %v", user.HashedPassword)
 	}
-	if user.AccessToken == "" {
-		t.Errorf("user.AccessToken should not be empty. user.AccessToken: %v", user.AccessToken)
-	}
 }
 
 func TestSaveLoginDeleteUser(t *testing.T) {
@@ -71,21 +68,12 @@ func TestSaveLoginDeleteUser(t *testing.T) {
 		t.Errorf("Login returns the wrong user. userFromStorage.Id: %v, userFromStorage.Name: %v", userFromStorage.Id, userFromStorage.Name)
 	}
 
-	userFromStorage2, err := LoginByAccessToken(store, user.AccessToken)
-	if err != nil {
-		t.Errorf("Login with the correct accessToken should work. Error: %v", err)
-	}
-
-	if (user.Id != userFromStorage2.Id) || (user.Name != userFromStorage2.Name) {
-		t.Errorf("Login returns the wrong user. userFromStorage2.Id: %v, userFromStorage2.Name: %v", userFromStorage2.Id, userFromStorage2.Name)
-	}
-
 	err = user.Delete()
 	if err != nil {
 		t.Errorf("Deleting user should work. Error: %v", err)
 	}
 
-	_, err = GetByName(store, "bob")
+	_, err = GetUserByName(store, "bob")
 	if err == nil {
 		t.Errorf("Getting user by name should not work because user is deleted.")
 	}

@@ -12,10 +12,10 @@ func CommonSaveByName(store resourcedmaster_storage.Storer, daoType, name string
 
 // CommonSaveById saves dao data in JSON format with Id as key.
 func CommonSaveById(store resourcedmaster_storage.Storer, daoType string, id int64, data []byte) error {
-	return store.Update(fmt.Sprintf("/%s/id/%s", daoType, id), data)
+	return store.Update(fmt.Sprintf("/%s/id/%v", daoType, id), data)
 }
 
 // CommonDeleteById deletes dao data with Id as key.
 func CommonDeleteById(store resourcedmaster_storage.Storer, daoType string, id int64) error {
-	return store.Delete(fmt.Sprintf("/%s/id/%s", daoType, id))
+	return store.Delete(fmt.Sprintf("/%s/id/%v", daoType, id))
 }

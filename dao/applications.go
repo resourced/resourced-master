@@ -20,9 +20,33 @@ func NewApplication(store resourcedmaster_storage.Storer, name string) (*Applica
 	return a, nil
 }
 
+// SaveApplicationByAccessToken saves application data in JSON format with accessToken as key.
+func SaveApplicationByAccessToken(store resourcedmaster_storage.Storer, accessToken string, data []byte) error {
+	return store.Update("/applications/access-token/"+accessToken, data)
+}
+
+// GetApplicationByAccessToken returns Application struct with name as key.
+func GetApplicationByAccessToken(store resourcedmaster_storage.Storer, accessToken string) (*Application, error) {
+	jsonBytes, err := store.Get("/applications/access-token/" + accessToken)
+	if err != nil {
+		return nil, err
+	}
+
+	a := &Application{}
+
+	err = json.Unmarshal(jsonBytes, a)
+	if err != nil {
+		return nil, err
+	}
+
+	a.store = store
+
+	return a, nil
+}
+
 // GetApplicationById returns Application struct with name as key.
 func GetApplicationById(store resourcedmaster_storage.Storer, id int64) (*Application, error) {
-	jsonBytes, err := store.Get(fmt.Sprintf("/applications/id/%s", id))
+	jsonBytes, err := store.Get(fmt.Sprintf("/applications/id/%v", id))
 	if err != nil {
 		return nil, err
 	}
@@ -71,6 +95,21 @@ func (a *Application) Save() error {
 	}
 
 	err = CommonSaveById(a.store, "applications", a.Id, jsonBytes)
+	if err != nil {
+		return err
+	}
+
+	access, err := NewAccessToken(a.store, a)
+	if err != nil {
+		return err
+	}
+
+	err = access.Save()
+	if err != nil {
+		return err
+	}
+
+	err = SaveApplicationByAccessToken(a.store, access.Token, jsonBytes)
 	if err != nil {
 		return err
 	}
