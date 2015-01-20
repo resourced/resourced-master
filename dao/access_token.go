@@ -3,10 +3,57 @@ package dao
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"github.com/resourced/resourced-master/libstring"
 	resourcedmaster_storage "github.com/resourced/resourced-master/storage"
+	"strconv"
 	"time"
 )
+
+// AllAccessTokens returns slice of all AccessToken
+func AllAccessTokens(store resourcedmaster_storage.Storer) ([]*AccessToken, error) {
+	ids, err := store.List("/access-tokens/id")
+	if err != nil {
+		return nil, err
+	}
+
+	accessTokens := make([]*AccessToken, 0)
+
+	for _, idString := range ids {
+		id, err := strconv.ParseInt(idString, 10, 0)
+		if err != nil {
+			continue
+		}
+
+		access, err := GetAccessTokenById(store, id)
+		if err != nil {
+			continue
+		}
+
+		accessTokens = append(accessTokens, access)
+	}
+
+	return accessTokens, nil
+}
+
+// GetApplicationById returns AccessToken struct with name as key.
+func GetAccessTokenById(store resourcedmaster_storage.Storer, id int64) (*AccessToken, error) {
+	jsonBytes, err := store.Get(fmt.Sprintf("/access-tokens/id/%v", id))
+	if err != nil {
+		return nil, err
+	}
+
+	a := &AccessToken{}
+
+	err = json.Unmarshal(jsonBytes, a)
+	if err != nil {
+		return nil, err
+	}
+
+	a.store = store
+
+	return a, nil
+}
 
 // NewAccessToken is constructor for NewAccessToken struct.
 func NewAccessToken(store resourcedmaster_storage.Storer, app *Application) (*AccessToken, error) {
