@@ -3,9 +3,9 @@ package main
 import (
 	"fmt"
 	"github.com/carbocation/interpose"
-	"github.com/carbocation/interpose/middleware"
 	resourcedmaster_dao "github.com/resourced/resourced-master/dao"
 	"github.com/resourced/resourced-master/libenv"
+	resourcedmaster_middlewares "github.com/resourced/resourced-master/middlewares"
 	resourcedmaster_storage "github.com/resourced/resourced-master/storage"
 	"net/http"
 )
@@ -27,11 +27,7 @@ func middlewareStruct(store resourcedmaster_storage.Storer) (*interpose.Middlewa
 	}
 
 	middle := interpose.New()
-
-	for _, accessToken := range accessTokens {
-		println(accessToken.Token)
-		middle.Use(middleware.BasicAuth(accessToken.Token, ""))
-	}
+	middle.Use(resourcedmaster_middlewares.AccessTokenAuth(accessTokens))
 
 	return middle, nil
 }
