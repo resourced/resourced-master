@@ -65,7 +65,8 @@ ResourceD Master accepts a few environment variables as configuration:
 * **POST** `/api/users` Create a user.
     ```
     # Request
-    curl -u {access-token}: -X POST -H "Content-Type: application/json" -d '{"Name":"broski","Password":"xyz"}' http://localhost:55655/api/users
+    curl -u {access-token}: -X POST -H "Content-Type: application/json" \
+    -d '{"Name":"broski","Password":"xyz"}' http://localhost:55655/api/users
 
     # Response
     # {"Id":1421909958359476231,"Name":"broski","HashedPassword":"$2a$05$Q9HofLxY0Bdfx.x/1mPAvO4yqDMo/VYOyx.ZVDbTxmiMjrtEo7yz2","Level":"basic","Enabled":true,"CreatedUnixNano":1421909958359476231}
@@ -75,7 +76,8 @@ ResourceD Master accepts a few environment variables as configuration:
 * **GET** `/api/users` List all users.
     ```
     # Request
-    curl -u {access-token}: -H "Content-Type: application/json" http://localhost:55655/api/users
+    curl -u {access-token}: -H "Content-Type: application/json" \
+    http://localhost:55655/api/users
 
     # Response
     # [{"Id":1421909958359476231,"Name":"broski","HashedPassword":"$2a$05$Q9HofLxY0Bdfx.x/1mPAvO4yqDMo/VYOyx.ZVDbTxmiMjrtEo7yz2","Level":"basic","Enabled":true,"CreatedUnixNano":1421909958359476231}]
@@ -84,7 +86,8 @@ ResourceD Master accepts a few environment variables as configuration:
 * **GET** `/api/users/:name` Display 1 user.
     ```
     # Request
-    curl -u {access-token}: -H "Content-Type: application/json" http://localhost:55655/api/users/broski
+    curl -u {access-token}: -H "Content-Type: application/json" \
+    http://localhost:55655/api/users/broski
 
     # Response
     # [{"Id":1421909958359476231,"Name":"broski","HashedPassword":"$2a$05$Q9HofLxY0Bdfx.x/1mPAvO4yqDMo/VYOyx.ZVDbTxmiMjrtEo7yz2","Level":"basic","Enabled":true,"CreatedUnixNano":1421909958359476231}]
@@ -94,7 +97,8 @@ ResourceD Master accepts a few environment variables as configuration:
 * **PUT** `/api/users/:name` Update user by name.
     ```
     # Request
-    curl -u x_UsStpQU0ZWXL0NP57I-4QpBv-MbQdppLWW_GOUuaU=: -X PUT -H "Content-Type: application/json" -d '{"Name":"broski","Password":"xyz123", "Level": "admin"}' http://localhost:55655/api/users/broski
+    curl -u {access-token}: -X PUT -H "Content-Type: application/json" \
+    -d '{"Name":"broski","Password":"xyz123", "Level": "admin"}' http://localhost:55655/api/users/broski
 
     # Response
     # {"Id":1421909958359476231,"Name":"broski","HashedPassword":"$2a$05$fqIK74sqjYRgNIC/a6RIj.Xky6vrZ0tymKeXF19KABMF70Y28L7Hu","Level":"admin","Enabled":true,"CreatedUnixNano":1421909958359476231}
@@ -103,7 +107,8 @@ ResourceD Master accepts a few environment variables as configuration:
 * **DELETE** `/api/users/:name` Delete user by name.
     ```
     # Request
-    curl -u x_UsStpQU0ZWXL0NP57I-4QpBv-MbQdppLWW_GOUuaU=: -X DELETE -H "Content-Type: application/json" http://localhost:55655/api/users/broski
+    curl -u {access-token}: -X DELETE -H "Content-Type: application/json" \
+    http://localhost:55655/api/users/broski
 
     # Response
     # {"Message":"User{Name: broski} is deleted."}
