@@ -44,6 +44,11 @@ func GetApplicationByAccessToken(store resourcedmaster_storage.Storer, accessTok
 	return a, nil
 }
 
+// DeleteApplicationAccessToken returns error.
+func DeleteApplicationAccessToken(store resourcedmaster_storage.Storer, accessToken string) error {
+	return store.Delete(fmt.Sprintf("/applications/access-token/%v", accessToken))
+}
+
 // GetApplicationById returns Application struct with name as key.
 func GetApplicationById(store resourcedmaster_storage.Storer, id int64) (*Application, error) {
 	jsonBytes, err := store.Get(fmt.Sprintf("/applications/id/%v", id))

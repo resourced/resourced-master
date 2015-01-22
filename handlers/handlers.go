@@ -189,18 +189,28 @@ func DeleteApiApplicationIdAccessToken(w http.ResponseWriter, r *http.Request, p
 
 	store := context.Get(r, "store").(resourcedmaster_storage.Storer)
 
-	id, err := strconv.ParseInt(ps.ByName("id"), 10, 64)
+	err := resourcedmaster_dao.DeleteAccessTokenByToken(store, ps.ByName("token"))
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
 	}
 
-	_, err = resourcedmaster_dao.GetApplicationById(store, id)
+	err = resourcedmaster_dao.DeleteApplicationAccessToken(store, ps.ByName("token"))
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
 	}
 
+	messageJson, err := json.Marshal(
+		map[string]string{
+			"Message": fmt.Sprintf("AccessToken{Token: %v} is deleted.", ps.ByName("token"))})
+
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
+
+	w.Write(messageJson)
 }
 
 //

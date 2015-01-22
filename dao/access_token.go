@@ -74,11 +74,26 @@ func DeleteAccessTokenById(store resourcedmaster_storage.Storer, id int64) error
 	return a.Delete()
 }
 
+// DeleteAccessTokenById returns error.
+func DeleteAccessTokenByToken(store resourcedmaster_storage.Storer, token string) error {
+	accessTokens, err := AllAccessTokens(store)
+	if err != nil {
+		return err
+	}
+
+	for _, accessToken := range accessTokens {
+		if accessToken.Token == token {
+			return accessToken.Delete()
+		}
+	}
+
+	return errors.New("Unable to find token.")
+}
+
 // NewAccessToken is constructor for NewAccessToken struct.
 func NewAccessToken(store resourcedmaster_storage.Storer, app *Application) (*AccessToken, error) {
 	a := &AccessToken{}
 	a.store = store
-	a.Token = ""
 	a.Level = "basic"
 	a.Enabled = true
 	a.CreatedUnixNano = time.Now().UnixNano()
