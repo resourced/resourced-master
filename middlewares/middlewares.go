@@ -1,8 +1,10 @@
 package middlewares
 
 import (
+	"github.com/gorilla/context"
 	resourcedmaster_dao "github.com/resourced/resourced-master/dao"
 	"github.com/resourced/resourced-master/libhttp"
+	resourcedmaster_storage "github.com/resourced/resourced-master/storage"
 	"net/http"
 )
 
@@ -35,6 +37,16 @@ func AccessTokenAuth(accessTokens []*resourcedmaster_dao.AccessToken) func(http.
 				libhttp.BasicAuthUnauthorized(res)
 				return
 			}
+
+			next.ServeHTTP(res, req)
+		})
+	}
+}
+
+func SetStore(store resourcedmaster_storage.Storer) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
+			context.Set(req, "store", store)
 
 			next.ServeHTTP(res, req)
 		})

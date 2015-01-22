@@ -28,6 +28,7 @@ func middlewareStruct(store resourcedmaster_storage.Storer) (*interpose.Middlewa
 	}
 
 	middle := interpose.New()
+	middle.Use(resourcedmaster_middlewares.SetStore(store))
 	middle.Use(resourcedmaster_middlewares.AccessTokenAuth(accessTokens))
 
 	return middle, nil
