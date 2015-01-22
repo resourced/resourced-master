@@ -55,6 +55,25 @@ func GetAccessTokenById(store resourcedmaster_storage.Storer, id int64) (*Access
 	return a, nil
 }
 
+// DeleteAccessTokenById returns error.
+func DeleteAccessTokenById(store resourcedmaster_storage.Storer, id int64) error {
+	jsonBytes, err := store.Get(fmt.Sprintf("/access-tokens/id/%v", id))
+	if err != nil {
+		return err
+	}
+
+	a := &AccessToken{}
+
+	err = json.Unmarshal(jsonBytes, a)
+	if err != nil {
+		return err
+	}
+
+	a.store = store
+
+	return a.Delete()
+}
+
 // NewAccessToken is constructor for NewAccessToken struct.
 func NewAccessToken(store resourcedmaster_storage.Storer, app *Application) (*AccessToken, error) {
 	a := &AccessToken{}
