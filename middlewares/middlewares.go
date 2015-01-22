@@ -8,12 +8,12 @@ import (
 	"net/http"
 )
 
-func AccessTokenAuth(accessTokens []*resourcedmaster_dao.AccessToken) func(http.Handler) http.Handler {
+func AccessTokenAuth(users []*resourcedmaster_dao.User) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
 			auth := req.Header.Get("Authorization")
 
-			if auth == "" && len(accessTokens) > 0 {
+			if auth == "" && len(users) > 0 {
 				libhttp.BasicAuthUnauthorized(res)
 				return
 			}
@@ -26,7 +26,7 @@ func AccessTokenAuth(accessTokens []*resourcedmaster_dao.AccessToken) func(http.
 
 			accessTokenMatched := false
 
-			for _, accessToken := range accessTokens {
+			for _, accessToken := range users {
 				if username == accessToken.Token {
 					accessTokenMatched = true
 					break

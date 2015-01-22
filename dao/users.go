@@ -11,6 +11,48 @@ import (
 	"time"
 )
 
+// NewUser returns struct User with basic level permission.
+func NewUser(store resourcedmaster_storage.Storer, name, password string) (*User, error) {
+	u := &User{}
+	u.store = store
+	u.Name = name
+	u.Level = "basic"
+	u.Enabled = true
+	u.CreatedUnixNano = time.Now().UnixNano()
+	u.Id = u.CreatedUnixNano
+
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), 5)
+	if err != nil {
+		return nil, err
+	}
+	u.HashedPassword = string(hashedPassword)
+
+	accessToken, err := libstring.GeneratePassword(32)
+	if err != nil {
+		return nil, err
+	}
+	u.Token = accessToken
+
+	return u, nil
+}
+
+// NewAccessTokenUser returns struct User with basic level permission.
+func NewAccessTokenUser(store resourcedmaster_storage.Storer, app *Application) (*User, error) {
+	accessToken, err := libstring.GeneratePassword(32)
+	if err != nil {
+		return nil, err
+	}
+
+	u, err := NewUser(store, accessToken, accessToken)
+	if err != nil {
+		return nil, err
+	}
+	u.Token = accessToken
+	u.ApplicationId = app.Id
+
+	return u, nil
+}
+
 // NewUserGivenJson returns struct User.
 func NewUserGivenJson(store resourcedmaster_storage.Storer, jsonBody io.ReadCloser) (*User, error) {
 	var userArgs map[string]interface{}
@@ -78,42 +120,6 @@ func UpdateUserByNameGivenJson(store resourcedmaster_storage.Storer, name string
 	if err != nil {
 		return nil, err
 	}
-
-	return u, nil
-}
-
-// NewUser returns struct User with basic level permission.
-func NewUser(store resourcedmaster_storage.Storer, name, password string) (*User, error) {
-	u := &User{}
-	u.store = store
-	u.Name = name
-	u.Level = "basic"
-	u.Enabled = true
-	u.CreatedUnixNano = time.Now().UnixNano()
-	u.Id = u.CreatedUnixNano
-
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), 5)
-	if err != nil {
-		return nil, err
-	}
-	u.HashedPassword = string(hashedPassword)
-
-	accessToken, err := libstring.GeneratePassword(32)
-	if err != nil {
-		return nil, err
-	}
-	u.Token = accessToken
-
-	return u, nil
-}
-
-// NewUser returns struct User with admin level permission.
-func NewAdminUser(store resourcedmaster_storage.Storer, name, password string) (*User, error) {
-	u, err := NewUser(store, name, password)
-	if err != nil {
-		return nil, err
-	}
-	u.Level = "admin"
 
 	return u, nil
 }
@@ -214,6 +220,7 @@ func Login(store resourcedmaster_storage.Storer, name, password string) (*User, 
 
 type User struct {
 	Id              int64
+	ApplicationId   int64
 	Name            string
 	HashedPassword  string
 	Level           string
@@ -227,6 +234,9 @@ type User struct {
 func (u *User) validateBeforeSave() error {
 	if u.Id <= 0 {
 		return errors.New("Id must not be empty.")
+	}
+	if u.ApplicationId <= 0 && u.Level != "staff" {
+		return errors.New("ApplicationId must not be empty.")
 	}
 	if u.Name == "" {
 		return errors.New("Name must not be empty.")
@@ -256,10 +266,30 @@ func (u *User) Save() error {
 		return err
 	}
 
-	return nil
+	if u.ApplicationId > 0 && u.Token != "" {
+		app, err := GetApplicationById(u.store, u.ApplicationId)
+		if err != nil {
+			return err
+		}
+
+		jsonBytes, err := json.Marshal(app)
+		if err != nil {
+			return err
+		}
+
+		err = SaveApplicationByAccessToken(u.store, u.Token, jsonBytes)
+	}
+
+	return err
 }
 
 // Delete user
 func (u *User) Delete() error {
-	return DeleteUserByName(u.store, u.Name)
+	err := DeleteUserByName(u.store, u.Name)
+
+	if u.ApplicationId > 0 && u.Token != "" {
+		err = DeleteApplicationByAccessToken(u.store, u.Token)
+	}
+
+	return err
 }

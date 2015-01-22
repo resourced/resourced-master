@@ -22,14 +22,14 @@ func storage() (resourcedmaster_storage.Storer, error) {
 }
 
 func middlewareStruct(store resourcedmaster_storage.Storer) (*interpose.Middleware, error) {
-	accessTokens, err := resourcedmaster_dao.AllAccessTokens(store)
+	users, err := resourcedmaster_dao.AllUsers(store)
 	if err != nil {
 		return nil, err
 	}
 
 	middle := interpose.New()
 	middle.Use(resourcedmaster_middlewares.SetStore(store))
-	middle.Use(resourcedmaster_middlewares.AccessTokenAuth(accessTokens))
+	middle.Use(resourcedmaster_middlewares.AccessTokenAuth(users))
 
 	return middle, nil
 }
@@ -44,8 +44,8 @@ func mux() *httprouter.Router {
 	router.PUT("/api/users/:name", resourcedmaster_handlers.PutApiUserName)
 	router.DELETE("/api/users/:name", resourcedmaster_handlers.DeleteApiUserName)
 	router.PUT("/api/users/:name/access-token", resourcedmaster_handlers.PutApiUserNameAccessToken)
-	router.POST("/api/applications/:id/access-token", resourcedmaster_handlers.PostApiApplicationIdAccessToken)
-	router.DELETE("/api/applications/:id/access-token/:token", resourcedmaster_handlers.DeleteApiApplicationIdAccessToken)
+	router.POST("/api/app/:id/access-token", resourcedmaster_handlers.PostApiApplicationIdAccessToken)
+	router.DELETE("/api/app/:id/access-token/:token", resourcedmaster_handlers.DeleteApiApplicationIdAccessToken)
 
 	// Basic level access
 	router.GET("/", resourcedmaster_handlers.GetRoot)

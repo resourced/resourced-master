@@ -1,7 +1,9 @@
 package dao
 
 import (
+	"fmt"
 	"testing"
+	"time"
 )
 
 func TestValidateBeforeSave(t *testing.T) {
@@ -13,6 +15,13 @@ func TestValidateBeforeSave(t *testing.T) {
 	}
 
 	u.Id = 1
+
+	err = u.validateBeforeSave()
+	if err == nil {
+		t.Error("validateBeforeSave should return error because ApplicationId us empty.")
+	}
+
+	u.ApplicationId = 1
 
 	err = u.validateBeforeSave()
 	if err == nil {
@@ -46,13 +55,18 @@ func TestNewUser(t *testing.T) {
 	}
 }
 
-func TestSaveLoginDeleteUser(t *testing.T) {
+func TestSaveLoginDeleteBasicUser(t *testing.T) {
 	store := s3StorageForTest(t)
+
+	app, _ := NewApplication(store, fmt.Sprintf("application-for-test-%v", time.Now().UnixNano()))
+	app.Save()
 
 	user, err := NewUser(store, "bob", "abc123")
 	if err != nil {
 		t.Errorf("Creating user struct should work. Error: %v", err)
 	}
+
+	user.ApplicationId = app.Id
 
 	err = user.Save()
 	if err != nil {
@@ -76,5 +90,24 @@ func TestSaveLoginDeleteUser(t *testing.T) {
 	_, err = GetUserByName(store, "bob")
 	if err == nil {
 		t.Errorf("Getting user by name should not work because user is deleted.")
+	}
+
+	app.Delete()
+}
+
+func TestSaveDeleteAccessTokenUser(t *testing.T) {
+	store := s3StorageForTest(t)
+
+	app, _ := NewApplication(store, fmt.Sprintf("application-for-test-%v", time.Now().UnixNano()))
+	app.Save()
+
+	user, err := NewAccessTokenUser(store, app)
+	if err != nil {
+		t.Errorf("Creating user struct should work. Error: %v", err)
+	}
+
+	err = user.Save()
+	if err != nil {
+		t.Errorf("Saving user struct should work. Error: %v", err)
 	}
 }

@@ -25,39 +25,39 @@ ResourceD Master accepts a few environment variables as configuration:
 
 ### Basic Level Authorization
 
-* **GET** `/api` Displays top level paths.
+* **GET** `/api` Redirect to `/api/app/:id/hosts` for non-staff user. Display list of all apps for staff user.
 
-* **GET** `/api/hosts` Displays list of all hosts and their tags.
+* **GET** `/api/app/:id/hosts` Displays list of all hosts and their tags.
 
-* **GET** `/api/hosts/tags/:tags` Displays list of hosts by tags.
+* **GET** `/api/app/:id/hosts/tags/:tags` Displays list of hosts by tags.
 
-* **GET** `/api/hosts/hardware-addr/:address` Displays list of hosts by MAC-48/EUI-48/EUI-64 address.
+* **GET** `/api/app/:id/hosts/hardware-addr/:address` Displays list of hosts by MAC-48/EUI-48/EUI-64 address.
 
-* **GET** `/api/hosts/ip-addr/:address` Displays list of hosts by IP address.
+* **GET** `/api/app/:id/hosts/ip-addr/:address` Displays list of hosts by IP address.
 
-* **GET** `/api/hosts/:name` Displays full JSON data (readers and writers) on a particular host.
+* **GET** `/api/app/:id/hosts/:name` Displays full JSON data (readers and writers) on a particular host.
 
-* **GET** `/api/hosts/:name/paths` Displays paths to all readers and writers data on a particular host.
+* **GET** `/api/app/:id/hosts/:name/paths` Displays paths to all readers and writers data on a particular host.
 
-* **GET** `/api/hosts/:name/r` Displays full JSON data (readers) on a particular host.
+* **GET** `/api/app/:id/hosts/:name/r` Displays full JSON data (readers) on a particular host.
 
-* **GET** `/api/hosts/:name/r/paths` Displays paths to all readers data on a particular host.
+* **GET** `/api/app/:id/hosts/:name/r/paths` Displays paths to all readers data on a particular host.
 
-* **GET** `/api/hosts/:name/r/:path` Displays reader JSON data on a particular host.
+* **GET** `/api/app/:id/hosts/:name/r/:path` Displays reader JSON data on a particular host.
 
-* **GET** `/api/hosts/:name/w` Displays full JSON data (writers) on a particular host.
+* **GET** `/api/app/:id/hosts/:name/w` Displays full JSON data (writers) on a particular host.
 
-* **GET** `/api/hosts/:name/w/paths` Displays paths to all writers data on a particular host.
+* **GET** `/api/app/:id/hosts/:name/w/paths` Displays paths to all writers data on a particular host.
 
-* **GET** `/api/hosts/:name/w/:path` Displays writer JSON data on a particular host.
+* **GET** `/api/app/:id/hosts/:name/w/:path` Displays writer JSON data on a particular host.
 
-* **GET** `/api/r/:path` Displays reader JSON data on all hosts.
+* **GET** `/api/app/:id/r/:path` Displays reader JSON data on all hosts.
 
-* **GET** `/api/w/:path` Displays writer JSON data on all hosts.
+* **GET** `/api/app/:id/w/:path` Displays writer JSON data on all hosts.
 
-* **POST** `/api/r/:path` Submit reader JSON data from 1 host.
+* **POST** `/api/app/:id/r/:path` Submit reader JSON data from 1 host.
 
-* **POST** `/api/w/:path` Submit writer JSON data from 1 host.
+* **POST** `/api/app/:id/w/:path` Submit writer JSON data from 1 host.
 
 
 ### Admin Level Authorization
@@ -124,13 +124,13 @@ ResourceD Master accepts a few environment variables as configuration:
     # {"Id":1421907221082083280,"Name":"bob","HashedPassword":"$2a$05$8brNU7lq2FcMV2lmSoQ53uYKm5X5Xd6/AaphVxoaJMbDojtLVlpQ2","Level":"basic","Token":"ZHJugwapjnyR9Ma8mvQnl6WvC1I9Kp07ss7IBpB73t8=","Enabled":true,"CreatedUnixNano":1421907221082083280}
     ```
 
-* **POST** `/api/applications/:id/access-token` Generate a new access token for application.
+* **POST** `/api/app/:id/access-token` Generate a new access token for application.
 
-* **DELETE** `/api/applications/:id/access-token/:token` Remove access token for application.
+* **DELETE** `/api/app/:id/access-token/:token` Remove access token for application.
     ```
     # Request
     curl -u {access-token}: -X DELETE -H "Content-Type: application/json" \
-    http://localhost:55655/api/applications/1421686722771058700/access-token/60df7Ri2UjUmsE_zg89JUGdAVczGKcLqyLNMXLxV3Hg=
+    http://localhost:55655/api/app/1421686722771058700/access-token/60df7Ri2UjUmsE_zg89JUGdAVczGKcLqyLNMXLxV3Hg=
 
     # Response
     # {"Message":"AccessToken{Token: 60df7Ri2UjUmsE_zg89JUGdAVczGKcLqyLNMXLxV3Hg=} is deleted."}

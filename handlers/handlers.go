@@ -163,25 +163,25 @@ func PostApiApplicationIdAccessToken(w http.ResponseWriter, r *http.Request, ps 
 		return
 	}
 
-	accessToken, err := resourcedmaster_dao.NewAccessToken(store, app)
+	user, err := resourcedmaster_dao.NewAccessTokenUser(store, app)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
 	}
 
-	err = accessToken.Save()
+	err = user.Save()
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
 	}
 
-	accessTokenJson, err := json.Marshal(accessToken)
+	userJson, err := json.Marshal(user)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
 	}
 
-	w.Write(accessTokenJson)
+	w.Write(userJson)
 }
 
 func DeleteApiApplicationIdAccessToken(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
@@ -189,13 +189,13 @@ func DeleteApiApplicationIdAccessToken(w http.ResponseWriter, r *http.Request, p
 
 	store := context.Get(r, "store").(resourcedmaster_storage.Storer)
 
-	err := resourcedmaster_dao.DeleteAccessTokenByToken(store, ps.ByName("token"))
+	err := resourcedmaster_dao.DeleteUserByName(store, ps.ByName("token"))
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
 	}
 
-	err = resourcedmaster_dao.DeleteApplicationAccessToken(store, ps.ByName("token"))
+	err = resourcedmaster_dao.DeleteApplicationByAccessToken(store, ps.ByName("token"))
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return

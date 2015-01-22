@@ -44,8 +44,8 @@ func GetApplicationByAccessToken(store resourcedmaster_storage.Storer, accessTok
 	return a, nil
 }
 
-// DeleteApplicationAccessToken returns error.
-func DeleteApplicationAccessToken(store resourcedmaster_storage.Storer, accessToken string) error {
+// DeleteApplicationByAccessToken returns error.
+func DeleteApplicationByAccessToken(store resourcedmaster_storage.Storer, accessToken string) error {
 	return store.Delete(fmt.Sprintf("/applications/access-token/%v", accessToken))
 }
 
@@ -100,21 +100,6 @@ func (a *Application) Save() error {
 	}
 
 	err = CommonSaveById(a.store, "applications", a.Id, jsonBytes)
-	if err != nil {
-		return err
-	}
-
-	access, err := NewAccessToken(a.store, a)
-	if err != nil {
-		return err
-	}
-
-	err = access.Save()
-	if err != nil {
-		return err
-	}
-
-	err = SaveApplicationByAccessToken(a.store, access.Token, jsonBytes)
 	if err != nil {
 		return err
 	}
