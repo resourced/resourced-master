@@ -114,9 +114,18 @@ ResourceD Master accepts a few environment variables as configuration:
     # {"Message":"User{Name: broski} is deleted."}
     ```
 
-* **PUT** `/api/applications/:id/access-token` Generate a new access token.
+* **PUT** `/api/users/:name/access-token` Generate a new access token for user.
+    ```
+    # Request
+    curl -u x_UsStpQU0ZWXL0NP57I-4QpBv-MbQdppLWW_GOUuaU=: -X PUT -H "Content-Type: application/json" http://localhost:55655/api/users/bob/access-token
 
-* **DELETE** `/api/applications/:id/access-token` Remove 1 access token.
+    # Response
+    # {"Id":1421907221082083280,"Name":"bob","HashedPassword":"$2a$05$8brNU7lq2FcMV2lmSoQ53uYKm5X5Xd6/AaphVxoaJMbDojtLVlpQ2","Level":"basic","Token":"ZHJugwapjnyR9Ma8mvQnl6WvC1I9Kp07ss7IBpB73t8=","Enabled":true,"CreatedUnixNano":1421907221082083280}
+    ```
+
+* **POST** `/api/applications/:id/access-token` Generate a new access token for application.
+
+* **DELETE** `/api/applications/:id/access-token/:token` Remove access token for application.
 
 
 Every HTTP request requires AccessToken passed as user. Example:

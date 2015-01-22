@@ -126,11 +126,23 @@ func DeleteApiUserName(w http.ResponseWriter, r *http.Request, ps httprouter.Par
 }
 
 func PutApiUserNameAccessToken(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	fmt.Fprintf(w, "hello, %s!\n", ps.ByName("name"))
-}
+	w.Header().Set("Content-Type", "application/json")
 
-func DeleteApiUserNameAccessToken(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	fmt.Fprintf(w, "hello, %s!\n", ps.ByName("name"))
+	store := context.Get(r, "store").(resourcedmaster_storage.Storer)
+
+	user, err := resourcedmaster_dao.UpdateUserTokenByName(store, ps.ByName("name"))
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
+
+	userJson, err := json.Marshal(user)
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
+
+	w.Write(userJson)
 }
 
 //

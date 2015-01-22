@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/resourced/resourced-master/libstring"
 	resourcedmaster_storage "github.com/resourced/resourced-master/storage"
 	"golang.org/x/crypto/bcrypt"
 	"io"
@@ -12,20 +13,30 @@ import (
 
 // NewUserGivenJson returns struct User.
 func NewUserGivenJson(store resourcedmaster_storage.Storer, jsonBody io.ReadCloser) (*User, error) {
-	var userArgs map[string]string
+	var userArgs map[string]interface{}
 
 	err := json.NewDecoder(jsonBody).Decode(&userArgs)
 	if err != nil {
 		return nil, err
 	}
 
-	u, err := NewUser(store, userArgs["Name"], userArgs["Password"])
+	if _, ok := userArgs["Name"]; !ok {
+		return nil, errors.New("Name key does not exist.")
+	}
+	if _, ok := userArgs["Password"]; !ok {
+		return nil, errors.New("Password key does not exist.")
+	}
+
+	u, err := NewUser(store, userArgs["Name"].(string), userArgs["Password"].(string))
 	if err != nil {
 		return nil, err
 	}
 
-	if userArgs["Level"] != "" {
-		u.Level = userArgs["Level"]
+	if _, ok := userArgs["Level"]; ok {
+		u.Level = userArgs["Level"].(string)
+	}
+	if _, ok := userArgs["Enabled"]; ok {
+		u.Enabled = userArgs["Enabled"].(bool)
 	}
 
 	return u, nil
@@ -87,6 +98,12 @@ func NewUser(store resourcedmaster_storage.Storer, name, password string) (*User
 	}
 	u.HashedPassword = string(hashedPassword)
 
+	accessToken, err := libstring.GeneratePassword(32)
+	if err != nil {
+		return nil, err
+	}
+	u.Token = accessToken
+
 	return u, nil
 }
 
@@ -139,6 +156,27 @@ func GetUserByName(store resourcedmaster_storage.Storer, name string) (*User, er
 	return u, nil
 }
 
+// UpdateUserTokenByName returns struct User.
+func UpdateUserTokenByName(store resourcedmaster_storage.Storer, name string) (*User, error) {
+	u, err := GetUserByName(store, name)
+	if err != nil {
+		return nil, err
+	}
+
+	accessToken, err := libstring.GeneratePassword(32)
+	if err != nil {
+		return nil, err
+	}
+	u.Token = accessToken
+
+	err = u.Save()
+	if err != nil {
+		return nil, err
+	}
+
+	return u, nil
+}
+
 // DeleteUserByName deletes user with name as key.
 func DeleteUserByName(store resourcedmaster_storage.Storer, name string) error {
 	u, err := GetUserByName(store, name)
@@ -179,6 +217,7 @@ type User struct {
 	Name            string
 	HashedPassword  string
 	Level           string
+	Token           string
 	Enabled         bool
 	CreatedUnixNano int64
 	store           resourcedmaster_storage.Storer
