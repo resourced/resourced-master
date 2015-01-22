@@ -6,8 +6,70 @@ import (
 	"fmt"
 	resourcedmaster_storage "github.com/resourced/resourced-master/storage"
 	"golang.org/x/crypto/bcrypt"
+	"io"
 	"time"
 )
+
+// NewUserGivenJson returns struct User.
+func NewUserGivenJson(store resourcedmaster_storage.Storer, jsonBody io.ReadCloser) (*User, error) {
+	var userArgs map[string]string
+
+	err := json.NewDecoder(jsonBody).Decode(&userArgs)
+	if err != nil {
+		return nil, err
+	}
+
+	u, err := NewUser(store, userArgs["Name"], userArgs["Password"])
+	if err != nil {
+		return nil, err
+	}
+
+	if userArgs["Level"] != "" {
+		u.Level = userArgs["Level"]
+	}
+
+	return u, nil
+}
+
+// UpdateUserByNameGivenJson returns struct User.
+func UpdateUserByNameGivenJson(store resourcedmaster_storage.Storer, name string, jsonBody io.ReadCloser) (*User, error) {
+	var userArgs map[string]interface{}
+
+	err := json.NewDecoder(jsonBody).Decode(&userArgs)
+	if err != nil {
+		return nil, err
+	}
+
+	u, err := GetUserByName(store, name)
+	if err != nil {
+		return nil, err
+	}
+
+	if _, ok := userArgs["Name"]; ok {
+		u.Name = userArgs["Name"].(string)
+	}
+	if _, ok := userArgs["Level"]; ok {
+		u.Level = userArgs["Level"].(string)
+	}
+	if _, ok := userArgs["Enabled"]; ok {
+		u.Enabled = userArgs["Enabled"].(bool)
+	}
+
+	if _, ok := userArgs["Password"]; ok {
+		hashedPassword, err := bcrypt.GenerateFromPassword([]byte(userArgs["Password"].(string)), 5)
+		if err != nil {
+			return nil, err
+		}
+		u.HashedPassword = string(hashedPassword)
+	}
+
+	err = u.Save()
+	if err != nil {
+		return nil, err
+	}
+
+	return u, nil
+}
 
 // NewUser returns struct User with basic level permission.
 func NewUser(store resourcedmaster_storage.Storer, name, password string) (*User, error) {
@@ -37,6 +99,25 @@ func NewAdminUser(store resourcedmaster_storage.Storer, name, password string) (
 	u.Level = "admin"
 
 	return u, nil
+}
+
+// AllUsers returns a slice of all User structs.
+func AllUsers(store resourcedmaster_storage.Storer) ([]*User, error) {
+	nameList, err := store.List("/users/name")
+	if err != nil {
+		return nil, err
+	}
+
+	users := make([]*User, 0)
+
+	for _, name := range nameList {
+		u, err := GetUserByName(store, name)
+		if err == nil {
+			users = append(users, u)
+		}
+	}
+
+	return users, nil
 }
 
 // GetUserByName returns User struct with name as key.

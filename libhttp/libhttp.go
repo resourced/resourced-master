@@ -2,6 +2,7 @@ package libhttp
 
 import (
 	"encoding/base64"
+	"encoding/json"
 	"net/http"
 	"strings"
 )
@@ -31,4 +32,18 @@ func ParseBasicAuth(auth string) (username, password string, ok bool) {
 func BasicAuthUnauthorized(res http.ResponseWriter) {
 	res.Header().Set("WWW-Authenticate", "Basic realm=\""+BasicRealm+"\"")
 	http.Error(res, "Not Authorized", http.StatusUnauthorized)
+}
+
+// HandleErrorJson wraps error in JSON structure.
+func HandleErrorJson(w http.ResponseWriter, err error) {
+	var errMap map[string]string
+
+	if err == nil {
+		errMap = map[string]string{"Error": "Error struct is nil."}
+	} else {
+		errMap = map[string]string{"Error": err.Error()}
+	}
+
+	errJson, _ := json.Marshal(errMap)
+	http.Error(w, string(errJson), http.StatusInternalServerError)
 }
