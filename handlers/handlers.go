@@ -9,6 +9,7 @@ import (
 	"github.com/resourced/resourced-master/libhttp"
 	resourcedmaster_storage "github.com/resourced/resourced-master/storage"
 	"net/http"
+	"strconv"
 )
 
 //
@@ -143,6 +144,63 @@ func PutApiUserNameAccessToken(w http.ResponseWriter, r *http.Request, ps httpro
 	}
 
 	w.Write(userJson)
+}
+
+func PostApiApplicationIdAccessToken(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	w.Header().Set("Content-Type", "application/json")
+
+	store := context.Get(r, "store").(resourcedmaster_storage.Storer)
+
+	id, err := strconv.ParseInt(ps.ByName("id"), 10, 64)
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
+
+	app, err := resourcedmaster_dao.GetApplicationById(store, id)
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
+
+	accessToken, err := resourcedmaster_dao.NewAccessToken(store, app)
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
+
+	err = accessToken.Save()
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
+
+	accessTokenJson, err := json.Marshal(accessToken)
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
+
+	w.Write(accessTokenJson)
+}
+
+func DeleteApiApplicationIdAccessToken(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	w.Header().Set("Content-Type", "application/json")
+
+	store := context.Get(r, "store").(resourcedmaster_storage.Storer)
+
+	id, err := strconv.ParseInt(ps.ByName("id"), 10, 64)
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
+
+	_, err = resourcedmaster_dao.GetApplicationById(store, id)
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
+
 }
 
 //

@@ -44,6 +44,8 @@ func mux() *httprouter.Router {
 	router.PUT("/api/users/:name", resourcedmaster_handlers.PutApiUserName)
 	router.DELETE("/api/users/:name", resourcedmaster_handlers.DeleteApiUserName)
 	router.PUT("/api/users/:name/access-token", resourcedmaster_handlers.PutApiUserNameAccessToken)
+	router.POST("/api/applications/:id/access-token", resourcedmaster_handlers.PostApiApplicationIdAccessToken)
+	router.DELETE("/api/applications/:id/access-token/:token", resourcedmaster_handlers.DeleteApiApplicationIdAccessToken)
 
 	// Basic level access
 	router.GET("/", resourcedmaster_handlers.GetRoot)
