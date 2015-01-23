@@ -25,7 +25,7 @@ ResourceD Master accepts a few environment variables as configuration:
 
 ### Basic Level Authorization
 
-* **GET** `/api` Redirect to `/api/app/:id/hosts` for non-staff user. Display list of all apps for staff user.
+* **GET** `/api` Redirect to `/api/app` (staff level only) or redirect to `/api/app/:id/hosts`.
 
 * **GET** `/api/app/:id/hosts` Displays list of all hosts and their tags.
 
@@ -140,6 +140,10 @@ ResourceD Master accepts a few environment variables as configuration:
     # Response
     # {"Message":"AccessToken{Token: 60df7Ri2UjUmsE_zg89JUGdAVczGKcLqyLNMXLxV3Hg=} is deleted."}
     ```
+
+### Staff level Authorization
+
+* **GET** `/api/app` Displays list of all apps (staff level only).
 
 
 Every HTTP request requires AccessToken passed as user. Example:

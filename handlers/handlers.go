@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/gorilla/context"
 	"github.com/julienschmidt/httprouter"
@@ -222,5 +223,47 @@ func GetRoot(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 }
 
 func GetApi(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-	fmt.Fprint(w, "/api\n")
+	w.Header().Set("Content-Type", "application/json")
+
+	currentUser := context.Get(r, "currentUser").(resourcedmaster_dao.User)
+
+	if currentUser.Level == "staff" {
+		http.Redirect(w, r, "/api/app", 301)
+
+	} else {
+		if currentUser.ApplicationId <= 0 {
+			libhttp.BasicAuthUnauthorized(w)
+			return
+		}
+
+		http.Redirect(w, r, fmt.Sprintf("/api/app/%v/hosts", currentUser.ApplicationId), 301)
+	}
+}
+
+func GetApiApp(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	w.Header().Set("Content-Type", "application/json")
+
+	currentUser := context.Get(r, "currentUser").(resourcedmaster_dao.User)
+
+	if currentUser.Level != "staff" {
+		err := errors.New("Access level is too low.")
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
+
+	store := context.Get(r, "store").(resourcedmaster_storage.Storer)
+
+	applications, err := resourcedmaster_dao.AllApplications(store)
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
+
+	applicationsJson, err := json.Marshal(applications)
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
+
+	w.Write(applicationsJson)
 }

@@ -50,6 +50,7 @@ func mux() *httprouter.Router {
 	// Basic level access
 	router.GET("/", resourcedmaster_handlers.GetRoot)
 	router.GET("/api", resourcedmaster_handlers.GetApi)
+	router.GET("/api/app", resourcedmaster_handlers.GetApiApp)
 
 	return router
 }
