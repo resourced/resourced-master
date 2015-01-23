@@ -99,7 +99,10 @@ func TestSaveDeleteAccessTokenUser(t *testing.T) {
 	store := s3StorageForTest(t)
 
 	app, _ := NewApplication(store, fmt.Sprintf("application-for-test-%v", time.Now().UnixNano()))
-	app.Save()
+	err := app.Save()
+	if err != nil {
+		t.Errorf("Saving app struct should work. Error: %v", err)
+	}
 
 	user, err := NewAccessTokenUser(store, app)
 	if err != nil {
@@ -110,4 +113,25 @@ func TestSaveDeleteAccessTokenUser(t *testing.T) {
 	if err != nil {
 		t.Errorf("Saving user struct should work. Error: %v", err)
 	}
+
+	userFromStorage, err := GetUserByName(store, user.Name)
+	if err != nil {
+		t.Errorf("Getting user by name should work. Error: %v", err)
+	}
+
+	if (user.Id != userFromStorage.Id) || (user.Name != userFromStorage.Name) {
+		t.Errorf("Login returns the wrong user. userFromStorage.Id: %v, userFromStorage.Name: %v", userFromStorage.Id, userFromStorage.Name)
+	}
+
+	err = user.Delete()
+	if err != nil {
+		t.Errorf("Deleting user should work. Error: %v", err)
+	}
+
+	_, err = GetUserByName(store, user.Name)
+	if err == nil {
+		t.Errorf("Getting user by name should not work because user is deleted.")
+	}
+
+	app.Delete()
 }
