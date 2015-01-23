@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	resourcedmaster_storage "github.com/resourced/resourced-master/storage"
+	"strconv"
 	"time"
 )
 
@@ -66,6 +67,30 @@ func GetApplicationById(store resourcedmaster_storage.Storer, id int64) (*Applic
 	a.store = store
 
 	return a, nil
+}
+
+// AllApplications returns a slice of all Application structs.
+func AllApplications(store resourcedmaster_storage.Storer) ([]*Application, error) {
+	idList, err := store.List("/applications/id")
+	if err != nil {
+		return nil, err
+	}
+
+	applications := make([]*Application, 0)
+
+	for _, idString := range idList {
+		id, err := strconv.ParseInt(idString, 10, 64)
+		if err != nil {
+			continue
+		}
+
+		a, err := GetApplicationById(store, id)
+		if err == nil {
+			applications = append(applications, a)
+		}
+	}
+
+	return applications, nil
 }
 
 type Application struct {

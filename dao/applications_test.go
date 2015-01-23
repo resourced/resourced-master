@@ -48,6 +48,22 @@ func TestCreateUpdateDeleteApplication(t *testing.T) {
 		t.Errorf("Got the wrong application by id. fromStorage: %v, app: %v", fromStorage, app)
 	}
 
+	apps, err := AllApplications(store)
+	if err != nil {
+		t.Errorf("Failed to get all applications. Error: %v", err)
+	}
+
+	foundId := false
+	for _, a := range apps {
+		if a.Id == fromStorage.Id {
+			foundId = true
+			break
+		}
+	}
+	if !foundId {
+		t.Errorf("AllApplications did not return everything.")
+	}
+
 	err = app.Delete()
 	if err != nil {
 		t.Errorf("Deleting app should work. Error: %v", err)
