@@ -6,6 +6,7 @@ import (
 	"github.com/resourced/resourced-master/libhttp"
 	resourcedmaster_storage "github.com/resourced/resourced-master/storage"
 	"net/http"
+	"strings"
 )
 
 func AccessTokenAuth(users []*resourcedmaster_dao.User) func(http.Handler) http.Handler {
@@ -24,16 +25,26 @@ func AccessTokenAuth(users []*resourcedmaster_dao.User) func(http.Handler) http.
 				return
 			}
 
-			accessTokenMatched := false
+			requireAdminLevelOrAbove := strings.HasPrefix(req.URL.Path, "/api/users/") || strings.HasPrefix(req.URL.Path, "/api/app/")
+			accessAllowed := false
 
-			for _, accessToken := range users {
-				if username == accessToken.Token {
-					accessTokenMatched = true
-					break
+			for _, user := range users {
+				if username == user.Token {
+					if !requireAdminLevelOrAbove {
+						accessAllowed = true
+						break
+					} else if user.Level == "staff" {
+						accessAllowed = true
+						break
+					} else if user.Level == "admin" {
+						// This is not quite right. We need to compare to ApplicationId
+						accessAllowed = true
+						break
+					}
 				}
 			}
 
-			if !accessTokenMatched {
+			if !accessAllowed {
 				libhttp.BasicAuthUnauthorized(res)
 				return
 			}

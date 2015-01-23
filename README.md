@@ -125,6 +125,11 @@ ResourceD Master accepts a few environment variables as configuration:
     ```
 
 * **POST** `/api/app/:id/access-token` Generate a new access token for application.
+    ```
+    # Request
+    curl -u {access-token}: -X POST -H "Content-Type: application/json" \
+    http://localhost:55655/api/app/1421686722771058700/access-token
+    ```
 
 * **DELETE** `/api/app/:id/access-token/:token` Remove access token for application.
     ```
