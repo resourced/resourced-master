@@ -123,6 +123,22 @@ func TestSaveDeleteAccessTokenUser(t *testing.T) {
 		t.Errorf("Login returns the wrong user. userFromStorage.Id: %v, userFromStorage.Name: %v", userFromStorage.Id, userFromStorage.Name)
 	}
 
+	users, err := AllUsers(store)
+	if err != nil {
+		t.Errorf("Failed to get all users. Error: %v", err)
+	}
+
+	foundId := false
+	for _, u := range users {
+		if u.Id == userFromStorage.Id {
+			foundId = true
+			break
+		}
+	}
+	if !foundId {
+		t.Error("AllUsers did not return everything.")
+	}
+
 	err = user.Delete()
 	if err != nil {
 		t.Errorf("Deleting user should work. Error: %v", err)
@@ -134,4 +150,16 @@ func TestSaveDeleteAccessTokenUser(t *testing.T) {
 	}
 
 	app.Delete()
+}
+
+func TestNewUserGivenJson(t *testing.T) {
+
+}
+
+func TestUpdateUserByNameGivenJson(t *testing.T) {
+
+}
+
+func TestUpdateUserTokenByName(t *testing.T) {
+
 }
