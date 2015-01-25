@@ -5,6 +5,7 @@ import (
 	goamz_aws "github.com/goamz/goamz/aws"
 	goamz_s3 "github.com/goamz/goamz/s3"
 	"path"
+	"strings"
 )
 
 func NewS3(env, accessKey, secretKey, regionName, bucketName string) *S3 {
@@ -82,7 +83,12 @@ func (store *S3) List(fullpath string) ([]string, error) {
 	var result []string
 
 	for _, object := range response.Contents {
-		result = append(result, path.Base(object.Key))
+		keyWithoutFullpath := strings.Replace(object.Key, fullpath+"/", "", -1)
+		keyInChunk := strings.Split(keyWithoutFullpath, "/")
+
+		if len(keyInChunk) > 0 {
+			result = append(result, keyInChunk[0])
+		}
 	}
 
 	return result, nil

@@ -267,3 +267,17 @@ func GetApiApp(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 
 	w.Write(applicationsJson)
 }
+
+// **POST** `/api/app/:id/r/:path` Submit reader JSON data from 1 host.
+
+// **POST** `/api/app/:id/w/:path` Submit writer JSON data from 1 host.
+
+func PostApiAppIdReader(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	w.Header().Set("Content-Type", "application/json")
+
+	store := context.Get(r, "store").(resourcedmaster_storage.Storer)
+
+}
+
+func PostApiAppIdWriter(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+}

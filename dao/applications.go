@@ -52,7 +52,7 @@ func DeleteApplicationByAccessToken(store resourcedmaster_storage.Storer, access
 
 // GetApplicationById returns Application struct with name as key.
 func GetApplicationById(store resourcedmaster_storage.Storer, id int64) (*Application, error) {
-	jsonBytes, err := store.Get(fmt.Sprintf("/applications/id/%v", id))
+	jsonBytes, err := store.Get(fmt.Sprintf("/applications/id/%v/record", id))
 	if err != nil {
 		return nil, err
 	}
@@ -75,6 +75,8 @@ func AllApplications(store resourcedmaster_storage.Storer) ([]*Application, erro
 	if err != nil {
 		return nil, err
 	}
+
+	fmt.Printf("idList: %v\n", idList)
 
 	applications := make([]*Application, 0)
 
