@@ -129,21 +129,6 @@ func GetApplicationReaderWriterByHostJson(store resourcedmaster_storage.Storer, 
 	return store.Get(fmt.Sprintf("applications/id/%v/hosts/%v/%vs/%v", id, host, readerOrWriter, path))
 }
 
-// SaveApplicationHost saves application host data in JSON format with id and hostname as keys.
-func SaveApplicationHost(store resourcedmaster_storage.Storer, id int64, hostname string, data []byte) error {
-	return store.Update(fmt.Sprintf("applications/id/%v/hosts/names/%v", id, hostname), data)
-}
-
-// DeleteApplicationHost delete application host data in JSON format with id and hostname as keys.
-func DeleteApplicationHost(store resourcedmaster_storage.Storer, id int64, hostname string) error {
-	return store.Delete(fmt.Sprintf("applications/id/%v/hosts/names/%v", id, hostname))
-}
-
-// GetApplicationHost get application host data in JSON format with id and hostname as keys.
-func GetApplicationHost(store resourcedmaster_storage.Storer, id int64, hostname string) ([]byte, error) {
-	return store.Get(fmt.Sprintf("applications/id/%v/hosts/names/%v", id, hostname))
-}
-
 type Application struct {
 	Id              int64
 	Name            string
@@ -209,16 +194,4 @@ func (a *Application) DeleteReaderWriterByHostJson(readerOrWriter, host, path st
 
 func (a *Application) GetReaderWriterByHostJson(readerOrWriter, host, path string) ([]byte, error) {
 	return GetApplicationReaderWriterByHostJson(a.store, a.Id, host, readerOrWriter, path)
-}
-
-func (a *Application) SaveHost(hostname string, data []byte) error {
-	return SaveApplicationHost(a.store, a.Id, hostname, data)
-}
-
-func (a *Application) DeleteHost(hostname string) error {
-	return DeleteApplicationHost(a.store, a.Id, hostname)
-}
-
-func (a *Application) GetHost(hostname string) ([]byte, error) {
-	return GetApplicationHost(a.store, a.Id, hostname)
 }
