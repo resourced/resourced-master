@@ -6,6 +6,7 @@ import (
 	"fmt"
 	resourcedmaster_storage "github.com/resourced/resourced-master/storage"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -76,12 +77,15 @@ func AllApplications(store resourcedmaster_storage.Storer) ([]*Application, erro
 		return nil, err
 	}
 
-	fmt.Printf("idList: %v\n", idList)
-
 	applications := make([]*Application, 0)
 
-	for _, idString := range idList {
-		id, err := strconv.ParseInt(idString, 10, 64)
+	for _, keyWithoutFullpath := range idList {
+		keyInChunk := strings.Split(keyWithoutFullpath, "/")
+		if len(keyInChunk) < 1 {
+			continue
+		}
+
+		id, err := strconv.ParseInt(keyInChunk[0], 10, 64)
 		if err != nil {
 			continue
 		}
@@ -93,6 +97,38 @@ func AllApplications(store resourcedmaster_storage.Storer) ([]*Application, erro
 	}
 
 	return applications, nil
+}
+
+// SaveApplicationReaderWriter saves application reader data in JSON format with id and path as keys.
+func SaveApplicationReaderWriter(store resourcedmaster_storage.Storer, id int64, readerOrWriter, path string, data []byte) error {
+	return store.Update(fmt.Sprintf("applications/id/%v/%vs/%v", id, readerOrWriter, path), data)
+}
+
+// DeleteApplicationReaderWriter returns error.
+func DeleteApplicationReaderWriter(store resourcedmaster_storage.Storer, id int64, readerOrWriter, path string) error {
+	return store.Delete(fmt.Sprintf("applications/id/%v/%vs/%v", id, readerOrWriter, path))
+}
+
+// GetApplicationReaderWriterJson returns json bytes.
+func GetApplicationReaderWriterJson(store resourcedmaster_storage.Storer, id int64, readerOrWriter, path string) ([]byte, error) {
+	return store.Get(fmt.Sprintf("applications/id/%v/%vs/%v", id, readerOrWriter, path))
+}
+
+// GetApplicationReaderWriter returns interface{}.
+func GetApplicationReaderWriter(store resourcedmaster_storage.Storer, id int64, readerOrWriter, path string) (interface{}, error) {
+	jsonBytes, err := GetApplicationReaderWriterJson(store, id, readerOrWriter, path)
+	if err != nil {
+		return nil, err
+	}
+
+	var data interface{}
+
+	err = json.Unmarshal(jsonBytes, &data)
+	if err != nil {
+		return nil, err
+	}
+
+	return data, nil
 }
 
 type Application struct {
@@ -136,4 +172,16 @@ func (a *Application) Save() error {
 
 func (a *Application) Delete() error {
 	return CommonDeleteById(a.store, "applications", a.Id)
+}
+
+func (a *Application) SaveReaderWriter(readerOrWriter, path string, data []byte) error {
+	return SaveApplicationReaderWriter(a.store, a.Id, readerOrWriter, path, data)
+}
+
+func (a *Application) DeleteReaderWriter(readerOrWriter, path string) error {
+	return DeleteApplicationReaderWriter(a.store, a.Id, readerOrWriter, path)
+}
+
+func (a *Application) GetReaderWriterJson(readerOrWriter, path string) ([]byte, error) {
+	return GetApplicationReaderWriterJson(a.store, a.Id, readerOrWriter, path)
 }

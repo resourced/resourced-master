@@ -84,10 +84,9 @@ func (store *S3) List(fullpath string) ([]string, error) {
 
 	for _, object := range response.Contents {
 		keyWithoutFullpath := strings.Replace(object.Key, fullpath+"/", "", -1)
-		keyInChunk := strings.Split(keyWithoutFullpath, "/")
 
-		if len(keyInChunk) > 0 {
-			result = append(result, keyInChunk[0])
+		if len(keyWithoutFullpath) > 0 {
+			result = append(result, keyWithoutFullpath)
 		}
 	}
 
