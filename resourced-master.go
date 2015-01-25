@@ -2,7 +2,7 @@ package main
 
 import (
 	"github.com/carbocation/interpose"
-	"github.com/julienschmidt/httprouter"
+	gorilla_mux "github.com/gorilla/mux"
 	resourcedmaster_dao "github.com/resourced/resourced-master/dao"
 	resourcedmaster_handlers "github.com/resourced/resourced-master/handlers"
 	"github.com/resourced/resourced-master/libenv"
@@ -34,23 +34,27 @@ func middlewareStruct(store resourcedmaster_storage.Storer) (*interpose.Middlewa
 	return middle, nil
 }
 
-func mux() *httprouter.Router {
-	router := httprouter.New()
+func mux() *gorilla_mux.Router {
+	router := gorilla_mux.NewRouter()
 
 	// Admin level access
-	router.POST("/api/users", resourcedmaster_handlers.PostApiUser)
-	router.GET("/api/users", resourcedmaster_handlers.GetApiUser)
-	router.GET("/api/users/:name", resourcedmaster_handlers.GetApiUserName)
-	router.PUT("/api/users/:name", resourcedmaster_handlers.PutApiUserName)
-	router.DELETE("/api/users/:name", resourcedmaster_handlers.DeleteApiUserName)
-	router.PUT("/api/users/:name/access-token", resourcedmaster_handlers.PutApiUserNameAccessToken)
-	router.POST("/api/app/:id/access-token", resourcedmaster_handlers.PostApiApplicationIdAccessToken)
-	router.DELETE("/api/app/:id/access-token/:token", resourcedmaster_handlers.DeleteApiApplicationIdAccessToken)
+	router.HandleFunc("/api/users", resourcedmaster_handlers.PostApiUser).Methods("POST")
+	router.HandleFunc("/api/users", resourcedmaster_handlers.GetApiUser).Methods("GET")
+
+	router.HandleFunc("/api/users/{name}", resourcedmaster_handlers.GetApiUserName).Methods("GET")
+	router.HandleFunc("/api/users/{name}", resourcedmaster_handlers.PutApiUserName).Methods("PUT")
+	router.HandleFunc("/api/users/{name}", resourcedmaster_handlers.DeleteApiUserName).Methods("DELETE")
+
+	router.HandleFunc("/api/users/{name}/access-token", resourcedmaster_handlers.PutApiUserNameAccessToken).Methods("PUT")
+	router.HandleFunc("/api/app/{id:[0-9]+}/access-token", resourcedmaster_handlers.PostApiApplicationIdAccessToken).Methods("POST")
+	router.HandleFunc("/api/app/{id:[0-9]+}/access-token/:token", resourcedmaster_handlers.DeleteApiApplicationIdAccessToken).Methods("DELETE")
 
 	// Basic level access
-	router.GET("/", resourcedmaster_handlers.GetRoot)
-	router.GET("/api", resourcedmaster_handlers.GetApi)
-	router.GET("/api/app", resourcedmaster_handlers.GetApiApp)
+	router.HandleFunc("/", resourcedmaster_handlers.GetRoot).Methods("GET")
+	router.HandleFunc("/api", resourcedmaster_handlers.GetApi).Methods("GET")
+	router.HandleFunc("/api/app", resourcedmaster_handlers.GetApiApp).Methods("GET")
+
+	router.HandleFunc("/api/app/{id:[0-9]+}/{reader-or-writer}/{path}", resourcedmaster_handlers.PostApiAppIdReaderWriter).Methods("POST")
 
 	return router
 }

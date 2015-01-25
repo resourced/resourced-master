@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/gorilla/context"
-	"github.com/julienschmidt/httprouter"
+	gorilla_mux "github.com/gorilla/mux"
 	resourcedmaster_dao "github.com/resourced/resourced-master/dao"
 	"github.com/resourced/resourced-master/libhttp"
 	resourcedmaster_storage "github.com/resourced/resourced-master/storage"
@@ -19,7 +19,7 @@ import (
 //
 
 // PostApiUser
-func PostApiUser(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+func PostApiUser(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	store := context.Get(r, "store").(resourcedmaster_storage.Storer)
@@ -45,7 +45,7 @@ func PostApiUser(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	w.Write(userJson)
 }
 
-func GetApiUser(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+func GetApiUser(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	store := context.Get(r, "store").(resourcedmaster_storage.Storer)
@@ -65,12 +65,14 @@ func GetApiUser(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	w.Write(usersJson)
 }
 
-func GetApiUserName(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+func GetApiUserName(w http.ResponseWriter, r *http.Request) {
+	params := gorilla_mux.Vars(r)
+
 	w.Header().Set("Content-Type", "application/json")
 
 	store := context.Get(r, "store").(resourcedmaster_storage.Storer)
 
-	user, err := resourcedmaster_dao.GetUserByName(store, ps.ByName("name"))
+	user, err := resourcedmaster_dao.GetUserByName(store, params["name"])
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
@@ -85,12 +87,14 @@ func GetApiUserName(w http.ResponseWriter, r *http.Request, ps httprouter.Params
 	w.Write(userJson)
 }
 
-func PutApiUserName(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+func PutApiUserName(w http.ResponseWriter, r *http.Request) {
+	params := gorilla_mux.Vars(r)
+
 	w.Header().Set("Content-Type", "application/json")
 
 	store := context.Get(r, "store").(resourcedmaster_storage.Storer)
 
-	user, err := resourcedmaster_dao.UpdateUserByNameGivenJson(store, ps.ByName("name"), r.Body)
+	user, err := resourcedmaster_dao.UpdateUserByNameGivenJson(store, params["name"], r.Body)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
@@ -105,12 +109,14 @@ func PutApiUserName(w http.ResponseWriter, r *http.Request, ps httprouter.Params
 	w.Write(userJson)
 }
 
-func DeleteApiUserName(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+func DeleteApiUserName(w http.ResponseWriter, r *http.Request) {
+	params := gorilla_mux.Vars(r)
+
 	w.Header().Set("Content-Type", "application/json")
 
 	store := context.Get(r, "store").(resourcedmaster_storage.Storer)
 
-	err := resourcedmaster_dao.DeleteUserByName(store, ps.ByName("name"))
+	err := resourcedmaster_dao.DeleteUserByName(store, params["name"])
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
@@ -118,7 +124,7 @@ func DeleteApiUserName(w http.ResponseWriter, r *http.Request, ps httprouter.Par
 
 	messageJson, err := json.Marshal(
 		map[string]string{
-			"Message": fmt.Sprintf("User{Name: %v} is deleted.", ps.ByName("name"))})
+			"Message": fmt.Sprintf("User{Name: %v} is deleted.", params["name"])})
 
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
@@ -128,12 +134,14 @@ func DeleteApiUserName(w http.ResponseWriter, r *http.Request, ps httprouter.Par
 	w.Write(messageJson)
 }
 
-func PutApiUserNameAccessToken(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+func PutApiUserNameAccessToken(w http.ResponseWriter, r *http.Request) {
+	params := gorilla_mux.Vars(r)
+
 	w.Header().Set("Content-Type", "application/json")
 
 	store := context.Get(r, "store").(resourcedmaster_storage.Storer)
 
-	user, err := resourcedmaster_dao.UpdateUserTokenByName(store, ps.ByName("name"))
+	user, err := resourcedmaster_dao.UpdateUserTokenByName(store, params["name"])
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
@@ -148,12 +156,14 @@ func PutApiUserNameAccessToken(w http.ResponseWriter, r *http.Request, ps httpro
 	w.Write(userJson)
 }
 
-func PostApiApplicationIdAccessToken(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+func PostApiApplicationIdAccessToken(w http.ResponseWriter, r *http.Request) {
+	params := gorilla_mux.Vars(r)
+
 	w.Header().Set("Content-Type", "application/json")
 
 	store := context.Get(r, "store").(resourcedmaster_storage.Storer)
 
-	id, err := strconv.ParseInt(ps.ByName("id"), 10, 64)
+	id, err := strconv.ParseInt(params["id"], 10, 64)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
@@ -186,18 +196,20 @@ func PostApiApplicationIdAccessToken(w http.ResponseWriter, r *http.Request, ps 
 	w.Write(userJson)
 }
 
-func DeleteApiApplicationIdAccessToken(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+func DeleteApiApplicationIdAccessToken(w http.ResponseWriter, r *http.Request) {
+	params := gorilla_mux.Vars(r)
+
 	w.Header().Set("Content-Type", "application/json")
 
 	store := context.Get(r, "store").(resourcedmaster_storage.Storer)
 
-	err := resourcedmaster_dao.DeleteUserByName(store, ps.ByName("token"))
+	err := resourcedmaster_dao.DeleteUserByName(store, params["token"])
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
 	}
 
-	err = resourcedmaster_dao.DeleteApplicationByAccessToken(store, ps.ByName("token"))
+	err = resourcedmaster_dao.DeleteApplicationByAccessToken(store, params["token"])
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
@@ -205,7 +217,7 @@ func DeleteApiApplicationIdAccessToken(w http.ResponseWriter, r *http.Request, p
 
 	messageJson, err := json.Marshal(
 		map[string]string{
-			"Message": fmt.Sprintf("AccessToken{Token: %v} is deleted.", ps.ByName("token"))})
+			"Message": fmt.Sprintf("AccessToken{Token: %v} is deleted.", params["token"])})
 
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
@@ -219,11 +231,11 @@ func DeleteApiApplicationIdAccessToken(w http.ResponseWriter, r *http.Request, p
 // Basic level access
 //
 
-func GetRoot(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+func GetRoot(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/api", 301)
 }
 
-func GetApi(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+func GetApi(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	currentUser := context.Get(r, "currentUser").(resourcedmaster_dao.User)
@@ -241,7 +253,7 @@ func GetApi(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	}
 }
 
-func GetApiApp(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+func GetApiApp(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	currentUser := context.Get(r, "currentUser").(resourcedmaster_dao.User)
@@ -269,16 +281,14 @@ func GetApiApp(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	w.Write(applicationsJson)
 }
 
-// **POST** `/api/app/:id/r/:path` Submit reader JSON data from 1 host.
+func PostApiAppIdReaderWriter(w http.ResponseWriter, r *http.Request) {
+	params := gorilla_mux.Vars(r)
 
-// **POST** `/api/app/:id/w/:path` Submit writer JSON data from 1 host.
-
-func PostApiAppIdReader(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	w.Header().Set("Content-Type", "application/json")
 
 	store := context.Get(r, "store").(resourcedmaster_storage.Storer)
 
-	id, err := strconv.ParseInt(ps.ByName("id"), 10, 64)
+	id, err := strconv.ParseInt(params["id"], 10, 64)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
@@ -290,19 +300,6 @@ func PostApiAppIdReader(w http.ResponseWriter, r *http.Request, ps httprouter.Pa
 		return
 	}
 
-	app, err := resourcedmaster_dao.GetApplicationById(id)
-	if err != nil {
-		libhttp.HandleErrorJson(w, err)
-		return
-	}
-
-	err = app.SaveReaderWriter("reader", ps.ByName("path"), dataJson)
-	if err != nil {
-		libhttp.HandleErrorJson(w, err)
-		return
-	}
-
-	// Parse JSON payload and save more things.
 	var data map[string]interface{}
 
 	if err := json.Unmarshal(dataJson, &data); err != nil {
@@ -310,45 +307,51 @@ func PostApiAppIdReader(w http.ResponseWriter, r *http.Request, ps httprouter.Pa
 		return
 	}
 
+	if _, ok := data["Hostname"]; !ok {
+		err = errors.New("Data does not contain Hostname.")
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
+
+	app, err := resourcedmaster_dao.GetApplicationById(store, id)
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
+
+	hostname := data["Hostname"].(string)
+	tags := data["Tags"].([]string)
+	host := &resourcedmaster_dao.Host{hostname, tags}
+
+	hostJson, err := json.Marshal(host)
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
+
+	err = app.SaveHost(hostname, hostJson)
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
+
+	if params["reader-or-writer"] == "r" {
+		err = app.SaveReaderWriter("reader", params["path"], dataJson)
+		if err != nil {
+			libhttp.HandleErrorJson(w, err)
+			return
+		}
+	} else if params["reader-or-writer"] == "w" {
+		err = app.SaveReaderWriter("writer", params["path"], dataJson)
+		if err != nil {
+			libhttp.HandleErrorJson(w, err)
+			return
+		}
+	}
+
 	messageJson, err := json.Marshal(
 		map[string]string{
-			"Message": fmt.Sprintf("Reader{Path: %v} is saved.", ps.ByName("path"))})
-
-	w.Write(messageJson)
-}
-
-func PostApiAppIdWriter(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	w.Header().Set("Content-Type", "application/json")
-
-	store := context.Get(r, "store").(resourcedmaster_storage.Storer)
-
-	id, err := strconv.ParseInt(ps.ByName("id"), 10, 64)
-	if err != nil {
-		libhttp.HandleErrorJson(w, err)
-		return
-	}
-
-	dataJson, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		libhttp.HandleErrorJson(w, err)
-		return
-	}
-
-	app, err := resourcedmaster_dao.GetApplicationById(id)
-	if err != nil {
-		libhttp.HandleErrorJson(w, err)
-		return
-	}
-
-	err = app.SaveReaderWriter("writer", ps.ByName("path"), dataJson)
-	if err != nil {
-		libhttp.HandleErrorJson(w, err)
-		return
-	}
-
-	messageJson, err := json.Marshal(
-		map[string]string{
-			"Message": fmt.Sprintf("Writer{Path: %v} is saved.", ps.ByName("path"))})
+			"Message": fmt.Sprintf("%v{Path: %v} is saved.", params["reader-or-writer"], params["path"])})
 
 	w.Write(messageJson)
 }

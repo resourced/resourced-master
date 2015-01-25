@@ -55,9 +55,7 @@ ResourceD Master accepts a few environment variables as configuration:
 
 * **GET** `/api/app/:id/w/:path` Displays writer JSON data on all hosts.
 
-* **POST** `/api/app/:id/r/:path` Submit reader JSON data from 1 host.
-
-* **POST** `/api/app/:id/w/:path` Submit writer JSON data from 1 host.
+* **POST** `/api/app/:id/:readerOrWriter/:path` Submit r/w JSON data from 1 host.
 
 
 ### Admin Level Authorization
