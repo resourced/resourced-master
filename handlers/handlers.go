@@ -9,6 +9,7 @@ import (
 	resourcedmaster_dao "github.com/resourced/resourced-master/dao"
 	"github.com/resourced/resourced-master/libhttp"
 	resourcedmaster_storage "github.com/resourced/resourced-master/storage"
+	"io/ioutil"
 	"net/http"
 	"strconv"
 )
@@ -277,7 +278,69 @@ func PostApiAppIdReader(w http.ResponseWriter, r *http.Request, ps httprouter.Pa
 
 	store := context.Get(r, "store").(resourcedmaster_storage.Storer)
 
+	id, err := strconv.ParseInt(ps.ByName("id"), 10, 64)
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
+
+	app, err := resourcedmaster_dao.GetApplicationById(id)
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
+
+	data, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
+
+	err = app.SaveReaderWriter("reader", ps.ByName("path"), data)
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
+
+	messageJson, err := json.Marshal(
+		map[string]string{
+			"Message": fmt.Sprintf("Reader{Path: %v} is saved.", ps.ByName("path"))})
+
+	w.Write(messageJson)
 }
 
 func PostApiAppIdWriter(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	w.Header().Set("Content-Type", "application/json")
+
+	store := context.Get(r, "store").(resourcedmaster_storage.Storer)
+
+	id, err := strconv.ParseInt(ps.ByName("id"), 10, 64)
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
+
+	app, err := resourcedmaster_dao.GetApplicationById(id)
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
+
+	data, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
+
+	err = app.SaveReaderWriter("writer", ps.ByName("path"), data)
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
+
+	messageJson, err := json.Marshal(
+		map[string]string{
+			"Message": fmt.Sprintf("Writer{Path: %v} is saved.", ps.ByName("path"))})
+
+	w.Write(messageJson)
 }
