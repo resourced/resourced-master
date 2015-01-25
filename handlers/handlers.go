@@ -320,18 +320,12 @@ func PostApiAppIdReaderWriter(w http.ResponseWriter, r *http.Request) {
 	}
 
 	hostname := data["Hostname"].(string)
-	tags := data["Tags"].([]string)
-	networkInterfaces := data["NetworkInterfaces"].(map[string]map[string]interface{})
 
-	host := &resourcedmaster_dao.Host{hostname, tags, networkInterfaces}
+	host := resourcedmaster_dao.NewHost(store, hostname, app.Id)
+	host.Tags = data["Tags"].([]string)
+	host.NetworkInterfaces = data["NetworkInterfaces"].(map[string]map[string]interface{})
 
-	hostJson, err := json.Marshal(host)
-	if err != nil {
-		libhttp.HandleErrorJson(w, err)
-		return
-	}
-
-	err = app.SaveHost(hostname, hostJson)
+	err = host.Save()
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
