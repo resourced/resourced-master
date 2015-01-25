@@ -114,21 +114,19 @@ func GetApplicationReaderWriterJson(store resourcedmaster_storage.Storer, id int
 	return store.Get(fmt.Sprintf("applications/id/%v/%vs/%v", id, readerOrWriter, path))
 }
 
-// GetApplicationReaderWriter returns interface{}.
-func GetApplicationReaderWriter(store resourcedmaster_storage.Storer, id int64, readerOrWriter, path string) (interface{}, error) {
-	jsonBytes, err := GetApplicationReaderWriterJson(store, id, readerOrWriter, path)
-	if err != nil {
-		return nil, err
-	}
+// SaveApplicationHost saves application host data in JSON format with id and hostname as keys.
+func SaveApplicationHost(store resourcedmaster_storage.Storer, id int64, hostname string, data []byte) error {
+	return store.Update(fmt.Sprintf("applications/id/%v/hosts/names/%v", id, hostname), data)
+}
 
-	var data interface{}
+// DeleteApplicationHost delete application host data in JSON format with id and hostname as keys.
+func DeleteApplicationHost(store resourcedmaster_storage.Storer, id int64, hostname string) error {
+	return store.Delete(fmt.Sprintf("applications/id/%v/hosts/names/%v", id, hostname))
+}
 
-	err = json.Unmarshal(jsonBytes, &data)
-	if err != nil {
-		return nil, err
-	}
-
-	return data, nil
+// GetApplicationHost get application host data in JSON format with id and hostname as keys.
+func GetApplicationHost(store resourcedmaster_storage.Storer, id int64, hostname string) ([]byte, error) {
+	return store.Get(fmt.Sprintf("applications/id/%v/hosts/names/%v", id, hostname))
 }
 
 type Application struct {
@@ -184,4 +182,16 @@ func (a *Application) DeleteReaderWriter(readerOrWriter, path string) error {
 
 func (a *Application) GetReaderWriterJson(readerOrWriter, path string) ([]byte, error) {
 	return GetApplicationReaderWriterJson(a.store, a.Id, readerOrWriter, path)
+}
+
+func (a *Application) SaveHost(hostname string, data []byte) error {
+	return SaveApplicationHost(a.store, a.Id, hostname, data)
+}
+
+func (a *Application) DeleteHost(hostname string) error {
+	return DeleteApplicationHost(a.store, a.Id, hostname)
+}
+
+func (a *Application) GetHost(hostname string) ([]byte, error) {
+	return GetApplicationHost(a.store, a.Id, hostname)
 }

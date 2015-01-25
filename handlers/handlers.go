@@ -284,20 +284,28 @@ func PostApiAppIdReader(w http.ResponseWriter, r *http.Request, ps httprouter.Pa
 		return
 	}
 
+	dataJson, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
+
 	app, err := resourcedmaster_dao.GetApplicationById(id)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
 	}
 
-	data, err := ioutil.ReadAll(r.Body)
+	err = app.SaveReaderWriter("reader", ps.ByName("path"), dataJson)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
 	}
 
-	err = app.SaveReaderWriter("reader", ps.ByName("path"), data)
-	if err != nil {
+	// Parse JSON payload and save more things.
+	var data map[string]interface{}
+
+	if err := json.Unmarshal(dataJson, &data); err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
 	}
@@ -320,19 +328,19 @@ func PostApiAppIdWriter(w http.ResponseWriter, r *http.Request, ps httprouter.Pa
 		return
 	}
 
+	dataJson, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
+
 	app, err := resourcedmaster_dao.GetApplicationById(id)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
 	}
 
-	data, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		libhttp.HandleErrorJson(w, err)
-		return
-	}
-
-	err = app.SaveReaderWriter("writer", ps.ByName("path"), data)
+	err = app.SaveReaderWriter("writer", ps.ByName("path"), dataJson)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return

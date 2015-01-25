@@ -107,3 +107,40 @@ func TestCreateGetDeleteReaderData(t *testing.T) {
 
 	app.Delete()
 }
+
+func TestCreateGetDeleteHostData(t *testing.T) {
+	store := s3StorageForTest(t)
+
+	app, err := NewApplication(store, "default")
+	if err != nil {
+		t.Errorf("Creating application struct should work. Error: %v", err)
+	}
+
+	err = app.Save()
+	if err != nil {
+		t.Errorf("Saving app struct should work. Error: %v", err)
+	}
+
+	data := []byte(`{"Message": "Hello World"}`)
+
+	err = app.SaveHost("localhost", data)
+	if err != nil {
+		t.Errorf("Saving host data should work. Error: %v", err)
+	}
+
+	inJson, err := app.GetHost("localhost")
+	if err != nil {
+		t.Errorf("Getting host data should work. Error: %v", err)
+	}
+
+	if string(inJson) != string(data) {
+		t.Error("Got the wrong host data.")
+	}
+
+	err = app.DeleteHost("localhost")
+	if err != nil {
+		t.Errorf("Deleting host data should work. Error: %v", err)
+	}
+
+	app.Delete()
+}
