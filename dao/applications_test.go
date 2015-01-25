@@ -86,7 +86,7 @@ func TestCreateGetDeleteReaderData(t *testing.T) {
 
 	data := []byte(`{"Message": "Hello World"}`)
 
-	err = app.SaveReaderWriter("reader", "hello/world", data)
+	err = app.SaveReaderWriterJson("reader", "hello/world", data)
 	if err != nil {
 		t.Errorf("Saving reader data should work. Error: %v", err)
 	}
@@ -100,7 +100,45 @@ func TestCreateGetDeleteReaderData(t *testing.T) {
 		t.Error("Got the wrong reader data.")
 	}
 
-	err = app.DeleteReaderWriter("reader", "hello/world")
+	err = app.DeleteReaderWriterJson("reader", "hello/world")
+	if err != nil {
+		t.Errorf("Deleting reader data should work. Error: %v", err)
+	}
+
+	app.Delete()
+}
+
+func TestCreateGetDeleteReaderByHostData(t *testing.T) {
+	store := s3StorageForTest(t)
+
+	app, err := NewApplication(store, "default")
+	if err != nil {
+		t.Errorf("Creating application struct should work. Error: %v", err)
+	}
+
+	err = app.Save()
+	if err != nil {
+		t.Errorf("Saving app struct should work. Error: %v", err)
+	}
+
+	host := "localhost"
+	data := []byte(`{"Message": "Hello World"}`)
+
+	err = app.SaveReaderWriterByHostJson("reader", host, "hello/world", data)
+	if err != nil {
+		t.Errorf("Saving reader data should work. Error: %v", err)
+	}
+
+	inJson, err := app.GetReaderWriterByHostJson("reader", host, "hello/world")
+	if err != nil {
+		t.Errorf("Getting reader data should work. Error: %v", err)
+	}
+
+	if string(inJson) != string(data) {
+		t.Error("Got the wrong reader data.")
+	}
+
+	err = app.DeleteReaderWriterByHostJson("reader", host, "hello/world")
 	if err != nil {
 		t.Errorf("Deleting reader data should work. Error: %v", err)
 	}

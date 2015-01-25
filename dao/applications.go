@@ -99,19 +99,34 @@ func AllApplications(store resourcedmaster_storage.Storer) ([]*Application, erro
 	return applications, nil
 }
 
-// SaveApplicationReaderWriter saves application reader data in JSON format with id and path as keys.
-func SaveApplicationReaderWriter(store resourcedmaster_storage.Storer, id int64, readerOrWriter, path string, data []byte) error {
+// SaveApplicationReaderWriterJson saves application reader data in JSON format with id and path as keys.
+func SaveApplicationReaderWriterJson(store resourcedmaster_storage.Storer, id int64, readerOrWriter, path string, data []byte) error {
 	return store.Update(fmt.Sprintf("applications/id/%v/%vs/%v", id, readerOrWriter, path), data)
 }
 
-// DeleteApplicationReaderWriter returns error.
-func DeleteApplicationReaderWriter(store resourcedmaster_storage.Storer, id int64, readerOrWriter, path string) error {
+// DeleteApplicationReaderWriterJson returns error.
+func DeleteApplicationReaderWriterJson(store resourcedmaster_storage.Storer, id int64, readerOrWriter, path string) error {
 	return store.Delete(fmt.Sprintf("applications/id/%v/%vs/%v", id, readerOrWriter, path))
 }
 
 // GetApplicationReaderWriterJson returns json bytes.
 func GetApplicationReaderWriterJson(store resourcedmaster_storage.Storer, id int64, readerOrWriter, path string) ([]byte, error) {
 	return store.Get(fmt.Sprintf("applications/id/%v/%vs/%v", id, readerOrWriter, path))
+}
+
+// SaveApplicationReaderWriterByHostJson saves application reader data in JSON format with id, host and path as keys.
+func SaveApplicationReaderWriterByHostJson(store resourcedmaster_storage.Storer, id int64, host, readerOrWriter, path string, data []byte) error {
+	return store.Update(fmt.Sprintf("applications/id/%v/hosts/%v/%vs/%v", id, host, readerOrWriter, path), data)
+}
+
+// DeleteApplicationReaderWriterByHostJson returns error.
+func DeleteApplicationReaderWriterByHostJson(store resourcedmaster_storage.Storer, id int64, host, readerOrWriter, path string) error {
+	return store.Delete(fmt.Sprintf("applications/id/%v/hosts/%v/%vs/%v", id, host, readerOrWriter, path))
+}
+
+// GetApplicationReaderWriterByHostJson returns json bytes.
+func GetApplicationReaderWriterByHostJson(store resourcedmaster_storage.Storer, id int64, host, readerOrWriter, path string) ([]byte, error) {
+	return store.Get(fmt.Sprintf("applications/id/%v/hosts/%v/%vs/%v", id, host, readerOrWriter, path))
 }
 
 // SaveApplicationHost saves application host data in JSON format with id and hostname as keys.
@@ -172,16 +187,28 @@ func (a *Application) Delete() error {
 	return CommonDeleteById(a.store, "applications", a.Id)
 }
 
-func (a *Application) SaveReaderWriter(readerOrWriter, path string, data []byte) error {
-	return SaveApplicationReaderWriter(a.store, a.Id, readerOrWriter, path, data)
+func (a *Application) SaveReaderWriterJson(readerOrWriter, path string, data []byte) error {
+	return SaveApplicationReaderWriterJson(a.store, a.Id, readerOrWriter, path, data)
 }
 
-func (a *Application) DeleteReaderWriter(readerOrWriter, path string) error {
-	return DeleteApplicationReaderWriter(a.store, a.Id, readerOrWriter, path)
+func (a *Application) DeleteReaderWriterJson(readerOrWriter, path string) error {
+	return DeleteApplicationReaderWriterJson(a.store, a.Id, readerOrWriter, path)
 }
 
 func (a *Application) GetReaderWriterJson(readerOrWriter, path string) ([]byte, error) {
 	return GetApplicationReaderWriterJson(a.store, a.Id, readerOrWriter, path)
+}
+
+func (a *Application) SaveReaderWriterByHostJson(readerOrWriter, host, path string, data []byte) error {
+	return SaveApplicationReaderWriterByHostJson(a.store, a.Id, host, readerOrWriter, path, data)
+}
+
+func (a *Application) DeleteReaderWriterByHostJson(readerOrWriter, host, path string) error {
+	return DeleteApplicationReaderWriterByHostJson(a.store, a.Id, host, readerOrWriter, path)
+}
+
+func (a *Application) GetReaderWriterByHostJson(readerOrWriter, host, path string) ([]byte, error) {
+	return GetApplicationReaderWriterByHostJson(a.store, a.Id, host, readerOrWriter, path)
 }
 
 func (a *Application) SaveHost(hostname string, data []byte) error {

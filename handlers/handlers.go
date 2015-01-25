@@ -321,7 +321,9 @@ func PostApiAppIdReaderWriter(w http.ResponseWriter, r *http.Request) {
 
 	hostname := data["Hostname"].(string)
 	tags := data["Tags"].([]string)
-	host := &resourcedmaster_dao.Host{hostname, tags}
+	networkInterfaces := data["NetworkInterfaces"].(map[string]map[string]interface{})
+
+	host := &resourcedmaster_dao.Host{hostname, tags, networkInterfaces}
 
 	hostJson, err := json.Marshal(host)
 	if err != nil {
@@ -341,12 +343,26 @@ func PostApiAppIdReaderWriter(w http.ResponseWriter, r *http.Request) {
 			libhttp.HandleErrorJson(w, err)
 			return
 		}
+
+		err = app.SaveReaderWriterByHost("reader", hostname, params["path"], dataJson)
+		if err != nil {
+			libhttp.HandleErrorJson(w, err)
+			return
+		}
+
 	} else if params["reader-or-writer"] == "w" {
 		err = app.SaveReaderWriter("writer", params["path"], dataJson)
 		if err != nil {
 			libhttp.HandleErrorJson(w, err)
 			return
 		}
+
+		err = app.SaveReaderWriterByHost("writer", hostname, params["path"], dataJson)
+		if err != nil {
+			libhttp.HandleErrorJson(w, err)
+			return
+		}
+
 	}
 
 	messageJson, err := json.Marshal(
