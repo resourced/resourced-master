@@ -281,6 +281,35 @@ func GetApiApp(w http.ResponseWriter, r *http.Request) {
 	w.Write(applicationsJson)
 }
 
+// * **GET** `/api/app/:id/hosts` Displays list of all hosts.
+func GetApiAppIdHosts(w http.ResponseWriter, r *http.Request) {
+	params := gorilla_mux.Vars(r)
+
+	w.Header().Set("Content-Type", "application/json")
+
+	store := context.Get(r, "store").(resourcedmaster_storage.Storer)
+
+	id, err := strconv.ParseInt(params["id"], 10, 64)
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
+
+	hosts, err := resourcedmaster_dao.AllHosts(store, id)
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
+
+	hostsJson, err := json.Marshal(hosts)
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
+
+	w.Write(hostsJson)
+}
+
 func PostApiAppIdReaderWriter(w http.ResponseWriter, r *http.Request) {
 	params := gorilla_mux.Vars(r)
 
@@ -332,26 +361,26 @@ func PostApiAppIdReaderWriter(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if params["reader-or-writer"] == "r" {
-		err = app.SaveReaderWriter("reader", params["path"], dataJson)
+		err = app.SaveReaderWriterJson("reader", params["path"], dataJson)
 		if err != nil {
 			libhttp.HandleErrorJson(w, err)
 			return
 		}
 
-		err = app.SaveReaderWriterByHost("reader", hostname, params["path"], dataJson)
+		err = app.SaveReaderWriterByHostJson("reader", hostname, params["path"], dataJson)
 		if err != nil {
 			libhttp.HandleErrorJson(w, err)
 			return
 		}
 
 	} else if params["reader-or-writer"] == "w" {
-		err = app.SaveReaderWriter("writer", params["path"], dataJson)
+		err = app.SaveReaderWriterJson("writer", params["path"], dataJson)
 		if err != nil {
 			libhttp.HandleErrorJson(w, err)
 			return
 		}
 
-		err = app.SaveReaderWriterByHost("writer", hostname, params["path"], dataJson)
+		err = app.SaveReaderWriterByHostJson("writer", hostname, params["path"], dataJson)
 		if err != nil {
 			libhttp.HandleErrorJson(w, err)
 			return

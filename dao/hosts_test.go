@@ -35,6 +35,14 @@ func TestCreateGetDeleteHostData(t *testing.T) {
 		t.Error("Got the wrong host data.")
 	}
 
+	hosts, err := AllHosts(store, app.Id)
+	if err != nil {
+		t.Errorf("Getting all hosts data should work. Error: %v", err)
+	}
+	if len(hosts) <= 0 {
+		t.Error("There should be at least 1 host data.")
+	}
+
 	err = hostFromStorage.Delete()
 	if err != nil {
 		t.Errorf("Deleting host data should work. Error: %v", err)

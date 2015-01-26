@@ -27,9 +27,9 @@ ResourceD Master accepts a few environment variables as configuration:
 
 * **GET** `/api` Redirect to `/api/app` (staff level only) or redirect to `/api/app/:id/hosts`.
 
-* **GET** `/api/app/:id/hosts` Displays list of all hosts and their tags.
+* **GET** `/api/app/:id/hosts` Displays list of all hosts.
 
-* **GET** `/api/app/:id/hosts/tags/:tags` Displays list of hosts by tags.
+* **GET** `/api/app/:id/hosts/tags/:tags` Displays list of hosts by tags. (Future)
 
 * **GET** `/api/app/:id/hosts/hardware-addr/:address` Displays list of hosts by MAC-48/EUI-48/EUI-64 address.
 
