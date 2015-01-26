@@ -21,11 +21,6 @@ func SaveHostByAppIdJson(store resourcedmaster_storage.Storer, id int64, hostnam
 	return store.Update(fmt.Sprintf("applications/id/%v/hosts/names/%v", id, hostname), data)
 }
 
-// GetHostByAppIdJson get host data in JSON format with app id and hostname as keys.
-func GetHostByAppIdJson(store resourcedmaster_storage.Storer, id int64, hostname string) ([]byte, error) {
-	return store.Get(fmt.Sprintf("applications/id/%v/hosts/names/%v", id, hostname))
-}
-
 // DeleteHostByAppId delete host data in JSON format with app id and hostname as keys.
 func DeleteHostByAppId(store resourcedmaster_storage.Storer, id int64, hostname string) error {
 	return store.Delete(fmt.Sprintf("applications/id/%v/hosts/names/%v", id, hostname))
@@ -46,6 +41,26 @@ func GetHostByAppId(store resourcedmaster_storage.Storer, id int64, hostname str
 	return h, nil
 }
 
+// SaveHostByAppIdAndHardwareAddrJson saves host data in JSON format with app id and hardware address as keys.
+func SaveHostByAppIdAndHardwareAddrJson(store resourcedmaster_storage.Storer, id int64, address string, data []byte) error {
+	return store.Update(fmt.Sprintf("applications/id/%v/hosts/hardware-addr/%v", id, address), data)
+}
+
+// DeleteHostByAppIdAndHardwareAddrJson delete host data in JSON format with app id and hardware address as keys.
+func DeleteHostByAppIdAndHardwareAddrJson(store resourcedmaster_storage.Storer, id int64, address string) error {
+	return store.Delete(fmt.Sprintf("applications/id/%v/hosts/hardware-addr/%v", id, address))
+}
+
+// SaveHostByAppIdAndIpAddrJson saves host data in JSON format with app id and ip address as keys.
+func SaveHostByAppIdAndIpAddrJson(store resourcedmaster_storage.Storer, id int64, address string, data []byte) error {
+	return store.Update(fmt.Sprintf("applications/id/%v/hosts/ip-addr/%v", id, address), data)
+}
+
+// DeleteHostByAppIdAndIpAddrJson delete host data in JSON format with app id and ip address as keys.
+func DeleteHostByAppIdAndIpAddrJson(store resourcedmaster_storage.Storer, id int64, address string) error {
+	return store.Delete(fmt.Sprintf("applications/id/%v/hosts/ip-addr/%v", id, address))
+}
+
 type Host struct {
 	ApplicationId     int64
 	Name              string
@@ -53,6 +68,25 @@ type Host struct {
 	NetworkInterfaces map[string]map[string]interface{}
 
 	store resourcedmaster_storage.Storer
+}
+
+// AllHosts returns a slice of all Host structs.
+func AllHosts(store resourcedmaster_storage.Storer, id int64) ([]*Host, error) {
+	hostnames, err := store.List(fmt.Sprintf("applications/id/%v/hosts/names", id))
+	if err != nil {
+		return nil, err
+	}
+
+	hosts := make([]*Host, 0)
+
+	for _, hostname := range hostnames {
+		host, err := GetHostByAppId(store, id, hostname)
+		if err == nil {
+			hosts = append(hosts, host)
+		}
+	}
+
+	return hosts, nil
 }
 
 // validateBeforeSave checks various conditions before saving.
@@ -78,9 +112,107 @@ func (h *Host) Save() error {
 		return err
 	}
 
-	return SaveHostByAppIdJson(h.store, h.ApplicationId, h.Name, jsonBytes)
+	err = SaveHostByAppIdJson(h.store, h.ApplicationId, h.Name, jsonBytes)
+	if err != nil {
+		return err
+	}
+
+	err = h.SaveByHardwareAddr()
+	if err != nil {
+		return err
+	}
+
+	return h.SaveByIpAddrs()
+}
+
+func (h *Host) SaveByHardwareAddr() error {
+	if h.NetworkInterfaces != nil {
+		jsonBytes, err := json.Marshal(h)
+		if err != nil {
+			return err
+		}
+
+		for _, data := range h.NetworkInterfaces {
+			hardwareAddrInterface, ok := data["HardwareAddress"]
+			if !ok {
+				continue
+			}
+
+			hardwareAddr := hardwareAddrInterface.(string)
+			SaveHostByAppIdAndHardwareAddrJson(h.store, h.ApplicationId, hardwareAddr, jsonBytes)
+		}
+	}
+
+	return nil
+}
+
+func (h *Host) SaveByIpAddrs() error {
+	if h.NetworkInterfaces != nil {
+		jsonBytes, err := json.Marshal(h)
+		if err != nil {
+			return err
+		}
+
+		for _, data := range h.NetworkInterfaces {
+			ipAddressInterface, ok := data["IPAddresses"]
+			if !ok {
+				continue
+			}
+
+			addrs := ipAddressInterface.([]string)
+			for _, addr := range addrs {
+				SaveHostByAppIdAndIpAddrJson(h.store, h.ApplicationId, addr, jsonBytes)
+			}
+		}
+	}
+
+	return nil
 }
 
 func (h *Host) Delete() error {
-	return DeleteHostByAppId(h.store, h.ApplicationId, h.Name)
+	err := DeleteHostByAppId(h.store, h.ApplicationId, h.Name)
+	if err != nil {
+		return err
+	}
+
+	err = h.DeleteByHardwareAddr()
+	if err != nil {
+		return err
+	}
+
+	return h.DeleteByIpAddrs()
+}
+
+func (h *Host) DeleteByHardwareAddr() error {
+	if h.NetworkInterfaces != nil {
+		for _, data := range h.NetworkInterfaces {
+			hardwareAddrInterface, ok := data["HardwareAddress"]
+			if !ok {
+				continue
+			}
+
+			hardwareAddr := hardwareAddrInterface.(string)
+			DeleteHostByAppIdAndHardwareAddrJson(h.store, h.ApplicationId, hardwareAddr)
+		}
+	}
+
+	return nil
+}
+
+func (h *Host) DeleteByIpAddrs() error {
+	if h.NetworkInterfaces != nil {
+		for _, data := range h.NetworkInterfaces {
+			ipAddressInterface, ok := data["IPAddresses"]
+			if !ok {
+				continue
+			}
+
+			addrs := ipAddressInterface.([]string)
+			for _, addr := range addrs {
+				DeleteHostByAppIdAndIpAddrJson(h.store, h.ApplicationId, addr)
+			}
+		}
+	}
+
+	return nil
 }
