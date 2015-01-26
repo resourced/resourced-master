@@ -54,6 +54,10 @@ func mux() *gorilla_mux.Router {
 	router.HandleFunc("/api", resourcedmaster_handlers.GetApi).Methods("GET")
 	router.HandleFunc("/api/app", resourcedmaster_handlers.GetApiApp).Methods("GET")
 
+	router.HandleFunc("/api/app/{id:[0-9]+}/hosts", resourcedmaster_handlers.GetApiAppIdHosts).Methods("GET")
+	router.HandleFunc("/api/app/{id:[0-9]+}/hosts/hardware-addr/{address}", resourcedmaster_handlers.GetApiAppIdHostsHardwareAddr).Methods("GET")
+	router.HandleFunc("/api/app/{id:[0-9]+}/hosts/ip-addr/{address}", resourcedmaster_handlers.GetApiAppIdHostsIpAddr).Methods("GET")
+
 	router.HandleFunc("/api/app/{id:[0-9]+}/{reader-or-writer}/{path}", resourcedmaster_handlers.PostApiAppIdReaderWriter).Methods("POST")
 
 	return router

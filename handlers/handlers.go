@@ -281,7 +281,7 @@ func GetApiApp(w http.ResponseWriter, r *http.Request) {
 	w.Write(applicationsJson)
 }
 
-// * **GET** `/api/app/:id/hosts` Displays list of all hosts.
+// **GET** `/api/app/:id/hosts` Displays list of all hosts.
 func GetApiAppIdHosts(w http.ResponseWriter, r *http.Request) {
 	params := gorilla_mux.Vars(r)
 
@@ -308,6 +308,64 @@ func GetApiAppIdHosts(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Write(hostsJson)
+}
+
+// **GET** `/api/app/:id/hosts/hardware-addr/:address` Displays list of hosts by MAC-48/EUI-48/EUI-64 address.
+func GetApiAppIdHostsHardwareAddr(w http.ResponseWriter, r *http.Request) {
+	params := gorilla_mux.Vars(r)
+
+	w.Header().Set("Content-Type", "application/json")
+
+	store := context.Get(r, "store").(resourcedmaster_storage.Storer)
+
+	id, err := strconv.ParseInt(params["id"], 10, 64)
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
+
+	host, err := resourcedmaster_dao.GetHostByAppIdAndHardwareAddr(store, id, params["address"])
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
+
+	hostJson, err := json.Marshal(host)
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
+
+	w.Write(hostJson)
+}
+
+// **GET** `/api/app/:id/hosts/ip-addr/:address` Displays list of hosts by IP address.
+func GetApiAppIdHostsIpAddr(w http.ResponseWriter, r *http.Request) {
+	params := gorilla_mux.Vars(r)
+
+	w.Header().Set("Content-Type", "application/json")
+
+	store := context.Get(r, "store").(resourcedmaster_storage.Storer)
+
+	id, err := strconv.ParseInt(params["id"], 10, 64)
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
+
+	host, err := resourcedmaster_dao.GetHostByAppIdAndIpAddr(store, id, params["address"])
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
+
+	hostJson, err := json.Marshal(host)
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
+
+	w.Write(hostJson)
 }
 
 func PostApiAppIdReaderWriter(w http.ResponseWriter, r *http.Request) {

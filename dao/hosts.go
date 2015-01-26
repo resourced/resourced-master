@@ -26,7 +26,7 @@ func DeleteHostByAppId(store resourcedmaster_storage.Storer, id int64, hostname 
 	return store.Delete(fmt.Sprintf("applications/id/%v/hosts/names/%v", id, hostname))
 }
 
-// GetHostByAppId get host data with app id and hostname as keys.
+// GetHostByAppId returns Host struct with app id and hostname as keys.
 func GetHostByAppId(store resourcedmaster_storage.Storer, id int64, hostname string) (*Host, error) {
 	jsonBytes, err := store.Get(fmt.Sprintf("applications/id/%v/hosts/names/%v", id, hostname))
 
@@ -61,13 +61,28 @@ func DeleteHostByAppIdAndIpAddrJson(store resourcedmaster_storage.Storer, id int
 	return store.Delete(fmt.Sprintf("applications/id/%v/hosts/ip-addr/%v", id, address))
 }
 
-type Host struct {
-	ApplicationId     int64
-	Name              string
-	Tags              []string
-	NetworkInterfaces map[string]map[string]interface{}
+func getHostByAppIdAndAddress(store resourcedmaster_storage.Storer, id int64, addressType, address string) (*Host, error) {
+	jsonBytes, err := store.Get(fmt.Sprintf("applications/id/%v/hosts/%v/%v", id, addressType, address))
 
-	store resourcedmaster_storage.Storer
+	h := &Host{}
+
+	err = json.Unmarshal(jsonBytes, h)
+	if err != nil {
+		return nil, err
+	}
+	h.store = store
+
+	return h, nil
+}
+
+// GetHostByAppIdAndHardwareAddr returns Host struct with app id and hardware address as keys.
+func GetHostByAppIdAndHardwareAddr(store resourcedmaster_storage.Storer, id int64, address string) (*Host, error) {
+	return getHostByAppIdAndAddress(store, id, "hardware-addr", address)
+}
+
+// GetHostByAppIdAndIpAddr returns Host struct with app id and ip address as keys.
+func GetHostByAppIdAndIpAddr(store resourcedmaster_storage.Storer, id int64, address string) (*Host, error) {
+	return getHostByAppIdAndAddress(store, id, "ip-addr", address)
 }
 
 // AllHosts returns a slice of all Host structs.
@@ -87,6 +102,15 @@ func AllHosts(store resourcedmaster_storage.Storer, id int64) ([]*Host, error) {
 	}
 
 	return hosts, nil
+}
+
+type Host struct {
+	ApplicationId     int64
+	Name              string
+	Tags              []string
+	NetworkInterfaces map[string]map[string]interface{}
+
+	store resourcedmaster_storage.Storer
 }
 
 // validateBeforeSave checks various conditions before saving.
