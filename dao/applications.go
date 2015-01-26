@@ -129,6 +129,25 @@ func GetApplicationReaderWriterByHostJson(store resourcedmaster_storage.Storer, 
 	return store.Get(fmt.Sprintf("applications/id/%v/hosts/%v/%vs/%v", id, host, readerOrWriter, path))
 }
 
+// AllReaderWriterByHost returns a slice of all reader/writer JSON data with id and host as keys.
+func AllReaderWriterByHost(store resourcedmaster_storage.Storer, id int64, host, readerOrWriter string) ([][]byte, error) {
+	paths, err := store.List(fmt.Sprintf("applications/id/%v/hosts/%v/%vs", id, host, readerOrWriter))
+	if err != nil {
+		return nil, err
+	}
+
+	sliceJsonData := make([][]byte, 0)
+
+	for _, path := range paths {
+		jsonData, err := GetApplicationReaderWriterByHostJson(store, id, host, readerOrWriter, path)
+		if err == nil {
+			sliceJsonData = append(sliceJsonData, jsonData)
+		}
+	}
+
+	return sliceJsonData, nil
+}
+
 type Application struct {
 	Id              int64
 	Name            string
