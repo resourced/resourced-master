@@ -2,6 +2,7 @@ package main
 
 import (
 	"github.com/carbocation/interpose"
+	"github.com/codegangsta/cli"
 	gorilla_mux "github.com/gorilla/mux"
 	resourcedmaster_dao "github.com/resourced/resourced-master/dao"
 	resourcedmaster_handlers "github.com/resourced/resourced-master/handlers"
@@ -9,9 +10,52 @@ import (
 	resourcedmaster_middlewares "github.com/resourced/resourced-master/middlewares"
 	resourcedmaster_storage "github.com/resourced/resourced-master/storage"
 	"net/http"
+	"os"
 )
 
-func storage() (resourcedmaster_storage.Storer, error) {
+func NewResourcedMaster() *ResourcedMaster {
+	rm := &ResourcedMaster{}
+
+	rm.app = cli.NewApp()
+	rm.app.Name = "resourced-master"
+	rm.app.Usage = "It stores all of your servers facts."
+	rm.app.Author = "Didip Kerabat"
+	rm.app.Email = "didipk@gmail.com"
+
+	rm.app.Commands = []cli.Command{
+		{
+			Name:      "server",
+			ShortName: "serv",
+			Usage:     "Run HTTP server",
+			Action: func(c *cli.Context) {
+				rm.httpRun()
+			},
+		},
+		{
+			Name:      "application",
+			ShortName: "app",
+			Usage:     "Application CRUD operations",
+			Action: func(c *cli.Context) {
+				crud := c.Args().First()
+
+				if crud == "create" {
+					name := c.Args().Get(1)
+
+					println(crud)
+					println(name)
+				}
+			},
+		},
+	}
+
+	return rm
+}
+
+type ResourcedMaster struct {
+	app *cli.App
+}
+
+func (rm *ResourcedMaster) storage() (resourcedmaster_storage.Storer, error) {
 	env := libenv.EnvWithDefault("RESOURCED_MASTER_ENV", "test")
 	s3AccessKey := libenv.EnvWithDefault("RESOURCED_MASTER_S3_ACCESS_KEY", "")
 	s3SecretKey := libenv.EnvWithDefault("RESOURCED_MASTER_S3_SECRET_KEY", "")
@@ -21,7 +65,7 @@ func storage() (resourcedmaster_storage.Storer, error) {
 	return resourcedmaster_storage.NewS3(env, s3AccessKey, s3SecretKey, s3Region, s3Bucket), nil
 }
 
-func middlewareStruct(store resourcedmaster_storage.Storer) (*interpose.Middleware, error) {
+func (rm *ResourcedMaster) middlewareStruct(store resourcedmaster_storage.Storer) (*interpose.Middleware, error) {
 	users, err := resourcedmaster_dao.AllUsers(store)
 	if err != nil {
 		return nil, err
@@ -34,7 +78,7 @@ func middlewareStruct(store resourcedmaster_storage.Storer) (*interpose.Middlewa
 	return middle, nil
 }
 
-func mux() *gorilla_mux.Router {
+func (rm *ResourcedMaster) mux() *gorilla_mux.Router {
 	router := gorilla_mux.NewRouter()
 
 	// Admin level access
@@ -63,13 +107,21 @@ func mux() *gorilla_mux.Router {
 	return router
 }
 
-func main() {
-	store, _ := storage()
+func (rm *ResourcedMaster) httpRun() {
+	store, _ := rm.storage()
 
-	middle, _ := middlewareStruct(store)
+	middle, _ := rm.middlewareStruct(store)
 
-	middle.UseHandler(mux())
+	middle.UseHandler(rm.mux())
 
 	serverAddress := libenv.EnvWithDefault("RESOURCED_MASTER_ADDR", ":55655")
 	http.ListenAndServe(serverAddress, middle)
+}
+
+func (rm *ResourcedMaster) Run(arguments []string) error {
+	return rm.app.Run(arguments)
+}
+
+func main() {
+	NewResourcedMaster().Run(os.Args)
 }
