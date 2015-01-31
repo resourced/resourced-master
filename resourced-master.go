@@ -13,7 +13,9 @@ import (
 	"os"
 )
 
-func NewResourcedMaster() *ResourcedMaster {
+func NewResourcedMaster() (*ResourcedMaster, error) {
+	var err error
+
 	rm := &ResourcedMaster{}
 
 	rm.app = cli.NewApp()
@@ -48,11 +50,14 @@ func NewResourcedMaster() *ResourcedMaster {
 		},
 	}
 
-	return rm
+	rm.store, err = rm.storage()
+
+	return rm, err
 }
 
 type ResourcedMaster struct {
-	app *cli.App
+	store resourcedmaster_storage.Storer
+	app   *cli.App
 }
 
 func (rm *ResourcedMaster) storage() (resourcedmaster_storage.Storer, error) {
@@ -108,9 +113,7 @@ func (rm *ResourcedMaster) mux() *gorilla_mux.Router {
 }
 
 func (rm *ResourcedMaster) httpRun() {
-	store, _ := rm.storage()
-
-	middle, _ := rm.middlewareStruct(store)
+	middle, _ := rm.middlewareStruct(rm.store)
 
 	middle.UseHandler(rm.mux())
 
@@ -123,5 +126,11 @@ func (rm *ResourcedMaster) Run(arguments []string) error {
 }
 
 func main() {
-	NewResourcedMaster().Run(os.Args)
+	app, err := NewResourcedMaster()
+	if err != nil {
+		println(err)
+		os.Exit(1)
+	}
+
+	app.Run(os.Args)
 }
