@@ -43,8 +43,17 @@ func NewResourcedMaster() (*ResourcedMaster, error) {
 				if crud == "create" {
 					name := c.Args().Get(1)
 
-					println(crud)
-					println(name)
+					application, err := resourcedmaster_dao.NewApplication(rm.store, name)
+					if err != nil {
+						println(err)
+						os.Exit(1)
+					}
+
+					err = application.Save()
+					if err != nil {
+						println(err)
+						os.Exit(1)
+					}
 				}
 			},
 		},
