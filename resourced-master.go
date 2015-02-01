@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"github.com/carbocation/interpose"
 	"github.com/codegangsta/cli"
 	gorilla_mux "github.com/gorilla/mux"
@@ -9,6 +10,7 @@ import (
 	"github.com/resourced/resourced-master/libenv"
 	resourcedmaster_middlewares "github.com/resourced/resourced-master/middlewares"
 	resourcedmaster_storage "github.com/resourced/resourced-master/storage"
+	"log"
 	"net/http"
 	"os"
 )
@@ -17,6 +19,7 @@ func NewResourcedMaster() (*ResourcedMaster, error) {
 	var err error
 
 	rm := &ResourcedMaster{}
+	rm.Env = libenv.EnvWithDefault("RESOURCED_MASTER_ENV", "development")
 
 	rm.app = cli.NewApp()
 	rm.app.Name = "resourced-master"
@@ -45,15 +48,49 @@ func NewResourcedMaster() (*ResourcedMaster, error) {
 
 					application, err := resourcedmaster_dao.NewApplication(rm.store, name)
 					if err != nil {
-						println(err)
-						os.Exit(1)
+						log.Fatalf("Failed to create a new application. Error: %v\n", err)
 					}
 
 					err = application.Save()
 					if err != nil {
-						println(err)
-						os.Exit(1)
+						log.Fatalf("Failed to save the new application. Error: %v\n", err)
 					}
+
+					jsonBytes, err := json.Marshal(application)
+					if err != nil {
+						log.Fatalf("Failed to serialize application to JSON. Error: %v\n", err)
+					}
+
+					println(string(jsonBytes))
+				}
+			},
+		},
+		{
+			Name:      "access-token",
+			ShortName: "token",
+			Usage:     "Access Token CRUD operations",
+			Action: func(c *cli.Context) {
+				crud := c.Args().First()
+
+				if crud == "create" {
+					appId := c.Args().Get(1)
+
+					application, err := resourcedmaster_dao.GetApplicationById(rm.store, appId)
+					if err != nil {
+						log.Fatalf("Failed to get application by id. Error: %v\n", err)
+					}
+
+					user, err := resourcedmaster_dao.NewAccessTokenUser(rm.store, application)
+					if err != nil {
+						log.Fatalf("Failed to create access token. Error: %v\n", err)
+					}
+
+					err = user.Save()
+					if err != nil {
+						log.Fatalf("Failed to save access token. Error: %v\n", err)
+					}
+
+					println(user.Token)
 				}
 			},
 		},
@@ -65,18 +102,18 @@ func NewResourcedMaster() (*ResourcedMaster, error) {
 }
 
 type ResourcedMaster struct {
+	Env   string
 	store resourcedmaster_storage.Storer
 	app   *cli.App
 }
 
 func (rm *ResourcedMaster) storage() (resourcedmaster_storage.Storer, error) {
-	env := libenv.EnvWithDefault("RESOURCED_MASTER_ENV", "test")
 	s3AccessKey := libenv.EnvWithDefault("RESOURCED_MASTER_S3_ACCESS_KEY", "")
 	s3SecretKey := libenv.EnvWithDefault("RESOURCED_MASTER_S3_SECRET_KEY", "")
 	s3Region := libenv.EnvWithDefault("RESOURCED_MASTER_S3_REGION", "us-east-1")
 	s3Bucket := libenv.EnvWithDefault("RESOURCED_MASTER_S3_BUCKET", "")
 
-	return resourcedmaster_storage.NewS3(env, s3AccessKey, s3SecretKey, s3Region, s3Bucket), nil
+	return resourcedmaster_storage.NewS3(rm.Env, s3AccessKey, s3SecretKey, s3Region, s3Bucket), nil
 }
 
 func (rm *ResourcedMaster) middlewareStruct(store resourcedmaster_storage.Storer) (*interpose.Middleware, error) {

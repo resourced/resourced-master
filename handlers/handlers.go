@@ -11,7 +11,6 @@ import (
 	resourcedmaster_storage "github.com/resourced/resourced-master/storage"
 	"io/ioutil"
 	"net/http"
-	"strconv"
 )
 
 //
@@ -163,13 +162,7 @@ func PostApiApplicationIdAccessToken(w http.ResponseWriter, r *http.Request) {
 
 	store := context.Get(r, "store").(resourcedmaster_storage.Storer)
 
-	id, err := strconv.ParseInt(params["id"], 10, 64)
-	if err != nil {
-		libhttp.HandleErrorJson(w, err)
-		return
-	}
-
-	app, err := resourcedmaster_dao.GetApplicationById(store, id)
+	app, err := resourcedmaster_dao.GetApplicationById(store, params["id"])
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
@@ -244,7 +237,7 @@ func GetApi(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/api/app", 301)
 
 	} else {
-		if currentUser.ApplicationId <= 0 {
+		if currentUser.ApplicationId == "" {
 			libhttp.BasicAuthUnauthorized(w)
 			return
 		}
@@ -289,13 +282,7 @@ func GetApiAppIdHosts(w http.ResponseWriter, r *http.Request) {
 
 	store := context.Get(r, "store").(resourcedmaster_storage.Storer)
 
-	id, err := strconv.ParseInt(params["id"], 10, 64)
-	if err != nil {
-		libhttp.HandleErrorJson(w, err)
-		return
-	}
-
-	hosts, err := resourcedmaster_dao.AllHosts(store, id)
+	hosts, err := resourcedmaster_dao.AllHosts(store, params["id"])
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
@@ -318,13 +305,7 @@ func GetApiAppIdHostsHardwareAddr(w http.ResponseWriter, r *http.Request) {
 
 	store := context.Get(r, "store").(resourcedmaster_storage.Storer)
 
-	id, err := strconv.ParseInt(params["id"], 10, 64)
-	if err != nil {
-		libhttp.HandleErrorJson(w, err)
-		return
-	}
-
-	host, err := resourcedmaster_dao.GetHostByAppIdAndHardwareAddr(store, id, params["address"])
+	host, err := resourcedmaster_dao.GetHostByAppIdAndHardwareAddr(store, params["id"], params["address"])
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
@@ -347,13 +328,7 @@ func GetApiAppIdHostsIpAddr(w http.ResponseWriter, r *http.Request) {
 
 	store := context.Get(r, "store").(resourcedmaster_storage.Storer)
 
-	id, err := strconv.ParseInt(params["id"], 10, 64)
-	if err != nil {
-		libhttp.HandleErrorJson(w, err)
-		return
-	}
-
-	host, err := resourcedmaster_dao.GetHostByAppIdAndIpAddr(store, id, params["address"])
+	host, err := resourcedmaster_dao.GetHostByAppIdAndIpAddr(store, params["id"], params["address"])
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
@@ -375,12 +350,6 @@ func PostApiAppIdReaderWriter(w http.ResponseWriter, r *http.Request) {
 
 	store := context.Get(r, "store").(resourcedmaster_storage.Storer)
 
-	id, err := strconv.ParseInt(params["id"], 10, 64)
-	if err != nil {
-		libhttp.HandleErrorJson(w, err)
-		return
-	}
-
 	dataJson, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
@@ -400,7 +369,7 @@ func PostApiAppIdReaderWriter(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	app, err := resourcedmaster_dao.GetApplicationById(store, id)
+	app, err := resourcedmaster_dao.GetApplicationById(store, params["id"])
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return

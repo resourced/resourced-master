@@ -8,6 +8,7 @@ import (
 	resourcedmaster_storage "github.com/resourced/resourced-master/storage"
 	"golang.org/x/crypto/bcrypt"
 	"io"
+	"strconv"
 	"time"
 )
 
@@ -18,8 +19,7 @@ func NewUser(store resourcedmaster_storage.Storer, name, password string) (*User
 	u.Name = name
 	u.Level = "basic"
 	u.Enabled = true
-	u.CreatedUnixNano = time.Now().UnixNano()
-	u.Id = u.CreatedUnixNano
+	u.Id = strconv.FormatInt(time.Now().UnixNano(), 10)
 
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), 5)
 	if err != nil {
@@ -219,23 +219,22 @@ func Login(store resourcedmaster_storage.Storer, name, password string) (*User, 
 }
 
 type User struct {
-	Id              int64
-	ApplicationId   int64
-	Name            string
-	HashedPassword  string
-	Level           string
-	Token           string
-	Enabled         bool
-	CreatedUnixNano int64
-	store           resourcedmaster_storage.Storer
+	Id             string
+	ApplicationId  string
+	Name           string
+	HashedPassword string
+	Level          string
+	Token          string
+	Enabled        bool
+	store          resourcedmaster_storage.Storer
 }
 
 // validateBeforeSave checks various conditions before saving.
 func (u *User) validateBeforeSave() error {
-	if u.Id <= 0 {
+	if u.Id == "" {
 		return errors.New("Id must not be empty.")
 	}
-	if u.ApplicationId <= 0 && u.Level != "staff" {
+	if u.ApplicationId == "" && u.Level != "staff" {
 		return errors.New("ApplicationId must not be empty.")
 	}
 	if u.Name == "" {
@@ -266,7 +265,7 @@ func (u *User) Save() error {
 		return err
 	}
 
-	if u.ApplicationId > 0 && u.Token != "" {
+	if u.ApplicationId != "" && u.Token != "" {
 		app, err := GetApplicationById(u.store, u.ApplicationId)
 		if err != nil {
 			return err
@@ -287,7 +286,7 @@ func (u *User) Save() error {
 func (u *User) Delete() error {
 	err := DeleteUserByName(u.store, u.Name)
 
-	if u.ApplicationId > 0 && u.Token != "" {
+	if u.ApplicationId != "" && u.Token != "" {
 		err = DeleteApplicationByAccessToken(u.store, u.Token)
 	}
 

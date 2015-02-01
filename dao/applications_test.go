@@ -12,11 +12,8 @@ func TestNewApplication(t *testing.T) {
 		t.Errorf("Creating application struct should work. Error: %v", err)
 	}
 
-	if app.Id <= 0 {
+	if app.Id == "" {
 		t.Errorf("app.Id should not be empty. app.Id: %v", app.Id)
-	}
-	if app.CreatedUnixNano != app.Id {
-		t.Errorf("app.Id == app.CreatedUnixNano. app.Id: %v, app.CreatedUnixNano: %v", app.Id, app.CreatedUnixNano)
 	}
 	if app.Name == "" {
 		t.Errorf("app.Name should not be empty. app.Name: %v", app.Name)

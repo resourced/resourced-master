@@ -16,8 +16,7 @@ func NewApplication(store resourcedmaster_storage.Storer, name string) (*Applica
 	a.store = store
 	a.Name = name
 	a.Enabled = true
-	a.CreatedUnixNano = time.Now().UnixNano()
-	a.Id = a.CreatedUnixNano
+	a.Id = strconv.FormatInt(time.Now().UnixNano(), 10)
 
 	return a, nil
 }
@@ -52,7 +51,7 @@ func DeleteApplicationByAccessToken(store resourcedmaster_storage.Storer, access
 }
 
 // GetApplicationById returns Application struct with name as key.
-func GetApplicationById(store resourcedmaster_storage.Storer, id int64) (*Application, error) {
+func GetApplicationById(store resourcedmaster_storage.Storer, id string) (*Application, error) {
 	jsonBytes, err := store.Get(fmt.Sprintf("/applications/id/%v/record", id))
 	if err != nil {
 		return nil, err
@@ -85,11 +84,7 @@ func AllApplications(store resourcedmaster_storage.Storer) ([]*Application, erro
 			continue
 		}
 
-		id, err := strconv.ParseInt(keyInChunk[0], 10, 64)
-		if err != nil {
-			continue
-		}
-
+		id := keyInChunk[0]
 		a, err := GetApplicationById(store, id)
 		if err == nil {
 			applications = append(applications, a)
@@ -100,37 +95,37 @@ func AllApplications(store resourcedmaster_storage.Storer) ([]*Application, erro
 }
 
 // SaveApplicationReaderWriterJson saves application reader data in JSON format with id and path as keys.
-func SaveApplicationReaderWriterJson(store resourcedmaster_storage.Storer, id int64, readerOrWriter, path string, data []byte) error {
+func SaveApplicationReaderWriterJson(store resourcedmaster_storage.Storer, id string, readerOrWriter, path string, data []byte) error {
 	return store.Update(fmt.Sprintf("applications/id/%v/%vs/%v", id, readerOrWriter, path), data)
 }
 
 // DeleteApplicationReaderWriterJson returns error.
-func DeleteApplicationReaderWriterJson(store resourcedmaster_storage.Storer, id int64, readerOrWriter, path string) error {
+func DeleteApplicationReaderWriterJson(store resourcedmaster_storage.Storer, id string, readerOrWriter, path string) error {
 	return store.Delete(fmt.Sprintf("applications/id/%v/%vs/%v", id, readerOrWriter, path))
 }
 
 // GetApplicationReaderWriterJson returns json bytes.
-func GetApplicationReaderWriterJson(store resourcedmaster_storage.Storer, id int64, readerOrWriter, path string) ([]byte, error) {
+func GetApplicationReaderWriterJson(store resourcedmaster_storage.Storer, id string, readerOrWriter, path string) ([]byte, error) {
 	return store.Get(fmt.Sprintf("applications/id/%v/%vs/%v", id, readerOrWriter, path))
 }
 
 // SaveApplicationReaderWriterByHostJson saves application reader data in JSON format with id, host and path as keys.
-func SaveApplicationReaderWriterByHostJson(store resourcedmaster_storage.Storer, id int64, host, readerOrWriter, path string, data []byte) error {
+func SaveApplicationReaderWriterByHostJson(store resourcedmaster_storage.Storer, id string, host, readerOrWriter, path string, data []byte) error {
 	return store.Update(fmt.Sprintf("applications/id/%v/hosts/%v/%vs/%v", id, host, readerOrWriter, path), data)
 }
 
 // DeleteApplicationReaderWriterByHostJson returns error.
-func DeleteApplicationReaderWriterByHostJson(store resourcedmaster_storage.Storer, id int64, host, readerOrWriter, path string) error {
+func DeleteApplicationReaderWriterByHostJson(store resourcedmaster_storage.Storer, id string, host, readerOrWriter, path string) error {
 	return store.Delete(fmt.Sprintf("applications/id/%v/hosts/%v/%vs/%v", id, host, readerOrWriter, path))
 }
 
 // GetApplicationReaderWriterByHostJson returns json bytes.
-func GetApplicationReaderWriterByHostJson(store resourcedmaster_storage.Storer, id int64, host, readerOrWriter, path string) ([]byte, error) {
+func GetApplicationReaderWriterByHostJson(store resourcedmaster_storage.Storer, id string, host, readerOrWriter, path string) ([]byte, error) {
 	return store.Get(fmt.Sprintf("applications/id/%v/hosts/%v/%vs/%v", id, host, readerOrWriter, path))
 }
 
 // AllReaderWriterByHost returns a slice of all reader/writer JSON data with id and host as keys.
-func AllReaderWriterByHost(store resourcedmaster_storage.Storer, id int64, host, readerOrWriter string) ([][]byte, error) {
+func AllReaderWriterByHost(store resourcedmaster_storage.Storer, id string, host, readerOrWriter string) ([][]byte, error) {
 	paths, err := store.List(fmt.Sprintf("applications/id/%v/hosts/%v/%vs", id, host, readerOrWriter))
 	if err != nil {
 		return nil, err
@@ -149,16 +144,15 @@ func AllReaderWriterByHost(store resourcedmaster_storage.Storer, id int64, host,
 }
 
 type Application struct {
-	Id              int64
-	Name            string
-	Enabled         bool
-	CreatedUnixNano int64
-	store           resourcedmaster_storage.Storer
+	Id      string
+	Name    string
+	Enabled bool
+	store   resourcedmaster_storage.Storer
 }
 
 // validateBeforeSave checks various conditions before saving.
 func (a *Application) validateBeforeSave() error {
-	if a.Id <= 0 {
+	if a.Id == "" {
 		return errors.New("Id must not be empty.")
 	}
 	if a.Name == "" {
@@ -183,6 +177,8 @@ func (a *Application) Save() error {
 	if err != nil {
 		return err
 	}
+
+	fmt.Printf("jsonBytes 2: %v\n", string(jsonBytes))
 
 	return nil
 }

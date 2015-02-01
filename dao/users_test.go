@@ -14,14 +14,14 @@ func TestValidateBeforeSave(t *testing.T) {
 		t.Error("validateBeforeSave should return error because Id is empty.")
 	}
 
-	u.Id = 1
+	u.Id = "1"
 
 	err = u.validateBeforeSave()
 	if err == nil {
 		t.Error("validateBeforeSave should return error because ApplicationId us empty.")
 	}
 
-	u.ApplicationId = 1
+	u.ApplicationId = "1"
 
 	err = u.validateBeforeSave()
 	if err == nil {
@@ -44,11 +44,8 @@ func TestNewUser(t *testing.T) {
 		t.Errorf("Creating user struct should work. Error: %v", err)
 	}
 
-	if user.Id <= 0 {
+	if user.Id == "" {
 		t.Errorf("user.Id should not be empty. user.Id: %v", user.Id)
-	}
-	if user.CreatedUnixNano != user.Id {
-		t.Errorf("user.Id == user.CreatedUnixNano. user.Id: %v, user.CreatedUnixNano: %v", user.Id, user.CreatedUnixNano)
 	}
 	if user.HashedPassword == "" {
 		t.Errorf("user.HashedPassword should not be empty. user.HashedPassword: %v", user.HashedPassword)

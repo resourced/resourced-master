@@ -7,7 +7,7 @@ import (
 	resourcedmaster_storage "github.com/resourced/resourced-master/storage"
 )
 
-func NewHost(store resourcedmaster_storage.Storer, name string, appId int64) *Host {
+func NewHost(store resourcedmaster_storage.Storer, name string, appId string) *Host {
 	h := &Host{}
 	h.Name = name
 	h.ApplicationId = appId
@@ -17,17 +17,17 @@ func NewHost(store resourcedmaster_storage.Storer, name string, appId int64) *Ho
 }
 
 // SaveHostByAppIdJson saves host data in JSON format with app id and hostname as keys.
-func SaveHostByAppIdJson(store resourcedmaster_storage.Storer, id int64, hostname string, data []byte) error {
+func SaveHostByAppIdJson(store resourcedmaster_storage.Storer, id string, hostname string, data []byte) error {
 	return store.Update(fmt.Sprintf("applications/id/%v/hosts/names/%v", id, hostname), data)
 }
 
 // DeleteHostByAppId delete host data in JSON format with app id and hostname as keys.
-func DeleteHostByAppId(store resourcedmaster_storage.Storer, id int64, hostname string) error {
+func DeleteHostByAppId(store resourcedmaster_storage.Storer, id string, hostname string) error {
 	return store.Delete(fmt.Sprintf("applications/id/%v/hosts/names/%v", id, hostname))
 }
 
 // GetHostByAppId returns Host struct with app id and hostname as keys.
-func GetHostByAppId(store resourcedmaster_storage.Storer, id int64, hostname string) (*Host, error) {
+func GetHostByAppId(store resourcedmaster_storage.Storer, id string, hostname string) (*Host, error) {
 	jsonBytes, err := store.Get(fmt.Sprintf("applications/id/%v/hosts/names/%v", id, hostname))
 
 	h := &Host{}
@@ -42,26 +42,26 @@ func GetHostByAppId(store resourcedmaster_storage.Storer, id int64, hostname str
 }
 
 // SaveHostByAppIdAndHardwareAddrJson saves host data in JSON format with app id and hardware address as keys.
-func SaveHostByAppIdAndHardwareAddrJson(store resourcedmaster_storage.Storer, id int64, address string, data []byte) error {
+func SaveHostByAppIdAndHardwareAddrJson(store resourcedmaster_storage.Storer, id string, address string, data []byte) error {
 	return store.Update(fmt.Sprintf("applications/id/%v/hosts/hardware-addr/%v", id, address), data)
 }
 
 // DeleteHostByAppIdAndHardwareAddrJson delete host data in JSON format with app id and hardware address as keys.
-func DeleteHostByAppIdAndHardwareAddrJson(store resourcedmaster_storage.Storer, id int64, address string) error {
+func DeleteHostByAppIdAndHardwareAddrJson(store resourcedmaster_storage.Storer, id string, address string) error {
 	return store.Delete(fmt.Sprintf("applications/id/%v/hosts/hardware-addr/%v", id, address))
 }
 
 // SaveHostByAppIdAndIpAddrJson saves host data in JSON format with app id and ip address as keys.
-func SaveHostByAppIdAndIpAddrJson(store resourcedmaster_storage.Storer, id int64, address string, data []byte) error {
+func SaveHostByAppIdAndIpAddrJson(store resourcedmaster_storage.Storer, id string, address string, data []byte) error {
 	return store.Update(fmt.Sprintf("applications/id/%v/hosts/ip-addr/%v", id, address), data)
 }
 
 // DeleteHostByAppIdAndIpAddrJson delete host data in JSON format with app id and ip address as keys.
-func DeleteHostByAppIdAndIpAddrJson(store resourcedmaster_storage.Storer, id int64, address string) error {
+func DeleteHostByAppIdAndIpAddrJson(store resourcedmaster_storage.Storer, id string, address string) error {
 	return store.Delete(fmt.Sprintf("applications/id/%v/hosts/ip-addr/%v", id, address))
 }
 
-func getHostByAppIdAndAddress(store resourcedmaster_storage.Storer, id int64, addressType, address string) (*Host, error) {
+func getHostByAppIdAndAddress(store resourcedmaster_storage.Storer, id string, addressType, address string) (*Host, error) {
 	jsonBytes, err := store.Get(fmt.Sprintf("applications/id/%v/hosts/%v/%v", id, addressType, address))
 
 	h := &Host{}
@@ -76,17 +76,17 @@ func getHostByAppIdAndAddress(store resourcedmaster_storage.Storer, id int64, ad
 }
 
 // GetHostByAppIdAndHardwareAddr returns Host struct with app id and hardware address as keys.
-func GetHostByAppIdAndHardwareAddr(store resourcedmaster_storage.Storer, id int64, address string) (*Host, error) {
+func GetHostByAppIdAndHardwareAddr(store resourcedmaster_storage.Storer, id string, address string) (*Host, error) {
 	return getHostByAppIdAndAddress(store, id, "hardware-addr", address)
 }
 
 // GetHostByAppIdAndIpAddr returns Host struct with app id and ip address as keys.
-func GetHostByAppIdAndIpAddr(store resourcedmaster_storage.Storer, id int64, address string) (*Host, error) {
+func GetHostByAppIdAndIpAddr(store resourcedmaster_storage.Storer, id string, address string) (*Host, error) {
 	return getHostByAppIdAndAddress(store, id, "ip-addr", address)
 }
 
 // AllHosts returns a slice of all Host structs.
-func AllHosts(store resourcedmaster_storage.Storer, id int64) ([]*Host, error) {
+func AllHosts(store resourcedmaster_storage.Storer, id string) ([]*Host, error) {
 	hostnames, err := store.List(fmt.Sprintf("applications/id/%v/hosts/names", id))
 	if err != nil {
 		return nil, err
@@ -105,7 +105,7 @@ func AllHosts(store resourcedmaster_storage.Storer, id int64) ([]*Host, error) {
 }
 
 type Host struct {
-	ApplicationId     int64
+	ApplicationId     string
 	Name              string
 	Tags              []string
 	NetworkInterfaces map[string]map[string]interface{}
@@ -115,7 +115,7 @@ type Host struct {
 
 // validateBeforeSave checks various conditions before saving.
 func (h *Host) validateBeforeSave() error {
-	if h.ApplicationId <= 0 {
+	if h.ApplicationId == "" {
 		return errors.New("ApplicationId must not be empty.")
 	}
 	if h.Name == "" {
