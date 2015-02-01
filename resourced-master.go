@@ -162,6 +162,7 @@ func (rm *ResourcedMaster) middlewareStruct(store resourcedmaster_storage.Storer
 
 	middle := interpose.New()
 	middle.Use(resourcedmaster_middlewares.SetStore(store))
+	middle.Use(resourcedmaster_middlewares.SetCurrentApplication(store))
 	middle.Use(resourcedmaster_middlewares.AccessTokenAuth(users))
 
 	return middle, nil

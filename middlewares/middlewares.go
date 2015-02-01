@@ -1,6 +1,8 @@
 package middlewares
 
 import (
+	"errors"
+	"fmt"
 	"github.com/gorilla/context"
 	resourcedmaster_dao "github.com/resourced/resourced-master/dao"
 	"github.com/resourced/resourced-master/libhttp"
@@ -9,48 +11,31 @@ import (
 	"strings"
 )
 
-func AccessTokenAuth(users []*resourcedmaster_dao.User) func(http.Handler) http.Handler {
+func SetStore(store resourcedmaster_storage.Storer) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
-			auth := req.Header.Get("Authorization")
+			context.Set(req, "store", store)
 
-			if auth == "" && len(users) > 0 {
-				libhttp.BasicAuthUnauthorized(res)
-				return
-			}
+			next.ServeHTTP(res, req)
+		})
+	}
+}
 
-			username, _, ok := libhttp.ParseBasicAuth(auth)
-			if !ok {
-				libhttp.BasicAuthUnauthorized(res)
-				return
-			}
+func SetCurrentApplication(store resourcedmaster_storage.Storer) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
+			urlChunks := strings.Split(req.URL.Path, "/")
 
-			requireAdminLevelOrAbove := strings.HasPrefix(req.URL.Path, "/api/users/") || strings.HasPrefix(req.URL.Path, "/api/app/")
-			accessAllowed := false
+			if len(urlChunks) >= 4 && urlChunks[1] == "api" && urlChunks[2] == "app" {
+				appId := urlChunks[3]
 
-			for _, user := range users {
-				if username == user.Token {
-					if !requireAdminLevelOrAbove {
-						context.Set(req, "currentUser", user)
-						accessAllowed = true
-						break
-					} else if user.Level == "staff" {
-						context.Set(req, "currentUser", user)
-						accessAllowed = true
-						break
-					} else if user.Level == "admin" {
-						context.Set(req, "currentUser", user)
-
-						// This is not quite right. We need to compare to ApplicationId
-						accessAllowed = true
-						break
-					}
+				app, err := resourcedmaster_dao.GetApplicationById(store, appId)
+				if err != nil {
+					libhttp.BasicAuthUnauthorized(res, err)
+					return
 				}
-			}
 
-			if !accessAllowed {
-				libhttp.BasicAuthUnauthorized(res)
-				return
+				context.Set(req, "currentApp", app)
 			}
 
 			next.ServeHTTP(res, req)
@@ -58,10 +43,61 @@ func AccessTokenAuth(users []*resourcedmaster_dao.User) func(http.Handler) http.
 	}
 }
 
-func SetStore(store resourcedmaster_storage.Storer) func(http.Handler) http.Handler {
+func AccessTokenAuth(users []*resourcedmaster_dao.User) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
-			context.Set(req, "store", store)
+			auth := req.Header.Get("Authorization")
+
+			if auth == "" && len(users) > 0 {
+				libhttp.BasicAuthUnauthorized(res, nil)
+				return
+			}
+
+			username, _, ok := libhttp.ParseBasicAuth(auth)
+			if !ok {
+				libhttp.BasicAuthUnauthorized(res, nil)
+				return
+			}
+
+			accessAllowed := false
+			adminLevelOrAbove := strings.HasPrefix(req.URL.Path, fmt.Sprintf("/api/app/%v/users", currentApp.Id))
+
+			currentAppInterface := context.Get(req, "currentApp")
+			if currentAppInterface == nil {
+				libhttp.BasicAuthUnauthorized(res, errors.New("CurrentApp is missing."))
+				return
+			}
+
+			currentApp := currentAppInterface.(*resourcedmaster_dao.Application)
+
+			for _, user := range users {
+				if username == user.Token {
+					if user.Level == "staff" {
+						context.Set(req, "currentUser", user)
+						accessAllowed = true
+						break
+					}
+
+					// Check application id if user.Level != staff
+					if currentApp != nil && currentApp.Id == user.ApplicationId {
+						if user.Level == "admin" {
+							context.Set(req, "currentUser", user)
+							accessAllowed = true
+							break
+
+						} else if user.Level == "basic" && !adminLevelOrAbove {
+							context.Set(req, "currentUser", user)
+							accessAllowed = true
+							break
+						}
+					}
+				}
+			}
+
+			if !accessAllowed {
+				libhttp.BasicAuthUnauthorized(res, nil)
+				return
+			}
 
 			next.ServeHTTP(res, req)
 		})
