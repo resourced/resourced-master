@@ -172,14 +172,14 @@ func (rm *ResourcedMaster) mux() *gorilla_mux.Router {
 	router := gorilla_mux.NewRouter()
 
 	// Admin level access
-	router.HandleFunc("/api/users", resourcedmaster_handlers.PostApiUser).Methods("POST")
-	router.HandleFunc("/api/users", resourcedmaster_handlers.GetApiUser).Methods("GET")
+	router.HandleFunc("/api/app/{id:[0-9]+}/users", resourcedmaster_handlers.PostApiUser).Methods("POST")
+	router.HandleFunc("/api/app/{id:[0-9]+}/users", resourcedmaster_handlers.GetApiUser).Methods("GET")
 
-	router.HandleFunc("/api/users/{name}", resourcedmaster_handlers.GetApiUserName).Methods("GET")
-	router.HandleFunc("/api/users/{name}", resourcedmaster_handlers.PutApiUserName).Methods("PUT")
-	router.HandleFunc("/api/users/{name}", resourcedmaster_handlers.DeleteApiUserName).Methods("DELETE")
+	router.HandleFunc("/api/app/{id:[0-9]+}/users/{name}", resourcedmaster_handlers.GetApiUserName).Methods("GET")
+	router.HandleFunc("/api/app/{id:[0-9]+}/users/{name}", resourcedmaster_handlers.PutApiUserName).Methods("PUT")
+	router.HandleFunc("/api/app/{id:[0-9]+}/users/{name}", resourcedmaster_handlers.DeleteApiUserName).Methods("DELETE")
 
-	router.HandleFunc("/api/users/{name}/access-token", resourcedmaster_handlers.PutApiUserNameAccessToken).Methods("PUT")
+	router.HandleFunc("/api/app/{id:[0-9]+}/users/{name}/access-token", resourcedmaster_handlers.PutApiUserNameAccessToken).Methods("PUT")
 	router.HandleFunc("/api/app/{id:[0-9]+}/access-token", resourcedmaster_handlers.PostApiApplicationIdAccessToken).Methods("POST")
 	router.HandleFunc("/api/app/{id:[0-9]+}/access-token/:token", resourcedmaster_handlers.DeleteApiApplicationIdAccessToken).Methods("DELETE")
 

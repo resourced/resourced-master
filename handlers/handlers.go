@@ -19,6 +19,8 @@ import (
 
 // PostApiUser
 func PostApiUser(w http.ResponseWriter, r *http.Request) {
+	params := gorilla_mux.Vars(r)
+
 	w.Header().Set("Content-Type", "application/json")
 
 	store := context.Get(r, "store").(resourcedmaster_storage.Storer)
@@ -28,6 +30,7 @@ func PostApiUser(w http.ResponseWriter, r *http.Request) {
 		libhttp.HandleErrorJson(w, err)
 		return
 	}
+	user.ApplicationId = params["id"]
 
 	err = user.Save()
 	if err != nil {
@@ -45,11 +48,13 @@ func PostApiUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func GetApiUser(w http.ResponseWriter, r *http.Request) {
+	params := gorilla_mux.Vars(r)
+
 	w.Header().Set("Content-Type", "application/json")
 
 	store := context.Get(r, "store").(resourcedmaster_storage.Storer)
 
-	users, err := resourcedmaster_dao.AllUsers(store)
+	users, err := resourcedmaster_dao.AllUsersByAppId(store, params["id"])
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
