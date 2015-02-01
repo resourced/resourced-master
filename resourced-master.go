@@ -73,7 +73,8 @@ func NewResourcedMaster() (*ResourcedMaster, error) {
 				crud := c.Args().First()
 
 				if crud == "create" {
-					appId := c.Args().Get(1)
+					level := c.Args().Get(1)
+					appId := c.Args().Get(2)
 
 					application, err := resourcedmaster_dao.GetApplicationById(rm.store, appId)
 					if err != nil {
@@ -84,6 +85,8 @@ func NewResourcedMaster() (*ResourcedMaster, error) {
 					if err != nil {
 						log.Fatalf("Failed to create access token. Error: %v\n", err)
 					}
+
+					user.Level = level
 
 					err = user.Save()
 					if err != nil {
