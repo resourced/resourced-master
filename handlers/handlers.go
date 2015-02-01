@@ -231,7 +231,7 @@ func GetRoot(w http.ResponseWriter, r *http.Request) {
 func GetApi(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	currentUser := context.Get(r, "currentUser").(resourcedmaster_dao.User)
+	currentUser := context.Get(r, "currentUser").(*resourcedmaster_dao.User)
 
 	if currentUser.Level == "staff" {
 		http.Redirect(w, r, "/api/app", 301)
@@ -249,7 +249,7 @@ func GetApi(w http.ResponseWriter, r *http.Request) {
 func GetApiApp(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	currentUser := context.Get(r, "currentUser").(resourcedmaster_dao.User)
+	currentUser := context.Get(r, "currentUser").(*resourcedmaster_dao.User)
 
 	if currentUser.Level != "staff" {
 		err := errors.New("Access level is too low.")

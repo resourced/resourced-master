@@ -27,20 +27,19 @@ func AccessTokenAuth(users []*resourcedmaster_dao.User) func(http.Handler) http.
 
 			requireAdminLevelOrAbove := strings.HasPrefix(req.URL.Path, "/api/users/") || strings.HasPrefix(req.URL.Path, "/api/app/")
 			accessAllowed := false
-			var allowedUser *resourcedmaster_dao.User
 
 			for _, user := range users {
 				if username == user.Token {
 					if !requireAdminLevelOrAbove {
-						*allowedUser = *user
+						context.Set(req, "currentUser", user)
 						accessAllowed = true
 						break
 					} else if user.Level == "staff" {
-						*allowedUser = *user
+						context.Set(req, "currentUser", user)
 						accessAllowed = true
 						break
 					} else if user.Level == "admin" {
-						*allowedUser = *user
+						context.Set(req, "currentUser", user)
 
 						// This is not quite right. We need to compare to ApplicationId
 						accessAllowed = true
@@ -52,10 +51,6 @@ func AccessTokenAuth(users []*resourcedmaster_dao.User) func(http.Handler) http.
 			if !accessAllowed {
 				libhttp.BasicAuthUnauthorized(res)
 				return
-			}
-
-			if accessAllowed && allowedUser != nil {
-				context.Set(req, "currentUser", allowedUser)
 			}
 
 			next.ServeHTTP(res, req)
