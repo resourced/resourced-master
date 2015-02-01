@@ -3,6 +3,7 @@ package libhttp
 import (
 	"encoding/base64"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strings"
 )
@@ -29,9 +30,15 @@ func ParseBasicAuth(auth string) (username, password string, ok bool) {
 }
 
 // BasicAuthUnauthorized denies authentication.
-func BasicAuthUnauthorized(res http.ResponseWriter) {
+func BasicAuthUnauthorized(res http.ResponseWriter, err error) {
+	message := "Not Authorized."
+
+	if err != nil {
+		message += fmt.Sprintf(" Error: %v", err)
+	}
+
 	res.Header().Set("WWW-Authenticate", "Basic realm=\""+BasicRealm+"\"")
-	http.Error(res, "Not Authorized", http.StatusUnauthorized)
+	http.Error(res, message, http.StatusUnauthorized)
 }
 
 // HandleErrorJson wraps error in JSON structure.

@@ -238,7 +238,7 @@ func GetApi(w http.ResponseWriter, r *http.Request) {
 
 	} else {
 		if currentUser.ApplicationId == "" {
-			libhttp.BasicAuthUnauthorized(w)
+			libhttp.HandleErrorJson(w, errors.New("User does not belong to application."))
 			return
 		}
 
