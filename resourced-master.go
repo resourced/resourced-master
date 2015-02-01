@@ -66,6 +66,41 @@ func NewResourcedMaster() (*ResourcedMaster, error) {
 			},
 		},
 		{
+			Name:      "user",
+			ShortName: "u",
+			Usage:     "User CRUD operations",
+			Action: func(c *cli.Context) {
+				crud := c.Args().First()
+
+				if crud == "create" {
+					level := c.Args().Get(1)
+					name := c.Args().Get(2)
+					password := c.Args().Get(3)
+					appId := c.Args().Get(4)
+
+					user, err := resourcedmaster_dao.NewUser(rm.store, name, password)
+					if err != nil {
+						log.Fatalf("Failed to create a new user. Error: %v\n", err)
+					}
+
+					user.Level = level
+					user.ApplicationId = appId
+
+					err = user.Save()
+					if err != nil {
+						log.Fatalf("Failed to save the new user. Error: %v\n", err)
+					}
+
+					jsonBytes, err := json.Marshal(user)
+					if err != nil {
+						log.Fatalf("Failed to serialize user to JSON. Error: %v\n", err)
+					}
+
+					println(string(jsonBytes))
+				}
+			},
+		},
+		{
 			Name:      "access-token",
 			ShortName: "token",
 			Usage:     "Access Token CRUD operations",
