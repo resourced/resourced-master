@@ -87,7 +87,7 @@ func NewUserGivenJson(store resourcedmaster_storage.Storer, jsonBody io.ReadClos
 }
 
 // UpdateUserByNameGivenJson returns struct User.
-func UpdateUserByNameGivenJson(store resourcedmaster_storage.Storer, name string, jsonBody io.ReadCloser) (*User, error) {
+func UpdateUserByNameGivenJson(store resourcedmaster_storage.Storer, name string, allowLevelUpdate bool, jsonBody io.ReadCloser) (*User, error) {
 	var userArgs map[string]interface{}
 
 	err := json.NewDecoder(jsonBody).Decode(&userArgs)
@@ -103,7 +103,7 @@ func UpdateUserByNameGivenJson(store resourcedmaster_storage.Storer, name string
 	if _, ok := userArgs["Name"]; ok {
 		u.Name = userArgs["Name"].(string)
 	}
-	if _, ok := userArgs["Level"]; ok {
+	if _, ok := userArgs["Level"]; ok && allowLevelUpdate {
 		u.Level = userArgs["Level"].(string)
 	}
 	if _, ok := userArgs["Enabled"]; ok {
