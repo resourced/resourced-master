@@ -93,7 +93,15 @@ func PutApiUserName(w http.ResponseWriter, r *http.Request) {
 
 	store := context.Get(r, "store").(resourcedmaster_storage.Storer)
 
-	user, err := resourcedmaster_dao.UpdateUserByNameGivenJson(store, params["name"], r.Body)
+	currentUser := context.Get(r, "currentUser").(*resourcedmaster_dao.User)
+
+	allowLevelUpdate := false
+
+	if currentUser != nil && currentUser.Level == "staff" {
+		allowLevelUpdate = true
+	}
+
+	user, err := resourcedmaster_dao.UpdateUserByNameGivenJson(store, params["name"], allowLevelUpdate, r.Body)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
@@ -341,6 +349,75 @@ func GetApiAppIdHostsIpAddr(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Write(hostJson)
+}
+
+// **GET** `/api/app/:id/hosts/:name` Displays host data.
+func GetApiAppIdHostsName(w http.ResponseWriter, r *http.Request) {
+	params := gorilla_mux.Vars(r)
+
+	w.Header().Set("Content-Type", "application/json")
+
+	store := context.Get(r, "store").(resourcedmaster_storage.Storer)
+
+	host, err := resourcedmaster_dao.GetHostByAppId(store, params["id"], params["name"])
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
+
+	hostJson, err := json.Marshal(host)
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
+
+	w.Write(hostJson)
+}
+
+// **GET** `/api/app/:id/hosts/:name/r` Displays readers JSON data on a particular host.
+func GetApiAppIdHostsNameReaders(w http.ResponseWriter, r *http.Request) {
+	params := gorilla_mux.Vars(r)
+
+	w.Header().Set("Content-Type", "application/json")
+
+	store := context.Get(r, "store").(resourcedmaster_storage.Storer)
+
+	allData, err := resourcedmaster_dao.AllReaderWriterByHost(store, params["id"], params["name"], "reader")
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
+
+	allDataInJson, err := json.Marshal(allData)
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
+
+	w.Write(allDataInJson)
+}
+
+// **GET** `/api/app/:id/hosts/:name/w` Displays writers JSON data on a particular host.
+func GetApiAppIdHostsNameWriters(w http.ResponseWriter, r *http.Request) {
+	params := gorilla_mux.Vars(r)
+
+	w.Header().Set("Content-Type", "application/json")
+
+	store := context.Get(r, "store").(resourcedmaster_storage.Storer)
+
+	allData, err := resourcedmaster_dao.AllReaderWriterByHost(store, params["id"], params["name"], "writer")
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
+
+	allDataInJson, err := json.Marshal(allData)
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
+
+	w.Write(allDataInJson)
 }
 
 func PostApiAppIdReaderWriter(w http.ResponseWriter, r *http.Request) {

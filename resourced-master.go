@@ -189,8 +189,13 @@ func (rm *ResourcedMaster) mux() *gorilla_mux.Router {
 	router.HandleFunc("/api/app", resourcedmaster_handlers.GetApiApp).Methods("GET")
 
 	router.HandleFunc("/api/app/{id:[0-9]+}/hosts", resourcedmaster_handlers.GetApiAppIdHosts).Methods("GET")
+
 	router.HandleFunc("/api/app/{id:[0-9]+}/hosts/hardware-addr/{address}", resourcedmaster_handlers.GetApiAppIdHostsHardwareAddr).Methods("GET")
 	router.HandleFunc("/api/app/{id:[0-9]+}/hosts/ip-addr/{address}", resourcedmaster_handlers.GetApiAppIdHostsIpAddr).Methods("GET")
+	router.HandleFunc("/api/app/{id:[0-9]+}/hosts/{name}", resourcedmaster_handlers.GetApiAppIdHostsName).Methods("GET")
+
+	router.HandleFunc("/api/app/{id:[0-9]+}/hosts/{name}/r", resourcedmaster_handlers.GetApiAppIdHostsNameReaders).Methods("GET")
+	router.HandleFunc("/api/app/{id:[0-9]+}/hosts/{name}/w", resourcedmaster_handlers.GetApiAppIdHostsNameWriters).Methods("GET")
 
 	router.HandleFunc("/api/app/{id:[0-9]+}/{reader-or-writer}/{path}", resourcedmaster_handlers.PostApiAppIdReaderWriter).Methods("POST")
 

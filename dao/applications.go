@@ -94,53 +94,59 @@ func AllApplications(store resourcedmaster_storage.Storer) ([]*Application, erro
 	return applications, nil
 }
 
-// SaveApplicationReaderWriterJson saves application reader data in JSON format with id and path as keys.
+// SaveApplicationReaderWriterJson saves reader data in JSON format with application id and path as keys.
 func SaveApplicationReaderWriterJson(store resourcedmaster_storage.Storer, id string, readerOrWriter, path string, data []byte) error {
 	return store.Update(fmt.Sprintf("applications/id/%v/%vs/%v", id, readerOrWriter, path), data)
 }
 
-// DeleteApplicationReaderWriterJson returns error.
+// DeleteApplicationReaderWriterJson deletes reader data in JSON format with application id and path as keys.
 func DeleteApplicationReaderWriterJson(store resourcedmaster_storage.Storer, id string, readerOrWriter, path string) error {
 	return store.Delete(fmt.Sprintf("applications/id/%v/%vs/%v", id, readerOrWriter, path))
 }
 
-// GetApplicationReaderWriterJson returns json bytes.
+// GetApplicationReaderWriterJson returns reader data in JSON format with application id and path as keys.
 func GetApplicationReaderWriterJson(store resourcedmaster_storage.Storer, id string, readerOrWriter, path string) ([]byte, error) {
 	return store.Get(fmt.Sprintf("applications/id/%v/%vs/%v", id, readerOrWriter, path))
 }
 
-// SaveApplicationReaderWriterByHostJson saves application reader data in JSON format with id, host and path as keys.
+// SaveApplicationReaderWriterByHostJson saves reader data in JSON format with application id, host and path as keys.
 func SaveApplicationReaderWriterByHostJson(store resourcedmaster_storage.Storer, id string, host, readerOrWriter, path string, data []byte) error {
 	return store.Update(fmt.Sprintf("applications/id/%v/hosts/%v/%vs/%v", id, host, readerOrWriter, path), data)
 }
 
-// DeleteApplicationReaderWriterByHostJson returns error.
+// DeleteApplicationReaderWriterByHostJson deletes reader data in JSON format with application id, host and path as keys.
 func DeleteApplicationReaderWriterByHostJson(store resourcedmaster_storage.Storer, id string, host, readerOrWriter, path string) error {
 	return store.Delete(fmt.Sprintf("applications/id/%v/hosts/%v/%vs/%v", id, host, readerOrWriter, path))
 }
 
-// GetApplicationReaderWriterByHostJson returns json bytes.
+// GetApplicationReaderWriterByHostJson returns reader data in JSON format with application id, host and path as keys.
 func GetApplicationReaderWriterByHostJson(store resourcedmaster_storage.Storer, id string, host, readerOrWriter, path string) ([]byte, error) {
 	return store.Get(fmt.Sprintf("applications/id/%v/hosts/%v/%vs/%v", id, host, readerOrWriter, path))
 }
 
-// AllReaderWriterByHost returns a slice of all reader/writer JSON data with id and host as keys.
-func AllReaderWriterByHost(store resourcedmaster_storage.Storer, id string, host, readerOrWriter string) ([][]byte, error) {
+// AllReaderWriterByHost returns a slice of all reader/writer JSON data with application id and host as keys.
+func AllReaderWriterByHost(store resourcedmaster_storage.Storer, id string, host, readerOrWriter string) (map[string]interface{}, error) {
 	paths, err := store.List(fmt.Sprintf("applications/id/%v/hosts/%v/%vs", id, host, readerOrWriter))
 	if err != nil {
 		return nil, err
 	}
 
-	sliceJsonData := make([][]byte, 0)
+	allJsonData := make(map[string]interface{})
 
 	for _, path := range paths {
 		jsonData, err := GetApplicationReaderWriterByHostJson(store, id, host, readerOrWriter, path)
+
 		if err == nil {
-			sliceJsonData = append(sliceJsonData, jsonData)
+			var data interface{}
+
+			err = json.Unmarshal(jsonData, data)
+			if err == nil {
+				allJsonData[path] = data
+			}
 		}
 	}
 
-	return sliceJsonData, nil
+	return allJsonData, nil
 }
 
 type Application struct {

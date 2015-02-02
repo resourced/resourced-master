@@ -31,29 +31,15 @@ ResourceD Master accepts a few environment variables as configuration:
 
 * **GET** `/api/app/:id/hosts/tags/:tags` Displays list of hosts by tags. (Future)
 
-* **GET** `/api/app/:id/hosts/hardware-addr/:address` Displays list of hosts by MAC-48/EUI-48/EUI-64 address.
+* **GET** `/api/app/:id/hosts/hardware-addr/:address` Displays host by MAC-48/EUI-48/EUI-64 address.
 
-* **GET** `/api/app/:id/hosts/ip-addr/:address` Displays list of hosts by IP address.
+* **GET** `/api/app/:id/hosts/ip-addr/:address` Displays host by IP address.
 
-* **GET** `/api/app/:id/hosts/:name` Displays full JSON data (readers and writers) on a particular host.
+* **GET** `/api/app/:id/hosts/:name` Displays host data.
 
-* **GET** `/api/app/:id/hosts/:name/paths` Displays paths to all readers and writers data on a particular host.
+* **GET** `/api/app/:id/hosts/:name/r` Displays readers JSON data on a particular host.
 
-* **GET** `/api/app/:id/hosts/:name/r` Displays full JSON data (readers) on a particular host.
-
-* **GET** `/api/app/:id/hosts/:name/r/paths` Displays paths to all readers data on a particular host.
-
-* **GET** `/api/app/:id/hosts/:name/r/:path` Displays reader JSON data on a particular host.
-
-* **GET** `/api/app/:id/hosts/:name/w` Displays full JSON data (writers) on a particular host.
-
-* **GET** `/api/app/:id/hosts/:name/w/paths` Displays paths to all writers data on a particular host.
-
-* **GET** `/api/app/:id/hosts/:name/w/:path` Displays writer JSON data on a particular host.
-
-* **GET** `/api/app/:id/r/:path` Displays reader JSON data on all hosts.
-
-* **GET** `/api/app/:id/w/:path` Displays writer JSON data on all hosts.
+* **GET** `/api/app/:id/hosts/:name/w` Displays writers JSON data on a particular host.
 
 * **POST** `/api/app/:id/:readerOrWriter/:path` Submit r/w JSON data from 1 host.
 
