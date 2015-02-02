@@ -18,7 +18,6 @@ func NewUser(store resourcedmaster_storage.Storer, name, password string) (*User
 	u.store = store
 	u.Name = name
 	u.Level = "basic"
-	u.Type = "human"
 	u.Enabled = true
 	u.Id = strconv.FormatInt(time.Now().UnixNano(), 10)
 
@@ -49,7 +48,6 @@ func NewAccessTokenUser(store resourcedmaster_storage.Storer, app *Application) 
 		return nil, err
 	}
 	u.Token = accessToken
-	u.Type = "token"
 	u.ApplicationId = app.Id
 
 	return u, nil
@@ -145,24 +143,6 @@ func AllUsers(store resourcedmaster_storage.Storer) ([]*User, error) {
 	return users, nil
 }
 
-// AllUsersByAppId returns a slice of all User structs by application id.
-func AllUsersByAppId(store resourcedmaster_storage.Storer, appId string) ([]*User, error) {
-	users, err := AllUsers(store)
-	if err != nil {
-		return nil, err
-	}
-
-	matchedUsers := make([]*User, 0)
-
-	for _, user := range users {
-		if user.ApplicationId == appId {
-			matchedUsers = append(matchedUsers, user)
-		}
-	}
-
-	return matchedUsers, nil
-}
-
 // GetUserByName returns User struct with name as key.
 func GetUserByName(store resourcedmaster_storage.Storer, name string) (*User, error) {
 	jsonBytes, err := store.Get("/users/name/" + name)
@@ -245,7 +225,6 @@ type User struct {
 	HashedPassword string
 	Level          string
 	Token          string
-	Type           string
 	Enabled        bool
 	store          resourcedmaster_storage.Storer
 }
