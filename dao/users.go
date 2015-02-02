@@ -220,6 +220,11 @@ func Login(store resourcedmaster_storage.Storer, name, password string) (*User, 
 	return u, nil
 }
 
+// saveByName saves user data in JSON format with name as key.
+func saveByName(store resourcedmaster_storage.Storer, name string, data []byte) error {
+	return store.Update(fmt.Sprintf("/users/name/%v", name), data)
+}
+
 type User struct {
 	Id             string
 	ApplicationId  string
@@ -258,7 +263,7 @@ func (u *User) Save() error {
 		return err
 	}
 
-	err = CommonSaveByName(u.store, "users", u.Name, jsonBytes)
+	err = saveByName(u.store, u.Name, jsonBytes)
 	if err != nil {
 		return err
 	}

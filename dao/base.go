@@ -5,11 +5,6 @@ import (
 	resourcedmaster_storage "github.com/resourced/resourced-master/storage"
 )
 
-// CommonSaveByName saves dao data in JSON format with name as key.
-func CommonSaveByName(store resourcedmaster_storage.Storer, daoType, name string, data []byte) error {
-	return store.Update(fmt.Sprintf("/%s/name/%s", daoType, name), data)
-}
-
 // CommonSaveById saves dao data in JSON format with Id as key.
 func CommonSaveById(store resourcedmaster_storage.Storer, daoType string, id string, data []byte) error {
 	return store.Update(fmt.Sprintf("/%s/id/%v/record", daoType, id), data)
