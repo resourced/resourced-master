@@ -59,16 +59,15 @@ func AccessTokenAuth(users []*resourcedmaster_dao.User) func(http.Handler) http.
 				return
 			}
 
-			accessAllowed := false
-			adminLevelOrAbove := strings.HasPrefix(req.URL.Path, fmt.Sprintf("/api/app/%v/users", currentApp.Id))
-
 			currentAppInterface := context.Get(req, "currentApp")
 			if currentAppInterface == nil {
 				libhttp.BasicAuthUnauthorized(res, errors.New("CurrentApp is missing."))
 				return
 			}
-
 			currentApp := currentAppInterface.(*resourcedmaster_dao.Application)
+
+			accessAllowed := false
+			adminLevelOrAbove := strings.HasPrefix(req.URL.Path, fmt.Sprintf("/api/app/%v/users", currentApp.Id))
 
 			for _, user := range users {
 				if username == user.Token {
