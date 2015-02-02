@@ -178,8 +178,6 @@ func (a *Application) Save() error {
 		return err
 	}
 
-	fmt.Printf("jsonBytes 2: %v\n", string(jsonBytes))
-
 	return nil
 }
 
