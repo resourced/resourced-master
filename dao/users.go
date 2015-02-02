@@ -19,6 +19,7 @@ func NewUser(store resourcedmaster_storage.Storer, name, password string) (*User
 	u.Name = name
 	u.Level = "basic"
 	u.Enabled = true
+	u.Type = "human"
 	u.Id = strconv.FormatInt(time.Now().UnixNano(), 10)
 
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), 5)
@@ -48,6 +49,7 @@ func NewAccessTokenUser(store resourcedmaster_storage.Storer, app *Application) 
 		return nil, err
 	}
 	u.Token = accessToken
+	u.Type = "token"
 	u.ApplicationId = app.Id
 
 	return u, nil
@@ -224,6 +226,7 @@ type User struct {
 	Name           string
 	HashedPassword string
 	Level          string
+	Type           string
 	Token          string
 	Enabled        bool
 	store          resourcedmaster_storage.Storer
