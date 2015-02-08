@@ -284,10 +284,9 @@ func GetApiApp(w http.ResponseWriter, r *http.Request) {
 
 // **GET** `/api/app/:id/hosts` Displays list of all hosts.
 func GetApiAppIdHosts(w http.ResponseWriter, r *http.Request) {
-	params := gorilla_mux.Vars(r)
-
 	w.Header().Set("Content-Type", "application/json")
 
+	params := gorilla_mux.Vars(r)
 	store := context.Get(r, "store").(resourcedmaster_storage.Storer)
 
 	hosts, err := resourcedmaster_dao.AllHosts(store, params["id"])
@@ -305,12 +304,31 @@ func GetApiAppIdHosts(w http.ResponseWriter, r *http.Request) {
 	w.Write(hostsJson)
 }
 
+func hostAndDataPayloadJson(store resourcedmaster_storage.Storer, appId string, host *resourcedmaster_dao.Host) ([]byte, error) {
+	payload := make(map[string]interface{})
+	var payloadJson []byte
+
+	payload["Host"] = host
+
+	hostData, err := resourcedmaster_dao.AllApplicationDataByHost(store, appId, host.Name)
+	if err != nil {
+		return payloadJson, err
+	}
+	payload["Data"] = hostData
+
+	payloadJson, err = json.Marshal(payload)
+	if err != nil {
+		return payloadJson, err
+	}
+
+	return payloadJson, nil
+}
+
 // **GET** `/api/app/:id/hosts/hardware-addr/:address` Displays list of hosts by MAC-48/EUI-48/EUI-64 address.
 func GetApiAppIdHostsHardwareAddr(w http.ResponseWriter, r *http.Request) {
-	params := gorilla_mux.Vars(r)
-
 	w.Header().Set("Content-Type", "application/json")
 
+	params := gorilla_mux.Vars(r)
 	store := context.Get(r, "store").(resourcedmaster_storage.Storer)
 
 	host, err := resourcedmaster_dao.GetHostByAppIdAndHardwareAddr(store, params["id"], params["address"])
@@ -319,21 +337,20 @@ func GetApiAppIdHostsHardwareAddr(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	hostJson, err := json.Marshal(host)
+	payloadJson, err := hostAndDataPayloadJson(store, params["id"], host)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
 	}
 
-	w.Write(hostJson)
+	w.Write(payloadJson)
 }
 
 // **GET** `/api/app/:id/hosts/ip-addr/:address` Displays list of hosts by IP address.
 func GetApiAppIdHostsIpAddr(w http.ResponseWriter, r *http.Request) {
-	params := gorilla_mux.Vars(r)
-
 	w.Header().Set("Content-Type", "application/json")
 
+	params := gorilla_mux.Vars(r)
 	store := context.Get(r, "store").(resourcedmaster_storage.Storer)
 
 	host, err := resourcedmaster_dao.GetHostByAppIdAndIpAddr(store, params["id"], params["address"])
@@ -342,21 +359,20 @@ func GetApiAppIdHostsIpAddr(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	hostJson, err := json.Marshal(host)
+	payloadJson, err := hostAndDataPayloadJson(store, params["id"], host)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
 	}
 
-	w.Write(hostJson)
+	w.Write(payloadJson)
 }
 
 // **GET** `/api/app/:id/hosts/:name` Displays host data.
 func GetApiAppIdHostsName(w http.ResponseWriter, r *http.Request) {
-	params := gorilla_mux.Vars(r)
-
 	w.Header().Set("Content-Type", "application/json")
 
+	params := gorilla_mux.Vars(r)
 	store := context.Get(r, "store").(resourcedmaster_storage.Storer)
 
 	host, err := resourcedmaster_dao.GetHostByAppId(store, params["id"], params["name"])
@@ -365,66 +381,19 @@ func GetApiAppIdHostsName(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	hostJson, err := json.Marshal(host)
+	payloadJson, err := hostAndDataPayloadJson(store, params["id"], host)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
 	}
 
-	w.Write(hostJson)
+	w.Write(payloadJson)
 }
 
-// **GET** `/api/app/:id/hosts/:name/r` Displays readers JSON data on a particular host.
-func GetApiAppIdHostsNameReaders(w http.ResponseWriter, r *http.Request) {
-	params := gorilla_mux.Vars(r)
-
+func PostApiAppIdHostsName(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	store := context.Get(r, "store").(resourcedmaster_storage.Storer)
-
-	allData, err := resourcedmaster_dao.AllReaderWriterByHost(store, params["id"], params["name"], "reader")
-	if err != nil {
-		libhttp.HandleErrorJson(w, err)
-		return
-	}
-
-	allDataInJson, err := json.Marshal(allData)
-	if err != nil {
-		libhttp.HandleErrorJson(w, err)
-		return
-	}
-
-	w.Write(allDataInJson)
-}
-
-// **GET** `/api/app/:id/hosts/:name/w` Displays writers JSON data on a particular host.
-func GetApiAppIdHostsNameWriters(w http.ResponseWriter, r *http.Request) {
 	params := gorilla_mux.Vars(r)
-
-	w.Header().Set("Content-Type", "application/json")
-
-	store := context.Get(r, "store").(resourcedmaster_storage.Storer)
-
-	allData, err := resourcedmaster_dao.AllReaderWriterByHost(store, params["id"], params["name"], "writer")
-	if err != nil {
-		libhttp.HandleErrorJson(w, err)
-		return
-	}
-
-	allDataInJson, err := json.Marshal(allData)
-	if err != nil {
-		libhttp.HandleErrorJson(w, err)
-		return
-	}
-
-	w.Write(allDataInJson)
-}
-
-func PostApiAppIdReaderWriter(w http.ResponseWriter, r *http.Request) {
-	params := gorilla_mux.Vars(r)
-
-	w.Header().Set("Content-Type", "application/json")
-
 	store := context.Get(r, "store").(resourcedmaster_storage.Storer)
 
 	dataJson, err := ioutil.ReadAll(r.Body)
@@ -446,13 +415,13 @@ func PostApiAppIdReaderWriter(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	hostname := data["Hostname"].(string)
+
 	app, err := resourcedmaster_dao.GetApplicationById(store, params["id"])
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
 	}
-
-	hostname := data["Hostname"].(string)
 
 	host := resourcedmaster_dao.NewHost(store, hostname, app.Id)
 	host.Tags = data["Tags"].([]string)
@@ -464,37 +433,25 @@ func PostApiAppIdReaderWriter(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if params["reader-or-writer"] == "r" {
-		err = app.SaveReaderWriterJson("reader", params["path"], dataJson)
+	var messageJson []byte
+
+	if _, ok := data["Path"]; ok {
+		path := data["Path"].(string)
+
+		err = app.SaveDataJson(hostname, path, dataJson)
 		if err != nil {
 			libhttp.HandleErrorJson(w, err)
 			return
 		}
 
-		err = app.SaveReaderWriterByHostJson("reader", hostname, params["path"], dataJson)
-		if err != nil {
-			libhttp.HandleErrorJson(w, err)
-			return
-		}
-
-	} else if params["reader-or-writer"] == "w" {
-		err = app.SaveReaderWriterJson("writer", params["path"], dataJson)
-		if err != nil {
-			libhttp.HandleErrorJson(w, err)
-			return
-		}
-
-		err = app.SaveReaderWriterByHostJson("writer", hostname, params["path"], dataJson)
-		if err != nil {
-			libhttp.HandleErrorJson(w, err)
-			return
-		}
-
+		messageJson, err = json.Marshal(
+			map[string]string{
+				"Message": fmt.Sprintf("Data{Path: %v} is saved.", params["path"])})
+	} else {
+		messageJson, err = json.Marshal(
+			map[string]string{
+				"Message": "Data is saved."})
 	}
-
-	messageJson, err := json.Marshal(
-		map[string]string{
-			"Message": fmt.Sprintf("%v{Path: %v} is saved.", params["reader-or-writer"], params["path"])})
 
 	w.Write(messageJson)
 }

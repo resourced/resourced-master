@@ -39,8 +39,6 @@ ResourceD Master accepts a few environment variables as configuration:
 
 * **POST** `/api/app/:id/hosts/:name` Submit JSON data from 1 host.
 
-* **GET** `/api/app/:id/hosts/:name/:path` Displays JSON data on a particular host in a given path.
-
 
 ### Admin Level Authorization
 
