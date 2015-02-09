@@ -314,6 +314,7 @@ func hostAndDataPayloadJson(store resourcedmaster_storage.Storer, appId string, 
 	if err != nil {
 		return payloadJson, err
 	}
+
 	payload["Data"] = hostData
 
 	payloadJson, err = json.Marshal(payload)

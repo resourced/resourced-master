@@ -94,22 +94,22 @@ func AllApplications(store resourcedmaster_storage.Storer) ([]*Application, erro
 	return applications, nil
 }
 
-// SaveApplicationDataByHostJson saves reader data in JSON format with application id, host and path as keys.
+// SaveApplicationDataByHostJson saves reader data in JSON format with application id + host + path as key.
 func SaveApplicationDataByHostJson(store resourcedmaster_storage.Storer, id string, host, path string, data []byte) error {
 	return store.Update(fmt.Sprintf("applications/id/%v/hosts/names/%v/data/%v", id, host, path), data)
 }
 
-// DeleteApplicationDataByHostJson deletes reader data in JSON format with application id, host and path as keys.
+// DeleteApplicationDataByHostJson deletes reader data in JSON format with application id + host + path as key.
 func DeleteApplicationDataByHostJson(store resourcedmaster_storage.Storer, id string, host, path string) error {
 	return store.Delete(fmt.Sprintf("applications/id/%v/hosts/names/%v/data/%v", id, host, path))
 }
 
-// GetApplicationDataByHostJson returns reader data in JSON format with application id, host and path as keys.
+// GetApplicationDataByHostJson returns reader data in JSON format with application id + host + path as key.
 func GetApplicationDataByHostJson(store resourcedmaster_storage.Storer, id string, host, path string) ([]byte, error) {
 	return store.Get(fmt.Sprintf("applications/id/%v/hosts/names/%v/data/%v", id, host, path))
 }
 
-// AllApplicationDataByHost returns a slice of all reader/writer JSON data with application id and host as keys.
+// AllApplicationDataByHost returns a slice of all JSON data with application id + host as key.
 func AllApplicationDataByHost(store resourcedmaster_storage.Storer, id string, host string) (map[string]interface{}, error) {
 	paths, err := store.List(fmt.Sprintf("applications/id/%v/hosts/names/%v/data", id, host))
 	if err != nil {
@@ -122,11 +122,11 @@ func AllApplicationDataByHost(store resourcedmaster_storage.Storer, id string, h
 		jsonData, err := GetApplicationDataByHostJson(store, id, host, path)
 
 		if err == nil {
-			var data interface{}
+			var data map[string]interface{}
 
-			err = json.Unmarshal(jsonData, data)
+			err = json.Unmarshal(jsonData, &data)
 			if err == nil {
-				allJsonData[path] = data
+				allJsonData["/"+path] = data
 			}
 		}
 	}
