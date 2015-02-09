@@ -69,10 +69,12 @@ func AllHosts(store resourcedmaster_storage.Storer, id string) ([]*Host, error) 
 }
 
 type Host struct {
-	ApplicationId string
-	Name          string
-	Tags          []string
-	store         resourcedmaster_storage.Storer
+	ApplicationId     string
+	Name              string
+	Tags              []string
+	NetworkInterfaces map[string]map[string]interface{}
+
+	store resourcedmaster_storage.Storer
 }
 
 // validateBeforeSave checks various conditions before saving.
