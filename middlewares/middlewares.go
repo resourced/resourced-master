@@ -1,7 +1,6 @@
 package middlewares
 
 import (
-	"errors"
 	"fmt"
 	"github.com/gorilla/context"
 	resourcedmaster_dao "github.com/resourced/resourced-master/dao"
@@ -44,6 +43,14 @@ func SetCurrentApplication(store resourcedmaster_storage.Storer) func(http.Handl
 }
 
 func AccessTokenAuth(users []*resourcedmaster_dao.User) func(http.Handler) http.Handler {
+	getCurrentApp := func(req *http.Request) *resourcedmaster_dao.Application {
+		currentAppInterface := context.Get(req, "currentApp")
+		if currentAppInterface == nil {
+			return nil
+		}
+		return currentAppInterface.(*resourcedmaster_dao.Application)
+	}
+
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
 			auth := req.Header.Get("Authorization")
@@ -59,15 +66,15 @@ func AccessTokenAuth(users []*resourcedmaster_dao.User) func(http.Handler) http.
 				return
 			}
 
-			currentAppInterface := context.Get(req, "currentApp")
-			if currentAppInterface == nil {
-				libhttp.BasicAuthUnauthorized(res, errors.New("CurrentApp is missing."))
-				return
-			}
-			currentApp := currentAppInterface.(*resourcedmaster_dao.Application)
-
+			currentApp := getCurrentApp(req)
 			accessAllowed := false
-			adminLevelOrAbove := strings.HasPrefix(req.URL.Path, fmt.Sprintf("/api/app/%v/users", currentApp.Id))
+			adminLevelOrAbove := false
+
+			if currentApp == nil {
+				adminLevelOrAbove = strings.HasPrefix(req.URL.Path, "/api/users")
+			} else {
+				adminLevelOrAbove = strings.HasPrefix(req.URL.Path, fmt.Sprintf("/api/app/%v/users", currentApp.Id))
+			}
 
 			for _, user := range users {
 				if username == user.Token {
