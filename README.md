@@ -31,10 +31,6 @@ ResourceD Master accepts a few environment variables as configuration:
 
 * **GET** `/api/app/:id/hosts/tags/:tags` Displays list of hosts by tags. (Future)
 
-* **GET** `/api/app/:id/hosts/hardware-addr/:address` Displays host by MAC-48/EUI-48/EUI-64 address.
-
-* **GET** `/api/app/:id/hosts/ip-addr/:address` Displays host by IP address.
-
 * **GET** `/api/app/:id/hosts/:name` Displays host data.
 
 * **POST** `/api/app/:id/hosts/:name` Submit JSON data from 1 host.
