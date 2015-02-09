@@ -365,12 +365,11 @@ func PostApiAppIdHostsName(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if _, ok := data["Hostname"]; !ok {
-		err = errors.New("Data does not contain Hostname.")
+	if _, ok := data["Host"]; !ok {
+		err = errors.New("Data does not contain Host information.")
 		libhttp.HandleErrorJson(w, err)
 		return
 	}
-	hostname := data["Hostname"].(string)
 
 	app, err := resourcedmaster_dao.GetApplicationById(store, params["id"])
 	if err != nil {
@@ -378,11 +377,15 @@ func PostApiAppIdHostsName(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	hostData := data["Host"].(map[string]interface{})
+	hostname := hostData["Name"].(string)
+
 	host := resourcedmaster_dao.NewHost(store, hostname, app.Id)
 
 	// TODO(didip): Enabling these 2 cause panic.
-	// Error: interface conversion: interface is map[string]interface {}, not map[string]map[string]interface {}
-	// host.Tags = data["Tags"].([]string)
+	// Panic: interface conversion: interface is []interface {}, not []string
+	// hostTags := hostData["Tags"].([]string)
+	// hostNetInterfaces := hostData["NetworkInterfaces"].(map[string]map[string]interface{})
 
 	err = host.Save()
 	if err != nil {
