@@ -324,50 +324,6 @@ func hostAndDataPayloadJson(store resourcedmaster_storage.Storer, appId string, 
 	return payloadJson, nil
 }
 
-// **GET** `/api/app/:id/hosts/hardware-addr/:address` Displays list of hosts by MAC-48/EUI-48/EUI-64 address.
-func GetApiAppIdHostsHardwareAddr(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-
-	params := gorilla_mux.Vars(r)
-	store := context.Get(r, "store").(resourcedmaster_storage.Storer)
-
-	host, err := resourcedmaster_dao.GetHostByAppIdAndHardwareAddr(store, params["id"], params["address"])
-	if err != nil {
-		libhttp.HandleErrorJson(w, err)
-		return
-	}
-
-	payloadJson, err := hostAndDataPayloadJson(store, params["id"], host)
-	if err != nil {
-		libhttp.HandleErrorJson(w, err)
-		return
-	}
-
-	w.Write(payloadJson)
-}
-
-// **GET** `/api/app/:id/hosts/ip-addr/:address` Displays list of hosts by IP address.
-func GetApiAppIdHostsIpAddr(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-
-	params := gorilla_mux.Vars(r)
-	store := context.Get(r, "store").(resourcedmaster_storage.Storer)
-
-	host, err := resourcedmaster_dao.GetHostByAppIdAndIpAddr(store, params["id"], params["address"])
-	if err != nil {
-		libhttp.HandleErrorJson(w, err)
-		return
-	}
-
-	payloadJson, err := hostAndDataPayloadJson(store, params["id"], host)
-	if err != nil {
-		libhttp.HandleErrorJson(w, err)
-		return
-	}
-
-	w.Write(payloadJson)
-}
-
 // **GET** `/api/app/:id/hosts/:name` Displays host data.
 func GetApiAppIdHostsName(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
