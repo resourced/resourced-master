@@ -414,7 +414,6 @@ func PostApiAppIdHostsName(w http.ResponseWriter, r *http.Request) {
 		libhttp.HandleErrorJson(w, err)
 		return
 	}
-
 	hostname := data["Hostname"].(string)
 
 	app, err := resourcedmaster_dao.GetApplicationById(store, params["id"])
@@ -424,8 +423,10 @@ func PostApiAppIdHostsName(w http.ResponseWriter, r *http.Request) {
 	}
 
 	host := resourcedmaster_dao.NewHost(store, hostname, app.Id)
-	host.Tags = data["Tags"].([]string)
-	host.NetworkInterfaces = data["NetworkInterfaces"].(map[string]map[string]interface{})
+
+	// TODO(didip): Enabling these 2 cause panic.
+	// Error: interface conversion: interface is map[string]interface {}, not map[string]map[string]interface {}
+	// host.Tags = data["Tags"].([]string)
 
 	err = host.Save()
 	if err != nil {
