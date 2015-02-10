@@ -1,4 +1,3 @@
-// Package dao provides Data Access Objects that perform CRUD operations on given storage.
 package dao
 
 import (
