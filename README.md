@@ -7,8 +7,7 @@ This project is currently an alpha software. Use it at your own risk.
 
 ## Installation
 
-Precompiled binary for darwin and linux will be provided in the future.
-
+[Download the precompiled binaries](https://github.com/resourced/resourced-master/releases) and manage them using init/systemd/supervisord.
 
 ## Run Instruction
 
