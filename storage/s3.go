@@ -8,6 +8,7 @@ import (
 	"strings"
 )
 
+// NewS3 is constructor for S3
 func NewS3(env, accessKey, secretKey, regionName, bucketName string) *S3 {
 	store := &S3{}
 	store.Env = env
@@ -54,24 +55,29 @@ func (store *S3) createBucket() *goamz_s3.Bucket {
 	return store.Bucket
 }
 
+// GetRoot returns root path.
 func (store *S3) GetRoot() string {
 	return store.Root
 }
 
+// Create saves JSON data with fullpath as key.
 func (store *S3) Create(fullpath string, data []byte) error {
 	fullpath = path.Join(store.Root, fullpath)
 	return store.Bucket.Put(fullpath, data, "application/json", goamz_s3.BucketOwnerFull, goamz_s3.Options{})
 }
 
+// Update saves JSON data with fullpath as key.
 func (store *S3) Update(fullpath string, data []byte) error {
 	return store.Create(fullpath, data)
 }
 
+// Get returns JSON data with fullpath as key.
 func (store *S3) Get(fullpath string) ([]byte, error) {
 	fullpath = path.Join(store.Root, fullpath)
 	return store.Bucket.Get(fullpath)
 }
 
+// List returns a slice of full reminder paths.
 func (store *S3) List(fullpath string) ([]string, error) {
 	fullpath = path.Join(store.Root, fullpath)
 
@@ -93,6 +99,7 @@ func (store *S3) List(fullpath string) ([]string, error) {
 	return result, nil
 }
 
+// Delete removes item with fullpath as key.
 func (store *S3) Delete(fullpath string) error {
 	fullpath = path.Join(store.Root, fullpath)
 	return store.Bucket.Del(fullpath)

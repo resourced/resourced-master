@@ -11,6 +11,7 @@ import (
 	"sync"
 )
 
+// NewFileSystem is constructor for FileSystem
 func NewFileSystem(env string) *FileSystem {
 	currentUser, _ := user.Current()
 
@@ -25,6 +26,7 @@ type FileSystem struct {
 	Root string
 }
 
+// GetRoot returns root path.
 func (fs *FileSystem) GetRoot() string {
 	return fs.Root
 }
@@ -62,14 +64,17 @@ func (fs *FileSystem) CreateOrUpdate(fullpath string, data []byte) error {
 	return err
 }
 
+// Create saves JSON data with fullpath as key.
 func (fs *FileSystem) Create(fullpath string, data []byte) error {
 	return fs.CreateOrUpdate(fullpath, data)
 }
 
+// Update saves JSON data with fullpath as key.
 func (fs *FileSystem) Update(fullpath string, data []byte) error {
 	return fs.CreateOrUpdate(fullpath, data)
 }
 
+// Get returns JSON data with fullpath as key.
 func (fs *FileSystem) Get(fullpath string) ([]byte, error) {
 	if !strings.HasPrefix(fullpath, fs.Root) {
 		fullpath = path.Join(fs.Root, fullpath)
@@ -77,6 +82,7 @@ func (fs *FileSystem) Get(fullpath string) ([]byte, error) {
 	return ioutil.ReadFile(fullpath)
 }
 
+// List returns a slice of base paths.
 func (fs *FileSystem) List(fullpath string) ([]string, error) {
 	if !strings.HasPrefix(fullpath, fs.Root) {
 		fullpath = path.Join(fs.Root, fullpath)
@@ -91,6 +97,7 @@ func (fs *FileSystem) List(fullpath string) ([]string, error) {
 	return names, err
 }
 
+// Delete removes item with fullpath as key.
 func (fs *FileSystem) Delete(fullpath string) error {
 	if !strings.HasPrefix(fullpath, fs.Root) {
 		fullpath = path.Join(fs.Root, fullpath)
