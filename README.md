@@ -22,6 +22,11 @@ ResourceD Master accepts a few environment variables as configuration:
 
 ## RESTful Endpoints
 
+Every HTTP request requires AccessToken passed as user. Example:
+```
+curl -u 0b79bab50daca910b000d4f1a2b675d604257e42: https://localhost:55655/api
+```
+
 ### Basic Level Authorization
 
 * **GET** `/api` Redirect to `/api/app` (staff level only) or redirect to `/api/app/:id/hosts`.
@@ -119,9 +124,3 @@ ResourceD Master accepts a few environment variables as configuration:
 ### Staff level Authorization
 
 * **GET** `/api/app` Displays list of all apps (staff level only).
-
-
-Every HTTP request requires AccessToken passed as user. Example:
-```
-curl https://localhost:55655/api -u 0b79bab50daca910b000d4f1a2b675d604257e42:
-```
