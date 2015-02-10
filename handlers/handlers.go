@@ -399,7 +399,7 @@ func PostApiAppIdHostsName(w http.ResponseWriter, r *http.Request) {
 	if _, ok := data["Path"]; ok {
 		path := data["Path"].(string)
 
-		err = app.SaveDataJson(hostname, path, dataJson)
+		err = host.SaveDataJson(path, dataJson)
 		if err != nil {
 			libhttp.HandleErrorJson(w, err)
 			return

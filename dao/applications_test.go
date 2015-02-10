@@ -1,7 +1,6 @@
 package dao
 
 import (
-	"os"
 	"testing"
 )
 
@@ -67,35 +66,6 @@ func TestCreateUpdateDeleteApplication(t *testing.T) {
 	}
 	if !foundId {
 		t.Errorf("AllApplications did not return everything.")
-	}
-
-	app.Delete()
-}
-
-func TestCreateGetDeleteApplicationData(t *testing.T) {
-	app := appForAppTesting(t)
-
-	host, _ := os.Hostname()
-	path := "/hello/world"
-	data := []byte(`{"Message": "Hello World"}`)
-
-	err := app.SaveDataJson(host, path, data)
-	if err != nil {
-		t.Errorf("Saving reader data should work. Error: %v", err)
-	}
-
-	inJson, err := app.GetDataJson(host, path)
-	if err != nil {
-		t.Errorf("Getting reader data should work. Error: %v", err)
-	}
-
-	if string(inJson) != string(data) {
-		t.Error("Got the wrong reader data.")
-	}
-
-	err = app.DeleteDataJson(host, path)
-	if err != nil {
-		t.Errorf("Deleting reader data should work. Error: %v", err)
 	}
 
 	app.Delete()
