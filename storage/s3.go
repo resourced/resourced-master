@@ -75,7 +75,7 @@ func (store *S3) Get(fullpath string) ([]byte, error) {
 func (store *S3) List(fullpath string) ([]string, error) {
 	fullpath = path.Join(store.Root, fullpath)
 
-	response, err := store.Bucket.List(fullpath, "", "", 500)
+	response, err := store.Bucket.List(fullpath, "", "", 0)
 	if err != nil {
 		return nil, err
 	}
