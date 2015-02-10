@@ -304,27 +304,6 @@ func GetApiAppIdHosts(w http.ResponseWriter, r *http.Request) {
 	w.Write(hostsJson)
 }
 
-func hostAndDataPayloadJson(store resourcedmaster_storage.Storer, appId string, host *resourcedmaster_dao.Host) ([]byte, error) {
-	payload := make(map[string]interface{})
-	var payloadJson []byte
-
-	payload["Host"] = host
-
-	hostData, err := resourcedmaster_dao.AllApplicationDataByHost(store, appId, host.Name)
-	if err != nil {
-		return payloadJson, err
-	}
-
-	payload["Data"] = hostData
-
-	payloadJson, err = json.Marshal(payload)
-	if err != nil {
-		return payloadJson, err
-	}
-
-	return payloadJson, nil
-}
-
 // **GET** `/api/app/:id/hosts/:name` Displays host data.
 func GetApiAppIdHostsName(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
@@ -338,13 +317,13 @@ func GetApiAppIdHostsName(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	payloadJson, err := hostAndDataPayloadJson(store, params["id"], host)
+	hostJson, err := json.Marshal(host)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
 	}
 
-	w.Write(payloadJson)
+	w.Write(hostJson)
 }
 
 func PostApiAppIdHostsName(w http.ResponseWriter, r *http.Request) {

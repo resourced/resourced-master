@@ -136,7 +136,7 @@ type Host struct {
 	Tags              []string
 	NetworkInterfaces map[string]map[string]interface{}
 
-	// We fill in Data as we perform GET requests.
+	// Data is filled in during Get() and not during Save().
 	Data map[string]interface{}
 
 	store resourcedmaster_storage.Storer
