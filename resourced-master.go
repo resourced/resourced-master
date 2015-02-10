@@ -15,6 +15,7 @@ import (
 	"os"
 )
 
+// NewResourcedMaster is the constructor for ResourcedMaster struct.
 func NewResourcedMaster() (*ResourcedMaster, error) {
 	var err error
 
@@ -139,6 +140,11 @@ func NewResourcedMaster() (*ResourcedMaster, error) {
 	return rm, err
 }
 
+// ResourcedMaster is the application object that can perform various things:
+//
+// * Run HTTP server.
+//
+// * Run a few command line operations.
 type ResourcedMaster struct {
 	Env   string
 	store resourcedmaster_storage.Storer

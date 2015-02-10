@@ -1,3 +1,4 @@
+// Package libhttp provides http related library functions.
 package libhttp
 
 import (

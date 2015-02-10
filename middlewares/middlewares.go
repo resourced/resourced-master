@@ -1,3 +1,4 @@
+// Package middlewares provides common middleware handlers.
 package middlewares
 
 import (

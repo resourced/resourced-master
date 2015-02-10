@@ -1,3 +1,5 @@
+// Package storage provides common interface to multiple storage backend.
+// Currently there are: filesystem and S3 backends.
 package storage
 
 import (

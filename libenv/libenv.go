@@ -1,3 +1,4 @@
+// Package libenv provides environment related library functions.
 package libenv
 
 import (
