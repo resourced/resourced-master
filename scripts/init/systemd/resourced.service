@@ -1,0 +1,11 @@
+[Unit]
+Description=ResourceD Master
+
+[Service]
+User=root
+ExecStart=/go/bin/resourced-master
+ExecReload=/bin/kill -s HUP $MAINPID
+Restart=on-abort
+
+[Install]
+WantedBy=multi-user.target

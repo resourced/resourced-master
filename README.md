@@ -9,6 +9,9 @@ This project is currently an alpha software. Use it at your own risk.
 
 [Download the precompiled binaries](https://github.com/resourced/resourced-master/releases) and manage them using init/systemd/supervisord.
 
+You can follow the examples of init scripts [here](https://github.com/resourced/resourced-master/tree/master/scripts/init).
+
+
 ## Run Instruction
 
 ResourceD Master accepts a few environment variables as configuration:
@@ -18,6 +21,12 @@ ResourceD Master accepts a few environment variables as configuration:
 * **RESOURCED_MASTER_CERT_FILE:** Path to cert file. Default: ""
 
 * **RESOURCED_MASTER_KEY_FILE:** Path to key file. Default: ""
+
+* **RESOURCED_MASTER_S3_ACCESS_KEY** S3 access key. Default: ""
+
+* **RESOURCED_MASTER_S3_SECRET_KEY** S3 secret key. Default: ""
+
+* **RESOURCED_MASTER_S3_BUCKET** S3 bucket. Default: ""
 
 
 ## RESTful Endpoints
