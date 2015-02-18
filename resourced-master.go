@@ -152,8 +152,8 @@ type ResourcedMaster struct {
 }
 
 func (rm *ResourcedMaster) storage() (resourcedmaster_storage.Storer, error) {
-	s3AccessKey := libenv.EnvWithDefault("RESOURCED_MASTER_S3_ACCESS_KEY", "")
-	s3SecretKey := libenv.EnvWithDefault("RESOURCED_MASTER_S3_SECRET_KEY", "")
+	s3AccessKey := libenv.EnvWithDefault("RESOURCED_MASTER_S3_ACCESS_KEY", libenv.EnvWithDefault("AWS_ACCESS_KEY_ID", ""))
+	s3SecretKey := libenv.EnvWithDefault("RESOURCED_MASTER_S3_SECRET_KEY", libenv.EnvWithDefault("AWS_SECRET_ACCESS_KEY", ""))
 	s3Region := libenv.EnvWithDefault("RESOURCED_MASTER_S3_REGION", "us-east-1")
 	s3Bucket := libenv.EnvWithDefault("RESOURCED_MASTER_S3_BUCKET", "")
 
