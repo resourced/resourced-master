@@ -8,16 +8,16 @@ import (
 
 func s3StorageForTest(t *testing.T) *S3 {
 	env := "test"
-	s3AccessKey := libenv.EnvWithDefault("RESOURCED_MASTER_S3_ACCESS_KEY", "")
-	s3SecretKey := libenv.EnvWithDefault("RESOURCED_MASTER_S3_SECRET_KEY", "")
+	accessKey := libenv.EnvWithDefault("RESOURCED_MASTER_ACCESS_KEY", "")
+	secretKey := libenv.EnvWithDefault("RESOURCED_MASTER_SECRET_KEY", "")
 	s3Region := "us-east-1"
 	s3Bucket := "resourcedmaster-test"
 
-	if s3AccessKey == "" || s3SecretKey == "" {
-		t.Fatal("You must set RESOURCED_MASTER_S3_ACCESS_KEY & RESOURCED_MASTER_S3_SECRET_KEY environments to run these tests.")
+	if accessKey == "" || secretKey == "" {
+		t.Fatal("You must set RESOURCED_MASTER_ACCESS_KEY & RESOURCED_MASTER_SECRET_KEY environments to run these tests.")
 	}
 
-	return NewS3(env, s3AccessKey, s3SecretKey, s3Region, s3Bucket)
+	return NewS3(env, accessKey, secretKey, s3Region, s3Bucket)
 }
 
 func TestS3RootWithDefaultEnvironment(t *testing.T) {

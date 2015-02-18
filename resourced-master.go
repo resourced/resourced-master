@@ -135,7 +135,8 @@ func NewResourcedMaster() (*ResourcedMaster, error) {
 		},
 	}
 
-	rm.store, err = rm.storage()
+	os.Setenv("RESOURCED_MASTER_STORAGE_TYPE", "s3")
+	rm.store = resourcedmaster_storage.NewStorage()
 
 	return rm, err
 }
@@ -149,15 +150,6 @@ type ResourcedMaster struct {
 	Env   string
 	store resourcedmaster_storage.Storer
 	app   *cli.App
-}
-
-func (rm *ResourcedMaster) storage() (resourcedmaster_storage.Storer, error) {
-	s3AccessKey := libenv.EnvWithDefault("RESOURCED_MASTER_S3_ACCESS_KEY", libenv.EnvWithDefault("AWS_ACCESS_KEY_ID", ""))
-	s3SecretKey := libenv.EnvWithDefault("RESOURCED_MASTER_S3_SECRET_KEY", libenv.EnvWithDefault("AWS_SECRET_ACCESS_KEY", ""))
-	s3Region := libenv.EnvWithDefault("RESOURCED_MASTER_S3_REGION", "us-east-1")
-	s3Bucket := libenv.EnvWithDefault("RESOURCED_MASTER_S3_BUCKET", "")
-
-	return resourcedmaster_storage.NewS3(rm.Env, s3AccessKey, s3SecretKey, s3Region, s3Bucket), nil
 }
 
 func (rm *ResourcedMaster) middlewareStruct(store resourcedmaster_storage.Storer) (*interpose.Middleware, error) {

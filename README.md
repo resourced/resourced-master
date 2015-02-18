@@ -22,9 +22,9 @@ ResourceD Master accepts a few environment variables as configuration:
 
 * **RESOURCED_MASTER_KEY_FILE:** Path to key file. Default: ""
 
-* **RESOURCED_MASTER_S3_ACCESS_KEY** S3 access key. Default: ""
+* **RESOURCED_MASTER_ACCESS_KEY** S3 access key. Default: ""
 
-* **RESOURCED_MASTER_S3_SECRET_KEY** S3 secret key. Default: ""
+* **RESOURCED_MASTER_SECRET_KEY** S3 secret key. Default: ""
 
 * **RESOURCED_MASTER_S3_BUCKET** S3 bucket. Default: ""
 
