@@ -2,6 +2,7 @@ package dal
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"github.com/jmoiron/sqlx"
 	"github.com/resourced/resourced-master/libstring"
@@ -27,6 +28,15 @@ type UserRow struct {
 
 type User struct {
 	Base
+}
+
+func (u *User) userRowFromSqlResult(tx *sqlx.Tx, sqlResult sql.Result) (*UserRow, error) {
+	userId, err := sqlResult.LastInsertId()
+	if err != nil {
+		return nil, err
+	}
+
+	return u.GetById(tx, userId)
 }
 
 // GetById returns record by id.
@@ -61,12 +71,7 @@ func (u *User) Signup(tx *sqlx.Tx, email, password string) (*UserRow, error) {
 		return nil, err
 	}
 
-	userId, err := sqlResult.LastInsertId()
-	if err != nil {
-		return nil, err
-	}
-
-	return u.GetById(tx, userId)
+	return u.userRowFromSqlResult(tx, sqlResult)
 }
 
 func (u *User) CreateAccessToken(tx *sqlx.Tx, appId int64) (*UserRow, error) {
@@ -84,7 +89,24 @@ func (u *User) CreateAccessToken(tx *sqlx.Tx, appId int64) (*UserRow, error) {
 		return nil, err
 	}
 
-	userId, err := sqlResult.LastInsertId()
+	return u.userRowFromSqlResult(tx, sqlResult)
+}
+
+// CreateApplication create a new application for a user.
+func (u *User) CreateApplication(tx *sqlx.Tx, userId int64, appName string) (*UserRow, error) {
+	app := NewApplication(u.db)
+	appRow, err := app.CreateApplication(tx, appName)
+	if err != nil {
+		return nil, err
+	}
+	if appRow.ID <= 0 {
+		return nil, errors.New("Application ID cannot be empty.")
+	}
+
+	data := make(map[string]interface{})
+	data["application_id"] = appRow.ID
+
+	_, err = u.UpdateById(tx, data, userId)
 	if err != nil {
 		return nil, err
 	}
