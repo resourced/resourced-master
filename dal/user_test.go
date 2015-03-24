@@ -44,3 +44,27 @@ func TestUserCRUD(t *testing.T) {
 	}
 
 }
+
+func TestAccessTokenCRUD(t *testing.T) {
+	u := newUserForTest(t)
+	appId := int64(1)
+
+	// CreateAccessToken
+	userRow, err := u.CreateAccessToken(nil, appId)
+	if err != nil {
+		t.Errorf("Creating access token should work. Error: %v", err)
+	}
+	if userRow == nil {
+		t.Fatal("Creating access token should work.")
+	}
+	if userRow.ID <= 0 {
+		t.Fatal("Creating access token should work.")
+	}
+
+	// DELETE FROM users WHERE id=...
+	_, err = u.DeleteById(nil, userRow.ID)
+	if err != nil {
+		t.Fatalf("Deleting user by id should not fail. Error: %v", err)
+	}
+
+}

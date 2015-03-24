@@ -16,19 +16,20 @@ func NewUser(db *sqlx.DB) *User {
 	return user
 }
 
+type UserRow struct {
+	ID            int64          `db:"id"`
+	ApplicationID sql.NullInt64  `db:"application_id"`
+	Kind          string         `db:"kind"`
+	Email         sql.NullString `db:"email"`
+	Password      sql.NullString `db:"password"`
+	Token         sql.NullString `db:"token"`
+}
+
 type User struct {
 	Base
 }
 
-type UserRow struct {
-	ID            int64         `db:"id"`
-	ApplicationID sql.NullInt64 `db:"application_id"`
-	Kind          string        `db:"kind"`
-	Email         string        `db:"email"`
-	Password      string        `db:"password"`
-	Token         string        `db:"token"`
-}
-
+// GetById returns record by id.
 func (u *User) GetById(tx *sqlx.Tx, id int64) (*UserRow, error) {
 	user := &UserRow{}
 	query := fmt.Sprintf("SELECT * FROM %v WHERE id=$1", u.table)
@@ -37,6 +38,7 @@ func (u *User) GetById(tx *sqlx.Tx, id int64) (*UserRow, error) {
 	return user, err
 }
 
+// Signup create a new record of user.
 func (u *User) Signup(tx *sqlx.Tx, email, password string) (*UserRow, error) {
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), 5)
 	if err != nil {
@@ -53,6 +55,29 @@ func (u *User) Signup(tx *sqlx.Tx, email, password string) (*UserRow, error) {
 	data["password"] = hashedPassword
 	data["token"] = accessToken
 	data["kind"] = "human"
+
+	sqlResult, err := u.InsertIntoTable(tx, data)
+	if err != nil {
+		return nil, err
+	}
+
+	userId, err := sqlResult.LastInsertId()
+	if err != nil {
+		return nil, err
+	}
+
+	return u.GetById(tx, userId)
+}
+
+func (u *User) CreateAccessToken(tx *sqlx.Tx, appId int64) (*UserRow, error) {
+	accessToken, err := libstring.GeneratePassword(32)
+	if err != nil {
+		return nil, err
+	}
+
+	data := make(map[string]interface{})
+	data["token"] = accessToken
+	data["kind"] = "token"
 
 	sqlResult, err := u.InsertIntoTable(tx, data)
 	if err != nil {

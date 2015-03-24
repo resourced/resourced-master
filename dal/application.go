@@ -13,13 +13,13 @@ func NewApplication(db *sqlx.DB) *Application {
 	return app
 }
 
-type Application struct {
-	Base
-}
-
 type ApplicationRow struct {
 	ID   int64  `db:"id"`
 	Name string `db:"name"`
+}
+
+type Application struct {
+	Base
 }
 
 func (a *Application) GetById(tx *sqlx.Tx, id int64) (*ApplicationRow, error) {

@@ -9,9 +9,9 @@ CREATE TABLE users (
     id BIGSERIAL PRIMARY KEY NOT NULL,
     application_id BIGINT,
     kind TEXT NOT NULL,
-    email TEXT NOT NULL,
-    password TEXT NOT NULL,
-    token TEXT NOT NULL
+    email TEXT,
+    password TEXT,
+    token TEXT
 );
 
 CREATE INDEX idx_application_id on users (application_id);
