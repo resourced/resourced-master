@@ -94,7 +94,10 @@ func (rm *ResourcedMaster) mux() *gorilla_mux.Router {
 	router.HandleFunc("/", resourcedmaster_handlers.GetDashboard).Methods("GET")
 
 	router.HandleFunc("/signup", resourcedmaster_handlers.GetSignup).Methods("GET")
+	router.HandleFunc("/signup", resourcedmaster_handlers.PostSignup).Methods("POST")
 	router.HandleFunc("/login", resourcedmaster_handlers.GetLogin).Methods("GET")
+	router.HandleFunc("/login", resourcedmaster_handlers.PostLogin).Methods("POST")
+	router.HandleFunc("/logout", resourcedmaster_handlers.GetLogout).Methods("GET")
 
 	return router
 }

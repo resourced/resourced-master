@@ -6,7 +6,7 @@
         <h1 class="text-center">Chillax Master</h1>
         <h4 class="text-center">create an account</h4>
 
-        <form class="form-signup-login form-signup">
+        <form class="form-signup-login form-signup" method="post" action="/signup">
           <input name="Email" type="text" class="form-control" placeholder="Email" required autofocus>
           <input name="Password" type="password" class="form-control password" placeholder="Password" required>
           <input name="PasswordAgain" type="password" class="form-control password-again" placeholder="Password Again" required>
@@ -18,43 +18,4 @@
     </div>
   </div>
 </div>
-
-<script>
-$('.form-signup').submit(function(event) {
-  event.preventDefault();
-
-  var $form = $(this);
-  var formData = {};
-
-  $form.serializeArray().map(function(item) {
-    formData[item.name] = item.value;
-  });
-
-  $.ajax({
-    type: "POST",
-    url: "/api/users",
-    data: JSON.stringify(formData),
-    contentType: "application/json; charset=utf-8",
-    dataType: "json"
-  })
-  .done(function(data, textStatus, jqXHR) {
-    $.ajax({
-      type: "POST",
-      url: "/api/users/login",
-      data: JSON.stringify(formData),
-      contentType: "application/json; charset=utf-8",
-      dataType: "json"
-    })
-    .done(function(data, textStatus, jqXHR) {
-      window.location.href = "/";
-    })
-    .fail(function(jqXHR, textStatus, errorThrown) {
-      alert($.parseJSON(jqXHR.responseText).Error);
-    });
-  })
-  .fail(function(jqXHR, textStatus, errorThrown) {
-    alert($.parseJSON(jqXHR.responseText).Error);
-  });
-});
-</script>
 {{end}}

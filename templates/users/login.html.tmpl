@@ -5,7 +5,7 @@
       <div class="account-wall">
         <h1 class="text-center">Chillax Master</h1>
 
-        <form class="form-signup-login form-login">
+        <form class="form-signup-login form-login" method="post" action="/login">
           <input name="Email" type="text" class="form-control" placeholder="Email" required autofocus>
           <input name="Password" type="password" class="form-control" placeholder="Password" required>
           <button class="btn btn-lg btn-primary btn-block" type="submit">Login</button>
@@ -16,31 +16,4 @@
     </div>
   </div>
 </div>
-
-<script>
-$('.form-login').submit(function(event) {
-  event.preventDefault();
-
-  var $form = $(this);
-  var formData = {};
-
-  $form.serializeArray().map(function(item) {
-    formData[item.name] = item.value;
-  });
-
-  $.ajax({
-    type: "POST",
-    url: "/api/users/login",
-    data: JSON.stringify(formData),
-    contentType: "application/json; charset=utf-8",
-    dataType: "json"
-  })
-  .done(function(data, textStatus, jqXHR) {
-    window.location.href = "/";
-  })
-  .fail(function(jqXHR, textStatus, errorThrown) {
-    alert($.parseJSON(jqXHR.responseText).Error);
-  });
-});
-</script>
 {{end}}

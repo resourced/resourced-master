@@ -1,9 +1,12 @@
 package handlers
 
 import (
+	"errors"
 	"github.com/GeertJohan/go.rice"
 	"github.com/gorilla/context"
 	"github.com/gorilla/sessions"
+	"github.com/jmoiron/sqlx"
+	resourcedmaster_dal "github.com/resourced/resourced-master/dal"
 	"github.com/resourced/resourced-master/libhttp"
 	"github.com/resourced/resourced-master/libtemplate"
 	"net/http"
@@ -21,6 +24,39 @@ func GetSignup(w http.ResponseWriter, r *http.Request) {
 	}
 
 	tmpl.Execute(w, nil)
+}
+
+func PostSignup(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "text/html")
+
+	db := context.Get(r, "db").(*sqlx.DB)
+
+	email := r.FormValue("Email")
+	password := r.FormValue("Password")
+	passwordAgain := r.FormValue("PasswordAgain")
+
+	u := resourcedmaster_dal.NewUser(db)
+
+	existingUser, err := u.GetByEmail(nil, email)
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
+
+	if existingUser != nil && existingUser.Email.String == email {
+		err = errors.New("User already exists.")
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
+
+	_, err = u.Signup(nil, email, password, passwordAgain)
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
+
+	// Perform login
+	PostLogin(w, r)
 }
 
 func GetLoginWithoutSession(w http.ResponseWriter, r *http.Request) {
@@ -51,4 +87,46 @@ func GetLogin(w http.ResponseWriter, r *http.Request) {
 	}
 
 	GetLoginWithoutSession(w, r)
+}
+
+func PostLogin(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "text/html")
+
+	db := context.Get(r, "db").(*sqlx.DB)
+	cookieStore := context.Get(r, "cookieStore").(*sessions.CookieStore)
+
+	email := r.FormValue("Email")
+	password := r.FormValue("Password")
+
+	u := resourcedmaster_dal.NewUser(db)
+
+	user, err := u.GetUserByEmailAndPassword(nil, email, password)
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
+
+	session, _ := cookieStore.Get(r, "resourcedmaster-session")
+	session.Values["user"] = user
+
+	err = session.Save(r, w)
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
+
+	http.Redirect(w, r, "/", 301)
+}
+
+func GetLogout(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "text/html")
+
+	cookieStore := context.Get(r, "cookieStore").(*sessions.CookieStore)
+
+	session, _ := cookieStore.Get(r, "resourcedmaster-session")
+
+	delete(session.Values, "user")
+	session.Save(r, w)
+
+	http.Redirect(w, r, "/login", 301)
 }
