@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/GeertJohan/go.rice"
 	"github.com/gorilla/context"
+	"github.com/gorilla/sessions"
 	"github.com/jmoiron/sqlx"
 	resourcedmaster_dal "github.com/resourced/resourced-master/dal"
 	"github.com/resourced/resourced-master/libhttp"
@@ -27,6 +28,16 @@ func SetRiceBoxes(riceBoxes map[string]*rice.Box) func(http.Handler) http.Handle
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
 			context.Set(req, "riceBoxes", riceBoxes)
+
+			next.ServeHTTP(res, req)
+		})
+	}
+}
+
+func SetCookieStore(cookieStore *sessions.CookieStore) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
+			context.Set(req, "cookieStore", cookieStore)
 
 			next.ServeHTTP(res, req)
 		})

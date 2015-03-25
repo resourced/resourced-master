@@ -5,6 +5,7 @@ import (
 	"github.com/GeertJohan/go.rice"
 	"github.com/carbocation/interpose"
 	gorilla_mux "github.com/gorilla/mux"
+	"github.com/gorilla/sessions"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
 	resourcedmaster_dal "github.com/resourced/resourced-master/dal"
@@ -36,7 +37,7 @@ func NewResourcedMaster() (*ResourcedMaster, error) {
 		return nil, err
 	}
 
-	dbPath := libenv.EnvWithDefault("RESOURCED_DB", fmt.Sprintf("postgres://%v@localhost:5432/resourced-master?sslmode=disable", u.Username))
+	dbPath := libenv.EnvWithDefault("RESOURCED_MASTER_DB", fmt.Sprintf("postgres://%v@localhost:5432/resourced-master?sslmode=disable", u.Username))
 
 	db, err := sqlx.Connect("postgres", dbPath)
 	if err != nil {
@@ -52,17 +53,21 @@ func NewResourcedMaster() (*ResourcedMaster, error) {
 		return nil, err
 	}
 
+	cookieStoreSecret := libenv.EnvWithDefault("RESOURCED_MASTER_COOKIE_SECRET", "T0PS3CR3T")
+
 	rm := &ResourcedMaster{}
 	rm.db = db
 	rm.riceBoxes = riceBoxes
+	rm.cookieStore = sessions.NewCookieStore([]byte(cookieStoreSecret))
 
 	return rm, err
 }
 
 // ResourcedMaster is the application object that runs HTTP server.
 type ResourcedMaster struct {
-	db        *sqlx.DB
-	riceBoxes map[string]*rice.Box
+	db          *sqlx.DB
+	riceBoxes   map[string]*rice.Box
+	cookieStore *sessions.CookieStore
 }
 
 func (rm *ResourcedMaster) middlewareStruct() (*interpose.Middleware, error) {
@@ -74,6 +79,7 @@ func (rm *ResourcedMaster) middlewareStruct() (*interpose.Middleware, error) {
 	middle := interpose.New()
 	middle.Use(resourcedmaster_middlewares.SetDB(rm.db))
 	middle.Use(resourcedmaster_middlewares.SetRiceBoxes(rm.riceBoxes))
+	middle.Use(resourcedmaster_middlewares.SetCookieStore(rm.cookieStore))
 	middle.Use(resourcedmaster_middlewares.SetCurrentApplication(rm.db))
 	middle.Use(resourcedmaster_middlewares.AccessTokenAuth(users))
 
