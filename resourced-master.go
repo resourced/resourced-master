@@ -1,167 +1,83 @@
 package main
 
 import (
-	"encoding/json"
+	"fmt"
+	"github.com/GeertJohan/go.rice"
 	"github.com/carbocation/interpose"
-	"github.com/codegangsta/cli"
 	gorilla_mux "github.com/gorilla/mux"
-	resourcedmaster_dao "github.com/resourced/resourced-master/dao"
+	"github.com/jmoiron/sqlx"
+	_ "github.com/lib/pq"
+	resourcedmaster_dal "github.com/resourced/resourced-master/dal"
 	resourcedmaster_handlers "github.com/resourced/resourced-master/handlers"
 	"github.com/resourced/resourced-master/libenv"
 	resourcedmaster_middlewares "github.com/resourced/resourced-master/middlewares"
-	resourcedmaster_storage "github.com/resourced/resourced-master/storage"
-	"log"
 	"net/http"
 	"os"
+	"os/user"
 )
+
+// NewResourcedMaster is the constructor for riceBoxes struct.
+func NewriceBoxes(gorice *rice.Config) (map[string]*rice.Box, error) {
+	templatesBox, err := gorice.FindBox("templates")
+	if err != nil {
+		return nil, err
+	}
+
+	riceBoxes := make(map[string]*rice.Box)
+	riceBoxes["templates"] = templatesBox
+
+	return riceBoxes, nil
+}
 
 // NewResourcedMaster is the constructor for ResourcedMaster struct.
 func NewResourcedMaster() (*ResourcedMaster, error) {
-	var err error
-
-	rm := &ResourcedMaster{}
-	rm.Env = libenv.EnvWithDefault("RESOURCED_MASTER_ENV", "development")
-
-	rm.app = cli.NewApp()
-	rm.app.Name = "resourced-master"
-	rm.app.Usage = "It stores all of your servers facts."
-	rm.app.Author = "Didip Kerabat"
-	rm.app.Email = "didipk@gmail.com"
-
-	rm.app.Commands = []cli.Command{
-		{
-			Name:      "server",
-			ShortName: "serv",
-			Usage:     "Run HTTP server",
-			Action: func(c *cli.Context) {
-				rm.httpRun()
-			},
-		},
-		{
-			Name:      "application",
-			ShortName: "app",
-			Usage:     "Application CRUD operations",
-			Action: func(c *cli.Context) {
-				crud := c.Args().First()
-
-				if crud == "create" {
-					name := c.Args().Get(1)
-
-					application, err := resourcedmaster_dao.NewApplication(rm.store, name)
-					if err != nil {
-						log.Fatalf("Failed to create a new application. Error: %v\n", err)
-					}
-
-					err = application.Save()
-					if err != nil {
-						log.Fatalf("Failed to save the new application. Error: %v\n", err)
-					}
-
-					jsonBytes, err := json.Marshal(application)
-					if err != nil {
-						log.Fatalf("Failed to serialize application to JSON. Error: %v\n", err)
-					}
-
-					println(string(jsonBytes))
-				}
-			},
-		},
-		{
-			Name:      "user",
-			ShortName: "u",
-			Usage:     "User CRUD operations",
-			Action: func(c *cli.Context) {
-				crud := c.Args().First()
-
-				if crud == "create" {
-					level := c.Args().Get(1)
-					name := c.Args().Get(2)
-					password := c.Args().Get(3)
-					appId := c.Args().Get(4)
-
-					user, err := resourcedmaster_dao.NewUser(rm.store, name, password)
-					if err != nil {
-						log.Fatalf("Failed to create a new user. Error: %v\n", err)
-					}
-
-					user.Level = level
-					user.ApplicationId = appId
-
-					err = user.Save()
-					if err != nil {
-						log.Fatalf("Failed to save the new user. Error: %v\n", err)
-					}
-
-					jsonBytes, err := json.Marshal(user)
-					if err != nil {
-						log.Fatalf("Failed to serialize user to JSON. Error: %v\n", err)
-					}
-
-					println(string(jsonBytes))
-				}
-			},
-		},
-		{
-			Name:      "access-token",
-			ShortName: "token",
-			Usage:     "Access Token CRUD operations",
-			Action: func(c *cli.Context) {
-				crud := c.Args().First()
-
-				if crud == "create" {
-					level := c.Args().Get(1)
-					appId := c.Args().Get(2)
-
-					application, err := resourcedmaster_dao.GetApplicationById(rm.store, appId)
-					if err != nil {
-						log.Fatalf("Failed to get application by id. Error: %v\n", err)
-					}
-
-					user, err := resourcedmaster_dao.NewAccessTokenUser(rm.store, application)
-					if err != nil {
-						log.Fatalf("Failed to create access token. Error: %v\n", err)
-					}
-
-					user.Level = level
-
-					err = user.Save()
-					if err != nil {
-						log.Fatalf("Failed to save access token. Error: %v\n", err)
-					}
-
-					println(user.Token)
-				}
-			},
-		},
+	u, err := user.Current()
+	if err != nil {
+		return nil, err
 	}
 
-	os.Setenv("RESOURCED_MASTER_STORAGE_TYPE", "s3")
-	rm.store = resourcedmaster_storage.NewStorage()
+	dbPath := libenv.EnvWithDefault("RESOURCED_DB", fmt.Sprintf("postgres://%v@localhost:5432/resourced-master?sslmode=disable", u.Username))
+
+	db, err := sqlx.Connect("postgres", dbPath)
+	if err != nil {
+		return nil, err
+	}
+
+	gorice := &rice.Config{
+		LocateOrder: []rice.LocateMethod{rice.LocateEmbedded, rice.LocateAppended, rice.LocateFS},
+	}
+
+	riceBoxes, err := NewriceBoxes(gorice)
+	if err != nil {
+		return nil, err
+	}
+
+	rm := &ResourcedMaster{}
+	rm.db = db
+	rm.riceBoxes = riceBoxes
 
 	return rm, err
 }
 
-// ResourcedMaster is the application object that can perform various things:
-//
-// * Run HTTP server.
-//
-// * Run a few command line operations.
+// ResourcedMaster is the application object that runs HTTP server.
 type ResourcedMaster struct {
-	Env   string
-	store resourcedmaster_storage.Storer
-	app   *cli.App
+	db        *sqlx.DB
+	riceBoxes map[string]*rice.Box
 }
 
-func (rm *ResourcedMaster) middlewareStruct(store resourcedmaster_storage.Storer) (*interpose.Middleware, error) {
-	users, err := resourcedmaster_dao.AllUsers(store)
+func (rm *ResourcedMaster) middlewareStruct() (*interpose.Middleware, error) {
+	users, err := resourcedmaster_dal.NewUser(rm.db).AllUsers(nil)
 	if err != nil {
 		return nil, err
 	}
 
 	middle := interpose.New()
-	middle.Use(resourcedmaster_middlewares.SetStore(store))
-	middle.Use(resourcedmaster_middlewares.SetCurrentApplication(store))
+	middle.Use(resourcedmaster_middlewares.SetDB(rm.db))
+	middle.Use(resourcedmaster_middlewares.SetRiceBoxes(rm.riceBoxes))
+	middle.Use(resourcedmaster_middlewares.SetCurrentApplication(rm.db))
 	middle.Use(resourcedmaster_middlewares.AccessTokenAuth(users))
+
+	middle.UseHandler(rm.mux())
 
 	return middle, nil
 }
@@ -169,49 +85,27 @@ func (rm *ResourcedMaster) middlewareStruct(store resourcedmaster_storage.Storer
 func (rm *ResourcedMaster) mux() *gorilla_mux.Router {
 	router := gorilla_mux.NewRouter()
 
-	// Admin level access
-	router.HandleFunc("/api/users", resourcedmaster_handlers.PostApiUser).Methods("POST")
-	router.HandleFunc("/api/users", resourcedmaster_handlers.GetApiUser).Methods("GET")
+	router.HandleFunc("/", resourcedmaster_handlers.GetDashboard).Methods("GET")
 
-	router.HandleFunc("/api/users/{name}", resourcedmaster_handlers.GetApiUserName).Methods("GET")
-	router.HandleFunc("/api/users/{name}", resourcedmaster_handlers.PutApiUserName).Methods("PUT")
-	router.HandleFunc("/api/users/{name}", resourcedmaster_handlers.DeleteApiUserName).Methods("DELETE")
-
-	router.HandleFunc("/api/users/{name}/access-token", resourcedmaster_handlers.PutApiUserNameAccessToken).Methods("PUT")
-	router.HandleFunc("/api/app/{id:[0-9]+}/access-token", resourcedmaster_handlers.PostApiApplicationIdAccessToken).Methods("POST")
-	router.HandleFunc("/api/app/{id:[0-9]+}/access-token/:token", resourcedmaster_handlers.DeleteApiApplicationIdAccessToken).Methods("DELETE")
-
-	// Basic level access
-	router.HandleFunc("/", resourcedmaster_handlers.GetRoot).Methods("GET")
-	router.HandleFunc("/api", resourcedmaster_handlers.GetApi).Methods("GET")
-	router.HandleFunc("/api/app", resourcedmaster_handlers.GetApiApp).Methods("GET")
-
-	router.HandleFunc("/api/app/{id:[0-9]+}/hosts", resourcedmaster_handlers.GetApiAppIdHosts).Methods("GET")
-	router.HandleFunc("/api/app/{id:[0-9]+}/hosts/{name}", resourcedmaster_handlers.GetApiAppIdHostsName).Methods("GET")
-	router.HandleFunc("/api/app/{id:[0-9]+}/hosts/{name}", resourcedmaster_handlers.PostApiAppIdHostsName).Methods("POST")
+	router.HandleFunc("/signup", resourcedmaster_handlers.GetSignup).Methods("GET")
+	router.HandleFunc("/login", resourcedmaster_handlers.GetLogin).Methods("GET")
 
 	return router
-}
-
-func (rm *ResourcedMaster) httpRun() {
-	middle, _ := rm.middlewareStruct(rm.store)
-
-	middle.UseHandler(rm.mux())
-
-	serverAddress := libenv.EnvWithDefault("RESOURCED_MASTER_ADDR", ":55655")
-	http.ListenAndServe(serverAddress, middle)
-}
-
-func (rm *ResourcedMaster) Run(arguments []string) error {
-	return rm.app.Run(arguments)
 }
 
 func main() {
 	app, err := NewResourcedMaster()
 	if err != nil {
-		println(err)
+		println(err.Error())
 		os.Exit(1)
 	}
 
-	app.Run(os.Args)
+	middle, err := app.middlewareStruct()
+	if err != nil {
+		println(err.Error())
+		os.Exit(1)
+	}
+
+	serverAddress := libenv.EnvWithDefault("RESOURCED_MASTER_ADDR", ":55655")
+	http.ListenAndServe(serverAddress, middle)
 }
