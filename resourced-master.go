@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/gob"
 	"fmt"
 	"github.com/GeertJohan/go.rice"
 	"github.com/carbocation/interpose"
@@ -17,6 +18,10 @@ import (
 	"os/user"
 )
 
+func registerToGob() {
+	gob.Register(&resourcedmaster_dal.UserRow{})
+}
+
 // NewResourcedMaster is the constructor for riceBoxes struct.
 func NewriceBoxes(gorice *rice.Config) (map[string]*rice.Box, error) {
 	templatesBox, err := gorice.FindBox("templates")
@@ -32,6 +37,8 @@ func NewriceBoxes(gorice *rice.Config) (map[string]*rice.Box, error) {
 
 // NewResourcedMaster is the constructor for ResourcedMaster struct.
 func NewResourcedMaster() (*ResourcedMaster, error) {
+	registerToGob()
+
 	u, err := user.Current()
 	if err != nil {
 		return nil, err

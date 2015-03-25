@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"errors"
 	"github.com/GeertJohan/go.rice"
 	"github.com/gorilla/context"
 	"github.com/gorilla/sessions"
@@ -35,21 +34,7 @@ func PostSignup(w http.ResponseWriter, r *http.Request) {
 	password := r.FormValue("Password")
 	passwordAgain := r.FormValue("PasswordAgain")
 
-	u := resourcedmaster_dal.NewUser(db)
-
-	existingUser, err := u.GetByEmail(nil, email)
-	if err != nil {
-		libhttp.HandleErrorJson(w, err)
-		return
-	}
-
-	if existingUser != nil && existingUser.Email.String == email {
-		err = errors.New("User already exists.")
-		libhttp.HandleErrorJson(w, err)
-		return
-	}
-
-	_, err = u.Signup(nil, email, password, passwordAgain)
+	_, err := resourcedmaster_dal.NewUser(db).Signup(nil, email, password, passwordAgain)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
