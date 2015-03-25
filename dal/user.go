@@ -58,8 +58,42 @@ func (u *User) GetById(tx *sqlx.Tx, id int64) (*UserRow, error) {
 	return user, err
 }
 
+// GetByEmail returns record by email.
+func (u *User) GetByEmail(tx *sqlx.Tx, email string) (*UserRow, error) {
+	user := &UserRow{}
+	query := fmt.Sprintf("SELECT * FROM %v WHERE email=$1", u.table)
+	err := u.db.Get(user, query, email)
+
+	return user, err
+}
+
+// GetByEmail returns record by email but checks password first.
+func (u *User) GetUserByEmailAndPassword(tx *sqlx.Tx, email, password string) (*UserRow, error) {
+	user, err := u.GetByEmail(tx, email)
+	if err != nil {
+		return nil, err
+	}
+
+	err = bcrypt.CompareHashAndPassword([]byte(user.Password.String), []byte(password))
+	if err != nil {
+		return nil, err
+	}
+
+	return user, err
+}
+
 // Signup create a new record of user.
-func (u *User) Signup(tx *sqlx.Tx, email, password string) (*UserRow, error) {
+func (u *User) Signup(tx *sqlx.Tx, email, password, passwordAgain string) (*UserRow, error) {
+	if email == "" {
+		return nil, errors.New("Email cannot be blank.")
+	}
+	if password == "" {
+		return nil, errors.New("Password cannot be blank.")
+	}
+	if password != passwordAgain {
+		return nil, errors.New("Password is invalid.")
+	}
+
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), 5)
 	if err != nil {
 		return nil, err
