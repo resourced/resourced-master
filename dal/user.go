@@ -24,6 +24,7 @@ type UserRow struct {
 	Email         sql.NullString `db:"email"`
 	Password      sql.NullString `db:"password"`
 	Token         sql.NullString `db:"token"`
+	Level         string         `db:"level"`
 }
 
 type User struct {
@@ -37,6 +38,15 @@ func (u *User) userRowFromSqlResult(tx *sqlx.Tx, sqlResult sql.Result) (*UserRow
 	}
 
 	return u.GetById(tx, userId)
+}
+
+// AllUsers returns all user rows.
+func (u *User) AllUsers(tx *sqlx.Tx) ([]*UserRow, error) {
+	users := []*UserRow{}
+	query := fmt.Sprintf("SELECT * FROM %v", u.table)
+	err := u.db.Select(&users, query)
+
+	return users, err
 }
 
 // GetById returns record by id.
@@ -65,6 +75,7 @@ func (u *User) Signup(tx *sqlx.Tx, email, password string) (*UserRow, error) {
 	data["password"] = hashedPassword
 	data["token"] = accessToken
 	data["kind"] = "human"
+	data["level"] = "basic"
 
 	sqlResult, err := u.InsertIntoTable(tx, data)
 	if err != nil {
@@ -83,6 +94,7 @@ func (u *User) CreateAccessToken(tx *sqlx.Tx, appId int64) (*UserRow, error) {
 	data := make(map[string]interface{})
 	data["token"] = accessToken
 	data["kind"] = "token"
+	data["level"] = "basic"
 
 	sqlResult, err := u.InsertIntoTable(tx, data)
 	if err != nil {

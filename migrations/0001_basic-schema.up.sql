@@ -11,7 +11,8 @@ CREATE TABLE users (
     kind TEXT NOT NULL,
     email TEXT,
     password TEXT,
-    token TEXT
+    token TEXT,
+    level TEXT
 );
 
 CREATE INDEX idx_application_id on users (application_id);
