@@ -88,7 +88,7 @@ func (rm *ResourcedMaster) middlewareStruct() (*interpose.Middleware, error) {
 	middle.Use(resourcedmaster_middlewares.SetRiceBoxes(rm.riceBoxes))
 	middle.Use(resourcedmaster_middlewares.SetCookieStore(rm.cookieStore))
 	middle.Use(resourcedmaster_middlewares.SetCurrentApplication(rm.db))
-	middle.Use(resourcedmaster_middlewares.AccessTokenAuth(users))
+	// middle.Use(resourcedmaster_middlewares.AccessTokenAuth(users))
 
 	middle.UseHandler(rm.mux())
 

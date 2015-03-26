@@ -71,74 +71,74 @@ func SetCurrentApplication(db *sqlx.DB) func(http.Handler) http.Handler {
 	}
 }
 
-func AccessTokenAuth(users []*resourcedmaster_dal.UserRow) func(http.Handler) http.Handler {
-	getCurrentApp := func(req *http.Request) *resourcedmaster_dal.ApplicationRow {
-		currentAppInterface := context.Get(req, "currentApp")
-		if currentAppInterface == nil {
-			return nil
-		}
-		return currentAppInterface.(*resourcedmaster_dal.ApplicationRow)
-	}
+// func AccessTokenAuth(users []*resourcedmaster_dal.UserRow) func(http.Handler) http.Handler {
+// 	getCurrentApp := func(req *http.Request) *resourcedmaster_dal.ApplicationRow {
+// 		currentAppInterface := context.Get(req, "currentApp")
+// 		if currentAppInterface == nil {
+// 			return nil
+// 		}
+// 		return currentAppInterface.(*resourcedmaster_dal.ApplicationRow)
+// 	}
 
-	return func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
-			if strings.HasPrefix(req.URL.Path, "/api") {
-				auth := req.Header.Get("Authorization")
+// 	return func(next http.Handler) http.Handler {
+// 		return http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
+// 			if strings.HasPrefix(req.URL.Path, "/api") {
+// 				auth := req.Header.Get("Authorization")
 
-				if auth == "" && len(users) > 0 {
-					libhttp.BasicAuthUnauthorized(res, nil)
-					return
-				}
+// 				if auth == "" && len(users) > 0 {
+// 					libhttp.BasicAuthUnauthorized(res, nil)
+// 					return
+// 				}
 
-				username, _, ok := libhttp.ParseBasicAuth(auth)
-				if !ok {
-					libhttp.BasicAuthUnauthorized(res, nil)
-					return
-				}
+// 				username, _, ok := libhttp.ParseBasicAuth(auth)
+// 				if !ok {
+// 					libhttp.BasicAuthUnauthorized(res, nil)
+// 					return
+// 				}
 
-				currentApp := getCurrentApp(req)
-				accessAllowed := false
-				adminLevelOrAbove := false
+// 				currentApp := getCurrentApp(req)
+// 				accessAllowed := false
+// 				adminLevelOrAbove := false
 
-				if currentApp == nil {
-					adminLevelOrAbove = strings.HasPrefix(req.URL.Path, "/api/users")
-				} else {
-					adminLevelOrAbove = strings.HasPrefix(req.URL.Path, fmt.Sprintf("/api/app/%v/users", currentApp.ID))
-				}
+// 				if currentApp == nil {
+// 					adminLevelOrAbove = strings.HasPrefix(req.URL.Path, "/api/users")
+// 				} else {
+// 					adminLevelOrAbove = strings.HasPrefix(req.URL.Path, fmt.Sprintf("/api/app/%v/users", currentApp.ID))
+// 				}
 
-				for _, user := range users {
-					if username == user.Token.String {
-						if user.Level == "staff" {
-							context.Set(req, "currentUser", user)
-							accessAllowed = true
-							break
-						}
+// 				for _, user := range users {
+// 					if username == user.Token.String {
+// 						if user.Level == "staff" {
+// 							context.Set(req, "currentUser", user)
+// 							accessAllowed = true
+// 							break
+// 						}
 
-						// Check application id if user.Level != staff
-						if currentApp != nil && currentApp.ID == user.ApplicationID.Int64 {
-							if user.Level == "admin" {
-								context.Set(req, "currentUser", user)
-								accessAllowed = true
-								break
+// 						// Check application id if user.Level != staff
+// 						if currentApp != nil && currentApp.ID == user.ApplicationID.Int64 {
+// 							if user.Level == "admin" {
+// 								context.Set(req, "currentUser", user)
+// 								accessAllowed = true
+// 								break
 
-							} else if user.Level == "basic" && !adminLevelOrAbove {
-								context.Set(req, "currentUser", user)
-								accessAllowed = true
-								break
-							}
-						}
-					}
-				}
+// 							} else if user.Level == "basic" && !adminLevelOrAbove {
+// 								context.Set(req, "currentUser", user)
+// 								accessAllowed = true
+// 								break
+// 							}
+// 						}
+// 					}
+// 				}
 
-				if !accessAllowed {
-					libhttp.BasicAuthUnauthorized(res, nil)
-					return
-				}
+// 				if !accessAllowed {
+// 					libhttp.BasicAuthUnauthorized(res, nil)
+// 					return
+// 				}
 
-				next.ServeHTTP(res, req)
-			} else {
-				next.ServeHTTP(res, req)
-			}
-		})
-	}
-}
+// 				next.ServeHTTP(res, req)
+// 			} else {
+// 				next.ServeHTTP(res, req)
+// 			}
+// 		})
+// 	}
+// }
