@@ -4,9 +4,14 @@ import (
 	"fmt"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
+	"github.com/satori/go.uuid"
 	"os/user"
 	"testing"
 )
+
+func newEmailForTest() string {
+	return fmt.Sprintf("brotato-%v@example.com", uuid.NewV4().String())
+}
 
 func newUserForTest(t *testing.T) *User {
 	u, err := user.Current()
@@ -26,7 +31,7 @@ func TestUserCRUD(t *testing.T) {
 	u := newUserForTest(t)
 
 	// Signup
-	userRow, err := u.Signup(nil, "brotato@example.com", "abc123", "abc123")
+	userRow, err := u.Signup(nil, newEmailForTest(), "abc123", "abc123")
 	if err != nil {
 		t.Errorf("Signing up user should work. Error: %v", err)
 	}
@@ -73,7 +78,7 @@ func TestCreateApplicationForUser(t *testing.T) {
 	u := newUserForTest(t)
 
 	// Signup
-	userRow, err := u.Signup(nil, "brotato@example.com", "abc123", "abc123")
+	userRow, err := u.Signup(nil, newEmailForTest(), "abc123", "abc123")
 	if err != nil {
 		t.Errorf("Signing up user should work. Error: %v", err)
 	}
@@ -86,12 +91,12 @@ func TestCreateApplicationForUser(t *testing.T) {
 
 	// Create application for user
 	appName := "brotato-test-app"
-	userRow, err = u.CreateApplication(nil, userRow.ID, appName)
+	appRow, err := u.CreateApplicationRow(nil, userRow.ID, appName)
 	if err != nil {
 		t.Fatalf("Creating an application for user should work. Error: %v", err)
 	}
-	if userRow.ApplicationID.Int64 <= 0 {
-		t.Fatalf("Application ID should be assign properly. userRow.ApplicationID: %v", userRow.ApplicationID)
+	if appRow.ID <= 0 {
+		t.Fatalf("Application ID should be assign properly. appRow.ID: %v", appRow.ID)
 	}
 
 	// DELETE FROM users WHERE id=...
@@ -101,9 +106,7 @@ func TestCreateApplicationForUser(t *testing.T) {
 	}
 
 	// DELETE FROM applications WHERE id=...
-	app := NewApplication(u.db)
-
-	_, err = app.DeleteById(nil, userRow.ApplicationID.Int64)
+	_, err = NewApplication(u.db).DeleteById(nil, userRow.ApplicationID.Int64)
 	if err != nil {
 		t.Fatalf("Deleting application by id should not fail. Error: %v", err)
 	}

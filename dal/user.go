@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/jmoiron/sqlx"
-	"github.com/resourced/resourced-master/libstring"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -13,6 +12,7 @@ func NewUser(db *sqlx.DB) *User {
 	user := &User{}
 	user.db = db
 	user.table = "users"
+	user.hasID = true
 
 	return user
 }
@@ -99,17 +99,10 @@ func (u *User) Signup(tx *sqlx.Tx, email, password, passwordAgain string) (*User
 		return nil, err
 	}
 
-	accessToken, err := libstring.GeneratePassword(32)
-	if err != nil {
-		return nil, err
-	}
-
 	data := make(map[string]interface{})
 	data["email"] = email
 	data["password"] = hashedPassword
-	data["token"] = accessToken
 	data["kind"] = "human"
-	data["level"] = "basic"
 
 	sqlResult, err := u.InsertIntoTable(tx, data)
 	if err != nil {
@@ -120,15 +113,8 @@ func (u *User) Signup(tx *sqlx.Tx, email, password, passwordAgain string) (*User
 }
 
 func (u *User) CreateAccessToken(tx *sqlx.Tx, appId int64) (*UserRow, error) {
-	accessToken, err := libstring.GeneratePassword(32)
-	if err != nil {
-		return nil, err
-	}
-
 	data := make(map[string]interface{})
-	data["token"] = accessToken
 	data["kind"] = "token"
-	data["level"] = "basic"
 
 	sqlResult, err := u.InsertIntoTable(tx, data)
 	if err != nil {
@@ -138,10 +124,9 @@ func (u *User) CreateAccessToken(tx *sqlx.Tx, appId int64) (*UserRow, error) {
 	return u.userRowFromSqlResult(tx, sqlResult)
 }
 
-// CreateApplication create a new application for a user.
-func (u *User) CreateApplication(tx *sqlx.Tx, userId int64, appName string) (*UserRow, error) {
-	app := NewApplication(u.db)
-	appRow, err := app.CreateApplication(tx, appName)
+// CreateApplicationRow create a new application for a user.
+func (u *User) CreateApplicationRow(tx *sqlx.Tx, userId int64, appName string) (*ApplicationRow, error) {
+	appRow, err := NewApplication(u.db).CreateRow(tx, appName)
 	if err != nil {
 		return nil, err
 	}
@@ -149,13 +134,10 @@ func (u *User) CreateApplication(tx *sqlx.Tx, userId int64, appName string) (*Us
 		return nil, errors.New("Application ID cannot be empty.")
 	}
 
-	data := make(map[string]interface{})
-	data["application_id"] = appRow.ID
-
-	_, err = u.UpdateById(tx, data, userId)
+	_, err = NewApplicationUser(u.db).CreateRow(tx, appRow.ID, userId, "admin")
 	if err != nil {
 		return nil, err
 	}
 
-	return u.GetById(tx, userId)
+	return appRow, nil
 }

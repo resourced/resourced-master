@@ -24,6 +24,7 @@ func (ir *InsertResult) RowsAffected() (int64, error) {
 type Base struct {
 	db    *sqlx.DB
 	table string
+	hasID bool
 }
 
 func (b *Base) newTransactionIfNeeded(tx *sqlx.Tx) (*sqlx.Tx, bool, error) {
@@ -73,19 +74,25 @@ func (b *Base) InsertIntoTable(tx *sqlx.Tx, data map[string]interface{}) (sql.Re
 	}
 
 	query := fmt.Sprintf(
-		"INSERT INTO %v (%v) VALUES (%v) RETURNING id",
+		"INSERT INTO %v (%v) VALUES (%v)",
 		b.table,
 		strings.Join(keys, ","),
 		strings.Join(dollarMarks, ","))
 
-	var lastInsertId int64
-	err = tx.QueryRow(query, values...).Scan(&lastInsertId)
+	result := &InsertResult{}
+	result.rowsAffected = 1
 
-	if err != nil {
-		return nil, err
+	if b.hasID {
+		query = query + " RETURNING id"
+
+		var lastInsertId int64
+		err = tx.QueryRow(query, values...).Scan(&lastInsertId)
+		if err != nil {
+			return nil, err
+		}
+
+		result.lastInsertId = lastInsertId
 	}
-
-	result := &InsertResult{lastInsertId, 1}
 
 	if wrapInSingleTransaction == true {
 		err = tx.Commit()
