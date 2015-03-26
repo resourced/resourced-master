@@ -7,17 +7,22 @@ CREATE INDEX idx_name on applications (name);
 
 CREATE TABLE users (
     id BIGSERIAL PRIMARY KEY NOT NULL,
-    application_id BIGINT,
     kind TEXT NOT NULL,
     email TEXT,
-    password TEXT,
-    token TEXT,
-    level TEXT
+    password TEXT
 );
 
-CREATE INDEX idx_application_id on users (application_id);
-CREATE INDEX idx_email on users (email);
-CREATE INDEX idx_token on users (token);
+CREATE UNIQUE INDEX idx_email on users (email);
+
+CREATE TABLE applications_users (
+    application_id bigint REFERENCES applications (id) ON UPDATE CASCADE ON DELETE CASCADE,
+    user_id bigint REFERENCES users (id) ON UPDATE CASCADE ON DELETE CASCADE,
+    token TEXT,
+    level TEXT,
+    CONSTRAINT pidx_application_user PRIMARY KEY (application_id, user_id)
+);
+
+CREATE INDEX idx_token on applications_users (token);
 
 CREATE TABLE hosts (
     id BIGSERIAL PRIMARY KEY NOT NULL,

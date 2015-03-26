@@ -1,3 +1,4 @@
+DROP TABLE IF EXISTS applications_users;
 DROP TABLE IF EXISTS applications;
 DROP TABLE IF EXISTS users;
 DROP TYPE IF EXISTS users_kind;
