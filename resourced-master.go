@@ -44,7 +44,7 @@ func NewResourcedMaster() (*ResourcedMaster, error) {
 		return nil, err
 	}
 
-	dbPath := libenv.EnvWithDefault("RESOURCED_MASTER_DB", fmt.Sprintf("postgres://%v@localhost:5432/resourced-master?sslmode=disable", u.Username))
+	dbPath := libenv.EnvWithDefault("RESOURCED_MASTER_DSN", fmt.Sprintf("postgres://%v@localhost:5432/resourced-master?sslmode=disable", u.Username))
 
 	db, err := sqlx.Connect("postgres", dbPath)
 	if err != nil {
@@ -105,6 +105,8 @@ func (rm *ResourcedMaster) mux() *gorilla_mux.Router {
 	router.HandleFunc("/login", resourcedmaster_handlers.GetLogin).Methods("GET")
 	router.HandleFunc("/login", resourcedmaster_handlers.PostLogin).Methods("POST")
 	router.HandleFunc("/logout", resourcedmaster_handlers.GetLogout).Methods("GET")
+
+	router.HandleFunc("/applications/create", resourcedmaster_handlers.GetApplicationsCreate).Methods("GET")
 
 	return router
 }
