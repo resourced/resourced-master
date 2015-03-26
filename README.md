@@ -43,7 +43,7 @@ ResourceD Master accepts a few environment variables as configuration:
 
 * **RESOURCED_MASTER_KEY_FILE:** Path to key file. Default: ""
 
-* **RESOURCED_MASTER_DB** PostgreSQL URI. Default: "postgres://$PG_USER@$localhost:5432/resourced-master?sslmode=disable"
+* **RESOURCED_MASTER_DSN** PostgreSQL DSN. Default: "postgres://$PG_USER@$localhost:5432/resourced-master?sslmode=disable"
 
 * **RESOURCED_MASTER_COOKIE_SECRET** Cookie secret key. Default: "$READ_THE_SOURCE_CODE"
 
