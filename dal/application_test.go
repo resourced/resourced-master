@@ -26,7 +26,7 @@ func TestApplicationCRUD(t *testing.T) {
 	app := newApplicationForTest(t)
 
 	// INSERT INTO applications (name) VALUES (...)
-	appRow, err := app.CreateApplication(nil, "testing-appz")
+	appRow, err := app.CreateRow(nil, "testing-appz")
 	if err != nil {
 		t.Fatalf("Creating new application should not fail. Error: %v", err)
 	}

@@ -10,6 +10,7 @@ func NewApplication(db *sqlx.DB) *Application {
 	app := &Application{}
 	app.db = db
 	app.table = "applications"
+	app.hasID = true
 
 	return app
 }
@@ -40,7 +41,7 @@ func (a *Application) GetById(tx *sqlx.Tx, id int64) (*ApplicationRow, error) {
 	return app, err
 }
 
-func (a *Application) CreateApplication(tx *sqlx.Tx, appName string) (*ApplicationRow, error) {
+func (a *Application) CreateRow(tx *sqlx.Tx, appName string) (*ApplicationRow, error) {
 	data := make(map[string]interface{})
 	data["name"] = appName
 
