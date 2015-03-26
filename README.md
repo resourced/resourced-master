@@ -5,11 +5,32 @@
 This project is currently an alpha software. Use it at your own risk.
 
 
-## Installation
+## Installation for users
 
-[Download the precompiled binaries](https://github.com/resourced/resourced-master/releases) and manage them using init/systemd/supervisord.
+1. [Download the precompiled binaries](https://github.com/resourced/resourced-master/releases) and manage them using init/systemd/supervisord.
 
-You can follow the examples of init scripts [here](https://github.com/resourced/resourced-master/tree/master/scripts/init).
+    You can follow the examples of init scripts [here](https://github.com/resourced/resourced-master/tree/master/scripts/init).
+
+
+## Installation for contributors
+
+1. Get the source code.
+    ```
+    go get github.com/resourced/resourced-master
+    ```
+
+2. Run the PostgreSQL migration.
+    ```
+    go get github.com/mattes/migrate
+    cd $GOPATH/src/github.com/resourced/resourced-master
+    migrate -url postgres://$PG_USER@$PG_HOST:$PG_PORT/resourced-master?sslmode=disable -path ./migrations up
+    ```
+
+3. Run the server
+    ```
+    cd $GOPATH/src/github.com/resourced/resourced-master
+    go run resourced-master.go
+    ```
 
 
 ## Run Instruction
@@ -22,11 +43,9 @@ ResourceD Master accepts a few environment variables as configuration:
 
 * **RESOURCED_MASTER_KEY_FILE:** Path to key file. Default: ""
 
-* **RESOURCED_MASTER_ACCESS_KEY** S3 access key. Default: ""
+* **RESOURCED_MASTER_DB** PostgreSQL URI. Default: "postgres://$PG_USER@$localhost:5432/resourced-master?sslmode=disable"
 
-* **RESOURCED_MASTER_SECRET_KEY** S3 secret key. Default: ""
-
-* **RESOURCED_MASTER_S3_BUCKET** S3 bucket. Default: ""
+* **RESOURCED_MASTER_COOKIE_SECRET** Cookie secret key. Default: "$READ_THE_SOURCE_CODE"
 
 
 ## RESTful Endpoints
@@ -38,98 +57,8 @@ curl -u 0b79bab50daca910b000d4f1a2b675d604257e42: https://localhost:55655/api
 
 ### Basic Level Authorization
 
-* **GET** `/api` Redirect to `/api/app` (staff level only) or redirect to `/api/app/:id/hosts`.
-
 * **GET** `/api/app/:id/hosts` Displays list of all hosts.
-
-* **GET** `/api/app/:id/hosts/tags/:tags` Displays list of hosts by tags. (Future)
 
 * **GET** `/api/app/:id/hosts/:name` Displays host data.
 
 * **POST** `/api/app/:id/hosts/:name` Submit JSON data from 1 host.
-
-
-### Admin Level Authorization
-
-* **POST** `/api/users` Create a user.
-    ```
-    # Request
-    curl -u {access-token}: -X POST -H "Content-Type: application/json" \
-    -d '{"Name":"broski","Password":"xyz"}' http://localhost:55655/api/users
-
-    # Response
-    # {"Id":1421909958359476231,"Name":"broski","HashedPassword":"$2a$05$Q9HofLxY0Bdfx.x/1mPAvO4yqDMo/VYOyx.ZVDbTxmiMjrtEo7yz2","Level":"basic","Enabled":true,"CreatedUnixNano":1421909958359476231}
-    ```
-
-
-* **GET** `/api/users` List all users.
-    ```
-    # Request
-    curl -u {access-token}: -H "Content-Type: application/json" \
-    http://localhost:55655/api/users
-
-    # Response
-    # [{"Id":1421909958359476231,"Name":"broski","HashedPassword":"$2a$05$Q9HofLxY0Bdfx.x/1mPAvO4yqDMo/VYOyx.ZVDbTxmiMjrtEo7yz2","Level":"basic","Enabled":true,"CreatedUnixNano":1421909958359476231}]
-    ```
-
-* **GET** `/api/users/:name` Display 1 user.
-    ```
-    # Request
-    curl -u {access-token}: -H "Content-Type: application/json" \
-    http://localhost:55655/api/users/broski
-
-    # Response
-    # [{"Id":1421909958359476231,"Name":"broski","HashedPassword":"$2a$05$Q9HofLxY0Bdfx.x/1mPAvO4yqDMo/VYOyx.ZVDbTxmiMjrtEo7yz2","Level":"basic","Enabled":true,"CreatedUnixNano":1421909958359476231}]
-    ```
-
-
-* **PUT** `/api/users/:name` Update user by name.
-    ```
-    # Request
-    curl -u {access-token}: -X PUT -H "Content-Type: application/json" \
-    -d '{"Name":"broski","Password":"xyz123", "Level": "admin"}' http://localhost:55655/api/users/broski
-
-    # Response
-    # {"Id":1421909958359476231,"Name":"broski","HashedPassword":"$2a$05$fqIK74sqjYRgNIC/a6RIj.Xky6vrZ0tymKeXF19KABMF70Y28L7Hu","Level":"admin","Enabled":true,"CreatedUnixNano":1421909958359476231}
-    ```
-
-* **DELETE** `/api/users/:name` Delete user by name.
-    ```
-    # Request
-    curl -u {access-token}: -X DELETE -H "Content-Type: application/json" \
-    http://localhost:55655/api/users/broski
-
-    # Response
-    # {"Message":"User{Name: broski} is deleted."}
-    ```
-
-* **PUT** `/api/users/:name/access-token` Generate a new access token for user.
-    ```
-    # Request
-    curl -u {access-token}: -X PUT -H "Content-Type: application/json" \
-    http://localhost:55655/api/users/bob/access-token
-
-    # Response
-    # {"Id":1421907221082083280,"Name":"bob","HashedPassword":"$2a$05$8brNU7lq2FcMV2lmSoQ53uYKm5X5Xd6/AaphVxoaJMbDojtLVlpQ2","Level":"basic","Token":"ZHJugwapjnyR9Ma8mvQnl6WvC1I9Kp07ss7IBpB73t8=","Enabled":true,"CreatedUnixNano":1421907221082083280}
-    ```
-
-* **POST** `/api/app/:id/access-token` Generate a new access token for application.
-    ```
-    # Request
-    curl -u {access-token}: -X POST -H "Content-Type: application/json" \
-    http://localhost:55655/api/app/1421686722771058700/access-token
-    ```
-
-* **DELETE** `/api/app/:id/access-token/:token` Remove access token for application.
-    ```
-    # Request
-    curl -u {access-token}: -X DELETE -H "Content-Type: application/json" \
-    http://localhost:55655/api/app/1421686722771058700/access-token/60df7Ri2UjUmsE_zg89JUGdAVczGKcLqyLNMXLxV3Hg=
-
-    # Response
-    # {"Message":"AccessToken{Token: 60df7Ri2UjUmsE_zg89JUGdAVczGKcLqyLNMXLxV3Hg=} is deleted."}
-    ```
-
-### Staff level Authorization
-
-* **GET** `/api/app` Displays list of all apps (staff level only).
