@@ -2,7 +2,7 @@
 package middlewares
 
 import (
-	"fmt"
+	// "fmt"
 	"github.com/GeertJohan/go.rice"
 	"github.com/gorilla/context"
 	"github.com/gorilla/sessions"

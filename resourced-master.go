@@ -24,13 +24,16 @@ func registerToGob() {
 
 // NewResourcedMaster is the constructor for riceBoxes struct.
 func NewriceBoxes(gorice *rice.Config) (map[string]*rice.Box, error) {
-	templatesBox, err := gorice.FindBox("templates")
-	if err != nil {
-		return nil, err
-	}
-
 	riceBoxes := make(map[string]*rice.Box)
-	riceBoxes["templates"] = templatesBox
+
+	for _, boxName := range []string{"templates", "static"} {
+		box, err := gorice.FindBox(boxName)
+		if err != nil {
+			return riceBoxes, err
+		}
+
+		riceBoxes[boxName] = box
+	}
 
 	return riceBoxes, nil
 }
@@ -78,10 +81,10 @@ type ResourcedMaster struct {
 }
 
 func (rm *ResourcedMaster) middlewareStruct() (*interpose.Middleware, error) {
-	users, err := resourcedmaster_dal.NewUser(rm.db).AllUsers(nil)
-	if err != nil {
-		return nil, err
-	}
+	// users, err := resourcedmaster_dal.NewUser(rm.db).AllUsers(nil)
+	// if err != nil {
+	// 	return nil, err
+	// }
 
 	middle := interpose.New()
 	middle.Use(resourcedmaster_middlewares.SetDB(rm.db))
@@ -107,6 +110,9 @@ func (rm *ResourcedMaster) mux() *gorilla_mux.Router {
 	router.HandleFunc("/logout", resourcedmaster_handlers.GetLogout).Methods("GET")
 
 	router.HandleFunc("/applications/create", resourcedmaster_handlers.GetApplicationsCreate).Methods("GET")
+
+	// Put static files path last!
+	router.PathPrefix("/").Handler(http.FileServer(rm.riceBoxes["static"].HTTPBox()))
 
 	return router
 }
