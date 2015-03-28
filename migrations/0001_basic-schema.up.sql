@@ -15,13 +15,14 @@ CREATE TABLE users (
 CREATE UNIQUE INDEX idx_email on users (email);
 
 CREATE TABLE applications_users (
+    id BIGSERIAL PRIMARY KEY NOT NULL,
     application_id bigint REFERENCES applications (id) ON UPDATE CASCADE ON DELETE CASCADE,
     user_id bigint REFERENCES users (id) ON UPDATE CASCADE ON DELETE CASCADE,
     token TEXT,
-    level TEXT,
-    CONSTRAINT pidx_application_user PRIMARY KEY (application_id, user_id)
+    level TEXT
 );
 
+CREATE UNIQUE INDEX idx_application_user on applications_users (application_id, user_id);
 CREATE INDEX idx_token on applications_users (token);
 
 CREATE TABLE hosts (

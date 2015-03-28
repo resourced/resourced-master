@@ -10,11 +10,13 @@ func NewApplicationUser(db *sqlx.DB) *ApplicationUser {
 	app := &ApplicationUser{}
 	app.db = db
 	app.table = "applications_users"
+	app.hasID = true
 
 	return app
 }
 
 type ApplicationUserRow struct {
+	ID            int64  `db:"id"`
 	ApplicationID int64  `db:"application_id"`
 	UserID        int64  `db:"user_id"`
 	Token         string `db:"token"`
