@@ -18,13 +18,9 @@ func NewUser(db *sqlx.DB) *User {
 }
 
 type UserRow struct {
-	ID            int64          `db:"id"`
-	ApplicationID sql.NullInt64  `db:"application_id"`
-	Kind          string         `db:"kind"`
-	Email         sql.NullString `db:"email"`
-	Password      sql.NullString `db:"password"`
-	Token         sql.NullString `db:"token"`
-	Level         string         `db:"level"`
+	ID       int64  `db:"id"`
+	Email    string `db:"email"`
+	Password string `db:"password"`
 }
 
 type User struct {
@@ -74,7 +70,7 @@ func (u *User) GetUserByEmailAndPassword(tx *sqlx.Tx, email, password string) (*
 		return nil, err
 	}
 
-	err = bcrypt.CompareHashAndPassword([]byte(user.Password.String), []byte(password))
+	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
 	if err != nil {
 		return nil, err
 	}
@@ -102,7 +98,6 @@ func (u *User) Signup(tx *sqlx.Tx, email, password, passwordAgain string) (*User
 	data := make(map[string]interface{})
 	data["email"] = email
 	data["password"] = hashedPassword
-	data["kind"] = "human"
 
 	sqlResult, err := u.InsertIntoTable(tx, data)
 	if err != nil {
@@ -112,32 +107,15 @@ func (u *User) Signup(tx *sqlx.Tx, email, password, passwordAgain string) (*User
 	return u.userRowFromSqlResult(tx, sqlResult)
 }
 
-func (u *User) CreateAccessToken(tx *sqlx.Tx, appId int64) (*UserRow, error) {
-	data := make(map[string]interface{})
-	data["kind"] = "token"
-
-	sqlResult, err := u.InsertIntoTable(tx, data)
+// CreateAccessTokenRow create a new token for a user.
+func (u *User) CreateAccessTokenRow(tx *sqlx.Tx, userId int64, level string) (*AccessTokenRow, error) {
+	tokenRow, err := NewAccessToken(u.db).CreateRow(tx, userId, level)
 	if err != nil {
 		return nil, err
 	}
-
-	return u.userRowFromSqlResult(tx, sqlResult)
-}
-
-// CreateApplicationRow create a new application for a user.
-func (u *User) CreateApplicationRow(tx *sqlx.Tx, userId int64, appName string) (*ApplicationRow, error) {
-	appRow, err := NewApplication(u.db).CreateRow(tx, appName)
-	if err != nil {
-		return nil, err
-	}
-	if appRow.ID <= 0 {
-		return nil, errors.New("Application ID cannot be empty.")
+	if tokenRow.ID <= 0 {
+		return nil, errors.New("AccessToken ID cannot be empty.")
 	}
 
-	_, err = NewApplicationUser(u.db).CreateRow(tx, appRow.ID, userId, "admin")
-	if err != nil {
-		return nil, err
-	}
-
-	return appRow, nil
+	return tokenRow, nil
 }

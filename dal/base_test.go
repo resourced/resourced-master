@@ -4,9 +4,14 @@ import (
 	"fmt"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
+	"github.com/satori/go.uuid"
 	"os/user"
 	"testing"
 )
+
+func newEmailForTest() string {
+	return fmt.Sprintf("brotato-%v@example.com", uuid.NewV4().String())
+}
 
 func newDbForTest(t *testing.T) *sqlx.DB {
 	u, err := user.Current()
@@ -61,123 +66,127 @@ func TestNewTransactionIfNeeded(t *testing.T) {
 
 func TestCreateDeleteGeneric(t *testing.T) {
 	base := newBaseForTest(t)
-	base.table = "applications"
+	base.table = "users"
 
-	// INSERT INTO applications (name) VALUES (...)
+	// INSERT INTO users (name) VALUES (...)
 	data := make(map[string]interface{})
-	data["name"] = "testing-app"
+	data["email"] = newEmailForTest()
+	data["password"] = "abc123"
 
 	result, err := base.InsertIntoTable(nil, data)
 	if err != nil {
-		t.Fatalf("Inserting new application should not fail. Error: %v", err)
+		t.Fatalf("Inserting new user should not fail. Error: %v", err)
 	}
 
 	lastInsertedId, err := result.LastInsertId()
 	if err != nil {
-		t.Fatalf("Inserting new application should not fail. Error: %v", err)
+		t.Fatalf("Inserting new user should not fail. Error: %v", err)
 	}
 
-	// DELETE FROM applications WHERE id=...
+	// DELETE FROM users WHERE id=...
 	where := fmt.Sprintf("id=%v", lastInsertedId)
 
 	_, err = base.DeleteFromTable(nil, where)
 	if err != nil {
-		t.Fatalf("Deleting application by id should not fail. Error: %v", err)
+		t.Fatalf("Deleting user by id should not fail. Error: %v", err)
 	}
 
 }
 
 func TestCreateDeleteById(t *testing.T) {
 	base := newBaseForTest(t)
-	base.table = "applications"
+	base.table = "users"
 
-	// INSERT INTO applications (name) VALUES (...)
+	// INSERT INTO users (...) VALUES (...)
 	data := make(map[string]interface{})
-	data["name"] = "testing-app"
+	data["email"] = newEmailForTest()
+	data["password"] = "abc123"
 
 	result, err := base.InsertIntoTable(nil, data)
 	if err != nil {
-		t.Fatalf("Inserting new application should not fail. Error: %v", err)
+		t.Fatalf("Inserting new user should not fail. Error: %v", err)
 	}
 
 	lastInsertedId, err := result.LastInsertId()
 	if err != nil {
-		t.Fatalf("Inserting new application should not fail. Error: %v", err)
+		t.Fatalf("Inserting new user should not fail. Error: %v", err)
 	}
 
-	// DELETE FROM applications WHERE id=...
+	// DELETE FROM users WHERE id=...
 	_, err = base.DeleteById(nil, lastInsertedId)
 	if err != nil {
-		t.Fatalf("Deleting application by id should not fail. Error: %v", err)
+		t.Fatalf("Deleting user by id should not fail. Error: %v", err)
 	}
 
 }
 
 func TestCreateUpdateGenericDelete(t *testing.T) {
 	base := newBaseForTest(t)
-	base.table = "applications"
+	base.table = "users"
 
-	// INSERT INTO applications (name) VALUES (...)
+	// INSERT INTO users (...) VALUES (...)
 	data := make(map[string]interface{})
-	data["name"] = "testing-appz"
+	data["email"] = newEmailForTest()
+	data["password"] = "abc123"
 
 	result, err := base.InsertIntoTable(nil, data)
 	if err != nil {
-		t.Fatalf("Inserting new application should not fail. Error: %v", err)
+		t.Fatalf("Inserting new user should not fail. Error: %v", err)
 	}
 
 	lastInsertedId, err := result.LastInsertId()
 	if err != nil {
-		t.Fatalf("Inserting new application should not fail. Error: %v", err)
+		t.Fatalf("Inserting new user should not fail. Error: %v", err)
 	}
 
-	// UPDATE applications SET name=$1 WHERE id=$2
-	data["name"] = "testing-app"
+	// UPDATE users SET email=$1 WHERE id=$2
+	data["email"] = newEmailForTest()
 	where := fmt.Sprintf("id=%v", lastInsertedId)
 
 	_, err = base.UpdateFromTable(nil, data, where)
 	if err != nil {
-		t.Errorf("Updating existing application should not fail. Error: %v", err)
+		t.Errorf("Updating existing user should not fail. Error: %v", err)
 	}
 
-	// DELETE FROM applications WHERE id=...
+	// DELETE FROM users WHERE id=...
 	_, err = base.DeleteById(nil, lastInsertedId)
 	if err != nil {
-		t.Fatalf("Deleting application by id should not fail. Error: %v", err)
+		t.Fatalf("Deleting user by id should not fail. Error: %v", err)
 	}
 
 }
 
 func TestCreateUpdateByIdDelete(t *testing.T) {
 	base := newBaseForTest(t)
-	base.table = "applications"
+	base.table = "users"
 
-	// INSERT INTO applications (name) VALUES (...)
+	// INSERT INTO users (...) VALUES (...)
 	data := make(map[string]interface{})
-	data["name"] = "testing-appz"
+	data["email"] = newEmailForTest()
+	data["password"] = "abc123"
 
 	result, err := base.InsertIntoTable(nil, data)
 	if err != nil {
-		t.Fatalf("Inserting new application should not fail. Error: %v", err)
+		t.Fatalf("Inserting new user should not fail. Error: %v", err)
 	}
 
 	lastInsertedId, err := result.LastInsertId()
 	if err != nil {
-		t.Fatalf("Inserting new application should not fail. Error: %v", err)
+		t.Fatalf("Inserting new user should not fail. Error: %v", err)
 	}
 
-	// UPDATE applications SET name=$1 WHERE id=$2
-	data["name"] = "testing-app"
+	// UPDATE users SET name=$1 WHERE id=$2
+	data["email"] = newEmailForTest()
 
 	_, err = base.UpdateById(nil, data, lastInsertedId)
 	if err != nil {
-		t.Errorf("Updating existing application should not fail. Error: %v", err)
+		t.Errorf("Updating existing user should not fail. Error: %v", err)
 	}
 
-	// DELETE FROM applications WHERE id=...
+	// DELETE FROM users WHERE id=...
 	_, err = base.DeleteById(nil, lastInsertedId)
 	if err != nil {
-		t.Fatalf("Deleting application by id should not fail. Error: %v", err)
+		t.Fatalf("Deleting user by id should not fail. Error: %v", err)
 	}
 
 }

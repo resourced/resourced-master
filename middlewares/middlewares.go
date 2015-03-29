@@ -7,11 +7,7 @@ import (
 	"github.com/gorilla/context"
 	"github.com/gorilla/sessions"
 	"github.com/jmoiron/sqlx"
-	resourcedmaster_dal "github.com/resourced/resourced-master/dal"
-	"github.com/resourced/resourced-master/libhttp"
 	"net/http"
-	"strconv"
-	"strings"
 )
 
 func SetDB(db *sqlx.DB) func(http.Handler) http.Handler {
@@ -38,33 +34,6 @@ func SetCookieStore(cookieStore *sessions.CookieStore) func(http.Handler) http.H
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
 			context.Set(req, "cookieStore", cookieStore)
-
-			next.ServeHTTP(res, req)
-		})
-	}
-}
-
-func SetCurrentApplication(db *sqlx.DB) func(http.Handler) http.Handler {
-	return func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
-			urlChunks := strings.Split(req.URL.Path, "/")
-
-			if len(urlChunks) >= 4 && urlChunks[1] == "api" && urlChunks[2] == "app" {
-				appIdString := urlChunks[3]
-				appId, err := strconv.ParseInt(appIdString, 10, 64)
-				if err != nil {
-					libhttp.BasicAuthUnauthorized(res, err)
-					return
-				}
-
-				appRow, err := resourcedmaster_dal.NewApplication(db).GetById(nil, appId)
-				if err != nil {
-					libhttp.BasicAuthUnauthorized(res, err)
-					return
-				}
-
-				context.Set(req, "currentApp", appRow)
-			}
 
 			next.ServeHTTP(res, req)
 		})
