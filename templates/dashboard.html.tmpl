@@ -66,7 +66,22 @@
           </div>
 
           <div class="modal-body">
-            ...
+            <form method="post" action="/users/some-id">
+              <div class="form-group">
+                <label class="control-label" for="email">Email:</label>
+                <input type="text" name="Email" id="email" class="form-control">
+              </div>
+
+              <div class="form-group">
+                <label class="control-label" for="password">New Password:</label>
+                <input type="password" name="Password" id="password" class="form-control">
+              </div>
+
+              <div class="form-group">
+                <label class="control-label" for="password-again">New Password Again:</label>
+                <input type="password" name="PasswordAgain" id="password-again" class="form-control">
+              </div>
+            </form>
           </div>
 
           <div class="modal-footer">
