@@ -13,9 +13,11 @@ import (
 	resourcedmaster_handlers "github.com/resourced/resourced-master/handlers"
 	"github.com/resourced/resourced-master/libenv"
 	resourcedmaster_middlewares "github.com/resourced/resourced-master/middlewares"
+	"github.com/stretchr/graceful"
 	"net/http"
 	"os"
 	"os/user"
+	"time"
 )
 
 func registerToGob() {
@@ -133,5 +135,24 @@ func main() {
 	}
 
 	serverAddress := libenv.EnvWithDefault("RESOURCED_MASTER_ADDR", ":55655")
-	http.ListenAndServe(serverAddress, middle)
+	certFile := libenv.EnvWithDefault("RESOURCED_MASTER_CERT_FILE", "")
+	keyFile := libenv.EnvWithDefault("RESOURCED_MASTER_KEY_FILE", "")
+	requestTimeoutString := libenv.EnvWithDefault("RESOURCED_MASTER_REQUEST_TIMEOUT", "7s")
+
+	requestTimeout, err := time.ParseDuration(requestTimeoutString)
+	if err != nil {
+		println(err.Error())
+		os.Exit(1)
+	}
+
+	srv := &graceful.Server{
+		Timeout: requestTimeout,
+		Server:  &http.Server{Addr: serverAddress, Handler: middle},
+	}
+
+	if certFile != "" && keyFile != "" {
+		srv.ListenAndServeTLS(certFile, keyFile)
+	} else {
+		srv.ListenAndServe()
+	}
 }
