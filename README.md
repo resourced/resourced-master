@@ -23,6 +23,7 @@ This project is currently an alpha software. Use it at your own risk.
     ```
     go get github.com/mattes/migrate
     cd $GOPATH/src/github.com/resourced/resourced-master
+    createdb resourced-master  # Create PostgreSQL database
     migrate -url postgres://$PG_USER@$PG_HOST:$PG_PORT/resourced-master?sslmode=disable -path ./migrations up
     ```
 
