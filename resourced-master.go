@@ -93,7 +93,6 @@ func (rm *ResourcedMaster) middlewareStruct() (*interpose.Middleware, error) {
 	middle.Use(resourcedmaster_middlewares.SetRiceBoxes(rm.riceBoxes))
 	middle.Use(resourcedmaster_middlewares.SetCookieStore(rm.cookieStore))
 	middle.Use(resourcedmaster_middlewares.SetCurrentApplication(rm.db))
-	middle.Use(resourcedmaster_middlewares.CheckUserSession())
 	// middle.Use(resourcedmaster_middlewares.AccessTokenAuth(users))
 
 	middle.UseHandler(rm.mux())
@@ -102,6 +101,8 @@ func (rm *ResourcedMaster) middlewareStruct() (*interpose.Middleware, error) {
 }
 
 func (rm *ResourcedMaster) mux() *gorilla_mux.Router {
+	MustLogin := resourcedmaster_middlewares.MustLogin
+
 	router := gorilla_mux.NewRouter()
 
 	router.HandleFunc("/", resourcedmaster_handlers.GetDashboard).Methods("GET")
@@ -112,8 +113,8 @@ func (rm *ResourcedMaster) mux() *gorilla_mux.Router {
 	router.HandleFunc("/login", resourcedmaster_handlers.PostLogin).Methods("POST")
 	router.HandleFunc("/logout", resourcedmaster_handlers.GetLogout).Methods("GET")
 
-	router.HandleFunc("/applications/create", resourcedmaster_handlers.GetApplicationsCreate).Methods("GET")
-	router.HandleFunc("/applications", resourcedmaster_handlers.PostApplications).Methods("POST")
+	router.Handle("/applications/create", MustLogin(http.HandlerFunc(resourcedmaster_handlers.GetApplicationsCreate))).Methods("GET")
+	router.Handle("/applications", MustLogin(http.HandlerFunc(resourcedmaster_handlers.PostApplications))).Methods("POST")
 
 	// Put static files path last!
 	router.PathPrefix("/").Handler(http.FileServer(rm.riceBoxes["static"].HTTPBox()))
