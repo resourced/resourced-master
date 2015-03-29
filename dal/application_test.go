@@ -1,25 +1,12 @@
 package dal
 
 import (
-	"fmt"
-	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
-	"os/user"
 	"testing"
 )
 
 func newApplicationForTest(t *testing.T) *Application {
-	u, err := user.Current()
-	if err != nil {
-		t.Fatalf("Getting current user should never fail. Error: %v", err)
-	}
-
-	db, err := sqlx.Connect("postgres", fmt.Sprintf("postgres://%v@localhost:5432/resourced-master?sslmode=disable", u.Username))
-	if err != nil {
-		t.Fatalf("Connecting to local postgres should never fail. Error: %v", err)
-	}
-
-	return NewApplication(db)
+	return NewApplication(newDbForTest(t))
 }
 
 func TestApplicationCRUD(t *testing.T) {

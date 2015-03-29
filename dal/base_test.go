@@ -8,20 +8,22 @@ import (
 	"testing"
 )
 
-func newBaseForTest(t *testing.T) *Base {
-	base := &Base{}
-
+func newDbForTest(t *testing.T) *sqlx.DB {
 	u, err := user.Current()
 	if err != nil {
 		t.Fatalf("Getting current user should never fail. Error: %v", err)
 	}
 
-	db, err := sqlx.Connect("postgres", fmt.Sprintf("postgres://%v@localhost:5432/resourced-master?sslmode=disable", u.Username))
+	db, err := sqlx.Connect("postgres", fmt.Sprintf("postgres://%v@localhost:5432/resourced-master-test?sslmode=disable", u.Username))
 	if err != nil {
 		t.Fatalf("Connecting to local postgres should never fail. Error: %v", err)
 	}
+	return db
+}
 
-	base.db = db
+func newBaseForTest(t *testing.T) *Base {
+	base := &Base{}
+	base.db = newDbForTest(t)
 
 	return base
 }

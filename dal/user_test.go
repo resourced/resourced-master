@@ -2,10 +2,8 @@ package dal
 
 import (
 	"fmt"
-	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
 	"github.com/satori/go.uuid"
-	"os/user"
 	"testing"
 )
 
@@ -14,17 +12,7 @@ func newEmailForTest() string {
 }
 
 func newUserForTest(t *testing.T) *User {
-	u, err := user.Current()
-	if err != nil {
-		t.Fatalf("Getting current user should never fail. Error: %v", err)
-	}
-
-	db, err := sqlx.Connect("postgres", fmt.Sprintf("postgres://%v@localhost:5432/resourced-master?sslmode=disable", u.Username))
-	if err != nil {
-		t.Fatalf("Connecting to local postgres should never fail. Error: %v", err)
-	}
-
-	return NewUser(db)
+	return NewUser(newDbForTest(t))
 }
 
 func TestUserCRUD(t *testing.T) {
