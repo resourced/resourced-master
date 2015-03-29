@@ -100,11 +100,11 @@ func (rm *ResourcedMaster) middlewareStruct() (*interpose.Middleware, error) {
 }
 
 func (rm *ResourcedMaster) mux() *gorilla_mux.Router {
-	// MustLogin := resourcedmaster_middlewares.MustLogin
+	MustLogin := resourcedmaster_middlewares.MustLogin
 
 	router := gorilla_mux.NewRouter()
 
-	router.HandleFunc("/", resourcedmaster_handlers.GetDashboard).Methods("GET")
+	router.Handle("/", MustLogin(http.HandlerFunc(resourcedmaster_handlers.GetHosts))).Methods("GET")
 
 	router.HandleFunc("/signup", resourcedmaster_handlers.GetSignup).Methods("GET")
 	router.HandleFunc("/signup", resourcedmaster_handlers.PostSignup).Methods("POST")
