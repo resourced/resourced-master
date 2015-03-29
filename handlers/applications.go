@@ -3,7 +3,6 @@ package handlers
 import (
 	"github.com/GeertJohan/go.rice"
 	"github.com/gorilla/context"
-	"github.com/gorilla/sessions"
 	"github.com/jmoiron/sqlx"
 	resourcedmaster_dal "github.com/resourced/resourced-master/dal"
 	"github.com/resourced/resourced-master/libhttp"
@@ -29,10 +28,7 @@ func PostApplications(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html")
 
 	db := context.Get(r, "db").(*sqlx.DB)
-	cookieStore := context.Get(r, "cookieStore").(*sessions.CookieStore)
-
-	session, _ := cookieStore.Get(r, "resourcedmaster-session")
-	userRow := session.Values["user"].(*resourcedmaster_dal.UserRow)
+	userRow := getCurrentUser(w, r)
 
 	appName := r.FormValue("Name")
 
@@ -43,4 +39,27 @@ func PostApplications(w http.ResponseWriter, r *http.Request) {
 	}
 
 	http.Redirect(w, r, "/", 301)
+}
+
+func GetApplications(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "text/html")
+
+	db := context.Get(r, "db").(*sqlx.DB)
+	userRow := getCurrentUser(w, r)
+
+	_, err := resourcedmaster_dal.NewApplication(db).AllApplicationsByUserID(nil, userRow.ID)
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
+
+	riceBoxes := context.Get(r, "riceBoxes").(map[string]*rice.Box)
+
+	tmpl, err := libtemplate.GetFromRicebox(riceBoxes["templates"], false, "dashboard.html.tmpl", "applications/list.html.tmpl")
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
+
+	tmpl.Execute(w, nil)
 }

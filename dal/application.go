@@ -52,3 +52,12 @@ func (a *Application) CreateRow(tx *sqlx.Tx, appName string) (*ApplicationRow, e
 
 	return a.applicationRowFromSqlResult(tx, sqlResult)
 }
+
+// AllApplicationsByUserID returns all user rows.
+func (a *Application) AllApplicationsByUserID(tx *sqlx.Tx, userId int64) ([]*ApplicationRow, error) {
+	apps := []*ApplicationRow{}
+	query := fmt.Sprintf("SELECT applications.id, applications.name FROM %v INNER JOIN applications_users ON %v.id = applications_users.application_id WHERE applications_users.user_id=$1;", a.table, a.table)
+	err := a.db.Select(&apps, query, userId)
+
+	return apps, err
+}
