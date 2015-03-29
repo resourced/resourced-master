@@ -91,6 +91,7 @@ func (rm *ResourcedMaster) middlewareStruct() (*interpose.Middleware, error) {
 	middle.Use(resourcedmaster_middlewares.SetRiceBoxes(rm.riceBoxes))
 	middle.Use(resourcedmaster_middlewares.SetCookieStore(rm.cookieStore))
 	middle.Use(resourcedmaster_middlewares.SetCurrentApplication(rm.db))
+	middle.Use(resourcedmaster_middlewares.CheckUserSession())
 	// middle.Use(resourcedmaster_middlewares.AccessTokenAuth(users))
 
 	middle.UseHandler(rm.mux())
@@ -110,6 +111,7 @@ func (rm *ResourcedMaster) mux() *gorilla_mux.Router {
 	router.HandleFunc("/logout", resourcedmaster_handlers.GetLogout).Methods("GET")
 
 	router.HandleFunc("/applications/create", resourcedmaster_handlers.GetApplicationsCreate).Methods("GET")
+	router.HandleFunc("/applications", resourcedmaster_handlers.PostApplications).Methods("POST")
 
 	// Put static files path last!
 	router.PathPrefix("/").Handler(http.FileServer(rm.riceBoxes["static"].HTTPBox()))

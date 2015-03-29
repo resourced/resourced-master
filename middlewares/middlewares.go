@@ -71,6 +71,33 @@ func SetCurrentApplication(db *sqlx.DB) func(http.Handler) http.Handler {
 	}
 }
 
+func CheckUserSession() func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
+			isLoggedInPath := true
+
+			for _, nonLoggedInPath := range []string{"/", "/login", "/logout", "/bootstrap", "/jquery"} {
+				if strings.HasPrefix(req.URL.Path, nonLoggedInPath) {
+					isLoggedInPath = false
+				}
+			}
+
+			if isLoggedInPath {
+				cookieStore := context.Get(req, "cookieStore").(*sessions.CookieStore)
+				session, _ := cookieStore.Get(req, "resourcedmaster-session")
+				userRowInterface := session.Values["user"]
+
+				if userRowInterface == nil {
+					http.Redirect(res, req, "/login", 301)
+					return
+				}
+			}
+
+			next.ServeHTTP(res, req)
+		})
+	}
+}
+
 // func AccessTokenAuth(users []*resourcedmaster_dal.UserRow) func(http.Handler) http.Handler {
 // 	getCurrentApp := func(req *http.Request) *resourcedmaster_dal.ApplicationRow {
 // 		currentAppInterface := context.Get(req, "currentApp")
