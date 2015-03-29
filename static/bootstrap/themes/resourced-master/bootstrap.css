@@ -1,0 +1,12 @@
+body {
+    font-family: "Raleway","HelveticaNeue","Helvetica Neue",Helvetica,Arial,sans-serif;
+}
+.modal-backdrop {
+    background-color: #fff;
+    bottom: 0;
+    left: 0;
+    position: fixed;
+    right: 0;
+    top: 0;
+    z-index: initial;
+}
