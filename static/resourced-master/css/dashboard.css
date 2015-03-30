@@ -16,3 +16,10 @@ body {
 .search-form > .btn {
     padding: 8px;
 }
+.page-header {
+    margin: 18px 0;
+    padding-bottom: 7px;
+}
+.page-header > h1 {
+    margin: 0;
+}
