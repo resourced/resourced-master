@@ -25,14 +25,6 @@ func GetAccessTokens(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	riceBoxes := context.Get(r, "riceBoxes").(map[string]*rice.Box)
-
-	tmpl, err := libtemplate.GetFromRicebox(riceBoxes["templates"], false, "dashboard.html.tmpl", "access-tokens/list.html.tmpl")
-	if err != nil {
-		libhttp.HandleErrorJson(w, err)
-		return
-	}
-
 	accessTokens, err := resourcedmaster_dal.NewAccessToken(db).AllAccessTokens(nil)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
@@ -47,5 +39,33 @@ func GetAccessTokens(w http.ResponseWriter, r *http.Request) {
 		accessTokens,
 	}
 
+	riceBoxes := context.Get(r, "riceBoxes").(map[string]*rice.Box)
+
+	tmpl, err := libtemplate.GetFromRicebox(riceBoxes["templates"], false, "dashboard.html.tmpl", "access-tokens/list.html.tmpl")
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
+
 	tmpl.Execute(w, data)
+}
+
+func PostAccessTokens(w http.ResponseWriter, r *http.Request) {
+	db := context.Get(r, "db").(*sqlx.DB)
+
+	cookieStore := context.Get(r, "cookieStore").(*sessions.CookieStore)
+
+	session, _ := cookieStore.Get(r, "resourcedmaster-session")
+
+	currentUser := session.Values["user"].(*resourcedmaster_dal.UserRow)
+
+	level := r.FormValue("Level")
+
+	_, err := resourcedmaster_dal.NewAccessToken(db).CreateRow(nil, currentUser.ID, level)
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
+
+	http.Redirect(w, r, "/access-tokens", 301)
 }
