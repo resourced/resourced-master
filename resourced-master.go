@@ -83,11 +83,6 @@ type ResourcedMaster struct {
 }
 
 func (rm *ResourcedMaster) middlewareStruct() (*interpose.Middleware, error) {
-	// users, err := resourcedmaster_dal.NewUser(rm.db).AllUsers(nil)
-	// if err != nil {
-	// 	return nil, err
-	// }
-
 	middle := interpose.New()
 	middle.Use(resourcedmaster_middlewares.SetDB(rm.db))
 	middle.Use(resourcedmaster_middlewares.SetRiceBoxes(rm.riceBoxes))
@@ -101,6 +96,7 @@ func (rm *ResourcedMaster) middlewareStruct() (*interpose.Middleware, error) {
 
 func (rm *ResourcedMaster) mux() *gorilla_mux.Router {
 	MustLogin := resourcedmaster_middlewares.MustLogin
+	MustLoginApi := resourcedmaster_middlewares.MustLoginApi
 
 	router := gorilla_mux.NewRouter()
 
@@ -116,6 +112,8 @@ func (rm *ResourcedMaster) mux() *gorilla_mux.Router {
 
 	router.Handle("/access-tokens", MustLogin(http.HandlerFunc(resourcedmaster_handlers.GetAccessTokens))).Methods("GET")
 	router.Handle("/access-tokens", MustLogin(http.HandlerFunc(resourcedmaster_handlers.PostAccessTokens))).Methods("POST")
+
+	router.Handle("/api/hosts", MustLoginApi(http.HandlerFunc(resourcedmaster_handlers.PostApiHosts))).Methods("POST")
 
 	// Path of static files must be last!
 	router.PathPrefix("/").Handler(http.FileServer(rm.riceBoxes["static"].HTTPBox()))
@@ -139,7 +137,7 @@ func main() {
 	serverAddress := libenv.EnvWithDefault("RESOURCED_MASTER_ADDR", ":55655")
 	certFile := libenv.EnvWithDefault("RESOURCED_MASTER_CERT_FILE", "")
 	keyFile := libenv.EnvWithDefault("RESOURCED_MASTER_KEY_FILE", "")
-	requestTimeoutString := libenv.EnvWithDefault("RESOURCED_MASTER_REQUEST_TIMEOUT", "7s")
+	requestTimeoutString := libenv.EnvWithDefault("RESOURCED_MASTER_REQUEST_TIMEOUT", "1s")
 
 	requestTimeout, err := time.ParseDuration(requestTimeoutString)
 	if err != nil {

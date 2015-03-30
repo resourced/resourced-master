@@ -18,7 +18,7 @@ CREATE INDEX idx_level on access_tokens (level);
 
 CREATE TABLE hosts (
     id BIGSERIAL PRIMARY KEY NOT NULL,
-    token_ids BIGINT[],
+    access_token_id bigint REFERENCES access_tokens (id),
     name TEXT NOT NULL,
     tags TEXT[],
     data JSONB
@@ -26,4 +26,4 @@ CREATE TABLE hosts (
 
 CREATE INDEX idx_tags ON hosts USING gin(tags);
 
-CREATE INDEX idx_data ON hosts using gin(data);
+CREATE INDEX idx_data ON hosts USING gin(data);
