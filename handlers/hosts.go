@@ -4,6 +4,7 @@ import (
 	"github.com/GeertJohan/go.rice"
 	"github.com/gorilla/context"
 	"github.com/gorilla/sessions"
+	resourcedmaster_dal "github.com/resourced/resourced-master/dal"
 	"github.com/resourced/resourced-master/libhttp"
 	"github.com/resourced/resourced-master/libtemplate"
 	"net/http"
@@ -15,7 +16,7 @@ func GetHosts(w http.ResponseWriter, r *http.Request) {
 	cookieStore := context.Get(r, "cookieStore").(*sessions.CookieStore)
 
 	session, _ := cookieStore.Get(r, "resourcedmaster-session")
-	_, ok := session.Values["user"]
+	currentUser, ok := session.Values["user"].(*resourcedmaster_dal.UserRow)
 	if !ok {
 		http.Redirect(w, r, "/logout", 301)
 		return
@@ -29,5 +30,11 @@ func GetHosts(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tmpl.Execute(w, nil)
+	data := struct {
+		CurrentUser *resourcedmaster_dal.UserRow
+	}{
+		currentUser,
+	}
+
+	tmpl.Execute(w, data)
 }

@@ -39,7 +39,7 @@
 
           <ul class="nav navbar-nav navbar-right">
             <li class="dropdown">
-              <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">Didip Kerabat <span class="caret"></span></a>
+              <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">{{ .CurrentUser.Email }} <span class="caret"></span></a>
 
               <ul class="dropdown-menu" role="menu">
                 <li><a href="javascript:void(0)" data-toggle="modal" data-target="#user-settings-modal">User Settings</a></li>
@@ -65,8 +65,11 @@
             <h4 class="modal-title" id="user-settings-label">User Settings</h4>
           </div>
 
-          <div class="modal-body">
-            <form method="post" action="/users/some-id">
+          <form method="post" action="/users/{{ .CurrentUser.ID }}">
+
+            <div class="modal-body">
+              <input type="hidden" name="_method" value="put">
+
               <div class="form-group">
                 <label class="control-label" for="email">Email:</label>
                 <input type="text" name="Email" id="email" class="form-control">
@@ -81,13 +84,15 @@
                 <label class="control-label" for="password-again">New Password Again:</label>
                 <input type="password" name="PasswordAgain" id="password-again" class="form-control">
               </div>
-            </form>
-          </div>
+            </div>
 
-          <div class="modal-footer">
-            <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
-            <button type="button" class="btn btn-primary">Save changes</button>
-          </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+              <button type="button" class="btn btn-primary" onclick="$(this).closest('form').submit()">Save changes</button>
+            </div>
+
+          </form>
+
         </div>
       </div>
     </div>

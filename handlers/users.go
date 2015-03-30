@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"errors"
 	"github.com/GeertJohan/go.rice"
 	"github.com/gorilla/context"
 	"github.com/gorilla/sessions"
@@ -9,6 +10,7 @@ import (
 	"github.com/resourced/resourced-master/libhttp"
 	"github.com/resourced/resourced-master/libtemplate"
 	"net/http"
+	"strings"
 )
 
 func GetSignup(w http.ResponseWriter, r *http.Request) {
@@ -58,6 +60,7 @@ func GetLoginWithoutSession(w http.ResponseWriter, r *http.Request) {
 	tmpl.Execute(w, nil)
 }
 
+// GetLogin get login page.
 func GetLogin(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html")
 
@@ -74,6 +77,7 @@ func GetLogin(w http.ResponseWriter, r *http.Request) {
 	GetLoginWithoutSession(w, r)
 }
 
+// PostLogin performs login.
 func PostLogin(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html")
 
@@ -114,4 +118,65 @@ func GetLogout(w http.ResponseWriter, r *http.Request) {
 	session.Save(r, w)
 
 	http.Redirect(w, r, "/login", 301)
+}
+
+func PostPutDeleteUsersID(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "text/html")
+
+	method := r.FormValue("_method")
+	if method == "" || strings.ToLower(method) == "post" || strings.ToLower(method) == "put" {
+		PutUsersID(w, r)
+	} else if strings.ToLower(method) == "delete" {
+		DeleteUsersID(w, r)
+	}
+}
+
+func PutUsersID(w http.ResponseWriter, r *http.Request) {
+	userId, err := getIdFromPath(w, r)
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
+
+	db := context.Get(r, "db").(*sqlx.DB)
+
+	cookieStore := context.Get(r, "cookieStore").(*sessions.CookieStore)
+
+	session, _ := cookieStore.Get(r, "resourcedmaster-session")
+
+	currentUser := session.Values["user"].(*resourcedmaster_dal.UserRow)
+
+	if currentUser.ID != userId {
+		err := errors.New("Modifying other user is not allowed.")
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
+
+	email := r.FormValue("Email")
+	password := r.FormValue("Password")
+	passwordAgain := r.FormValue("PasswordAgain")
+
+	u := resourcedmaster_dal.NewUser(db)
+
+	currentUser, err = u.UpdateEmailAndPasswordById(nil, currentUser.ID, email, password, passwordAgain)
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
+
+	// Update currentUser stored in session.
+	session.Values["user"] = currentUser
+	err = session.Save(r, w)
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
+
+	http.Redirect(w, r, "/", 301)
+}
+
+func DeleteUsersID(w http.ResponseWriter, r *http.Request) {
+	err := errors.New("DELETE method is not implemented.")
+	libhttp.HandleErrorJson(w, err)
+	return
 }

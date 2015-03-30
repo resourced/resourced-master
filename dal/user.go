@@ -119,3 +119,30 @@ func (u *User) CreateAccessTokenRow(tx *sqlx.Tx, userId int64, level string) (*A
 
 	return tokenRow, nil
 }
+
+// UpdateEmailAndPasswordById updates user email and password.
+func (u *User) UpdateEmailAndPasswordById(tx *sqlx.Tx, userId int64, email, password, passwordAgain string) (*UserRow, error) {
+	data := make(map[string]interface{})
+
+	if email != "" {
+		data["email"] = email
+	}
+
+	if password != "" && passwordAgain != "" && password == passwordAgain {
+		hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), 5)
+		if err != nil {
+			return nil, err
+		}
+
+		data["password"] = hashedPassword
+	}
+
+	if len(data) > 0 {
+		_, err := u.UpdateById(tx, data, userId)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return u.GetById(tx, userId)
+}
