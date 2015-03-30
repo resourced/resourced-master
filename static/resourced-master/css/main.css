@@ -10,3 +10,9 @@ body {
     top: 0;
     z-index: initial;
 }
+.search-form {
+    padding-left: 1px;
+}
+.search-form > .btn {
+    padding: 8px;
+}

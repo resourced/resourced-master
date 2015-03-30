@@ -114,6 +114,8 @@ func (rm *ResourcedMaster) mux() *gorilla_mux.Router {
 
 	router.Handle("/users/{id:[0-9]+}", MustLogin(http.HandlerFunc(resourcedmaster_handlers.PostPutDeleteUsersID))).Methods("POST", "PUT", "DELETE")
 
+	router.Handle("/access-tokens", MustLogin(http.HandlerFunc(resourcedmaster_handlers.GetAccessTokens))).Methods("GET")
+
 	// Path of static files must be last!
 	router.PathPrefix("/").Handler(http.FileServer(rm.riceBoxes["static"].HTTPBox()))
 
