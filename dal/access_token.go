@@ -72,3 +72,12 @@ func (t *AccessToken) CreateRow(tx *sqlx.Tx, userId int64, level string) (*Acces
 
 	return t.tokenRowFromSqlResult(tx, sqlResult)
 }
+
+// AllAccessTokens returns all user rows.
+func (t *AccessToken) AllAccessTokens(tx *sqlx.Tx) ([]*AccessTokenRow, error) {
+	accessTokens := []*AccessTokenRow{}
+	query := fmt.Sprintf("SELECT * FROM %v", t.table)
+	err := t.db.Select(&accessTokens, query)
+
+	return accessTokens, err
+}

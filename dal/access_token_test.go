@@ -33,6 +33,12 @@ func TestAccessTokenCRUD(t *testing.T) {
 		t.Fatalf("AccessToken ID should be assign properly. tokenRow.ID: %v", tokenRow.ID)
 	}
 
+	// SELECT * FROM access_tokens
+	_, err = NewAccessToken(u.db).AllAccessTokens(nil)
+	if err != nil {
+		t.Fatalf("Selecting all access_tokens should not fail. Error: %v", err)
+	}
+
 	// DELETE FROM access_tokens WHERE id=...
 	_, err = NewAccessToken(u.db).DeleteById(nil, tokenRow.ID)
 	if err != nil {
