@@ -2,9 +2,11 @@ package dal
 
 import (
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"github.com/jmoiron/sqlx"
 	sqlx_types "github.com/jmoiron/sqlx/types"
+	"strings"
 )
 
 func NewHost(db *sqlx.DB) *Host {
@@ -22,6 +24,18 @@ type HostRow struct {
 	Name          string              `db:"name"`
 	Tags          []string            `db:"tags"`
 	Data          sqlx_types.JsonText `db:"data"`
+}
+
+type ResourcedPayload struct {
+	Data     map[string]interface{}
+	GoStruct string
+	Host     struct {
+		Name string
+		Tags []string
+	}
+	Interval string
+	Path     string
+	UnixNano float64
 }
 
 type Host struct {
@@ -48,10 +62,27 @@ func (h *Host) GetById(tx *sqlx.Tx, id int64) (*HostRow, error) {
 
 // CreateRow performs insert for one host data.
 func (h *Host) CreateRow(tx *sqlx.Tx, accessTokenId int64, jsonData []byte) (*HostRow, error) {
+	resourcedPayloads := make(map[string]*ResourcedPayload)
+
+	err := json.Unmarshal(jsonData, &resourcedPayloads)
+	if err != nil {
+		return nil, err
+	}
+
+	// Get a random path from payload.
+	var path string
+	for path, _ = range resourcedPayloads {
+		break
+	}
+
 	data := make(map[string]interface{})
 	data["access_token_id"] = accessTokenId
-	data["name"] = ""
 	data["data"] = jsonData
+	data["name"] = resourcedPayloads[path].Host.Name
+
+	if len(resourcedPayloads[path].Host.Tags) > 0 {
+		data["tags"] = fmt.Sprintf("ARRAY[%s]", strings.Join(resourcedPayloads[path].Host.Tags, ","))
+	}
 
 	sqlResult, err := h.InsertIntoTable(tx, data)
 	if err != nil {
