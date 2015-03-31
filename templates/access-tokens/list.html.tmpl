@@ -13,14 +13,21 @@
                         <th>ID</th>
                         <th>Token</th>
                         <th>Level</th>
+                        <th>Enabled</th>
                     </tr>
                 </thead>
+
                 <tbody>
                 {{ range $accessToken := .AccessTokens }}
                     <tr>
                         <td>{{ $accessToken.ID }}</td>
                         <td>{{ $accessToken.Token }}</td>
                         <td>{{ $accessToken.Level }}</td>
+                        <td>
+                            <form action="/access-tokens/{{ $accessToken.ID }}/enable-disable">
+                                <input type="checkbox" name="Enabled" checked>
+                            </form>
+                        </td>
                     </tr>
                 {{ end }}
                 </tbody>
