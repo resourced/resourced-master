@@ -86,6 +86,19 @@ func MustLoginApi(next http.Handler) http.Handler {
 			return
 		}
 
+		isAllowed := false
+
+		if req.Method == "GET" {
+			isAllowed = true
+		} else if accessTokenRow.Level == "write" || accessTokenRow.Level == "execute" {
+			isAllowed = true
+		}
+
+		if !isAllowed {
+			libhttp.BasicAuthUnauthorized(res, nil)
+			return
+		}
+
 		context.Set(req, "accessTokenRow", accessTokenRow)
 
 		next.ServeHTTP(res, req)
