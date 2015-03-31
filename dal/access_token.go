@@ -17,10 +17,11 @@ func NewAccessToken(db *sqlx.DB) *AccessToken {
 }
 
 type AccessTokenRow struct {
-	ID     int64  `db:"id"`
-	UserID int64  `db:"user_id"`
-	Token  string `db:"token"`
-	Level  string `db:"level"` // read, write, execute
+	ID      int64  `db:"id"`
+	UserID  int64  `db:"user_id"`
+	Token   string `db:"token"`
+	Level   string `db:"level"` // read, write, execute
+	Enabled bool   `db:"enabled"`
 }
 
 type AccessToken struct {
@@ -64,6 +65,7 @@ func (t *AccessToken) CreateRow(tx *sqlx.Tx, userId int64, level string) (*Acces
 	data["user_id"] = userId
 	data["token"] = token
 	data["level"] = level
+	data["enabled"] = true
 
 	sqlResult, err := t.InsertIntoTable(tx, data)
 	if err != nil {

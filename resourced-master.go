@@ -113,6 +113,9 @@ func (rm *ResourcedMaster) mux() *gorilla_mux.Router {
 	router.Handle("/access-tokens", MustLogin(http.HandlerFunc(resourcedmaster_handlers.GetAccessTokens))).Methods("GET")
 	router.Handle("/access-tokens", MustLogin(http.HandlerFunc(resourcedmaster_handlers.PostAccessTokens))).Methods("POST")
 
+	router.Handle("/access-tokens/{id:[0-9]+}/level", MustLogin(http.HandlerFunc(resourcedmaster_handlers.PostAccessTokensLevel))).Methods("POST")
+	router.Handle("/access-tokens/{id:[0-9]+}/enabled", MustLogin(http.HandlerFunc(resourcedmaster_handlers.PostAccessTokensEnabled))).Methods("POST")
+
 	router.Handle("/api/hosts", MustLoginApi(http.HandlerFunc(resourcedmaster_handlers.PostApiHosts))).Methods("POST")
 
 	// Path of static files must be last!

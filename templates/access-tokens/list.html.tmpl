@@ -10,7 +10,6 @@
             <table class="table table-striped table-hover">
                 <thead>
                     <tr>
-                        <th>ID</th>
                         <th>Token</th>
                         <th>Level</th>
                         <th>Enabled</th>
@@ -20,12 +19,19 @@
                 <tbody>
                 {{ range $accessToken := .AccessTokens }}
                     <tr>
-                        <td>{{ $accessToken.ID }}</td>
                         <td>{{ $accessToken.Token }}</td>
-                        <td>{{ $accessToken.Level }}</td>
                         <td>
-                            <form action="/access-tokens/{{ $accessToken.ID }}/enable-disable">
-                                <input type="checkbox" name="Enabled" checked>
+                            <form method="post" action="/access-tokens/{{ $accessToken.ID }}/level">
+                            <select name="Level" onchange="$(this).closest('form').submit();">
+                                <option value="read" {{if eq $accessToken.Level "read"}} selected {{end}}>Read</option>
+                                <option value="write" {{if eq $accessToken.Level "write"}} selected {{end}}>Write</option>
+                                <option value="execute" {{if eq $accessToken.Level "execute"}} selected {{end}}>Execute</option>
+                            </select>
+                            </form>
+                        </td>
+                        <td>
+                            <form method="post" action="/access-tokens/{{ $accessToken.ID }}/enabled">
+                                <input type="checkbox" name="Enabled" onclick="$(this).closest('form').submit();" {{ if $accessToken.Enabled }} checked {{end}}>
                             </form>
                         </td>
                     </tr>

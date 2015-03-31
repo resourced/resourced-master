@@ -69,3 +69,55 @@ func PostAccessTokens(w http.ResponseWriter, r *http.Request) {
 
 	http.Redirect(w, r, "/access-tokens", 301)
 }
+
+func PostAccessTokensLevel(w http.ResponseWriter, r *http.Request) {
+	db := context.Get(r, "db").(*sqlx.DB)
+
+	tokenId, err := getIdFromPath(w, r)
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
+
+	level := r.FormValue("Level")
+
+	data := make(map[string]interface{})
+	data["level"] = level
+
+	_, err = resourcedmaster_dal.NewAccessToken(db).UpdateById(nil, data, tokenId)
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
+
+	http.Redirect(w, r, "/access-tokens", 301)
+}
+
+func PostAccessTokensEnabled(w http.ResponseWriter, r *http.Request) {
+	db := context.Get(r, "db").(*sqlx.DB)
+
+	tokenId, err := getIdFromPath(w, r)
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
+
+	at := resourcedmaster_dal.NewAccessToken(db)
+
+	accessTokenRow, err := at.GetById(nil, tokenId)
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
+
+	data := make(map[string]interface{})
+	data["enabled"] = !accessTokenRow.Enabled
+
+	_, err = at.UpdateById(nil, data, tokenId)
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
+
+	http.Redirect(w, r, "/access-tokens", 301)
+}

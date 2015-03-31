@@ -10,7 +10,8 @@ CREATE TABLE access_tokens (
     id BIGSERIAL PRIMARY KEY NOT NULL,
     user_id bigint REFERENCES users (id) ON UPDATE CASCADE ON DELETE CASCADE,
     token TEXT,
-    level TEXT
+    level TEXT,
+    enabled BOOLEAN
 );
 
 CREATE UNIQUE INDEX idx_token on access_tokens (token);

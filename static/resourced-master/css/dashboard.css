@@ -1,6 +1,10 @@
 body {
     font-family: "Raleway","HelveticaNeue","Helvetica Neue",Helvetica,Arial,sans-serif;
 }
+select {
+    color: #333;
+    padding: 1px 0;
+}
 .modal-backdrop {
     background-color: #aaa;
     bottom: 0;
