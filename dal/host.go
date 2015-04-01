@@ -107,8 +107,6 @@ func (h *Host) parseResourcedPayload(tx *sqlx.Tx, accessTokenId int64, jsonData 
 		return nil, err
 	}
 
-	println(string(resourcedPayloadJustJson))
-
 	data["data"] = resourcedPayloadJustJson
 
 	return data, nil
@@ -150,7 +148,6 @@ func (h *Host) CreateOrUpdate(tx *sqlx.Tx, accessTokenId int64, jsonData []byte)
 	// Perform UPDATE
 	_, err = h.UpdateByKeyValueString(tx, data, "name", data["name"].(string))
 	if err != nil {
-		println(err.Error())
 		return nil, err
 	}
 

@@ -67,7 +67,6 @@ func PostApiHosts(w http.ResponseWriter, r *http.Request) {
 
 	hostRow, err := resourcedmaster_dal.NewHost(db).CreateOrUpdate(nil, accessTokenRow.ID, dataJson)
 	if err != nil {
-		println(err.Error())
 		libhttp.HandleErrorJson(w, err)
 		return
 	}
