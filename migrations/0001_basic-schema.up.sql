@@ -21,7 +21,7 @@ CREATE TABLE hosts (
     id BIGSERIAL PRIMARY KEY NOT NULL,
     access_token_id bigint REFERENCES access_tokens (id),
     name TEXT NOT NULL,
-    tags TEXT[],
+    tags JSONB,
     data JSONB
 );
 
