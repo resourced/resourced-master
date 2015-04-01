@@ -19,8 +19,8 @@
                 {{ range $host := .Hosts }}
                     <tr>
                         <td>{{ $host.Name }}</td>
-                        <td>some tags</td>
-                        <td>some JSON</td>
+                        <td>{{ printf "%s" $host.Tags }}</td>
+                        <td>{{ printf "%s" $host.Data }}</td>
                     </tr>
                 {{ end }}
                 </tbody>
