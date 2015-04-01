@@ -61,7 +61,7 @@ func PostAccessTokens(w http.ResponseWriter, r *http.Request) {
 
 	level := r.FormValue("Level")
 
-	_, err := resourcedmaster_dal.NewAccessToken(db).CreateRow(nil, currentUser.ID, level)
+	_, err := resourcedmaster_dal.NewAccessToken(db).Create(nil, currentUser.ID, level)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return

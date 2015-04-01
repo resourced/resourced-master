@@ -196,6 +196,56 @@ func (b *Base) UpdateById(tx *sqlx.Tx, data map[string]interface{}, id int64) (s
 	return result, err
 }
 
+func (b *Base) UpdateByKeyValueString(tx *sqlx.Tx, data map[string]interface{}, key, value string) (sql.Result, error) {
+	var result sql.Result
+
+	if b.table == "" {
+		return nil, errors.New("Table must not be empty.")
+	}
+
+	tx, wrapInSingleTransaction, err := b.newTransactionIfNeeded(tx)
+	if tx == nil {
+		return nil, errors.New("Transaction struct must not be empty.")
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	keysWithDollarMarks := make([]string, 0)
+	values := make([]interface{}, 0)
+
+	loopCounter := 1
+	for key, value := range data {
+		keysWithDollarMark := fmt.Sprintf("%v=$%v", key, loopCounter)
+		keysWithDollarMarks = append(keysWithDollarMarks, keysWithDollarMark)
+		values = append(values, value)
+
+		loopCounter++
+	}
+
+	// Add value as part of values
+	values = append(values, value)
+
+	query := fmt.Sprintf(
+		"UPDATE %v SET %v WHERE %v=$%v",
+		b.table,
+		strings.Join(keysWithDollarMarks, ","),
+		key,
+		loopCounter)
+
+	result, err = tx.Exec(query, values...)
+
+	if err != nil {
+		return nil, err
+	}
+
+	if wrapInSingleTransaction == true {
+		err = tx.Commit()
+	}
+
+	return result, err
+}
+
 func (b *Base) DeleteFromTable(tx *sqlx.Tx, where string) (sql.Result, error) {
 	var result sql.Result
 

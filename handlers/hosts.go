@@ -27,7 +27,9 @@ func GetHosts(w http.ResponseWriter, r *http.Request) {
 
 	riceBoxes := context.Get(r, "riceBoxes").(map[string]*rice.Box)
 
-	tmpl, err := libtemplate.GetFromRicebox(riceBoxes["templates"], false, "dashboard.html.tmpl", "hosts/list.html.tmpl")
+	db := context.Get(r, "db").(*sqlx.DB)
+
+	hosts, err := resourcedmaster_dal.NewHost(db).AllHosts(nil)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
@@ -35,8 +37,16 @@ func GetHosts(w http.ResponseWriter, r *http.Request) {
 
 	data := struct {
 		CurrentUser *resourcedmaster_dal.UserRow
+		Hosts       []*resourcedmaster_dal.HostRow
 	}{
 		currentUser,
+		hosts,
+	}
+
+	tmpl, err := libtemplate.GetFromRicebox(riceBoxes["templates"], false, "dashboard.html.tmpl", "hosts/list.html.tmpl")
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
 	}
 
 	tmpl.Execute(w, data)
@@ -55,8 +65,9 @@ func PostApiHosts(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	hostRow, err := resourcedmaster_dal.NewHost(db).CreateRow(nil, accessTokenRow.ID, dataJson)
+	hostRow, err := resourcedmaster_dal.NewHost(db).CreateOrUpdate(nil, accessTokenRow.ID, dataJson)
 	if err != nil {
+		println(err.Error())
 		libhttp.HandleErrorJson(w, err)
 		return
 	}

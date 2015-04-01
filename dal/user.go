@@ -109,7 +109,7 @@ func (u *User) Signup(tx *sqlx.Tx, email, password, passwordAgain string) (*User
 
 // CreateAccessTokenRow create a new token for a user.
 func (u *User) CreateAccessTokenRow(tx *sqlx.Tx, userId int64, level string) (*AccessTokenRow, error) {
-	tokenRow, err := NewAccessToken(u.db).CreateRow(tx, userId, level)
+	tokenRow, err := NewAccessToken(u.db).Create(tx, userId, level)
 	if err != nil {
 		return nil, err
 	}

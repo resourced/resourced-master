@@ -55,7 +55,7 @@ func (t *AccessToken) GetByAccessToken(tx *sqlx.Tx, token string) (*AccessTokenR
 	return tokenRow, err
 }
 
-func (t *AccessToken) CreateRow(tx *sqlx.Tx, userId int64, level string) (*AccessTokenRow, error) {
+func (t *AccessToken) Create(tx *sqlx.Tx, userId int64, level string) (*AccessTokenRow, error) {
 	token, err := libstring.GeneratePassword(32)
 	if err != nil {
 		return nil, err
