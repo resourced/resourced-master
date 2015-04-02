@@ -190,3 +190,40 @@ func TestCreateUpdateByIdDelete(t *testing.T) {
 	}
 
 }
+
+func TestCreateUpdateByKeyValueStringDelete(t *testing.T) {
+	base := newBaseForTest(t)
+	base.table = "users"
+
+	originalEmail := newEmailForTest()
+
+	// INSERT INTO users (...) VALUES (...)
+	data := make(map[string]interface{})
+	data["email"] = newEmailForTest()
+	data["password"] = originalEmail
+
+	result, err := base.InsertIntoTable(nil, data)
+	if err != nil {
+		t.Fatalf("Inserting new user should not fail. Error: %v", err)
+	}
+
+	lastInsertedId, err := result.LastInsertId()
+	if err != nil {
+		t.Fatalf("Inserting new user should not fail. Error: %v", err)
+	}
+
+	// UPDATE users SET name=$1 WHERE id=$2
+	data["email"] = newEmailForTest()
+
+	_, err = base.UpdateByKeyValueString(nil, data, "email", originalEmail)
+	if err != nil {
+		t.Errorf("Updating existing user should not fail. Error: %v", err)
+	}
+
+	// DELETE FROM users WHERE id=...
+	_, err = base.DeleteById(nil, lastInsertedId)
+	if err != nil {
+		t.Fatalf("Deleting user by id should not fail. Error: %v", err)
+	}
+
+}

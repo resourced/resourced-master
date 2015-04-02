@@ -53,7 +53,7 @@ func (h *Host) hostRowFromSqlResult(tx *sqlx.Tx, sqlResult sql.Result) (*HostRow
 // AllHosts returns all user rows.
 func (h *Host) AllHosts(tx *sqlx.Tx) ([]*HostRow, error) {
 	hosts := []*HostRow{}
-	query := fmt.Sprintf("SELECT id, name, tags, data FROM %v", h.table)
+	query := fmt.Sprintf("SELECT * FROM %v", h.table)
 	err := h.db.Select(&hosts, query)
 
 	return hosts, err
@@ -62,7 +62,7 @@ func (h *Host) AllHosts(tx *sqlx.Tx) ([]*HostRow, error) {
 // GetById returns record by id.
 func (h *Host) GetById(tx *sqlx.Tx, id int64) (*HostRow, error) {
 	hostRow := &HostRow{}
-	query := fmt.Sprintf("SELECT id, name, tags, data FROM %v WHERE id=$1", h.table)
+	query := fmt.Sprintf("SELECT * FROM %v WHERE id=$1", h.table)
 	err := h.db.Get(hostRow, query, id)
 
 	return hostRow, err
@@ -71,7 +71,7 @@ func (h *Host) GetById(tx *sqlx.Tx, id int64) (*HostRow, error) {
 // GetByName returns record by name.
 func (h *Host) GetByName(tx *sqlx.Tx, name string) (*HostRow, error) {
 	hostRow := &HostRow{}
-	query := fmt.Sprintf("SELECT id, name, tags, data FROM %v WHERE name=$1", h.table)
+	query := fmt.Sprintf("SELECT * FROM %v WHERE name=$1", h.table)
 	err := h.db.Get(hostRow, query, name)
 
 	return hostRow, err
@@ -112,21 +112,7 @@ func (h *Host) parseResourcedPayload(tx *sqlx.Tx, accessTokenId int64, jsonData 
 	return data, nil
 }
 
-// Create performs insert for one host data.
-func (h *Host) Create(tx *sqlx.Tx, accessTokenId int64, jsonData []byte) (*HostRow, error) {
-	data, err := h.parseResourcedPayload(tx, accessTokenId, jsonData)
-	if err != nil {
-		return nil, err
-	}
-
-	sqlResult, err := h.InsertIntoTable(tx, data)
-	if err != nil {
-		return nil, err
-	}
-
-	return h.hostRowFromSqlResult(tx, sqlResult)
-}
-
+// CreateOrUpdate performs insert/update for one host data.
 func (h *Host) CreateOrUpdate(tx *sqlx.Tx, accessTokenId int64, jsonData []byte) (*HostRow, error) {
 	data, err := h.parseResourcedPayload(tx, accessTokenId, jsonData)
 	if err != nil {

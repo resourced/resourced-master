@@ -31,15 +31,15 @@ func ParseBasicAuth(auth string) (username, password string, ok bool) {
 }
 
 // BasicAuthUnauthorized denies authentication.
-func BasicAuthUnauthorized(res http.ResponseWriter, err error) {
+func BasicAuthUnauthorized(w http.ResponseWriter, err error) {
 	message := "Not Authorized."
 
 	if err != nil {
 		message += fmt.Sprintf(" Error: %v", err)
 	}
 
-	res.Header().Set("WWW-Authenticate", "Basic realm=\""+BasicRealm+"\"")
-	http.Error(res, message, http.StatusUnauthorized)
+	w.Header().Set("WWW-Authenticate", "Basic realm=\""+BasicRealm+"\"")
+	http.Error(w, message, http.StatusUnauthorized)
 }
 
 // HandleErrorJson wraps error in JSON structure.
