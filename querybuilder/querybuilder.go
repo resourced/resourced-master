@@ -48,7 +48,7 @@ func Parse(input string) string {
 				name = strings.TrimSpace(name)
 				name = libstring.StripChars(name, `"'`)
 
-				query := `name LIKE ` + `"` + name + `%"`
+				query := `name LIKE "` + name + `%"`
 				pgQueryParts = append(pgQueryParts, query)
 			}
 		}
