@@ -43,3 +43,13 @@ func GeneratePassword(size int) (string, error) {
 
 	return base64.URLEncoding.EncodeToString(rb), nil
 }
+
+// StripChars removes multiple characters in a string.
+func StripChars(str, chr string) string {
+	return strings.Map(func(r rune) rune {
+		if strings.IndexRune(chr, r) < 0 {
+			return r
+		}
+		return -1
+	}, str)
+}

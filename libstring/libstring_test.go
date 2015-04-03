@@ -30,3 +30,10 @@ func TestGeneratePassword(t *testing.T) {
 		t.Errorf("Generating password should not fail. err: %v", err)
 	}
 }
+
+func TestStripChars(t *testing.T) {
+	output := StripChars("She was a soul stripper. She took my heart!", "aei")
+	if output != "Sh ws  soul strppr. Sh took my hrt!" {
+		t.Error("StripChars did not do its job.")
+	}
+}
