@@ -28,8 +28,29 @@ func Parse(input string) string {
 		}
 
 		// Querying name.
+		// Operators:
+		// "="  : Exact match.
+		// "~^" : Starts with.
 		if strings.HasPrefix(statement, "Name") || strings.HasPrefix(statement, "name") {
+			if strings.Contains(statement, "=") {
+				parts := strings.Split(statement, "=")
 
+				name := parts[len(parts)-1]
+				name = strings.TrimSpace(name)
+
+				query := fmt.Sprintf("name = %v", name)
+				pgQueryParts = append(pgQueryParts, query)
+
+			} else if strings.Contains(statement, "~^") {
+				parts := strings.Split(statement, "~^")
+
+				name := parts[len(parts)-1]
+				name = strings.TrimSpace(name)
+				name = libstring.StripChars(name, `"'`)
+
+				query := `name LIKE ` + `"` + name + `%"`
+				pgQueryParts = append(pgQueryParts, query)
+			}
 		}
 	}
 
