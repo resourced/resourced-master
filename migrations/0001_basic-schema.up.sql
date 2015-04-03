@@ -25,6 +25,8 @@ CREATE TABLE hosts (
     data JSONB
 );
 
+CREATE INDEX idx_name on hosts (name);
+
 CREATE INDEX idx_tags ON hosts USING gin(tags);
 
 CREATE INDEX idx_data ON hosts USING gin(data);
