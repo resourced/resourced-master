@@ -31,7 +31,7 @@ func TestHostCRUD(t *testing.T) {
 	}
 
 	// Create host
-	hostRow, err := newHostForTest(t).CreateOrUpdate(nil, tokenRow.ID, []byte(`{"/stuff": {"Score": 100}, "Host": {"Name": "localhost", "Tags": ["aaa", "bbb"]}}`))
+	hostRow, err := newHostForTest(t).CreateOrUpdate(nil, tokenRow.ID, []byte(`{"/stuff": {"Score": 100, "Host": {"Name": "localhost", "Tags": ["aaa", "bbb"]}}}`))
 	if err != nil {
 		t.Errorf("Creating a new host should work. Error: %v", err)
 	}
