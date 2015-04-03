@@ -8,6 +8,8 @@ import (
 
 var CachedTemplates = make(map[string]*template.Template)
 
+// GetFromRicebox builds template struct from rice.Box.
+// See: github.com/GeertJohan/go.rice
 func GetFromRicebox(box *rice.Box, useCache bool, relativePaths ...string) (*template.Template, error) {
 	templateKey := strings.Join(relativePaths, ",")
 
