@@ -29,7 +29,9 @@ func GetHosts(w http.ResponseWriter, r *http.Request) {
 
 	db := context.Get(r, "db").(*sqlx.DB)
 
-	hosts, err := resourcedmaster_dal.NewHost(db).AllHosts(nil)
+	query := r.URL.Query().Get("q")
+
+	hosts, err := resourcedmaster_dal.NewHost(db).AllHostsByQuery(nil, query)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
@@ -78,4 +80,28 @@ func PostApiHosts(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Write(hostRowJson)
+}
+
+func GetApiHosts(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	db := context.Get(r, "db").(*sqlx.DB)
+
+	accessTokenRow := context.Get(r, "accessTokenRow").(*resourcedmaster_dal.AccessTokenRow)
+
+	query := r.URL.Query().Get("q")
+
+	hosts, err := resourcedmaster_dal.NewHost(db).AllHostsByAccessTokenAndQuery(nil, accessTokenRow.ID, query)
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
+
+	hostRowsJson, err := json.Marshal(hosts)
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
+
+	w.Write(hostRowsJson)
 }

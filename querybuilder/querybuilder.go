@@ -58,8 +58,9 @@ func parseStatement(statement string) string {
 
 			name := parts[len(parts)-1]
 			name = strings.TrimSpace(name)
+			name = libstring.StripChars(name, `"'`)
 
-			return fmt.Sprintf("name = %v", name)
+			return fmt.Sprintf("name = '%v'", name)
 
 		} else if strings.Contains(statement, "~^") {
 			parts := strings.Split(statement, "~^")
@@ -68,7 +69,7 @@ func parseStatement(statement string) string {
 			name = strings.TrimSpace(name)
 			name = libstring.StripChars(name, `"'`)
 
-			return `name LIKE "` + name + `%"`
+			return `name LIKE '` + name + `%'`
 		}
 	}
 

@@ -80,6 +80,20 @@ func (h *Host) AllHostsByQuery(tx *sqlx.Tx, resourcedQuery string) ([]*HostRow, 
 	return hosts, err
 }
 
+// AllHostsByAccessTokenAndQuery returns all user rows by access token and resourced query.
+func (h *Host) AllHostsByAccessTokenAndQuery(tx *sqlx.Tx, accessTokenId int64, resourcedQuery string) ([]*HostRow, error) {
+	pgQuery := querybuilder.Parse(resourcedQuery)
+	if pgQuery == "" {
+		return h.AllHosts(tx)
+	}
+
+	hosts := []*HostRow{}
+	query := fmt.Sprintf("SELECT * FROM %v WHERE access_token_id=$1 AND %v", h.table, pgQuery)
+	err := h.db.Select(&hosts, query, accessTokenId)
+
+	return hosts, err
+}
+
 // GetById returns record by id.
 func (h *Host) GetById(tx *sqlx.Tx, id int64) (*HostRow, error) {
 	hostRow := &HostRow{}
