@@ -52,6 +52,39 @@ func Parse(input string) string {
 				pgQueryParts = append(pgQueryParts, query)
 			}
 		}
+
+		// Querying data.
+		// Operators: >=, <=, =, <, >
+		// Expected output: data #>> '{/free,Swap,Free}' = '0'
+		if strings.HasPrefix(statement, "/") {
+			operator := ""
+
+			if strings.Contains(statement, ">=") {
+				operator = ">="
+			} else if strings.Contains(statement, "<=") {
+				operator = "<="
+			} else if strings.Contains(statement, "=") {
+				operator = "="
+			} else if strings.Contains(statement, "<") {
+				operator = ">"
+			} else if strings.Contains(statement, ">") {
+				operator = ">"
+			}
+
+			if operator != "" {
+				parts := strings.Split(statement, operator)
+
+				pgJsonPath := strings.Replace(parts[0], ".", ",", -1)
+				pgJsonPath = strings.TrimSpace(pgJsonPath)
+
+				value := parts[len(parts)-1]
+				value = strings.TrimSpace(value)
+				value = libstring.StripChars(value, `"'`)
+
+				query := fmt.Sprintf("data #>> '{%v}' %v '%v'", pgJsonPath, operator, value)
+				pgQueryParts = append(pgQueryParts, query)
+			}
+		}
 	}
 
 	if len(pgQueryParts) > 1 {

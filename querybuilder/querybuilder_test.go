@@ -49,11 +49,23 @@ func TestParseNameStartsWith(t *testing.T) {
 	}
 }
 
-func TestParseAnd(t *testing.T) {
-	toBeTested := `tags = ["aaa","bbb","ccc"] AND Name~^"brotato"`
+func TestParseJsonTraversal(t *testing.T) {
+	// Example JSON:
+	// {"/free": {"Swap": {"Free": 0, "Used": 0, "Total": 0}, "Memory": {"Free": 1346609152, "Used": 7243325440, "Total": 8589934592, "ActualFree": 3666075648, "ActualUsed": 4923858944}}}
+
+	toBeTested := `/free.Memory.Free > 10000000`
 
 	output := Parse(toBeTested)
-	if output != `tags ?& array["aaa","bbb","ccc"] AND name LIKE "brotato%"` {
+	if output != `data #>> '{/free,Memory,Free}' > '10000000'` {
+		t.Errorf("Failed to generate name query. Output: %v", output)
+	}
+}
+
+func TestParseAnd(t *testing.T) {
+	toBeTested := `tags = ["aaa","bbb","ccc"] AND Name~^"brotato" AND /free.Memory.Free > 10000000`
+
+	output := Parse(toBeTested)
+	if output != `tags ?& array["aaa","bbb","ccc"] AND name LIKE "brotato%" AND data #>> '{/free,Memory,Free}' > '10000000'` {
 		t.Errorf("Failed to generate name query. Output: %v", output)
 	}
 }
