@@ -45,6 +45,12 @@ func TestHostCRUD(t *testing.T) {
 		t.Fatalf("Selecting all hosts should not fail. Error: %v", err)
 	}
 
+	// SELECT * FROM hosts by query
+	_, err = newHostForTest(t).AllHostsByQuery(nil, `/stuff.Score = 100`)
+	if err != nil {
+		t.Fatalf("Selecting all hosts by query should not fail. Error: %v", err)
+	}
+
 	// SELECT * FROM hosts WHERE id=...
 	_, err = newHostForTest(t).GetById(nil, hostRow.ID)
 	if err != nil {

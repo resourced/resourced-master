@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/jmoiron/sqlx"
 	sqlx_types "github.com/jmoiron/sqlx/types"
+	"github.com/resourced/resourced-master/querybuilder"
 )
 
 func NewHost(db *sqlx.DB) *Host {
@@ -54,6 +55,20 @@ func (h *Host) hostRowFromSqlResult(tx *sqlx.Tx, sqlResult sql.Result) (*HostRow
 func (h *Host) AllHosts(tx *sqlx.Tx) ([]*HostRow, error) {
 	hosts := []*HostRow{}
 	query := fmt.Sprintf("SELECT * FROM %v", h.table)
+	err := h.db.Select(&hosts, query)
+
+	return hosts, err
+}
+
+// AllHostsByQuery returns all user rows by resourced query.
+func (h *Host) AllHostsByQuery(tx *sqlx.Tx, resourcedQuery string) ([]*HostRow, error) {
+	pgQuery := querybuilder.Parse(resourcedQuery)
+	if pgQuery == "" {
+		return h.AllHosts(tx)
+	}
+
+	hosts := []*HostRow{}
+	query := fmt.Sprintf("SELECT * FROM %v WHERE %v", h.table, pgQuery)
 	err := h.db.Select(&hosts, query)
 
 	return hosts, err
