@@ -26,6 +26,12 @@ type HostRow struct {
 	Data          sqlx_types.JsonText `db:"data"`
 }
 
+func (h *HostRow) StringTags() []string {
+	tags := make([]string, 0)
+	h.Tags.Unmarshal(tags)
+	return tags
+}
+
 type ResourcedPayload struct {
 	Data     map[string]interface{}
 	GoStruct string
