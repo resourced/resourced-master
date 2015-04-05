@@ -1,6 +1,6 @@
-[![GoDoc](https://godoc.org/github.com/resourced/resourced-master?status.svg)](http://godoc.org/github.com/resourced/resourced-master) [![license](http://img.shields.io/badge/license-MIT-red.svg?style=flat)](https://raw.githubusercontent.com/resourced/resourced-master/master/LICENSE.md)
+[![GoDoc](https://godoc.org/github.com/resourced/resourced-master?status.svg)](http://godoc.org/github.com/resourced/resourced-master) [![license](http://img.shields.io/badge/license-MIT-red.svg?style=flat)](https://raw.githubusercontent.com/resourced/resourced-master/master/LICENSE.md) [(Imgur Album)](http://imgur.com/a/MKyFr#0)
 
-**ResourceD Master** receives server data from ResourceD agents and serves them as HTTP+JSON [(Imgur Album)](http://imgur.com/a/MKyFr#0).
+**ResourceD Master** receives server data from ResourceD agents and serves them as HTTP+JSON.
 
 ![Signup](http://i.imgur.com/yibQDad.png)
 
