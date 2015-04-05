@@ -20,16 +20,11 @@
             {{ end }}
 
             {{ range $path, $data := $host.DataAsFlatKeyValue }}
-            <div>{{ $path }}</div>
+            <div><h4>{{ $path }}</h4></div>
 
-            <div class="table-responsive">
+            <div class="table-responsive table-condensed">
                 <table class="table table-striped">
-                    <thead>
-                        <tr>
-                            <th>Key</th>
-                            <th>Value</th>
-                        </tr>
-                    </thead>
+                    <thead></thead>
                     <tbody>
                         {{ range $key, $value := $data }}
                         <tr>

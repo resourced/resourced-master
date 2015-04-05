@@ -29,6 +29,10 @@ select {
 .page-header > h1 {
     margin: 0;
 }
+.host h3 {
+    margin-top: 8px;
+    margin-bottom: 20px;
+}
 
 @media(max-width:1196px) {
     #search-input {
@@ -49,4 +53,8 @@ select {
         margin-top: 0;
         margin-bottom: 0;
     }
+}
+
+@-moz-document url-prefix() {
+  fieldset { display: table-cell; }
 }

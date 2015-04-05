@@ -75,9 +75,6 @@ func (h *HostRow) DataAsFlatKeyValue() map[string]map[string]interface{} {
 		outputData[path] = flattenMap
 	}
 
-	inJson, _ := json.Marshal(outputData)
-	println(string(inJson))
-
 	return outputData
 }
 
