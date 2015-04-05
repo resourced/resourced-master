@@ -57,34 +57,20 @@ func (h *Host) hostRowFromSqlResult(tx *sqlx.Tx, sqlResult sql.Result) (*HostRow
 	return h.GetById(tx, hostId)
 }
 
-// AllHosts returns all user rows.
-func (h *Host) AllHosts(tx *sqlx.Tx) ([]*HostRow, error) {
+// AllHostsByAccessTokenId returns all user rows.
+func (h *Host) AllHostsByAccessTokenId(tx *sqlx.Tx, accessTokenId int64) ([]*HostRow, error) {
 	hosts := []*HostRow{}
-	query := fmt.Sprintf("SELECT * FROM %v", h.table)
-	err := h.db.Select(&hosts, query)
+	query := fmt.Sprintf("SELECT * FROM %v WHERE access_token_id=$1", h.table)
+	err := h.db.Select(&hosts, query, accessTokenId)
 
 	return hosts, err
 }
 
-// AllHostsByQuery returns all user rows by resourced query.
-func (h *Host) AllHostsByQuery(tx *sqlx.Tx, resourcedQuery string) ([]*HostRow, error) {
+// AllHostsByAccessTokenIdAndQuery returns all user rows by resourced query.
+func (h *Host) AllHostsByAccessTokenIdAndQuery(tx *sqlx.Tx, accessTokenId int64, resourcedQuery string) ([]*HostRow, error) {
 	pgQuery := querybuilder.Parse(resourcedQuery)
 	if pgQuery == "" {
-		return h.AllHosts(tx)
-	}
-
-	hosts := []*HostRow{}
-	query := fmt.Sprintf("SELECT * FROM %v WHERE %v", h.table, pgQuery)
-	err := h.db.Select(&hosts, query)
-
-	return hosts, err
-}
-
-// AllHostsByAccessTokenAndQuery returns all user rows by access token and resourced query.
-func (h *Host) AllHostsByAccessTokenAndQuery(tx *sqlx.Tx, accessTokenId int64, resourcedQuery string) ([]*HostRow, error) {
-	pgQuery := querybuilder.Parse(resourcedQuery)
-	if pgQuery == "" {
-		return h.AllHosts(tx)
+		return h.AllHostsByAccessTokenId(tx, accessTokenId)
 	}
 
 	hosts := []*HostRow{}
