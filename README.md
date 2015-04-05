@@ -5,9 +5,9 @@
 
 ![Signup](http://i.imgur.com/UcNmeTF.png)
 
-![Hosts](http://i.imgur.com/N92tKwi.png)
+![Access Tokens](http://i.imgur.com/3H9ONza.png)
 
-![Access Tokens](http://i.imgur.com/spk2wO3.png)
+![Hosts](http://i.imgur.com/N92tKwi.png)
 
 
 ## Installation for users
