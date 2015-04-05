@@ -4,8 +4,6 @@
 
 ![Signup](http://i.imgur.com/yibQDad.png)
 
-![Login](http://i.imgur.com/0WlnlOl.png)
-
 ![Hosts](http://i.imgur.com/N92tKwi.png)
 
 ![Access Tokens](http://i.imgur.com/spk2wO3.png)
