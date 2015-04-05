@@ -1,8 +1,14 @@
 [![GoDoc](https://godoc.org/github.com/resourced/resourced-master?status.svg)](http://godoc.org/github.com/resourced/resourced-master) [![license](http://img.shields.io/badge/license-MIT-red.svg?style=flat)](https://raw.githubusercontent.com/resourced/resourced-master/master/LICENSE.md)
 
-**ResourceD Master** receives server data from ResourceD agents and serves them as HTTP+JSON.
+**ResourceD Master** receives server data from ResourceD agents and serves them as HTTP+JSON [(Imgur Album)](http://imgur.com/a/MKyFr#0).
 
-This project is currently an alpha software. Use it at your own risk.
+![Signup](http://i.imgur.com/yibQDad.png)
+
+![Login](http://i.imgur.com/0WlnlOl.png)
+
+![Hosts](http://i.imgur.com/N92tKwi.png)
+
+![Access Tokens](http://i.imgur.com/spk2wO3.png)
 
 
 ## Installation for users
