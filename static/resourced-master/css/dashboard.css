@@ -5,6 +5,11 @@ select {
     color: #333;
     padding: 1px 0;
 }
+#search-input {
+    font-size: 17px;
+    width: 640px;
+    padding: 0 10px;
+}
 .modal-backdrop {
     background-color: #aaa;
     bottom: 0;
@@ -15,10 +20,7 @@ select {
     z-index: initial;
 }
 .search-form {
-    padding-left: 1px;
-}
-.search-form > .btn {
-    padding: 8px;
+    padding: 0 1px;
 }
 .page-header {
     margin: 18px 0;
@@ -26,4 +28,25 @@ select {
 }
 .page-header > h1 {
     margin: 0;
+}
+
+@media(max-width:1196px) {
+    #search-input {
+        width: 500px;
+    }
+}
+
+@media(max-width:989px) {
+    #search-input {
+        width: 280px;
+    }
+}
+@media(max-width:767px) {
+    #search-input {
+        width: 100%;
+    }
+    .navbar-nav {
+        margin-top: 0;
+        margin-bottom: 0;
+    }
 }

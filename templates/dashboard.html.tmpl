@@ -47,11 +47,16 @@
             <li class="active"><a href="/">Hosts</a></li>
           </ul>
 
-          <form class="navbar-form navbar-left search-form host-search" role="search" action="/">
+
+          <form class="navbar-form navbar-left search-form" role="search" action="/">
             <div class="form-group">
-              <input name="q" type="text" class="form-control" placeholder="Search">
+              <div class="input-group">
+                <input id="search-input" name="q" type="text" class="form-control" placeholder="Search">
+                <span class="input-group-btn">
+                  <button type="submit" class="btn btn-default"><span class="glyphicon glyphicon-search" aria-hidden="true"></span></button>
+                </span>
+              </div>
             </div>
-            <button type="submit" class="btn btn-default"><span class="glyphicon glyphicon-search" aria-hidden="true"></span></button>
           </form>
 
           <ul class="nav navbar-nav navbar-right">
