@@ -3,7 +3,7 @@
 
 **ResourceD Master** receives server data from ResourceD agents and serves them as HTTP+JSON.
 
-![Signup](http://i.imgur.com/yibQDad.png)
+![Signup](http://i.imgur.com/UcNmeTF.png)
 
 ![Hosts](http://i.imgur.com/N92tKwi.png)
 
