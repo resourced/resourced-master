@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/jmoiron/sqlx"
 	sqlx_types "github.com/jmoiron/sqlx/types"
+	"github.com/nytlabs/gojsonexplode"
 	"github.com/resourced/resourced-master/querybuilder"
 )
 
@@ -16,6 +17,18 @@ func NewHost(db *sqlx.DB) *Host {
 	host.hasID = true
 
 	return host
+}
+
+type ResourcedPayload struct {
+	Data     map[string]interface{}
+	GoStruct string
+	Host     struct {
+		Name string
+		Tags []string
+	}
+	Interval string
+	Path     string
+	UnixNano float64
 }
 
 type HostRow struct {
@@ -32,16 +45,40 @@ func (h *HostRow) StringTags() []string {
 	return tags
 }
 
-type ResourcedPayload struct {
-	Data     map[string]interface{}
-	GoStruct string
-	Host     struct {
-		Name string
-		Tags []string
+func (h *HostRow) DataAsFlatKeyValue() map[string]map[string]interface{} {
+	inputData := make(map[string]map[string]interface{})
+
+	outputData := make(map[string]map[string]interface{})
+
+	err := json.Unmarshal(h.Data, &inputData)
+	if err != nil {
+		return outputData
 	}
-	Interval string
-	Path     string
-	UnixNano float64
+
+	for path, innerData := range inputData {
+		innerDataJson, err := json.Marshal(innerData)
+		if err != nil {
+			continue
+		}
+
+		flattenMapJson, err := gojsonexplode.Explodejson(innerDataJson, ".")
+		if err != nil {
+			continue
+		}
+
+		flattenMap := make(map[string]interface{})
+
+		err = json.Unmarshal(flattenMapJson, &flattenMap)
+		if err != nil {
+			continue
+		}
+		outputData[path] = flattenMap
+	}
+
+	inJson, _ := json.Marshal(outputData)
+	println(string(inJson))
+
+	return outputData
 }
 
 type Host struct {

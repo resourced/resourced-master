@@ -9,7 +9,7 @@
     </div>
 
     {{ range $host := .Hosts }}
-    <div class="row">
+    <div class="row host">
         <div class="col-xs-12 col-lg-12">
             <div>
                 <h3>{{ $host.Name }}</h3>
@@ -19,9 +19,28 @@
             <span class="label label-primary">{{ $tag }}</span>
             {{ end }}
 
-            <div>
-                {{ printf "%s" $host.Data }}
+            {{ range $path, $data := $host.DataAsFlatKeyValue }}
+            <div>{{ $path }}</div>
+
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Key</th>
+                            <th>Value</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {{ range $key, $value := $data }}
+                        <tr>
+                            <td>{{ $key }}</td>
+                            <td>{{ $value }}</td>
+                        </tr>
+                        {{ end }}
+                    </tbody>
+                </table>
             </div>
+            {{ end }}
 
         </div>
     </div>
