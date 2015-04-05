@@ -53,13 +53,9 @@ ResourceD Master accepts a few environment variables as configuration:
 
 Every HTTP request requires AccessToken passed as user. Example:
 ```
-curl -u 0b79bab50daca910b000d4f1a2b675d604257e42: https://localhost:55655/api
+curl -u 0b79bab50daca910b000d4f1a2b675d604257e42: https://localhost:55655/api/hosts
 ```
 
-### Basic Level Authorization
+* **GET** `/api/hosts` Displays list of all hosts by access token.
 
-* **GET** `/api/app/:id/hosts` Displays list of all hosts.
-
-* **GET** `/api/app/:id/hosts/:name` Displays host data.
-
-* **POST** `/api/app/:id/hosts/:name` Submit JSON data from 1 host.
+* **POST** `/api/hosts` Submit JSON data from 1 host.
