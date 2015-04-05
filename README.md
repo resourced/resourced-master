@@ -59,3 +59,40 @@ curl -u 0b79bab50daca910b000d4f1a2b675d604257e42: https://localhost:55655/api/ho
 * **GET** `/api/hosts` Displays list of all hosts by access token.
 
 * **POST** `/api/hosts` Submit JSON data from 1 host.
+
+
+## Querying
+
+You can query hosts data using SQL-like language. There are 3 fields to query from: name, tags, and data.
+
+Currently, you can only use *AND* conjunctive operators.
+
+
+**Query by hostname**
+
+* Exact match: `name = "localhost"`
+
+* Starts with match: `name ~^ "awesome-app-"`
+
+**Query by tags**
+
+* Contains the following tags: `tags = ["app", "django", "staging"]`
+
+**Query by data**
+
+1. To craft the query, starts with ResourceD path
+
+2. And then use "." delimited separator as you get deeper into the JSON structure.
+
+Example:
+
+Let's say your resourced agent shipped `/free` data:
+```json
+{"/free": {"Swap": {"Free": 0, "Used": 0, "Total": 0}, "Memory": {"Free": 1346609152, "Used": 7243325440, "Total": 8589934592, "ActualFree": 3666075648, "ActualUsed": 4923858944}}}
+```
+
+You can query "Swap": "Used": data like this:
+```
+/free.Swap.Used > 10000000
+```
+
