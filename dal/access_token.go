@@ -37,7 +37,7 @@ func (t *AccessToken) tokenRowFromSqlResult(tx *sqlx.Tx, sqlResult sql.Result) (
 	return t.GetById(tx, tokenId)
 }
 
-// GetById returns record by id.
+// GetById returns one record by id.
 func (t *AccessToken) GetById(tx *sqlx.Tx, id int64) (*AccessTokenRow, error) {
 	tokenRow := &AccessTokenRow{}
 	query := fmt.Sprintf("SELECT * FROM %v WHERE id=$1", t.table)
@@ -46,11 +46,20 @@ func (t *AccessToken) GetById(tx *sqlx.Tx, id int64) (*AccessTokenRow, error) {
 	return tokenRow, err
 }
 
-// GetByAccessToken returns record by token.
+// GetByAccessToken returns one record by token.
 func (t *AccessToken) GetByAccessToken(tx *sqlx.Tx, token string) (*AccessTokenRow, error) {
 	tokenRow := &AccessTokenRow{}
 	query := fmt.Sprintf("SELECT * FROM %v WHERE token=$1", t.table)
 	err := t.db.Get(tokenRow, query, token)
+
+	return tokenRow, err
+}
+
+// GetByUserId returns one record by user_id.
+func (t *AccessToken) GetByUserId(tx *sqlx.Tx, userId int64) (*AccessTokenRow, error) {
+	tokenRow := &AccessTokenRow{}
+	query := fmt.Sprintf("SELECT * FROM %v WHERE user_id=$1", t.table)
+	err := t.db.Get(tokenRow, query, userId)
 
 	return tokenRow, err
 }
