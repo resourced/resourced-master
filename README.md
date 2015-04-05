@@ -19,22 +19,20 @@ You can follow the examples of init scripts [here](https://github.com/resourced/
 
 ## Installation for contributors
 
-[See CONTRIBUTORS.md](docs/CONTRIBUTORS.md)
+See [CONTRIBUTORS.md](docs/CONTRIBUTORS.md)
 
 
 ## ENV variables as configuration
 
-ResourceD Master accepts a few environment variables as configuration:
+* **RESOURCED_MASTER_ADDR:** HTTP server host:port. Default: `":55655"`
 
-* **RESOURCED_MASTER_ADDR:** The HTTP server host and port. Default: ":55655"
+* **RESOURCED_MASTER_CERT_FILE:** Path to cert file. Default: `""`
 
-* **RESOURCED_MASTER_CERT_FILE:** Path to cert file. Default: ""
+* **RESOURCED_MASTER_KEY_FILE:** Path to key file. Default: `""`
 
-* **RESOURCED_MASTER_KEY_FILE:** Path to key file. Default: ""
+* **RESOURCED_MASTER_DSN** PostgreSQL DSN. Default: `"postgres://$PG_USER@$localhost:5432/resourced-master?sslmode=disable"`
 
-* **RESOURCED_MASTER_DSN** PostgreSQL DSN. Default: "postgres://$PG_USER@$localhost:5432/resourced-master?sslmode=disable"
-
-* **RESOURCED_MASTER_COOKIE_SECRET** Cookie secret key. Default: "$READ_THE_SOURCE_CODE"
+* **RESOURCED_MASTER_COOKIE_SECRET** Cookie secret key. Default: `"$SEE_THE_CODE"`
 
 
 ## RESTful Endpoints
