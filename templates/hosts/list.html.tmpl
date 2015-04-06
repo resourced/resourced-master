@@ -12,6 +12,7 @@
     <div class="row host">
         <div class="col-xs-12 col-lg-12">
             <div>
+                <button type="button" class="btn btn-default pull-right" onclick="$(this).parent().siblings('.details').toggle();">Toggle Details</button>
                 <h3>{{ $host.Name }}</h3>
             </div>
 
@@ -19,23 +20,25 @@
             <span class="label label-primary">{{ $tag }}</span>
             {{ end }}
 
-            {{ range $path, $data := $host.DataAsFlatKeyValue }}
-            <div><h4>{{ $path }}</h4></div>
+            <div class="details" style="display: none">
+                {{ range $path, $data := $host.DataAsFlatKeyValue }}
+                <div><h4>{{ $path }}</h4></div>
 
-            <div class="table-responsive table-condensed">
-                <table class="table table-striped">
-                    <thead></thead>
-                    <tbody>
-                        {{ range $key, $value := $data }}
-                        <tr>
-                            <td>{{ $key }}</td>
-                            <td>{{ $value }}</td>
-                        </tr>
-                        {{ end }}
-                    </tbody>
-                </table>
+                <div class="table-responsive table-condensed">
+                    <table class="table table-striped">
+                        <thead></thead>
+                        <tbody>
+                            {{ range $key, $value := $data }}
+                            <tr>
+                                <td>{{ $key }}</td>
+                                <td>{{ $value }}</td>
+                            </tr>
+                            {{ end }}
+                        </tbody>
+                    </table>
+                </div>
+                {{ end }}
             </div>
-            {{ end }}
 
         </div>
     </div>

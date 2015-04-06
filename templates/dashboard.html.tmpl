@@ -12,19 +12,24 @@
     <script src="/bootstrap/js/bootstrap.min.js"></script>
 
     <script>
-    function GetUrlParams(key) {
+    $(window).load(function() {
+      var key = "q";
+      var value = "";
       var sPageURL = window.location.search.substring(1);
       var sURLVariables = sPageURL.split('&');
+
       for (var i = 0; i < sURLVariables.length; i++) {
         var sParameterName = sURLVariables[i].split('=');
         if (sParameterName[0] == key) {
-          return sParameterName[1];
+          value = sParameterName[1];
         }
       }
-    }
 
-    $(window).load(function() {
-      $('[name="q"]').val(decodeURIComponent(GetUrlParams("q").replace(/\+/g, " ")));
+      value = value.replace(/\+/g, " ");
+
+      if(value != "") {
+        $('[name="q"]').val(decodeURIComponent(value));
+      }
     });
     </script>
   </head>
