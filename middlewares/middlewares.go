@@ -86,6 +86,11 @@ func MustLoginApi(next http.Handler) http.Handler {
 			return
 		}
 
+		if !accessTokenRow.Enabled {
+			libhttp.BasicAuthUnauthorized(res, nil)
+			return
+		}
+
 		isAllowed := false
 
 		if req.Method == "GET" {
