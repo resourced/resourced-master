@@ -28,7 +28,7 @@ func TestParseNameExact(t *testing.T) {
 
 	for _, testString := range toBeTested {
 		output := Parse(testString)
-		if output != `name = "Awesome Sauce"` {
+		if output != `name = 'Awesome Sauce'` {
 			t.Errorf("Failed to generate name query. Output: %v", output)
 		}
 	}
@@ -43,7 +43,7 @@ func TestParseNameStartsWith(t *testing.T) {
 
 	for _, testString := range toBeTested {
 		output := Parse(testString)
-		if output != `name LIKE "brotato%"` {
+		if output != `name LIKE 'brotato%'` {
 			t.Errorf("Failed to generate name query. Output: %v", output)
 		}
 	}
@@ -65,7 +65,7 @@ func TestParseAnd(t *testing.T) {
 	toBeTested := `tags = ["aaa","bbb","ccc"] AND Name~^"brotato" AND /free.Memory.Free > 10000000`
 
 	output := Parse(toBeTested)
-	if output != `tags ?& array["aaa","bbb","ccc"] AND name LIKE "brotato%" AND data #>> '{/free,Memory,Free}' > '10000000'` {
+	if output != `tags ?& array["aaa","bbb","ccc"] AND name LIKE 'brotato%' AND data #>> '{/free,Memory,Free}' > '10000000'` {
 		t.Errorf("Failed to generate name query. Output: %v", output)
 	}
 }

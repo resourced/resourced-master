@@ -12,7 +12,7 @@
 
 ## Installation for users
 
-[Download the precompiled binaries](https://github.com/resourced/resourced-master/releases) and manage them using init/systemd/supervisord.
+[Download the tar.gz](https://github.com/resourced/resourced-master/releases), unpack it, and run the binary using init/systemd/supervisord.
 
 You can follow the examples of init scripts [here](https://github.com/resourced/resourced-master/tree/master/scripts/init).
 
