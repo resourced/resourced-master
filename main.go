@@ -11,11 +11,11 @@ import (
 	resourcedmaster_dal "github.com/resourced/resourced-master/dal"
 	resourcedmaster_handlers "github.com/resourced/resourced-master/handlers"
 	"github.com/resourced/resourced-master/libenv"
+	"github.com/resourced/resourced-master/libunix"
 	resourcedmaster_middlewares "github.com/resourced/resourced-master/middlewares"
 	"github.com/stretchr/graceful"
 	"net/http"
 	"os"
-	"os/user"
 	"time"
 )
 
@@ -27,12 +27,12 @@ func registerToGob() {
 func NewResourcedMaster() (*ResourcedMaster, error) {
 	registerToGob()
 
-	u, err := user.Current()
+	u, err := libunix.CurrentUser()
 	if err != nil {
 		return nil, err
 	}
 
-	dbPath := libenv.EnvWithDefault("RESOURCED_MASTER_DSN", fmt.Sprintf("postgres://%v@localhost:5432/resourced-master?sslmode=disable", u.Username))
+	dbPath := libenv.EnvWithDefault("RESOURCED_MASTER_DSN", fmt.Sprintf("postgres://%v@localhost:5432/resourced-master?sslmode=disable", u))
 
 	db, err := sqlx.Connect("postgres", dbPath)
 	if err != nil {

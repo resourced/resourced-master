@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
+	"github.com/resourced/resourced-master/libunix"
 	"github.com/satori/go.uuid"
-	"os/user"
 	"testing"
 )
 
@@ -14,12 +14,12 @@ func newEmailForTest() string {
 }
 
 func newDbForTest(t *testing.T) *sqlx.DB {
-	u, err := user.Current()
+	u, err := libunix.CurrentUser()
 	if err != nil {
 		t.Fatalf("Getting current user should never fail. Error: %v", err)
 	}
 
-	db, err := sqlx.Connect("postgres", fmt.Sprintf("postgres://%v@localhost:5432/resourced-master-test?sslmode=disable", u.Username))
+	db, err := sqlx.Connect("postgres", fmt.Sprintf("postgres://%v@localhost:5432/resourced-master-test?sslmode=disable", u))
 	if err != nil {
 		t.Fatalf("Connecting to local postgres should never fail. Error: %v", err)
 	}
