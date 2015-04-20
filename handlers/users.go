@@ -2,13 +2,12 @@ package handlers
 
 import (
 	"errors"
-	"github.com/GeertJohan/go.rice"
 	"github.com/gorilla/context"
 	"github.com/gorilla/sessions"
 	"github.com/jmoiron/sqlx"
 	resourcedmaster_dal "github.com/resourced/resourced-master/dal"
 	"github.com/resourced/resourced-master/libhttp"
-	"github.com/resourced/resourced-master/libtemplate"
+	"html/template"
 	"net/http"
 	"strings"
 )
@@ -16,9 +15,7 @@ import (
 func GetSignup(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html")
 
-	riceBoxes := context.Get(r, "riceBoxes").(map[string]*rice.Box)
-
-	tmpl, err := libtemplate.GetFromRicebox(riceBoxes["templates"], false, "users/login-signup-parent.html.tmpl", "users/signup.html.tmpl")
+	tmpl, err := template.ParseFiles("templates/users/login-signup-parent.html.tmpl", "templates/users/signup.html.tmpl")
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
@@ -49,9 +46,7 @@ func PostSignup(w http.ResponseWriter, r *http.Request) {
 func GetLoginWithoutSession(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html")
 
-	riceBoxes := context.Get(r, "riceBoxes").(map[string]*rice.Box)
-
-	tmpl, err := libtemplate.GetFromRicebox(riceBoxes["templates"], false, "users/login-signup-parent.html.tmpl", "users/login.html.tmpl")
+	tmpl, err := template.ParseFiles("templates/users/login-signup-parent.html.tmpl", "templates/users/login.html.tmpl")
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return

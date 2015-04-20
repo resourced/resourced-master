@@ -2,13 +2,12 @@ package handlers
 
 import (
 	"encoding/json"
-	"github.com/GeertJohan/go.rice"
 	"github.com/gorilla/context"
 	"github.com/gorilla/sessions"
 	"github.com/jmoiron/sqlx"
 	resourcedmaster_dal "github.com/resourced/resourced-master/dal"
 	"github.com/resourced/resourced-master/libhttp"
-	"github.com/resourced/resourced-master/libtemplate"
+	"html/template"
 	"io/ioutil"
 	"net/http"
 )
@@ -24,8 +23,6 @@ func GetHosts(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/logout", 301)
 		return
 	}
-
-	riceBoxes := context.Get(r, "riceBoxes").(map[string]*rice.Box)
 
 	db := context.Get(r, "db").(*sqlx.DB)
 
@@ -51,7 +48,7 @@ func GetHosts(w http.ResponseWriter, r *http.Request) {
 		hosts,
 	}
 
-	tmpl, err := libtemplate.GetFromRicebox(riceBoxes["templates"], false, "dashboard.html.tmpl", "hosts/list.html.tmpl")
+	tmpl, err := template.ParseFiles("templates/dashboard.html.tmpl", "templates/hosts/list.html.tmpl")
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return

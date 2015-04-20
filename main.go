@@ -3,7 +3,6 @@ package main
 import (
 	"encoding/gob"
 	"fmt"
-	"github.com/GeertJohan/go.rice"
 	"github.com/carbocation/interpose"
 	gorilla_mux "github.com/gorilla/mux"
 	"github.com/gorilla/sessions"
@@ -24,22 +23,6 @@ func registerToGob() {
 	gob.Register(&resourcedmaster_dal.UserRow{})
 }
 
-// NewResourcedMaster is the constructor for riceBoxes struct.
-func NewriceBoxes(gorice *rice.Config) (map[string]*rice.Box, error) {
-	riceBoxes := make(map[string]*rice.Box)
-
-	for _, boxName := range []string{"templates", "static"} {
-		box, err := gorice.FindBox(boxName)
-		if err != nil {
-			return riceBoxes, err
-		}
-
-		riceBoxes[boxName] = box
-	}
-
-	return riceBoxes, nil
-}
-
 // NewResourcedMaster is the constructor for ResourcedMaster struct.
 func NewResourcedMaster() (*ResourcedMaster, error) {
 	registerToGob()
@@ -56,20 +39,10 @@ func NewResourcedMaster() (*ResourcedMaster, error) {
 		return nil, err
 	}
 
-	gorice := &rice.Config{
-		LocateOrder: []rice.LocateMethod{rice.LocateEmbedded, rice.LocateAppended, rice.LocateFS},
-	}
-
-	riceBoxes, err := NewriceBoxes(gorice)
-	if err != nil {
-		return nil, err
-	}
-
 	cookieStoreSecret := libenv.EnvWithDefault("RESOURCED_MASTER_COOKIE_SECRET", "T0PS3CR3T")
 
 	rm := &ResourcedMaster{}
 	rm.db = db
-	rm.riceBoxes = riceBoxes
 	rm.cookieStore = sessions.NewCookieStore([]byte(cookieStoreSecret))
 
 	return rm, err
@@ -78,14 +51,12 @@ func NewResourcedMaster() (*ResourcedMaster, error) {
 // ResourcedMaster is the application object that runs HTTP server.
 type ResourcedMaster struct {
 	db          *sqlx.DB
-	riceBoxes   map[string]*rice.Box
 	cookieStore *sessions.CookieStore
 }
 
 func (rm *ResourcedMaster) middlewareStruct() (*interpose.Middleware, error) {
 	middle := interpose.New()
 	middle.Use(resourcedmaster_middlewares.SetDB(rm.db))
-	middle.Use(resourcedmaster_middlewares.SetRiceBoxes(rm.riceBoxes))
 	middle.Use(resourcedmaster_middlewares.SetCookieStore(rm.cookieStore))
 
 	middle.UseHandler(rm.mux())
@@ -119,7 +90,7 @@ func (rm *ResourcedMaster) mux() *gorilla_mux.Router {
 	router.Handle("/api/hosts", MustLoginApi(http.HandlerFunc(resourcedmaster_handlers.PostApiHosts))).Methods("POST")
 
 	// Path of static files must be last!
-	router.PathPrefix("/").Handler(http.FileServer(rm.riceBoxes["static"].HTTPBox()))
+	router.PathPrefix("/").Handler(http.FileServer(http.Dir("static")))
 
 	return router
 }

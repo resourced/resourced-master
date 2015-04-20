@@ -1,13 +1,12 @@
 package handlers
 
 import (
-	"github.com/GeertJohan/go.rice"
 	"github.com/gorilla/context"
 	"github.com/gorilla/sessions"
 	"github.com/jmoiron/sqlx"
 	resourcedmaster_dal "github.com/resourced/resourced-master/dal"
 	"github.com/resourced/resourced-master/libhttp"
-	"github.com/resourced/resourced-master/libtemplate"
+	"html/template"
 	"net/http"
 )
 
@@ -39,9 +38,7 @@ func GetAccessTokens(w http.ResponseWriter, r *http.Request) {
 		accessTokens,
 	}
 
-	riceBoxes := context.Get(r, "riceBoxes").(map[string]*rice.Box)
-
-	tmpl, err := libtemplate.GetFromRicebox(riceBoxes["templates"], false, "dashboard.html.tmpl", "access-tokens/list.html.tmpl")
+	tmpl, err := template.ParseFiles("templates/dashboard.html.tmpl", "templates/access-tokens/list.html.tmpl")
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return

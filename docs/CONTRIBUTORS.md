@@ -16,5 +16,5 @@
 3. Run the server
     ```
     cd $GOPATH/src/github.com/resourced/resourced-master
-    go run resourced-master.go
+    go run main.go
     ```

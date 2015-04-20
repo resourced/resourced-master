@@ -2,8 +2,6 @@
 package middlewares
 
 import (
-	// "fmt"
-	"github.com/GeertJohan/go.rice"
 	"github.com/gorilla/context"
 	"github.com/gorilla/sessions"
 	"github.com/jmoiron/sqlx"
@@ -16,16 +14,6 @@ func SetDB(db *sqlx.DB) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
 			context.Set(req, "db", db)
-
-			next.ServeHTTP(res, req)
-		})
-	}
-}
-
-func SetRiceBoxes(riceBoxes map[string]*rice.Box) func(http.Handler) http.Handler {
-	return func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
-			context.Set(req, "riceBoxes", riceBoxes)
 
 			next.ServeHTTP(res, req)
 		})
