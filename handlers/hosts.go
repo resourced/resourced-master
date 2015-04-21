@@ -28,16 +28,12 @@ func GetHosts(w http.ResponseWriter, r *http.Request) {
 
 	query := r.URL.Query().Get("q")
 
-	accessTokenRow, err := resourcedmaster_dal.NewAccessToken(db).GetByUserId(nil, currentUser.ID)
-	if err != nil {
-		libhttp.HandleErrorJson(w, err)
-		return
-	}
+	var hosts []*resourcedmaster_dal.HostRow
 
-	hosts, err := resourcedmaster_dal.NewHost(db).AllHostsByAccessTokenIdAndQuery(nil, accessTokenRow.ID, query)
-	if err != nil {
-		libhttp.HandleErrorJson(w, err)
-		return
+	accessTokenRow, _ := resourcedmaster_dal.NewAccessToken(db).GetByUserId(nil, currentUser.ID)
+
+	if accessTokenRow != nil {
+		hosts, _ = resourcedmaster_dal.NewHost(db).AllHostsByAccessTokenIdAndQuery(nil, accessTokenRow.ID, query)
 	}
 
 	data := struct {

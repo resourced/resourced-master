@@ -24,11 +24,7 @@ func GetAccessTokens(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	accessTokens, err := resourcedmaster_dal.NewAccessToken(db).AllAccessTokens(nil)
-	if err != nil {
-		libhttp.HandleErrorJson(w, err)
-		return
-	}
+	accessTokens, _ := resourcedmaster_dal.NewAccessToken(db).AllAccessTokens(nil)
 
 	data := struct {
 		CurrentUser  *resourcedmaster_dal.UserRow
