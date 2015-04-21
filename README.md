@@ -12,9 +12,22 @@
 
 ## Installation for users
 
-[Download the tar.gz](https://github.com/resourced/resourced-master/releases), unpack it, and run the binary using init/systemd/supervisord.
+1. Install PostgreSQL 9.4.x
 
-You can follow the examples of init scripts [here](https://github.com/resourced/resourced-master/tree/master/scripts/init).
+2. Install Go 1.4.x, git, setup $GOPATH, and PATH=$PATH:$GOPATH/bin
+
+3. Create PostgreSQL database.
+    ```
+    sudo su - postgres
+    createuser -P -e resourced
+    createdb --owner=resourced resourced-master
+
+    # Make sure user, password, and pg_hba.conf are configured correctly.
+    ```
+
+4. [Create all the PostgreSQL tables](https://github.com/resourced/resourced-master/blob/master/migrations/0001_basic-schema.up.sql).
+
+5. [Download the tar.gz](https://github.com/resourced/resourced-master/releases), unpack it, and run the binary using init/systemd/supervisord. You can follow the examples of init scripts [here](https://github.com/resourced/resourced-master/tree/master/scripts/init).
 
 
 ## Installation for contributors
