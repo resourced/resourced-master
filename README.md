@@ -14,7 +14,7 @@
 
 1. Install PostgreSQL 9.4.x
 
-2. Install Go 1.4.x, git, setup $GOPATH, and PATH=$PATH:$GOPATH/bin
+2. Install Go 1.4.x, git, setup `$GOPATH`, and `PATH=$PATH:$GOPATH/bin`
 
 3. Create PostgreSQL database.
     ```
@@ -62,9 +62,7 @@ curl -u 0b79bab50daca910b000d4f1a2b675d604257e42: https://localhost:55655/api/ho
 
 ## Querying
 
-You can query hosts data using SQL-like language.
-
-There are 3 fields to query from: name, tags, and data.
+You can query hosts data using SQL-like language. There are 3 fields to query from: `name`, `tags`, and `data`.
 
 Currently, you can only use *AND* conjunctive operators.
 
