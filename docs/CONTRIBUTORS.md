@@ -27,3 +27,10 @@
     cd $GOPATH/src/github.com/resourced/resourced-master
     go run main.go
     ```
+
+
+## Building a new darwin/linux release
+
+1. `GOOS={os} go build`
+
+2. `tar cvzf resourced-master-$GOOS-{semver}.tar.gz resourced-master static/ templates/ migrations/`
