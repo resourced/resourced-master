@@ -12,7 +12,10 @@
     <div class="row host">
         <div class="col-xs-12 col-lg-12">
             <div>
-                <button type="button" class="btn btn-default pull-right" onclick="$(this).parent().siblings('.details').toggle();">Toggle Details</button>
+                <div class="pull-right">
+                    <input type="checkbox" class="toggler toggler-header pull-right" data-size="mini">
+                </div>
+
                 <h3>{{ $host.Name }}</h3>
             </div>
 
@@ -22,9 +25,15 @@
 
             <div class="details" style="display: none">
                 {{ range $path, $data := $host.DataAsFlatKeyValue }}
-                <div><h4>{{ $path }}</h4></div>
+                <div class="detail-header" data-path="{{ $path }}">
+                    <div class="pull-right">
+                        <input type="checkbox" class="toggler toggler-body pull-right" data-size="mini" checked>
+                    </div>
 
-                <div class="table-responsive table-condensed">
+                    <h4>{{ $path }}</h4>
+                </div>
+
+                <div class="detail-body table-responsive table-condensed" data-path="{{ $path }}">
                     <table class="table table-striped">
                         <thead></thead>
                         <tbody>
@@ -44,5 +53,18 @@
     </div>
     {{ end }}
 
+    <script>
+    $('.toggler').bootstrapSwitch();
+
+    $('.toggler-header').on('switchChange.bootstrapSwitch', function(event, state) {
+        $(this).closest('.host').find('.details').toggle();
+    });
+
+    $('.toggler-body').on('switchChange.bootstrapSwitch', function(event, state) {
+        var $detailHeader = $(this).closest('.detail-header');
+        var path = $detailHeader.data('path');
+        $detailHeader.siblings('.detail-body[data-path="' + path + '"]').toggle();
+    });
+    </script>
 </div>
 {{end}}
