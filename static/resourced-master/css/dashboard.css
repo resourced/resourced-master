@@ -33,6 +33,10 @@ select {
     margin-top: 8px;
     margin-bottom: 20px;
 }
+.updated-timestamp {
+    font-size: 75%;
+    margin-right: 14px;
+}
 
 @media(max-width:1196px) {
     #search-input {
@@ -52,6 +56,11 @@ select {
     .navbar-nav {
         margin-top: 0;
         margin-bottom: 0;
+    }
+}
+@media(max-width:600px) {
+    .updated-timestamp {
+        display: none;
     }
 }
 

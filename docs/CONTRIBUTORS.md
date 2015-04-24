@@ -16,6 +16,9 @@
 
 5. Run the PostgreSQL migration.
     ```
+    # The automatic way: skip this part because migrate up is automatically run when server is up.
+
+    # The CLI way
     go get github.com/mattes/migrate
     cd $GOPATH/src/github.com/resourced/resourced-master
     createdb resourced-master  # Create PostgreSQL database

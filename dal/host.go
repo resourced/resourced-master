@@ -8,6 +8,7 @@ import (
 	sqlx_types "github.com/jmoiron/sqlx/types"
 	"github.com/nytlabs/gojsonexplode"
 	"github.com/resourced/resourced-master/querybuilder"
+	"time"
 )
 
 func NewHost(db *sqlx.DB) *Host {
@@ -35,6 +36,7 @@ type HostRow struct {
 	ID            int64               `db:"id"`
 	AccessTokenID int64               `db:"access_token_id"`
 	Name          string              `db:"name"`
+	Updated       time.Time           `db:"updated"`
 	Tags          sqlx_types.JsonText `db:"tags"`
 	Data          sqlx_types.JsonText `db:"data"`
 }
@@ -184,6 +186,10 @@ func (h *Host) CreateOrUpdate(tx *sqlx.Tx, accessTokenId int64, jsonData []byte)
 		}
 
 		return h.hostRowFromSqlResult(tx, sqlResult)
+	}
+
+	if _, ok := data["updated"]; !ok {
+		data["updated"] = time.Now()
 	}
 
 	// Perform UPDATE

@@ -8,6 +8,7 @@ import (
 	"github.com/gorilla/sessions"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
+	"github.com/mattes/migrate/migrate"
 	resourcedmaster_dal "github.com/resourced/resourced-master/dal"
 	resourcedmaster_handlers "github.com/resourced/resourced-master/handlers"
 	"github.com/resourced/resourced-master/libenv"
@@ -32,9 +33,9 @@ func NewResourcedMaster() (*ResourcedMaster, error) {
 		return nil, err
 	}
 
-	dbPath := libenv.EnvWithDefault("RESOURCED_MASTER_DSN", fmt.Sprintf("postgres://%v@localhost:5432/resourced-master?sslmode=disable", u))
+	dsn := libenv.EnvWithDefault("RESOURCED_MASTER_DSN", fmt.Sprintf("postgres://%v@localhost:5432/resourced-master?sslmode=disable", u))
 
-	db, err := sqlx.Connect("postgres", dbPath)
+	db, err := sqlx.Connect("postgres", dsn)
 	if err != nil {
 		return nil, err
 	}
@@ -42,6 +43,7 @@ func NewResourcedMaster() (*ResourcedMaster, error) {
 	cookieStoreSecret := libenv.EnvWithDefault("RESOURCED_MASTER_COOKIE_SECRET", "T0PS3CR3T")
 
 	rm := &ResourcedMaster{}
+	rm.dsn = dsn
 	rm.db = db
 	rm.cookieStore = sessions.NewCookieStore([]byte(cookieStoreSecret))
 
@@ -50,6 +52,7 @@ func NewResourcedMaster() (*ResourcedMaster, error) {
 
 // ResourcedMaster is the application object that runs HTTP server.
 type ResourcedMaster struct {
+	dsn         string
 	db          *sqlx.DB
 	cookieStore *sessions.CookieStore
 }
@@ -95,10 +98,23 @@ func (rm *ResourcedMaster) mux() *gorilla_mux.Router {
 	return router
 }
 
+func (rm *ResourcedMaster) migrateUp() (err []error, ok bool) {
+	return migrate.UpSync(rm.dsn, "./migrations")
+}
+
 func main() {
 	app, err := NewResourcedMaster()
 	if err != nil {
 		println(err.Error())
+		os.Exit(1)
+	}
+
+	// Migrate up
+	errs, ok := app.migrateUp()
+	if !ok {
+		for _, err := range errs {
+			println(err.Error())
+		}
 		os.Exit(1)
 	}
 

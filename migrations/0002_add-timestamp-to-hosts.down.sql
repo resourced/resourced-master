@@ -1,0 +1,3 @@
+ALTER TABLE hosts DROP IF EXISTS updated;
+
+DROP INDEX IF EXISTS idx_updated;

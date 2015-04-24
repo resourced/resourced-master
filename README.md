@@ -25,9 +25,7 @@
     # Make sure user, password, and pg_hba.conf are configured correctly.
     ```
 
-4. [Create all the PostgreSQL tables](https://github.com/resourced/resourced-master/blob/master/migrations/0001_basic-schema.up.sql).
-
-5. [Download the tar.gz](https://github.com/resourced/resourced-master/releases), unpack it, and run the binary using init/systemd/supervisord. You can follow the examples of init scripts [here](https://github.com/resourced/resourced-master/tree/master/scripts/init).
+4. [Download the tar.gz](https://github.com/resourced/resourced-master/releases), unpack it, and run the binary using init/systemd/supervisord. You can follow the examples of init scripts [here](https://github.com/resourced/resourced-master/tree/master/scripts/init).
 
 
 ## Installation for contributors
