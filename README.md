@@ -1,4 +1,6 @@
-[![GoDoc](https://godoc.org/github.com/resourced/resourced-master?status.svg)](http://godoc.org/github.com/resourced/resourced-master) [![license](http://img.shields.io/badge/license-MIT-red.svg?style=flat)](LICENSE.md) [![Imgur Album](https://img.shields.io/badge/images-imgur-blue.svg?style=flat)](http://imgur.com/a/MKyFr#0)
+[![GoDoc](https://godoc.org/github.com/resourced/resourced-master?status.svg)](http://godoc.org/github.com/resourced/resourced-master)
+[![license](http://img.shields.io/badge/license-MIT-red.svg?style=flat)](LICENSE.md)
+[![Imgur Album](https://img.shields.io/badge/images-imgur-blue.svg?style=flat)](http://imgur.com/a/MKyFr#0)
 
 
 **ResourceD Master** receives server data from ResourceD agents and serves them as HTTP+JSON.
@@ -28,9 +30,9 @@
 4. [Download the tar.gz](https://github.com/resourced/resourced-master/releases), unpack it, and run the binary using init/systemd/supervisord. You can follow the examples of init scripts [here](https://github.com/resourced/resourced-master/tree/master/scripts/init).
 
 
-## Installation for contributors
+## Installation for developers/contributors
 
-See [CONTRIBUTORS.md](docs/CONTRIBUTORS.md)
+See [INSTALL.md](docs/contributors/INSTALL.md) and [BUILD.md](docs/contributors/BUILD.md)
 
 
 ## ENV variables as configuration
