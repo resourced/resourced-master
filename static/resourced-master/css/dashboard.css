@@ -7,7 +7,7 @@ select {
 }
 #search-input {
     font-size: 17px;
-    width: 640px;
+    width: 600px;
     padding: 0 10px;
 }
 .modal-backdrop {
@@ -19,7 +19,10 @@ select {
     top: 0;
     z-index: initial;
 }
-.search-form {
+.navbar {
+    margin-bottom: 0;
+}
+.navbar form {
     padding: 0 1px;
 }
 .page-header {
@@ -29,9 +32,26 @@ select {
 .page-header > h1 {
     margin: 0;
 }
-.host h3 {
-    margin-top: 8px;
+.container.saved-queries h2, .container.hosts h2 {
+    margin-top: 30px;
+    font-size: 25px;
+}
+.saved-queries h3 {
+    margin: 0 0 6px;
+    padding: 4px 0;
+    font-size: 17px;
+}
+.saved-queries .btn {
+    padding: 4px 8px;
+    font-size: 12px;
+}
+.hosts h3 {
+    margin-top: 0;
     margin-bottom: 20px;
+    font-size: 21px;
+}
+.hosts h4 {
+    font-size: 18px;
 }
 .updated-timestamp {
     font-size: 75%;
