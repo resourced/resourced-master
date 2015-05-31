@@ -97,7 +97,7 @@ func PostAccessTokensEnabled(w http.ResponseWriter, r *http.Request) {
 
 	at := resourcedmaster_dal.NewAccessToken(db)
 
-	accessTokenRow, err := at.GetById(nil, tokenId)
+	accessTokenRow, err := at.GetByID(nil, tokenId)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return

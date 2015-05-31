@@ -46,13 +46,13 @@ func TestHostCRUD(t *testing.T) {
 	}
 
 	// SELECT * FROM hosts by query
-	_, err = newHostForTest(t).AllHostsByAccessTokenIdAndQuery(nil, tokenRow.ID, `/stuff.Score = 100`)
+	_, err = newHostForTest(t).AllByAccessTokenIdAndQuery(nil, tokenRow.ID, `/stuff.Score = 100`)
 	if err != nil {
 		t.Fatalf("Selecting all hosts by query should not fail. Error: %v", err)
 	}
 
 	// SELECT * FROM hosts WHERE id=...
-	_, err = newHostForTest(t).GetById(nil, hostRow.ID)
+	_, err = newHostForTest(t).GetByID(nil, hostRow.ID)
 	if err != nil {
 		t.Fatalf("Selecting host by id should not fail. Error: %v", err)
 	}

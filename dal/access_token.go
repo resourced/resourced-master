@@ -34,11 +34,11 @@ func (t *AccessToken) tokenRowFromSqlResult(tx *sqlx.Tx, sqlResult sql.Result) (
 		return nil, err
 	}
 
-	return t.GetById(tx, tokenId)
+	return t.GetByID(tx, tokenId)
 }
 
-// GetById returns one record by id.
-func (t *AccessToken) GetById(tx *sqlx.Tx, id int64) (*AccessTokenRow, error) {
+// GetByID returns one record by id.
+func (t *AccessToken) GetByID(tx *sqlx.Tx, id int64) (*AccessTokenRow, error) {
 	tokenRow := &AccessTokenRow{}
 	query := fmt.Sprintf("SELECT * FROM %v WHERE id=$1", t.table)
 	err := t.db.Get(tokenRow, query, id)

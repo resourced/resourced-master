@@ -33,7 +33,7 @@ func (u *User) userRowFromSqlResult(tx *sqlx.Tx, sqlResult sql.Result) (*UserRow
 		return nil, err
 	}
 
-	return u.GetById(tx, userId)
+	return u.GetByID(tx, userId)
 }
 
 // AllUsers returns all user rows.
@@ -45,8 +45,8 @@ func (u *User) AllUsers(tx *sqlx.Tx) ([]*UserRow, error) {
 	return users, err
 }
 
-// GetById returns record by id.
-func (u *User) GetById(tx *sqlx.Tx, id int64) (*UserRow, error) {
+// GetByID returns record by id.
+func (u *User) GetByID(tx *sqlx.Tx, id int64) (*UserRow, error) {
 	user := &UserRow{}
 	query := fmt.Sprintf("SELECT * FROM %v WHERE id=$1", u.table)
 	err := u.db.Get(user, query, id)
@@ -144,5 +144,5 @@ func (u *User) UpdateEmailAndPasswordById(tx *sqlx.Tx, userId int64, email, pass
 		}
 	}
 
-	return u.GetById(tx, userId)
+	return u.GetByID(tx, userId)
 }

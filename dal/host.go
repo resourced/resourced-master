@@ -90,7 +90,7 @@ func (h *Host) hostRowFromSqlResult(tx *sqlx.Tx, sqlResult sql.Result) (*HostRow
 		return nil, err
 	}
 
-	return h.GetById(tx, hostId)
+	return h.GetByID(tx, hostId)
 }
 
 // AllHostsByAccessTokenId returns all user rows.
@@ -102,8 +102,8 @@ func (h *Host) AllHostsByAccessTokenId(tx *sqlx.Tx, accessTokenId int64) ([]*Hos
 	return hosts, err
 }
 
-// AllHostsByAccessTokenIdAndQuery returns all user rows by resourced query.
-func (h *Host) AllHostsByAccessTokenIdAndQuery(tx *sqlx.Tx, accessTokenId int64, resourcedQuery string) ([]*HostRow, error) {
+// AllByAccessTokenIdAndQuery returns all user rows by resourced query.
+func (h *Host) AllByAccessTokenIdAndQuery(tx *sqlx.Tx, accessTokenId int64, resourcedQuery string) ([]*HostRow, error) {
 	pgQuery := querybuilder.Parse(resourcedQuery)
 	if pgQuery == "" {
 		return h.AllHostsByAccessTokenId(tx, accessTokenId)
@@ -116,8 +116,8 @@ func (h *Host) AllHostsByAccessTokenIdAndQuery(tx *sqlx.Tx, accessTokenId int64,
 	return hosts, err
 }
 
-// GetById returns record by id.
-func (h *Host) GetById(tx *sqlx.Tx, id int64) (*HostRow, error) {
+// GetByID returns record by id.
+func (h *Host) GetByID(tx *sqlx.Tx, id int64) (*HostRow, error) {
 	hostRow := &HostRow{}
 	query := fmt.Sprintf("SELECT * FROM %v WHERE id=$1", h.table)
 	err := h.db.Get(hostRow, query, id)
