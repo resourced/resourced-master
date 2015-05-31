@@ -3,6 +3,7 @@ package dal
 import (
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/jmoiron/sqlx"
 	sqlx_types "github.com/jmoiron/sqlx/types"
@@ -174,6 +175,10 @@ func (h *Host) CreateOrUpdate(tx *sqlx.Tx, accessTokenId int64, jsonData []byte)
 	data, err := h.parseResourcedPayload(tx, accessTokenId, jsonData)
 	if err != nil {
 		return nil, err
+	}
+
+	if data["name"] == nil {
+		return nil, errors.New("Host name cannot be empty.")
 	}
 
 	hostRow, err := h.GetByName(tx, data["name"].(string))
