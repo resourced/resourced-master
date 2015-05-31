@@ -2,6 +2,17 @@ select {
     color: #333;
     padding: 1px 0;
 }
+.bootstrap-switch {
+    border: none;
+}
+.bootstrap-switch .bootstrap-switch-label {
+    background: #4e5d6c none repeat scroll 0 0;
+}
+.bootstrap-switch .bootstrap-switch-handle-on.bootstrap-switch-default, .bootstrap-switch .bootstrap-switch-handle-off.bootstrap-switch-default {
+    background: #d9534f none repeat scroll 0 0;
+    color: #fff;
+}
+
 #search-input {
     font-size: 17px;
     width: 700px;
