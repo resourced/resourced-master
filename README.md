@@ -62,7 +62,9 @@ curl -u 0b79bab50daca910b000d4f1a2b675d604257e42: https://localhost:55655/api/ho
 
 ## Querying
 
-You can query hosts data using SQL-like language. There are 3 fields to query from: `name`, `tags`, and `data`.
+You can query hosts data using SQL-like language.
+
+There are 3 fields to query from: `name`, `tags`, and `data`.
 
 Currently, you can only use *AND* conjunctive operators.
 
@@ -71,7 +73,7 @@ Currently, you can only use *AND* conjunctive operators.
 
 * Exact match: `name = "localhost"`
 
-* Starts with match: `name ~^ "awesome-app-"`
+* Starts-with match: `name ~^ "awesome-app-"`
 
 **Query by tags**
 
@@ -79,15 +81,11 @@ Currently, you can only use *AND* conjunctive operators.
 
 **Query by data**
 
-To craft data query, starts with ResourceD path and then use "." delimited separator as you get deeper into the JSON structure. Example:
+To craft data query, start with ResourceD path and then use "." delimited separator as you get deeper into the JSON structure.
 
-Let's say your resourced agent shipped `/free` data:
+For example, let's say your resourced agent shipped `/free` data:
 ```json
 {"/free": {"Swap": {"Free": 0, "Used": 0, "Total": 0}, "Memory": {"Free": 1346609152, "Used": 7243325440, "Total": 8589934592, "ActualFree": 3666075648, "ActualUsed": 4923858944}}}
 ```
 
-You can query "Swap": "Used": data like this:
-```
-/free.Swap.Used > 10000000
-```
-
+You can then query "Swap": "Used": data: `/free.Swap.Used > 10000000`
