@@ -29,19 +29,23 @@ func GetHosts(w http.ResponseWriter, r *http.Request) {
 	query := r.URL.Query().Get("q")
 
 	var hosts []*resourcedmaster_dal.HostRow
+	var savedQueries []*resourcedmaster_dal.SavedQueryRow
 
 	accessTokenRow, _ := resourcedmaster_dal.NewAccessToken(db).GetByUserId(nil, currentUser.ID)
 
 	if accessTokenRow != nil {
-		hosts, _ = resourcedmaster_dal.NewHost(db).AllHostsByAccessTokenIdAndQuery(nil, accessTokenRow.ID, query)
+		hosts, _ = resourcedmaster_dal.NewHost(db).AllByAccessTokenIdAndQuery(nil, accessTokenRow.ID, query)
+		savedQueries, _ = resourcedmaster_dal.NewSavedQuery(db).AllByAccessToken(nil, accessTokenRow)
 	}
 
 	data := struct {
-		CurrentUser *resourcedmaster_dal.UserRow
-		Hosts       []*resourcedmaster_dal.HostRow
+		CurrentUser  *resourcedmaster_dal.UserRow
+		Hosts        []*resourcedmaster_dal.HostRow
+		SavedQueries []*resourcedmaster_dal.SavedQueryRow
 	}{
 		currentUser,
 		hosts,
+		savedQueries,
 	}
 
 	tmpl, err := template.ParseFiles("templates/dashboard.html.tmpl", "templates/hosts/list.html.tmpl")
@@ -90,7 +94,7 @@ func GetApiHosts(w http.ResponseWriter, r *http.Request) {
 
 	query := r.URL.Query().Get("q")
 
-	hosts, err := resourcedmaster_dal.NewHost(db).AllHostsByAccessTokenIdAndQuery(nil, accessTokenRow.ID, query)
+	hosts, err := resourcedmaster_dal.NewHost(db).AllByAccessTokenIdAndQuery(nil, accessTokenRow.ID, query)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return

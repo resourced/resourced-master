@@ -9,29 +9,21 @@
         </div>
     </div>
 
+    {{ range $savedQuery := .SavedQueries }}
     <div class="row saved-queries">
         <div class="col-xs-12 col-lg-12">
             <div>
                 <div class="pull-right">
-                    <a href="?q=/free.Memory.ActualFree > 1" type="submit" class="btn btn-default"><span class="glyphicon glyphicon-search" aria-hidden="true"></span></a>
+                    <a href="?q={{ $savedQuery.Query }}" type="submit" class="btn btn-default">
+                        <span class="glyphicon glyphicon-search" aria-hidden="true"></span>
+                    </a>
                 </div>
 
-                <h3>/free.Memory.ActualFree > 1</h3>
+                <h3>{{ $savedQuery.Query }}</h3>
             </div>
         </div>
     </div>
-
-    <div class="row saved-queries">
-        <div class="col-xs-12 col-lg-12">
-            <div>
-                <div class="pull-right">
-                    <a href="?q=/free.Memory.ActualUsed > 10" type="submit" class="btn btn-default"><span class="glyphicon glyphicon-search" aria-hidden="true"></span></a>
-                </div>
-
-                <h3>/free.Memory.ActualUsed > 10</h3>
-            </div>
-        </div>
-    </div>
+    {{ end }}
 </div>
 
 <!-- Hosts -->

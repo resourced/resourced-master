@@ -66,6 +66,8 @@
           </form>
 
           <form class="navbar-form navbar-left saved-queries-form" action="/saved-queries" method="post">
+            <input id="saved-queries-input" name="SavedQuery" type="hidden">
+
             <div class="form-group">
               <div class="input-group">
                 <span class="input-group-btn">
@@ -135,5 +137,12 @@
       </div>
     </div>
     {{template "content" .}}
+
+    <script>
+    // This catches keyup, onchange, and paste events.
+    $('#search-input').bind("input propertychange", function(e) {
+      $('#saved-queries-input').val($(this).val());
+    });
+    </script>
   </body>
 </html>

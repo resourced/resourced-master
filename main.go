@@ -89,6 +89,8 @@ func (rm *ResourcedMaster) mux() *gorilla_mux.Router {
 	router.Handle("/access-tokens/{id:[0-9]+}/level", MustLogin(http.HandlerFunc(resourcedmaster_handlers.PostAccessTokensLevel))).Methods("POST")
 	router.Handle("/access-tokens/{id:[0-9]+}/enabled", MustLogin(http.HandlerFunc(resourcedmaster_handlers.PostAccessTokensEnabled))).Methods("POST")
 
+	router.Handle("/saved-queries", MustLogin(http.HandlerFunc(resourcedmaster_handlers.PostSavedQueries))).Methods("POST")
+
 	router.Handle("/api/hosts", MustLoginApi(http.HandlerFunc(resourcedmaster_handlers.GetApiHosts))).Methods("GET")
 	router.Handle("/api/hosts", MustLoginApi(http.HandlerFunc(resourcedmaster_handlers.PostApiHosts))).Methods("POST")
 
