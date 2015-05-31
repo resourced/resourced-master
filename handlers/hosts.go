@@ -5,7 +5,7 @@ import (
 	"github.com/gorilla/context"
 	"github.com/gorilla/sessions"
 	"github.com/jmoiron/sqlx"
-	resourcedmaster_dal "github.com/resourced/resourced-master/dal"
+	rm_dal "github.com/resourced/resourced-master/dal"
 	"github.com/resourced/resourced-master/libhttp"
 	"html/template"
 	"io/ioutil"
@@ -18,7 +18,7 @@ func GetHosts(w http.ResponseWriter, r *http.Request) {
 	cookieStore := context.Get(r, "cookieStore").(*sessions.CookieStore)
 
 	session, _ := cookieStore.Get(r, "resourcedmaster-session")
-	currentUser, ok := session.Values["user"].(*resourcedmaster_dal.UserRow)
+	currentUser, ok := session.Values["user"].(*rm_dal.UserRow)
 	if !ok {
 		http.Redirect(w, r, "/logout", 301)
 		return
@@ -28,20 +28,20 @@ func GetHosts(w http.ResponseWriter, r *http.Request) {
 
 	query := r.URL.Query().Get("q")
 
-	var hosts []*resourcedmaster_dal.HostRow
-	var savedQueries []*resourcedmaster_dal.SavedQueryRow
+	var hosts []*rm_dal.HostRow
+	var savedQueries []*rm_dal.SavedQueryRow
 
-	accessTokenRow, _ := resourcedmaster_dal.NewAccessToken(db).GetByUserId(nil, currentUser.ID)
+	accessTokenRow, _ := rm_dal.NewAccessToken(db).GetByUserId(nil, currentUser.ID)
 
 	if accessTokenRow != nil {
-		hosts, _ = resourcedmaster_dal.NewHost(db).AllByAccessTokenIdAndQuery(nil, accessTokenRow.ID, query)
-		savedQueries, _ = resourcedmaster_dal.NewSavedQuery(db).AllByAccessToken(nil, accessTokenRow)
+		hosts, _ = rm_dal.NewHost(db).AllByAccessTokenIdAndQuery(nil, accessTokenRow.ID, query)
+		savedQueries, _ = rm_dal.NewSavedQuery(db).AllByAccessToken(nil, accessTokenRow)
 	}
 
 	data := struct {
-		CurrentUser  *resourcedmaster_dal.UserRow
-		Hosts        []*resourcedmaster_dal.HostRow
-		SavedQueries []*resourcedmaster_dal.SavedQueryRow
+		CurrentUser  *rm_dal.UserRow
+		Hosts        []*rm_dal.HostRow
+		SavedQueries []*rm_dal.SavedQueryRow
 	}{
 		currentUser,
 		hosts,
@@ -62,7 +62,7 @@ func PostApiHosts(w http.ResponseWriter, r *http.Request) {
 
 	db := context.Get(r, "db").(*sqlx.DB)
 
-	accessTokenRow := context.Get(r, "accessTokenRow").(*resourcedmaster_dal.AccessTokenRow)
+	accessTokenRow := context.Get(r, "accessTokenRow").(*rm_dal.AccessTokenRow)
 
 	dataJson, err := ioutil.ReadAll(r.Body)
 	if err != nil {
@@ -70,7 +70,7 @@ func PostApiHosts(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	hostRow, err := resourcedmaster_dal.NewHost(db).CreateOrUpdate(nil, accessTokenRow.ID, dataJson)
+	hostRow, err := rm_dal.NewHost(db).CreateOrUpdate(nil, accessTokenRow.ID, dataJson)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
@@ -90,11 +90,11 @@ func GetApiHosts(w http.ResponseWriter, r *http.Request) {
 
 	db := context.Get(r, "db").(*sqlx.DB)
 
-	accessTokenRow := context.Get(r, "accessTokenRow").(*resourcedmaster_dal.AccessTokenRow)
+	accessTokenRow := context.Get(r, "accessTokenRow").(*rm_dal.AccessTokenRow)
 
 	query := r.URL.Query().Get("q")
 
-	hosts, err := resourcedmaster_dal.NewHost(db).AllByAccessTokenIdAndQuery(nil, accessTokenRow.ID, query)
+	hosts, err := rm_dal.NewHost(db).AllByAccessTokenIdAndQuery(nil, accessTokenRow.ID, query)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return

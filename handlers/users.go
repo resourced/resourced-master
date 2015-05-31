@@ -5,7 +5,7 @@ import (
 	"github.com/gorilla/context"
 	"github.com/gorilla/sessions"
 	"github.com/jmoiron/sqlx"
-	resourcedmaster_dal "github.com/resourced/resourced-master/dal"
+	rm_dal "github.com/resourced/resourced-master/dal"
 	"github.com/resourced/resourced-master/libhttp"
 	"html/template"
 	"net/http"
@@ -33,7 +33,7 @@ func PostSignup(w http.ResponseWriter, r *http.Request) {
 	password := r.FormValue("Password")
 	passwordAgain := r.FormValue("PasswordAgain")
 
-	_, err := resourcedmaster_dal.NewUser(db).Signup(nil, email, password, passwordAgain)
+	_, err := rm_dal.NewUser(db).Signup(nil, email, password, passwordAgain)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
@@ -82,7 +82,7 @@ func PostLogin(w http.ResponseWriter, r *http.Request) {
 	email := r.FormValue("Email")
 	password := r.FormValue("Password")
 
-	u := resourcedmaster_dal.NewUser(db)
+	u := rm_dal.NewUser(db)
 
 	user, err := u.GetUserByEmailAndPassword(nil, email, password)
 	if err != nil {
@@ -139,7 +139,7 @@ func PutUsersID(w http.ResponseWriter, r *http.Request) {
 
 	session, _ := cookieStore.Get(r, "resourcedmaster-session")
 
-	currentUser := session.Values["user"].(*resourcedmaster_dal.UserRow)
+	currentUser := session.Values["user"].(*rm_dal.UserRow)
 
 	if currentUser.ID != userId {
 		err := errors.New("Modifying other user is not allowed.")
@@ -151,7 +151,7 @@ func PutUsersID(w http.ResponseWriter, r *http.Request) {
 	password := r.FormValue("Password")
 	passwordAgain := r.FormValue("PasswordAgain")
 
-	u := resourcedmaster_dal.NewUser(db)
+	u := rm_dal.NewUser(db)
 
 	currentUser, err = u.UpdateEmailAndPasswordById(nil, currentUser.ID, email, password, passwordAgain)
 	if err != nil {

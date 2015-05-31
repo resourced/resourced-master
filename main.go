@@ -9,11 +9,11 @@ import (
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
 	"github.com/mattes/migrate/migrate"
-	resourcedmaster_dal "github.com/resourced/resourced-master/dal"
-	resourcedmaster_handlers "github.com/resourced/resourced-master/handlers"
+	rm_dal "github.com/resourced/resourced-master/dal"
+	rm_handlers "github.com/resourced/resourced-master/handlers"
 	"github.com/resourced/resourced-master/libenv"
 	"github.com/resourced/resourced-master/libunix"
-	resourcedmaster_middlewares "github.com/resourced/resourced-master/middlewares"
+	rm_middlewares "github.com/resourced/resourced-master/middlewares"
 	"github.com/stretchr/graceful"
 	"net/http"
 	"os"
@@ -21,7 +21,7 @@ import (
 )
 
 func registerToGob() {
-	gob.Register(&resourcedmaster_dal.UserRow{})
+	gob.Register(&rm_dal.UserRow{})
 }
 
 // NewResourcedMaster is the constructor for ResourcedMaster struct.
@@ -59,8 +59,8 @@ type ResourcedMaster struct {
 
 func (rm *ResourcedMaster) middlewareStruct() (*interpose.Middleware, error) {
 	middle := interpose.New()
-	middle.Use(resourcedmaster_middlewares.SetDB(rm.db))
-	middle.Use(resourcedmaster_middlewares.SetCookieStore(rm.cookieStore))
+	middle.Use(rm_middlewares.SetDB(rm.db))
+	middle.Use(rm_middlewares.SetCookieStore(rm.cookieStore))
 
 	middle.UseHandler(rm.mux())
 
@@ -68,31 +68,32 @@ func (rm *ResourcedMaster) middlewareStruct() (*interpose.Middleware, error) {
 }
 
 func (rm *ResourcedMaster) mux() *gorilla_mux.Router {
-	MustLogin := resourcedmaster_middlewares.MustLogin
-	MustLoginApi := resourcedmaster_middlewares.MustLoginApi
+	MustLogin := rm_middlewares.MustLogin
+	MustLoginApi := rm_middlewares.MustLoginApi
 
 	router := gorilla_mux.NewRouter()
 
-	router.Handle("/", MustLogin(http.HandlerFunc(resourcedmaster_handlers.GetHosts))).Methods("GET")
+	router.Handle("/", MustLogin(http.HandlerFunc(rm_handlers.GetHosts))).Methods("GET")
 
-	router.HandleFunc("/signup", resourcedmaster_handlers.GetSignup).Methods("GET")
-	router.HandleFunc("/signup", resourcedmaster_handlers.PostSignup).Methods("POST")
-	router.HandleFunc("/login", resourcedmaster_handlers.GetLogin).Methods("GET")
-	router.HandleFunc("/login", resourcedmaster_handlers.PostLogin).Methods("POST")
-	router.HandleFunc("/logout", resourcedmaster_handlers.GetLogout).Methods("GET")
+	router.HandleFunc("/signup", rm_handlers.GetSignup).Methods("GET")
+	router.HandleFunc("/signup", rm_handlers.PostSignup).Methods("POST")
+	router.HandleFunc("/login", rm_handlers.GetLogin).Methods("GET")
+	router.HandleFunc("/login", rm_handlers.PostLogin).Methods("POST")
+	router.HandleFunc("/logout", rm_handlers.GetLogout).Methods("GET")
 
-	router.Handle("/users/{id:[0-9]+}", MustLogin(http.HandlerFunc(resourcedmaster_handlers.PostPutDeleteUsersID))).Methods("POST", "PUT", "DELETE")
+	router.Handle("/users/{id:[0-9]+}", MustLogin(http.HandlerFunc(rm_handlers.PostPutDeleteUsersID))).Methods("POST", "PUT", "DELETE")
 
-	router.Handle("/access-tokens", MustLogin(http.HandlerFunc(resourcedmaster_handlers.GetAccessTokens))).Methods("GET")
-	router.Handle("/access-tokens", MustLogin(http.HandlerFunc(resourcedmaster_handlers.PostAccessTokens))).Methods("POST")
+	router.Handle("/access-tokens", MustLogin(http.HandlerFunc(rm_handlers.GetAccessTokens))).Methods("GET")
+	router.Handle("/access-tokens", MustLogin(http.HandlerFunc(rm_handlers.PostAccessTokens))).Methods("POST")
 
-	router.Handle("/access-tokens/{id:[0-9]+}/level", MustLogin(http.HandlerFunc(resourcedmaster_handlers.PostAccessTokensLevel))).Methods("POST")
-	router.Handle("/access-tokens/{id:[0-9]+}/enabled", MustLogin(http.HandlerFunc(resourcedmaster_handlers.PostAccessTokensEnabled))).Methods("POST")
+	router.Handle("/access-tokens/{id:[0-9]+}/level", MustLogin(http.HandlerFunc(rm_handlers.PostAccessTokensLevel))).Methods("POST")
+	router.Handle("/access-tokens/{id:[0-9]+}/enabled", MustLogin(http.HandlerFunc(rm_handlers.PostAccessTokensEnabled))).Methods("POST")
 
-	router.Handle("/saved-queries", MustLogin(http.HandlerFunc(resourcedmaster_handlers.PostSavedQueries))).Methods("POST")
+	router.Handle("/saved-queries", MustLogin(http.HandlerFunc(rm_handlers.PostSavedQueries))).Methods("POST")
+	router.Handle("/saved-queries/{id:[0-9]+}", MustLogin(http.HandlerFunc(rm_handlers.PostPutDeleteSavedQueriesID))).Methods("POST", "PUT", "DELETE")
 
-	router.Handle("/api/hosts", MustLoginApi(http.HandlerFunc(resourcedmaster_handlers.GetApiHosts))).Methods("GET")
-	router.Handle("/api/hosts", MustLoginApi(http.HandlerFunc(resourcedmaster_handlers.PostApiHosts))).Methods("POST")
+	router.Handle("/api/hosts", MustLoginApi(http.HandlerFunc(rm_handlers.GetApiHosts))).Methods("GET")
+	router.Handle("/api/hosts", MustLoginApi(http.HandlerFunc(rm_handlers.PostApiHosts))).Methods("POST")
 
 	// Path of static files must be last!
 	router.PathPrefix("/").Handler(http.FileServer(http.Dir("static")))

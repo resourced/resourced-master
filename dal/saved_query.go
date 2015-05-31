@@ -36,6 +36,14 @@ func (sq *SavedQuery) savedQueryRowFromSqlResult(tx *sqlx.Tx, sqlResult sql.Resu
 	return sq.GetByID(tx, savedQueryId)
 }
 
+// DeleteByID deletes record by id.
+func (sq *SavedQuery) DeleteByID(tx *sqlx.Tx, id int64) error {
+	query := fmt.Sprintf("DELETE FROM %v WHERE id=$1", sq.table)
+	_, err := sq.db.Exec(query, id)
+
+	return err
+}
+
 // AllByAccessTokenID returns all saved_query rows.
 func (sq *SavedQuery) AllByAccessTokenID(tx *sqlx.Tx, accessTokenID int64) ([]*SavedQueryRow, error) {
 	accessTokenRow, err := NewAccessToken(sq.db).GetByID(tx, accessTokenID)

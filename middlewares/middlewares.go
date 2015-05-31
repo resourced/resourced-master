@@ -5,7 +5,7 @@ import (
 	"github.com/gorilla/context"
 	"github.com/gorilla/sessions"
 	"github.com/jmoiron/sqlx"
-	resourcedmaster_dal "github.com/resourced/resourced-master/dal"
+	rm_dal "github.com/resourced/resourced-master/dal"
 	"github.com/resourced/resourced-master/libhttp"
 	"net/http"
 )
@@ -64,7 +64,7 @@ func MustLoginApi(next http.Handler) http.Handler {
 
 		db := context.Get(req, "db").(*sqlx.DB)
 
-		accessTokenRow, err := resourcedmaster_dal.NewAccessToken(db).GetByAccessToken(nil, accessTokenString)
+		accessTokenRow, err := rm_dal.NewAccessToken(db).GetByAccessToken(nil, accessTokenString)
 		if err != nil {
 			libhttp.BasicAuthUnauthorized(res, nil)
 			return

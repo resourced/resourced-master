@@ -5,15 +5,15 @@ import (
 	"github.com/gorilla/context"
 	"github.com/gorilla/mux"
 	"github.com/gorilla/sessions"
-	resourcedmaster_dal "github.com/resourced/resourced-master/dal"
+	rm_dal "github.com/resourced/resourced-master/dal"
 	"net/http"
 	"strconv"
 )
 
-func getCurrentUser(w http.ResponseWriter, r *http.Request) *resourcedmaster_dal.UserRow {
+func getCurrentUser(w http.ResponseWriter, r *http.Request) *rm_dal.UserRow {
 	cookieStore := context.Get(r, "cookieStore").(*sessions.CookieStore)
 	session, _ := cookieStore.Get(r, "resourcedmaster-session")
-	return session.Values["user"].(*resourcedmaster_dal.UserRow)
+	return session.Values["user"].(*rm_dal.UserRow)
 }
 
 func getIdFromPath(w http.ResponseWriter, r *http.Request) (int64, error) {
