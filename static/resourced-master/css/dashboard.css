@@ -1,13 +1,10 @@
-body {
-    font-family: "Raleway","HelveticaNeue","Helvetica Neue",Helvetica,Arial,sans-serif;
-}
 select {
     color: #333;
     padding: 1px 0;
 }
 #search-input {
     font-size: 17px;
-    width: 600px;
+    width: 700px;
     padding: 0 10px;
 }
 .modal-backdrop {
@@ -58,24 +55,33 @@ select {
     margin-right: 14px;
 }
 
-@media(max-width:1196px) {
+@media(max-width:1198px) {
     #search-input {
-        width: 430px;
+        width: 520px;
     }
 }
 
-@media(max-width:989px) {
+@media(max-width:990px) {
     #search-input {
-        width: 210px;
+        width: 300px;
     }
 }
 @media(max-width:767px) {
-    #search-input {
+    .input-group, #search-input, .saved-queries-form .btn {
         width: 100%;
+    }
+    .saved-queries-form .btn {
+        margin: 0;
     }
     .navbar-nav {
         margin-top: 0;
         margin-bottom: 0;
+    }
+    .dropdown-toggle, .dropdown-menu {
+        text-align: right;
+    }
+    .row.saved-queries form {
+        float: right;
     }
 }
 @media(max-width:600px) {
