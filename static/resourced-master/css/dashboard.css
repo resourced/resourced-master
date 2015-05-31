@@ -60,13 +60,13 @@ select {
 
 @media(max-width:1196px) {
     #search-input {
-        width: 500px;
+        width: 430px;
     }
 }
 
 @media(max-width:989px) {
     #search-input {
-        width: 280px;
+        width: 210px;
     }
 }
 @media(max-width:767px) {
