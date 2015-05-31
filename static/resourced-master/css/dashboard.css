@@ -41,6 +41,10 @@ select {
 .saved-queries .btn {
     padding: 4px 8px;
     font-size: 12px;
+    margin: 0 0 0 2px;
+}
+.saved-queries form {
+    display: inline-block;
 }
 .hosts h3 {
     margin-top: 0;

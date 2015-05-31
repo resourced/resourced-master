@@ -14,14 +14,18 @@
         <div class="col-xs-12 col-lg-12">
             <div>
                 <div class="pull-right">
-                    <form class="navbar-right" action="/saved-queries/{{ $savedQuery.ID }}" method="post" onsubmit="return confirm('Are you sure you want to delete?');">
-                        <input type="hidden" name="_method" value="delete">
-                        <button type="submit" class="btn btn-danger">Delete</button>
-                    </form>
-
                     <a href="?q={{ $savedQuery.Query }}" type="submit" class="btn btn-default">
                         <span class="glyphicon glyphicon-search" aria-hidden="true"></span>
                     </a>
+
+                    <a href="/api/hosts?q={{ $savedQuery.Query }}" type="submit" class="btn btn-success">
+                       JSON
+                    </a>
+
+                    <form action="/saved-queries/{{ $savedQuery.ID }}" method="post" onsubmit="return confirm('Are you sure you want to delete?');">
+                        <input type="hidden" name="_method" value="delete">
+                        <button type="submit" class="btn btn-danger">Delete</button>
+                    </form>
                 </div>
 
                 <h3>{{ $savedQuery.Query }}</h3>
