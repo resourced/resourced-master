@@ -9,7 +9,7 @@
 
 ![Access Tokens](http://i.imgur.com/3H9ONza.png)
 
-![Hosts](http://i.imgur.com/N92tKwi.png)
+![Hosts](http://i.imgur.com/aTEOlA3.png)
 
 
 ## Installation for users
