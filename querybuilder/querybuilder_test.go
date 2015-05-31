@@ -49,6 +49,66 @@ func TestParseNameStartsWith(t *testing.T) {
 	}
 }
 
+func TestParseNameDoesNotMatchRegexCaseInsensitive(t *testing.T) {
+	toBeTested := []string{
+		`Name !~* "brotato"`,
+		`Name!~*"brotato"`,
+		`name !~* "brotato"`,
+	}
+
+	for _, testString := range toBeTested {
+		output := Parse(testString)
+		if output != `name !~* 'brotato'` {
+			t.Errorf("Failed to generate name query. Output: %v", output)
+		}
+	}
+}
+
+func TestParseNameDoesNotMatchRegexCaseSensitive(t *testing.T) {
+	toBeTested := []string{
+		`Name !~ "brotato"`,
+		`Name!~"brotato"`,
+		`name !~ "brotato"`,
+	}
+
+	for _, testString := range toBeTested {
+		output := Parse(testString)
+		if output != `name !~ 'brotato'` {
+			t.Errorf("Failed to generate name query. Output: %v", output)
+		}
+	}
+}
+
+func TestParseNameMatchRegexCaseInsensitive(t *testing.T) {
+	toBeTested := []string{
+		`Name ~* "brotato"`,
+		`Name~*"brotato"`,
+		`name ~* "brotato"`,
+	}
+
+	for _, testString := range toBeTested {
+		output := Parse(testString)
+		if output != `name ~* 'brotato'` {
+			t.Errorf("Failed to generate name query. Output: %v", output)
+		}
+	}
+}
+
+func TestParseNameMatchRegexCaseSensitive(t *testing.T) {
+	toBeTested := []string{
+		`Name ~ "brotato"`,
+		`Name~"brotato"`,
+		`name ~ "brotato"`,
+	}
+
+	for _, testString := range toBeTested {
+		output := Parse(testString)
+		if output != `name ~ 'brotato'` {
+			t.Errorf("Failed to generate name query. Output: %v", output)
+		}
+	}
+}
+
 func TestParseJsonTraversal(t *testing.T) {
 	// Example JSON:
 	// {"/free": {"Swap": {"Free": 0, "Used": 0, "Total": 0}, "Memory": {"Free": 1346609152, "Used": 7243325440, "Total": 8589934592, "ActualFree": 3666075648, "ActualUsed": 4923858944}}}

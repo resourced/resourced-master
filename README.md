@@ -75,6 +75,15 @@ Currently, you can only use *AND* conjunctive operators.
 
 * Starts-with match: `name ~^ "awesome-app-"`
 
+* Regex match, case insensitive: `name ~* "awesome-app-"`
+
+* Regex match, case sensitive: `name ~ "awesome-app-"`
+
+* Regex match negation, case sensitive: `name !~ "awesome-app-"`
+
+* Regex match negation, case insensitive: `name !~* "awesome-app-"`
+
+
 **Query by tags**
 
 * Contains the following tags: `tags = ["app", "django", "staging"]`

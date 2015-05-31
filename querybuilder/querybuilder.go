@@ -32,6 +32,17 @@ func parseAnd(input string) string {
 	return ""
 }
 
+// parseNameStatement parses ResourceD name related query statement and turns it into postgres statement.
+func parseNameStatement(statement, operator string) string {
+	parts := strings.Split(statement, operator)
+
+	name := parts[len(parts)-1]
+	name = strings.TrimSpace(name)
+	name = libstring.StripChars(name, `"'`)
+
+	return fmt.Sprintf("name %v '%v'", operator, name)
+}
+
 // parseStatement parses ResourceD statement and turns it into postgres statement.
 func parseStatement(statement string) string {
 	statement = strings.TrimSpace(statement)
@@ -50,17 +61,24 @@ func parseStatement(statement string) string {
 
 	// Querying name.
 	// Operators:
-	// "="  : Exact match.
-	// "~^" : Starts with.
+	// "="   : Exact match.
+	// "!~*" : Does not match regular expression, case insensitive.
+	// "!~"  : Does not match regular expression, case sensitive.
+	// "~*"  : Matches regular expression, case insensitive.
+	// "~^"  : Starts with, case sensitive.
+	// "~"   : Matches regular expression, case sensitive.
 	if strings.HasPrefix(statement, "Name") || strings.HasPrefix(statement, "name") {
 		if strings.Contains(statement, "=") {
-			parts := strings.Split(statement, "=")
+			return parseNameStatement(statement, "=")
 
-			name := parts[len(parts)-1]
-			name = strings.TrimSpace(name)
-			name = libstring.StripChars(name, `"'`)
+		} else if strings.Contains(statement, "!~*") {
+			return parseNameStatement(statement, "!~*")
 
-			return fmt.Sprintf("name = '%v'", name)
+		} else if strings.Contains(statement, "!~") {
+			return parseNameStatement(statement, "!~")
+
+		} else if strings.Contains(statement, "~*") {
+			return parseNameStatement(statement, "~*")
 
 		} else if strings.Contains(statement, "~^") {
 			parts := strings.Split(statement, "~^")
@@ -70,6 +88,9 @@ func parseStatement(statement string) string {
 			name = libstring.StripChars(name, `"'`)
 
 			return `name LIKE '` + name + `%'`
+
+		} else if strings.Contains(statement, "~") {
+			return parseNameStatement(statement, "~")
 		}
 	}
 
