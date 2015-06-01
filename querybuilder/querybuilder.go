@@ -55,6 +55,7 @@ func parseStatement(statement string) string {
 		arrayOfTagsInString := parts[len(parts)-1]
 		arrayOfTagsInString = strings.TrimSpace(arrayOfTagsInString)
 		arrayOfTagsInString = libstring.StripChars(arrayOfTagsInString, "[]")
+		arrayOfTagsInString = strings.Replace(arrayOfTagsInString, `"`, `'`, -1)
 
 		return fmt.Sprintf("tags ?& array[%v]", arrayOfTagsInString)
 	}
