@@ -94,10 +94,10 @@ func (h *Host) hostRowFromSqlResult(tx *sqlx.Tx, sqlResult sql.Result) (*HostRow
 	return h.GetByID(tx, hostId)
 }
 
-// AllHostsByAccessTokenId returns all user rows.
-func (h *Host) AllHostsByAccessTokenId(tx *sqlx.Tx, accessTokenId int64) ([]*HostRow, error) {
+// AllByAccessTokenId returns all user rows.
+func (h *Host) AllByAccessTokenId(tx *sqlx.Tx, accessTokenId int64) ([]*HostRow, error) {
 	hosts := []*HostRow{}
-	query := fmt.Sprintf("SELECT * FROM %v WHERE access_token_id=$1", h.table)
+	query := fmt.Sprintf("SELECT * FROM %v WHERE access_token_id=$1 ORDER BY updated DESC", h.table)
 	err := h.db.Select(&hosts, query, accessTokenId)
 
 	return hosts, err
@@ -107,7 +107,7 @@ func (h *Host) AllHostsByAccessTokenId(tx *sqlx.Tx, accessTokenId int64) ([]*Hos
 func (h *Host) AllByAccessTokenIdAndQuery(tx *sqlx.Tx, accessTokenId int64, resourcedQuery string) ([]*HostRow, error) {
 	pgQuery := querybuilder.Parse(resourcedQuery)
 	if pgQuery == "" {
-		return h.AllHostsByAccessTokenId(tx, accessTokenId)
+		return h.AllByAccessTokenId(tx, accessTokenId)
 	}
 
 	hosts := []*HostRow{}

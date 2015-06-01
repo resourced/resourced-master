@@ -40,7 +40,7 @@ func TestHostCRUD(t *testing.T) {
 	}
 
 	// SELECT * FROM hosts
-	_, err = newHostForTest(t).AllHostsByAccessTokenId(nil, tokenRow.ID)
+	_, err = newHostForTest(t).AllByAccessTokenId(nil, tokenRow.ID)
 	if err != nil {
 		t.Fatalf("Selecting all hosts should not fail. Error: %v", err)
 	}
