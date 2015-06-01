@@ -57,7 +57,7 @@ curl -u 0b79bab50daca910b000d4f1a2b675d604257e42: https://localhost:55655/api/ho
 
 * **GET** `/api/hosts` Displays list of all hosts by access token.
 
-* **POST** `/api/hosts` Submit JSON data from 1 host.
+* **POST** `/api/hosts` Submit JSON data from 1 host. The JSON payload format is defined by `type ResourcedPayload struct`. See: [/dal/host.go#L24](https://github.com/resourced/resourced-master/blob/master/dal/host.go#L24)
 
 
 ## Querying
