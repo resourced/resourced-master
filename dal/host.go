@@ -34,8 +34,8 @@ type ResourcedPayload struct {
 }
 
 type HostRow struct {
-	ID            int64               `db:"id"`
-	AccessTokenID int64               `db:"access_token_id"`
+	ID            int64               `db:"id" json:"-"`
+	AccessTokenID int64               `db:"access_token_id" json:"-"`
 	Name          string              `db:"name"`
 	Updated       time.Time           `db:"updated"`
 	Tags          sqlx_types.JsonText `db:"tags"`
