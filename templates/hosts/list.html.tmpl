@@ -4,13 +4,18 @@
     <div class="row">
         <div class="col-lg-12">
             <div class="page-header">
+                <div class="pull-right">
+                    <small class="updated-queries-toggle">Show All</small>
+                    <input type="checkbox" class="toggler toggler-header pull-right" data-size="mini">
+                </div>
+
                 <h2>Saved Queries</h2>
             </div>
         </div>
     </div>
 
-    {{ range $savedQuery := .SavedQueries }}
-    <div class="row saved-queries">
+    {{ range $i, $savedQuery := .SavedQueries }}
+    <div class="row saved-queries" style="{{ if lt $i 5 }}display: block{{ else }}display: none{{ end }}">
         <div class="col-xs-12 col-lg-12">
             <div>
                 <div class="pull-right">
@@ -95,11 +100,19 @@
 <script>
 $('.toggler').bootstrapSwitch();
 
-$('.toggler-header').on('switchChange.bootstrapSwitch', function(event, state) {
+$('.container.saved-queries .toggler-header').on('switchChange.bootstrapSwitch', function(event, state) {
+    if(state) {
+        $(this).closest('.container.saved-queries').find('.row.saved-queries').show();
+    } else {
+        $(this).closest('.container.saved-queries').find('.row.saved-queries:gt(4)').hide();
+    }
+});
+
+$('.row.hosts .toggler-header').on('switchChange.bootstrapSwitch', function(event, state) {
     $(this).closest('.hosts').find('.details').toggle();
 });
 
-$('.toggler-body').on('switchChange.bootstrapSwitch', function(event, state) {
+$('.row.hosts .toggler-body').on('switchChange.bootstrapSwitch', function(event, state) {
     var $detailHeader = $(this).closest('.detail-header');
     var path = $detailHeader.data('path');
     $detailHeader.siblings('.detail-body[data-path="' + path + '"]').toggle();

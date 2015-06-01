@@ -42,6 +42,7 @@ select {
 }
 .container.saved-queries h2, .container.hosts h2 {
     margin-top: 30px;
+    margin-bottom: 5px;
     font-size: 25px;
 }
 .saved-queries h3 {
@@ -65,7 +66,7 @@ select {
 .hosts h4 {
     font-size: 18px;
 }
-.updated-timestamp {
+.updated-timestamp, .updated-queries-toggle {
     font-size: 75%;
     margin-right: 14px;
 }
