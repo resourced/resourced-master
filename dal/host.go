@@ -26,7 +26,7 @@ type ResourcedPayload struct {
 	GoStruct string
 	Host     struct {
 		Name string
-		Tags []string
+		Tags map[string]string
 	}
 	Interval string
 	Path     string
@@ -43,9 +43,16 @@ type HostRow struct {
 }
 
 func (h *HostRow) StringTags() []string {
-	tags := make([]string, 0)
-	h.Tags.Unmarshal(tags)
-	return tags
+	tags := make(map[string]string)
+	h.Tags.Unmarshal(&tags)
+
+	tagsSlice := make([]string, 0)
+
+	for key, value := range tags {
+		tagsSlice = append(tagsSlice, key+"="+value)
+	}
+
+	return tagsSlice
 }
 
 func (h *HostRow) DataAsFlatKeyValue() map[string]map[string]interface{} {
