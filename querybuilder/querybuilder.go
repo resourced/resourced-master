@@ -15,7 +15,10 @@ func Parse(input string) string {
 func parseAnd(input string) string {
 	pgQueryParts := make([]string, 0)
 
-	statements := strings.Split(input, " AND ")
+	// normalize variation of AND
+	input = strings.Replace(input, " AND ", " and ", -1)
+
+	statements := strings.Split(input, " and ")
 	for _, statement := range statements {
 		pgStatement := parseStatement(statement)
 		if pgStatement != "" {
@@ -24,7 +27,7 @@ func parseAnd(input string) string {
 	}
 
 	if len(pgQueryParts) > 1 {
-		return strings.Join(pgQueryParts, " AND ")
+		return strings.Join(pgQueryParts, " and ")
 	} else if len(pgQueryParts) == 1 {
 		return pgQueryParts[0]
 	}
@@ -50,14 +53,27 @@ func parseStatement(statement string) string {
 	// Querying tags.
 	// There can only be 1 operator for tags: "="
 	if strings.HasPrefix(statement, "Tags") || strings.HasPrefix(statement, "tags") {
-		parts := strings.Split(statement, "=")
+		operator := ""
 
-		arrayOfTagsInString := parts[len(parts)-1]
-		arrayOfTagsInString = strings.TrimSpace(arrayOfTagsInString)
-		arrayOfTagsInString = libstring.StripChars(arrayOfTagsInString, "[]")
-		arrayOfTagsInString = strings.Replace(arrayOfTagsInString, `"`, `'`, -1)
+		if strings.Contains(statement, "=") {
+			operator = "="
+		}
 
-		return fmt.Sprintf("tags ?& array[%v]", arrayOfTagsInString)
+		if operator != "" {
+			parts := strings.Split(statement, operator)
+
+			// Remove tags prefix
+			parts[0] = strings.Replace(parts[0], "tags.", "", -1)
+
+			pgJsonPath := strings.Replace(parts[0], ".", ",", -1)
+			pgJsonPath = strings.TrimSpace(pgJsonPath)
+
+			value := parts[len(parts)-1]
+			value = strings.TrimSpace(value)
+			value = libstring.StripChars(value, `"'`)
+
+			return fmt.Sprintf("tags #>> '{%v}' %v '%v'", pgJsonPath, operator, value)
+		}
 	}
 
 	// Querying name.

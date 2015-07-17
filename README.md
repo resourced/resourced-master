@@ -86,7 +86,10 @@ Currently, you can only use *AND* conjunctive operators.
 
 **Query by tags**
 
-* Contains the following tags: `tags = ["app", "django", "staging"]`
+* Exact match: `tags.mysql = 5.6.24`
+
+* Multiple exact match: `tags.mysql = 5.6.24 and tags.redis = 3.0.1`
+
 
 **Query by data**
 
