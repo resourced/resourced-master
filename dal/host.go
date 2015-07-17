@@ -49,7 +49,7 @@ func (h *HostRow) StringTags() []string {
 	tagsSlice := make([]string, 0)
 
 	for key, value := range tags {
-		tagsSlice = append(tagsSlice, key+"="+value)
+		tagsSlice = append(tagsSlice, key+" : "+value)
 	}
 
 	return tagsSlice

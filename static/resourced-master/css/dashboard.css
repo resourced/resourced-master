@@ -60,11 +60,14 @@ select {
 }
 .hosts h3 {
     margin-top: 0;
-    margin-bottom: 20px;
+    margin-bottom: 6px;
     font-size: 21px;
 }
 .hosts h4 {
     font-size: 18px;
+}
+.hosts .details {
+    margin-top: 20px;
 }
 .updated-timestamp, .updated-queries-toggle {
     font-size: 75%;
