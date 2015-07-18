@@ -61,6 +61,7 @@ func (rm *ResourcedMaster) middlewareStruct() (*interpose.Middleware, error) {
 	middle := interpose.New()
 	middle.Use(middlewares.SetDB(rm.db))
 	middle.Use(middlewares.SetCookieStore(rm.cookieStore))
+	middle.Use(middlewares.SetWSConnections(rm.cookieStore))
 
 	middle.UseHandler(rm.mux())
 

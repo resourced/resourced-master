@@ -2,98 +2,121 @@
 package middlewares
 
 import (
+	"net/http"
+
 	"github.com/gorilla/context"
 	"github.com/gorilla/sessions"
+	"github.com/gorilla/websocket"
 	"github.com/jmoiron/sqlx"
-	rm_dal "github.com/resourced/resourced-master/dal"
+	"github.com/resourced/resourced-master/dal"
 	"github.com/resourced/resourced-master/libhttp"
-	"net/http"
 )
 
 func SetDB(db *sqlx.DB) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
-			context.Set(req, "db", db)
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			context.Set(r, "db", db)
 
-			next.ServeHTTP(res, req)
+			next.ServeHTTP(w, r)
 		})
 	}
 }
 
 func SetCookieStore(cookieStore *sessions.CookieStore) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
-			context.Set(req, "cookieStore", cookieStore)
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			context.Set(r, "cookieStore", cookieStore)
 
-			next.ServeHTTP(res, req)
+			next.ServeHTTP(w, r)
+		})
+	}
+}
+
+func SetWSConnections(cookieStore *sessions.CookieStore) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			session, _ := cookieStore.Get(r, "resourcedmaster-session")
+
+			_, ok := session.Values["wsConnections"]
+			if !ok {
+				session.Values["wsConnections"] = make(map[string]*websocket.Conn)
+
+				err := session.Save(r, w)
+				if err != nil {
+					libhttp.HandleErrorJson(w, err)
+					return
+				}
+			}
+
+			next.ServeHTTP(w, r)
 		})
 	}
 }
 
 // MustLogin is a middleware that checks existence of current user.
 func MustLogin(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
-		cookieStore := context.Get(req, "cookieStore").(*sessions.CookieStore)
-		session, _ := cookieStore.Get(req, "resourcedmaster-session")
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		cookieStore := context.Get(r, "cookieStore").(*sessions.CookieStore)
+		session, _ := cookieStore.Get(r, "resourcedmaster-session")
 		userRowInterface := session.Values["user"]
 
 		if userRowInterface == nil {
-			http.Redirect(res, req, "/login", 301)
+			http.Redirect(w, r, "/login", 301)
 			return
 		}
 
-		next.ServeHTTP(res, req)
+		next.ServeHTTP(w, r)
 	})
 }
 
 // MustLoginApi is a middleware that checks /api login.
 func MustLoginApi(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
-		auth := req.Header.Get("Authorization")
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		auth := r.Header.Get("Authorization")
 
 		if auth == "" {
-			libhttp.BasicAuthUnauthorized(res, nil)
+			libhttp.BasicAuthUnauthorized(w, nil)
 			return
 		}
 
 		accessTokenString, _, ok := libhttp.ParseBasicAuth(auth)
 		if !ok {
-			libhttp.BasicAuthUnauthorized(res, nil)
+			libhttp.BasicAuthUnauthorized(w, nil)
 			return
 		}
 
-		db := context.Get(req, "db").(*sqlx.DB)
+		db := context.Get(r, "db").(*sqlx.DB)
 
-		accessTokenRow, err := rm_dal.NewAccessToken(db).GetByAccessToken(nil, accessTokenString)
+		accessTokenRow, err := dal.NewAccessToken(db).GetByAccessToken(nil, accessTokenString)
 		if err != nil {
-			libhttp.BasicAuthUnauthorized(res, nil)
+			libhttp.BasicAuthUnauthorized(w, nil)
 			return
 		}
 		if accessTokenRow == nil {
-			libhttp.BasicAuthUnauthorized(res, nil)
+			libhttp.BasicAuthUnauthorized(w, nil)
 			return
 		}
 
 		if !accessTokenRow.Enabled {
-			libhttp.BasicAuthUnauthorized(res, nil)
+			libhttp.BasicAuthUnauthorized(w, nil)
 			return
 		}
 
 		isAllowed := false
 
-		if req.Method == "GET" {
+		if r.Method == "GET" {
 			isAllowed = true
 		} else if accessTokenRow.Level == "write" || accessTokenRow.Level == "execute" {
 			isAllowed = true
 		}
 
 		if !isAllowed {
-			libhttp.BasicAuthUnauthorized(res, nil)
+			libhttp.BasicAuthUnauthorized(w, nil)
 			return
 		}
 
-		context.Set(req, "accessTokenRow", accessTokenRow)
+		context.Set(r, "accessTokenRow", accessTokenRow)
 
-		next.ServeHTTP(res, req)
+		next.ServeHTTP(w, r)
 	})
 }
