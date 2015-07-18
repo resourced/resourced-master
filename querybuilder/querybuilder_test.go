@@ -6,14 +6,12 @@ import (
 
 func TestParseTags(t *testing.T) {
 	toBeTested := []string{
-		`Tags = ["aaa","bbb","ccc"]`,
-		`Tags=["aaa","bbb","ccc"]`,
-		`tags = ["aaa","bbb","ccc"]`,
+		`tags.aaa = bbb`,
 	}
 
 	for _, testString := range toBeTested {
 		output := Parse(testString)
-		if output != `tags ?& array['aaa','bbb','ccc']` {
+		if output != `tags #>> '{aaa}' = 'bbb'` {
 			t.Errorf("Failed to generate tags query. Output: %v", output)
 		}
 	}
@@ -122,10 +120,10 @@ func TestParseJsonTraversal(t *testing.T) {
 }
 
 func TestParseAnd(t *testing.T) {
-	toBeTested := `tags = ["aaa","bbb","ccc"] AND Name~^"brotato" AND /free.Memory.Free > 10000000`
+	toBeTested := `tags.aaa = bbb AND Name~^"brotato" AND /free.Memory.Free > 10000000`
 
 	output := Parse(toBeTested)
-	if output != `tags ?& array['aaa','bbb','ccc'] AND name LIKE 'brotato%' AND data #>> '{/free,Memory,Free}' > '10000000'` {
+	if output != `tags #>> '{aaa}' = 'bbb' and name LIKE 'brotato%' and data #>> '{/free,Memory,Free}' > '10000000'` {
 		t.Errorf("Failed to generate name query. Output: %v", output)
 	}
 }
