@@ -3,9 +3,25 @@ package handlers
 import (
 	"encoding/json"
 	"net/http"
+	"time"
 
 	"github.com/gorilla/context"
 	"github.com/gorilla/websocket"
+	"github.com/resourced/resourced-master/wstrafficker"
+)
+
+const (
+	// Time allowed to write a message to the peer.
+	writeWait = 10 * time.Second
+
+	// Time allowed to read the next pong message from the peer.
+	pongWait = 60 * time.Second
+
+	// Send pings to peer with this period. Must be less than pongWait.
+	pingPeriod = (pongWait * 9) / 10
+
+	// Maximum message size allowed from peer.
+	maxMessageSize = 512
 )
 
 var upgrader = websocket.Upgrader{
@@ -14,7 +30,7 @@ var upgrader = websocket.Upgrader{
 }
 
 func setWSConnection(w http.ResponseWriter, r *http.Request, conn *websocket.Conn) {
-	wsConnections := context.Get(r, "wsConnections").(map[string]*websocket.Conn)
+	wsTraffickers := context.Get(r, "wsTraffickers").(map[string]*wstrafficker.WSTrafficker)
 
 	_, payloadJson, err := conn.ReadMessage()
 	if err != nil {
@@ -36,7 +52,7 @@ func setWSConnection(w http.ResponseWriter, r *http.Request, conn *websocket.Con
 	}
 	agentId := agentIdInterface.(string)
 
-	wsConnections[agentId] = conn
+	wsTraffickers[agentId] = wstrafficker.New(conn)
 }
 
 func ApiWS(w http.ResponseWriter, r *http.Request) {
@@ -47,6 +63,31 @@ func ApiWS(w http.ResponseWriter, r *http.Request) {
 	}
 
 	setWSConnection(w, r, conn)
+
+	ticker := time.NewTicker(pingPeriod)
+	defer func() {
+		ticker.Stop()
+		conn.Close()
+	}()
+
+	// for {
+	// 	select {
+	// 	case message, ok := <-c.Send:
+	// 		if !ok {
+	// 			conn.SetWriteDeadline(time.Now().Add(writeWait))
+
+	// 			c.Write(websocket.CloseMessage, []byte{})
+	// 			return
+	// 		}
+	// 		if err := c.Write(websocket.TextMessage, message); err != nil {
+	// 			return
+	// 		}
+	// 	case <-ticker.C:
+	// 		if err := c.Write(websocket.PingMessage, []byte{}); err != nil {
+	// 			return
+	// 		}
+	// 	}
+	// }
 
 	// for {
 	// 	messageType, p, err := conn.ReadMessage()

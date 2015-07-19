@@ -5,7 +5,6 @@ import (
 	"github.com/carbocation/interpose"
 	"github.com/gorilla/mux"
 	"github.com/gorilla/sessions"
-	"github.com/gorilla/websocket"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
 	"github.com/mattes/migrate/migrate"
@@ -13,6 +12,7 @@ import (
 	"github.com/resourced/resourced-master/libenv"
 	"github.com/resourced/resourced-master/libunix"
 	"github.com/resourced/resourced-master/middlewares"
+	"github.com/resourced/resourced-master/wstrafficker"
 	"net/http"
 )
 
@@ -36,7 +36,7 @@ func New() (*Application, error) {
 	app.dsn = dsn
 	app.db = db
 	app.cookieStore = sessions.NewCookieStore([]byte(cookieStoreSecret))
-	app.WSConnections = make(map[string]*websocket.Conn)
+	app.WSTraffickers = make(map[string]*wstrafficker.WSTrafficker)
 
 	return app, err
 }
@@ -46,14 +46,14 @@ type Application struct {
 	dsn           string
 	db            *sqlx.DB
 	cookieStore   *sessions.CookieStore
-	WSConnections map[string]*websocket.Conn
+	WSTraffickers map[string]*wstrafficker.WSTrafficker
 }
 
 func (app *Application) MiddlewareStruct() (*interpose.Middleware, error) {
 	middle := interpose.New()
 	middle.Use(middlewares.SetDB(app.db))
 	middle.Use(middlewares.SetCookieStore(app.cookieStore))
-	middle.Use(middlewares.SetWSConnections(app.WSConnections))
+	middle.Use(middlewares.SetWSTraffickers(app.WSTraffickers))
 
 	middle.UseHandler(app.mux())
 

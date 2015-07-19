@@ -6,10 +6,10 @@ import (
 
 	"github.com/gorilla/context"
 	"github.com/gorilla/sessions"
-	"github.com/gorilla/websocket"
 	"github.com/jmoiron/sqlx"
 	"github.com/resourced/resourced-master/dal"
 	"github.com/resourced/resourced-master/libhttp"
+	"github.com/resourced/resourced-master/wstrafficker"
 )
 
 func SetDB(db *sqlx.DB) func(http.Handler) http.Handler {
@@ -32,10 +32,10 @@ func SetCookieStore(cookieStore *sessions.CookieStore) func(http.Handler) http.H
 	}
 }
 
-func SetWSConnections(wsConnections map[string]*websocket.Conn) func(http.Handler) http.Handler {
+func SetWSTraffickers(wsTraffickers map[string]*wstrafficker.WSTrafficker) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			context.Set(r, "wsConnections", wsConnections)
+			context.Set(r, "wsTraffickers", wsTraffickers)
 
 			next.ServeHTTP(w, r)
 		})
