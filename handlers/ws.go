@@ -5,9 +5,7 @@ import (
 	"net/http"
 
 	"github.com/gorilla/context"
-	"github.com/gorilla/sessions"
 	"github.com/gorilla/websocket"
-	"github.com/resourced/resourced-master/libhttp"
 )
 
 var upgrader = websocket.Upgrader{
@@ -16,9 +14,7 @@ var upgrader = websocket.Upgrader{
 }
 
 func setWSConnection(w http.ResponseWriter, r *http.Request, conn *websocket.Conn) {
-	cookieStore := context.Get(r, "cookieStore").(*sessions.CookieStore)
-
-	session, _ := cookieStore.Get(r, "resourcedmaster-session")
+	wsConnections := context.Get(r, "wsConnections").(map[string]*websocket.Conn)
 
 	_, payloadJson, err := conn.ReadMessage()
 	if err != nil {
@@ -40,14 +36,7 @@ func setWSConnection(w http.ResponseWriter, r *http.Request, conn *websocket.Con
 	}
 	agentId := agentIdInterface.(string)
 
-	wsConnections := session.Values["wsConnections"].(map[string]*websocket.Conn)
 	wsConnections[agentId] = conn
-
-	err = session.Save(r, w)
-	if err != nil {
-		libhttp.HandleErrorJson(w, err)
-		return
-	}
 }
 
 func ApiWS(w http.ResponseWriter, r *http.Request) {
@@ -59,17 +48,17 @@ func ApiWS(w http.ResponseWriter, r *http.Request) {
 
 	setWSConnection(w, r, conn)
 
-	for {
-		messageType, p, err := conn.ReadMessage()
-		if err != nil {
-			return
-		}
+	// for {
+	// 	messageType, p, err := conn.ReadMessage()
+	// 	if err != nil {
+	// 		return
+	// 	}
 
-		println("Received on Server Side: " + string(p))
+	// 	println("Received on Server Side: " + string(p))
 
-		err = conn.WriteMessage(messageType, p)
-		if err != nil {
-			return
-		}
-	}
+	// 	err = conn.WriteMessage(messageType, p)
+	// 	if err != nil {
+	// 		return
+	// 	}
+	// }
 }

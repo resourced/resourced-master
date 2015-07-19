@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/gob"
+	"github.com/Sirupsen/logrus"
 	"github.com/resourced/resourced-master/application"
 	"github.com/resourced/resourced-master/dal"
 	"github.com/resourced/resourced-master/libenv"
@@ -18,8 +19,7 @@ func init() {
 func main() {
 	app, err := application.New()
 	if err != nil {
-		println(err.Error())
-		os.Exit(1)
+		logrus.Fatal(err)
 	}
 
 	// Migrate up
@@ -33,25 +33,27 @@ func main() {
 
 	middle, err := app.MiddlewareStruct()
 	if err != nil {
-		println(err.Error())
-		os.Exit(1)
+		logrus.Fatal(err)
 	}
 
-	serverAddress := libenv.EnvWithDefault("RESOURCED_MASTER_ADDR", ":55655")
+	addr := libenv.EnvWithDefault("RESOURCED_MASTER_ADDR", ":55655")
 	certFile := libenv.EnvWithDefault("RESOURCED_MASTER_CERT_FILE", "")
 	keyFile := libenv.EnvWithDefault("RESOURCED_MASTER_KEY_FILE", "")
 	requestTimeoutString := libenv.EnvWithDefault("RESOURCED_MASTER_REQUEST_TIMEOUT", "1s")
 
 	requestTimeout, err := time.ParseDuration(requestTimeoutString)
 	if err != nil {
-		println(err.Error())
-		os.Exit(1)
+		logrus.Fatal(err)
 	}
 
 	srv := &graceful.Server{
 		Timeout: requestTimeout,
-		Server:  &http.Server{Addr: serverAddress, Handler: middle},
+		Server:  &http.Server{Addr: addr, Handler: middle},
 	}
+
+	logrus.WithFields(logrus.Fields{
+		"addr": addr,
+	}).Info("Running HTTP server")
 
 	if certFile != "" && keyFile != "" {
 		srv.ListenAndServeTLS(certFile, keyFile)

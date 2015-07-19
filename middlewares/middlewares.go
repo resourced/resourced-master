@@ -32,21 +32,10 @@ func SetCookieStore(cookieStore *sessions.CookieStore) func(http.Handler) http.H
 	}
 }
 
-func SetWSConnections(cookieStore *sessions.CookieStore) func(http.Handler) http.Handler {
+func SetWSConnections(wsConnections map[string]*websocket.Conn) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			session, _ := cookieStore.Get(r, "resourcedmaster-session")
-
-			_, ok := session.Values["wsConnections"]
-			if !ok {
-				session.Values["wsConnections"] = make(map[string]*websocket.Conn)
-
-				err := session.Save(r, w)
-				if err != nil {
-					libhttp.HandleErrorJson(w, err)
-					return
-				}
-			}
+			context.Set(r, "wsConnections", wsConnections)
 
 			next.ServeHTTP(w, r)
 		})

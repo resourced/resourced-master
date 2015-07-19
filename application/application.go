@@ -5,6 +5,7 @@ import (
 	"github.com/carbocation/interpose"
 	"github.com/gorilla/mux"
 	"github.com/gorilla/sessions"
+	"github.com/gorilla/websocket"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
 	"github.com/mattes/migrate/migrate"
@@ -35,22 +36,24 @@ func New() (*Application, error) {
 	app.dsn = dsn
 	app.db = db
 	app.cookieStore = sessions.NewCookieStore([]byte(cookieStoreSecret))
+	app.WSConnections = make(map[string]*websocket.Conn)
 
 	return app, err
 }
 
 // Application is the application object that runs HTTP server.
 type Application struct {
-	dsn         string
-	db          *sqlx.DB
-	cookieStore *sessions.CookieStore
+	dsn           string
+	db            *sqlx.DB
+	cookieStore   *sessions.CookieStore
+	WSConnections map[string]*websocket.Conn
 }
 
 func (app *Application) MiddlewareStruct() (*interpose.Middleware, error) {
 	middle := interpose.New()
 	middle.Use(middlewares.SetDB(app.db))
 	middle.Use(middlewares.SetCookieStore(app.cookieStore))
-	middle.Use(middlewares.SetWSConnections(app.cookieStore))
+	middle.Use(middlewares.SetWSConnections(app.WSConnections))
 
 	middle.UseHandler(app.mux())
 
