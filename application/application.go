@@ -36,7 +36,7 @@ func New() (*Application, error) {
 	app.dsn = dsn
 	app.db = db
 	app.cookieStore = sessions.NewCookieStore([]byte(cookieStoreSecret))
-	app.WSTraffickers = make(map[string]*wstrafficker.WSTrafficker)
+	app.WSTraffickers = wstrafficker.NewWSTraffickers()
 
 	return app, err
 }
@@ -46,7 +46,7 @@ type Application struct {
 	dsn           string
 	db            *sqlx.DB
 	cookieStore   *sessions.CookieStore
-	WSTraffickers map[string]*wstrafficker.WSTrafficker
+	WSTraffickers *wstrafficker.WSTraffickers
 }
 
 func (app *Application) MiddlewareStruct() (*interpose.Middleware, error) {

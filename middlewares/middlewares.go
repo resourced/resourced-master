@@ -32,7 +32,7 @@ func SetCookieStore(cookieStore *sessions.CookieStore) func(http.Handler) http.H
 	}
 }
 
-func SetWSTraffickers(wsTraffickers map[string]*wstrafficker.WSTrafficker) func(http.Handler) http.Handler {
+func SetWSTraffickers(wsTraffickers *wstrafficker.WSTraffickers) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			context.Set(r, "wsTraffickers", wsTraffickers)

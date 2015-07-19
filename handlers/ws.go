@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"encoding/json"
 	"net/http"
 	"time"
 
@@ -33,32 +32,6 @@ var upgrader = websocket.Upgrader{
 	},
 }
 
-func setWSConnection(w http.ResponseWriter, r *http.Request, conn *websocket.Conn) {
-	wsTraffickers := context.Get(r, "wsTraffickers").(map[string]*wstrafficker.WSTrafficker)
-
-	_, payloadJson, err := conn.ReadMessage()
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	var payload map[string]interface{}
-
-	err = json.Unmarshal(payloadJson, &payload)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	agentIdInterface := payload["AgentID"]
-	if agentIdInterface == nil {
-		return
-	}
-	agentId := agentIdInterface.(string)
-
-	wsTraffickers[agentId] = wstrafficker.New(conn)
-}
-
 func ApiWS(w http.ResponseWriter, r *http.Request) {
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
@@ -66,7 +39,8 @@ func ApiWS(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	setWSConnection(w, r, conn)
+	wsTraffickers := context.Get(r, "wsTraffickers").(*wstrafficker.WSTraffickers)
+	wsTraffickers.SaveConnection(conn)
 
 	ticker := time.NewTicker(pingPeriod)
 	defer func() {
