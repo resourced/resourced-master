@@ -85,7 +85,7 @@ func (app *Application) mux() *mux.Router {
 	router.Handle("/saved-queries", MustLogin(http.HandlerFunc(handlers.PostSavedQueries))).Methods("POST")
 	router.Handle("/saved-queries/{id:[0-9]+}", MustLogin(http.HandlerFunc(handlers.PostPutDeleteSavedQueriesID))).Methods("POST", "PUT", "DELETE")
 
-	router.HandleFunc("/api/ws", handlers.ApiWS)
+	router.HandleFunc("/api/ws/access-tokens/{id}", handlers.ApiWSAccessToken)
 
 	router.Handle("/api/hosts", MustLoginApi(http.HandlerFunc(handlers.GetApiHosts))).Methods("GET")
 	router.Handle("/api/hosts", MustLoginApi(http.HandlerFunc(handlers.PostApiHosts))).Methods("POST")

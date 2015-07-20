@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/gorilla/context"
+	"github.com/gorilla/mux"
 	"github.com/gorilla/websocket"
 	"github.com/resourced/resourced-master/wstrafficker"
 )
@@ -32,7 +33,9 @@ var upgrader = websocket.Upgrader{
 	},
 }
 
-func ApiWS(w http.ResponseWriter, r *http.Request) {
+func ApiWSAccessToken(w http.ResponseWriter, r *http.Request) {
+	accessToken := mux.Vars(r)["id"]
+
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -40,7 +43,12 @@ func ApiWS(w http.ResponseWriter, r *http.Request) {
 	}
 
 	wsTraffickers := context.Get(r, "wsTraffickers").(*wstrafficker.WSTraffickers)
-	wsTraffickers.SaveConnection(conn)
+
+	wsTrafficker, err := wsTraffickers.SaveConnection(accessToken, conn)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 
 	ticker := time.NewTicker(pingPeriod)
 	defer func() {
@@ -48,36 +56,20 @@ func ApiWS(w http.ResponseWriter, r *http.Request) {
 		conn.Close()
 	}()
 
-	// for {
-	// 	select {
-	// 	case message, ok := <-c.Send:
-	// 		if !ok {
-	// 			conn.SetWriteDeadline(time.Now().Add(writeWait))
-
-	// 			c.Write(websocket.CloseMessage, []byte{})
-	// 			return
-	// 		}
-	// 		if err := c.Write(websocket.TextMessage, message); err != nil {
-	// 			return
-	// 		}
-	// 	case <-ticker.C:
-	// 		if err := c.Write(websocket.PingMessage, []byte{}); err != nil {
-	// 			return
-	// 		}
-	// 	}
-	// }
-
-	// for {
-	// 	messageType, p, err := conn.ReadMessage()
-	// 	if err != nil {
-	// 		return
-	// 	}
-
-	// 	println("Received on Server Side: " + string(p))
-
-	// 	err = conn.WriteMessage(messageType, p)
-	// 	if err != nil {
-	// 		return
-	// 	}
-	// }
+	for {
+		select {
+		case message, ok := <-wsTrafficker.Chans.Send:
+			if !ok {
+				wsTrafficker.Write(websocket.CloseMessage, []byte{})
+				return
+			}
+			if err := wsTrafficker.Write(websocket.TextMessage, message); err != nil {
+				return
+			}
+		case <-ticker.C:
+			if err := wsTrafficker.Write(websocket.PingMessage, []byte{}); err != nil {
+				return
+			}
+		}
+	}
 }

@@ -2,8 +2,25 @@ package wstrafficker
 
 import (
 	"encoding/json"
+	"errors"
+	"time"
 
+	"github.com/Sirupsen/logrus"
 	"github.com/gorilla/websocket"
+)
+
+const (
+	// Time allowed to write a message to the peer.
+	writeWait = 10 * time.Second
+
+	// Time allowed to read the next pong message from the peer.
+	pongWait = 60 * time.Second
+
+	// Send pings to peer with this period. Must be less than pongWait.
+	pingPeriod = (pongWait * 9) / 10
+
+	// Maximum message size allowed from peer.
+	maxMessageSize = 512
 )
 
 func NewWSTrafficker(client *websocket.Conn) *WSTrafficker {
@@ -24,43 +41,53 @@ type WSTrafficker struct {
 	Client *websocket.Conn
 }
 
+func (ws *WSTrafficker) Write(messageType int, payload []byte) error {
+	ws.Client.SetWriteDeadline(time.Now().Add(writeWait))
+	return ws.Client.WriteMessage(messageType, payload)
+}
+
 func NewWSTraffickers() *WSTraffickers {
 	wss := &WSTraffickers{}
-	wss.ByAgentID = make(map[string]*WSTrafficker)
-	wss.ByAccessToken = make(map[string]*WSTrafficker)
+	wss.ByAccessTokenHostname = make(map[string]*WSTrafficker)
 
 	return wss
 }
 
 type WSTraffickers struct {
-	ByAgentID     map[string]*WSTrafficker
-	ByAccessToken map[string]*WSTrafficker
+	ByAccessTokenHostname map[string]*WSTrafficker
 }
 
-func (wss *WSTraffickers) SaveConnection(conn *websocket.Conn) error {
+func (wss *WSTraffickers) SaveConnection(accessToken string, conn *websocket.Conn) (*WSTrafficker, error) {
 	_, payloadJson, err := conn.ReadMessage()
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	var payload map[string]interface{}
 
 	err = json.Unmarshal(payloadJson, &payload)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	agentIdInterface, agentIdExists := payload["AgentID"]
-	if agentIdExists {
-		agentId := agentIdInterface.(string)
-		wss.ByAgentID[agentId] = NewWSTrafficker(conn)
+	hostnameInterface, hostnameExists := payload["Hostname"]
+	if !hostnameExists {
+		return nil, errors.New("Unable to establish websocket connection without Hostname payload")
 	}
 
-	accessTokenInterface, accessTokenExists := payload["AccessToken"]
-	if accessTokenExists {
-		accessToken := accessTokenInterface.(string)
-		wss.ByAccessToken[accessToken] = NewWSTrafficker(conn)
-	}
+	wsTrafficker := NewWSTrafficker(conn)
 
-	return nil
+	hostname := hostnameInterface.(string)
+	wss.ByAccessTokenHostname[accessToken+"-"+hostname] = NewWSTrafficker(conn)
+
+	logrus.WithFields(logrus.Fields{
+		"AccessToken": accessToken,
+		"Hostname":    hostname,
+	}).Info("Saved websocket connection in memory")
+
+	return wsTrafficker, nil
+}
+
+func (wss *WSTraffickers) GetConnectionByAccessTokenHostname(accessToken, hostname string) *WSTrafficker {
+	return wss.ByAccessTokenHostname[accessToken+"-"+hostname]
 }
