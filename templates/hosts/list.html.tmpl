@@ -23,7 +23,7 @@
                         <span class="glyphicon glyphicon-search" aria-hidden="true"></span>
                     </a>
 
-                    <a href="/api/hosts?q={{ $savedQuery.Query }}" type="submit" class="btn btn-success">
+                    <a href="//{{ $.AccessToken.Token }}:@{{ $.Addr }}/api/hosts?q={{ $savedQuery.Query }}" type="submit" class="btn btn-success">
                        JSON
                     </a>
 

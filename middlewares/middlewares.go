@@ -3,6 +3,7 @@ package middlewares
 
 import (
 	"net/http"
+	"strings"
 
 	"github.com/gorilla/context"
 	"github.com/gorilla/sessions"
@@ -11,6 +12,20 @@ import (
 	"github.com/resourced/resourced-master/libhttp"
 	"github.com/resourced/resourced-master/wstrafficker"
 )
+
+func SetAddr(addr string) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if strings.HasPrefix(addr, ":") {
+				addr = "localhost" + addr
+			}
+
+			context.Set(r, "addr", addr)
+
+			next.ServeHTTP(w, r)
+		})
+	}
+}
 
 func SetDB(db *sqlx.DB) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {

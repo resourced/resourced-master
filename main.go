@@ -36,7 +36,6 @@ func main() {
 		logrus.Fatal(err)
 	}
 
-	addr := libenv.EnvWithDefault("RESOURCED_MASTER_ADDR", ":55655")
 	certFile := libenv.EnvWithDefault("RESOURCED_MASTER_CERT_FILE", "")
 	keyFile := libenv.EnvWithDefault("RESOURCED_MASTER_KEY_FILE", "")
 	requestTimeoutString := libenv.EnvWithDefault("RESOURCED_MASTER_REQUEST_TIMEOUT", "1s")
@@ -48,11 +47,11 @@ func main() {
 
 	srv := &graceful.Server{
 		Timeout: requestTimeout,
-		Server:  &http.Server{Addr: addr, Handler: middle},
+		Server:  &http.Server{Addr: app.Addr, Handler: middle},
 	}
 
 	logrus.WithFields(logrus.Fields{
-		"addr": addr,
+		"Addr": app.Addr,
 	}).Info("Running HTTP server")
 
 	if certFile != "" && keyFile != "" {

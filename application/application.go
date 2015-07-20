@@ -33,6 +33,7 @@ func New() (*Application, error) {
 	cookieStoreSecret := libenv.EnvWithDefault("RESOURCED_MASTER_COOKIE_SECRET", "T0PS3CR3T")
 
 	app := &Application{}
+	app.Addr = libenv.EnvWithDefault("RESOURCED_MASTER_ADDR", ":55655")
 	app.dsn = dsn
 	app.db = db
 	app.cookieStore = sessions.NewCookieStore([]byte(cookieStoreSecret))
@@ -43,6 +44,7 @@ func New() (*Application, error) {
 
 // Application is the application object that runs HTTP server.
 type Application struct {
+	Addr          string
 	dsn           string
 	db            *sqlx.DB
 	cookieStore   *sessions.CookieStore
@@ -51,6 +53,7 @@ type Application struct {
 
 func (app *Application) MiddlewareStruct() (*interpose.Middleware, error) {
 	middle := interpose.New()
+	middle.Use(middlewares.SetAddr(app.Addr))
 	middle.Use(middlewares.SetDB(app.db))
 	middle.Use(middlewares.SetCookieStore(app.cookieStore))
 	middle.Use(middlewares.SetWSTraffickers(app.WSTraffickers))
