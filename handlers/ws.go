@@ -1,12 +1,15 @@
 package handlers
 
 import (
+	"errors"
 	"net/http"
 	"time"
 
 	"github.com/gorilla/context"
 	"github.com/gorilla/mux"
 	"github.com/gorilla/websocket"
+	"github.com/jmoiron/sqlx"
+	"github.com/resourced/resourced-master/dal"
 	"github.com/resourced/resourced-master/wstrafficker"
 )
 
@@ -36,6 +39,21 @@ var upgrader = websocket.Upgrader{
 func ApiWSAccessToken(w http.ResponseWriter, r *http.Request) {
 	accessToken := mux.Vars(r)["id"]
 
+	db := context.Get(r, "db").(*sqlx.DB)
+
+	// Check if access token exists
+	accessTokenRow, err := dal.NewAccessToken(db).GetByAccessToken(nil, accessToken)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if accessTokenRow == nil {
+		err = errors.New("Unrecognized access token")
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Upgrade connection to full duplex TCP connection
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)

@@ -4,7 +4,7 @@ import (
 	"github.com/gorilla/context"
 	"github.com/gorilla/sessions"
 	"github.com/jmoiron/sqlx"
-	rm_dal "github.com/resourced/resourced-master/dal"
+	"github.com/resourced/resourced-master/dal"
 	"github.com/resourced/resourced-master/libhttp"
 	"html/template"
 	"net/http"
@@ -18,17 +18,17 @@ func GetAccessTokens(w http.ResponseWriter, r *http.Request) {
 	cookieStore := context.Get(r, "cookieStore").(*sessions.CookieStore)
 
 	session, _ := cookieStore.Get(r, "resourcedmaster-session")
-	currentUser, ok := session.Values["user"].(*rm_dal.UserRow)
+	currentUser, ok := session.Values["user"].(*dal.UserRow)
 	if !ok {
 		http.Redirect(w, r, "/logout", 301)
 		return
 	}
 
-	accessTokens, _ := rm_dal.NewAccessToken(db).AllAccessTokens(nil)
+	accessTokens, _ := dal.NewAccessToken(db).AllAccessTokens(nil)
 
 	data := struct {
-		CurrentUser  *rm_dal.UserRow
-		AccessTokens []*rm_dal.AccessTokenRow
+		CurrentUser  *dal.UserRow
+		AccessTokens []*dal.AccessTokenRow
 	}{
 		currentUser,
 		accessTokens,
@@ -50,11 +50,11 @@ func PostAccessTokens(w http.ResponseWriter, r *http.Request) {
 
 	session, _ := cookieStore.Get(r, "resourcedmaster-session")
 
-	currentUser := session.Values["user"].(*rm_dal.UserRow)
+	currentUser := session.Values["user"].(*dal.UserRow)
 
 	level := r.FormValue("Level")
 
-	_, err := rm_dal.NewAccessToken(db).Create(nil, currentUser.ID, level)
+	_, err := dal.NewAccessToken(db).Create(nil, currentUser.ID, level)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
@@ -77,7 +77,7 @@ func PostAccessTokensLevel(w http.ResponseWriter, r *http.Request) {
 	data := make(map[string]interface{})
 	data["level"] = level
 
-	_, err = rm_dal.NewAccessToken(db).UpdateById(nil, data, tokenId)
+	_, err = dal.NewAccessToken(db).UpdateById(nil, data, tokenId)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
@@ -95,7 +95,7 @@ func PostAccessTokensEnabled(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	at := rm_dal.NewAccessToken(db)
+	at := dal.NewAccessToken(db)
 
 	accessTokenRow, err := at.GetByID(nil, tokenId)
 	if err != nil {
