@@ -79,6 +79,7 @@ func ApiWSAccessToken(w http.ResponseWriter, r *http.Request) {
 		case message, ok := <-wsTrafficker.Chans.Send:
 			if !ok {
 				wsTrafficker.Write(websocket.CloseMessage, []byte{})
+				wsTraffickers.DeleteConnection(accessToken, wsTrafficker.Hostname)
 				return
 			}
 			if err := wsTrafficker.Write(websocket.TextMessage, message); err != nil {

@@ -38,7 +38,8 @@ type WSTrafficker struct {
 		Send    chan []byte
 		Receive chan []byte
 	}
-	Client *websocket.Conn
+	Client   *websocket.Conn
+	Hostname string
 }
 
 func (ws *WSTrafficker) Write(messageType int, payload []byte) error {
@@ -76,13 +77,13 @@ func (wss *WSTraffickers) SaveConnection(accessToken string, conn *websocket.Con
 	}
 
 	wsTrafficker := NewWSTrafficker(conn)
+	wsTrafficker.Hostname = hostnameInterface.(string)
 
-	hostname := hostnameInterface.(string)
-	wss.ByAccessTokenHostname[accessToken+"-"+hostname] = NewWSTrafficker(conn)
+	wss.ByAccessTokenHostname[accessToken+"-"+wsTrafficker.Hostname] = NewWSTrafficker(conn)
 
 	logrus.WithFields(logrus.Fields{
 		"AccessToken": accessToken,
-		"Hostname":    hostname,
+		"Hostname":    wsTrafficker.Hostname,
 	}).Info("Saved websocket connection in memory")
 
 	return wsTrafficker, nil
@@ -90,4 +91,14 @@ func (wss *WSTraffickers) SaveConnection(accessToken string, conn *websocket.Con
 
 func (wss *WSTraffickers) GetConnectionByAccessTokenHostname(accessToken, hostname string) *WSTrafficker {
 	return wss.ByAccessTokenHostname[accessToken+"-"+hostname]
+}
+
+func (wss *WSTraffickers) DeleteConnection(accessToken, hostname string) error {
+	err := wss.ByAccessTokenHostname[accessToken+"-"+hostname].Client.Close()
+	if err != nil {
+		return err
+	}
+
+	delete(wss.ByAccessTokenHostname, accessToken+"-"+hostname)
+	return nil
 }
