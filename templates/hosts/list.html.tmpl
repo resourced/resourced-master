@@ -98,7 +98,19 @@
 </div>
 
 <script>
-$('.toggler').bootstrapSwitch();
+$(document).ready(function() {
+    $('.toggler').bootstrapSwitch();
+
+    // Show all saved-queries if toggler is set to on.
+    $('.container.saved-queries .toggler-header').each(function() {
+        var state = $.cookie('.container.saved-queries .toggler-header');
+
+        if (state && state == 'true') {
+            $(this).bootstrapSwitch('state', true, true);
+            $(this).closest('.container.saved-queries').find('.row.saved-queries').show();
+        }
+    });
+});
 
 $('.container.saved-queries .toggler-header').on('switchChange.bootstrapSwitch', function(event, state) {
     if(state) {
@@ -106,6 +118,12 @@ $('.container.saved-queries .toggler-header').on('switchChange.bootstrapSwitch',
     } else {
         $(this).closest('.container.saved-queries').find('.row.saved-queries:gt(4)').hide();
     }
+
+    // Set state in cookie
+    $.cookie('.container.saved-queries .toggler-header', state, {
+        path: '/',
+        expires: 365
+    });
 });
 
 $('.row.hosts .toggler-header').on('switchChange.bootstrapSwitch', function(event, state) {
