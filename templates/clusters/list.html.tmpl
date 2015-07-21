@@ -1,0 +1,137 @@
+{{define "head"}}{{ end }}
+
+{{define "content"}}
+<div class="container">
+    <div class="row">
+        <div class="col-lg-12">
+            <div class="page-header">
+                <button class="new-cluster-button btn btn-primary pull-right" type="button" data-toggle="modal" data-target="#new-cluster-modal">New Cluster</button>
+                <h2>Clusters</h2>
+            </div>
+
+            {{ if eq (len .Clusters) 0 }}
+            <div class="jumbotron">
+                <h2>Welcome to Cargo Ship</h2>
+                <p>To begin, you need to create a cluster for your servers. Press the "New Cluster" button on the upper right corner.</p>
+            </div>
+            {{ end }}
+
+            {{ range $cluster := .Clusters }}
+                <div class="page-header">
+                    <button class="btn btn-sm btn-info pull-right" type="button" data-toggle="modal" data-target="#new-access-token-modal" data-app-id="{{ $cluster.ID }}">New Access Token</button>
+                    <h3>{{ $cluster.Name }}</h3>
+                </div>
+
+                <!-- Access Tokens -->
+                <div class="row access-tokens" style="display: none">
+                    <div class="col-lg-12">
+                        <table class="table table-condensed table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Access Token</th>
+                                    <th>Level</th>
+                                    <th>Enabled</th>
+                                </tr>
+                            </thead>
+
+                            <tbody>
+                            {{ range $accessToken := index $.AccessTokens $cluster.ID }}
+                                <tr>
+                                    <td>{{ $accessToken.Token }}</td>
+                                    <td>
+                                        <form method="post" action="/access-tokens/{{ $accessToken.ID }}/level">
+                                        <select name="Level" onchange="$(this).closest('form').submit();">
+                                            <option value="read" {{if eq $accessToken.Level "read"}} selected {{end}}>Read</option>
+                                            <option value="write" {{if eq $accessToken.Level "write"}} selected {{end}}>Write</option>
+                                            <option value="execute" {{if eq $accessToken.Level "execute"}} selected {{end}}>Execute</option>
+                                        </select>
+                                        </form>
+                                    </td>
+                                    <td>
+                                        <form method="post" action="/access-tokens/{{ $accessToken.ID }}/enabled">
+                                            <input type="checkbox" name="Enabled" onclick="$(this).closest('form').submit();" {{ if $accessToken.Enabled }} checked {{end}}>
+                                        </form>
+                                    </td>
+                                </tr>
+                            {{ end }}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            {{ end }}
+        </div>
+    </div>
+</div>
+
+<!-- New Cluster Modal -->
+<div class="modal fade" id="new-cluster-modal" tabindex="-1" role="dialog" aria-labelledby="new-cluster-label" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                <h4 class="modal-title" id="new-cluster-label">New Cluster</h4>
+            </div>
+
+            <form method="post" action="/clusters">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label class="control-label" for="name">Name:</label>
+                        <input type="text" name="Name" id="name" class="form-control" placeholder="My Cluster">
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary" onclick="$(this).closest('form').submit()">Create</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- New Access Token Modal -->
+<div class="modal fade" id="new-access-token-modal" tabindex="-1" role="dialog" aria-labelledby="new-access-token-label" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                <h4 class="modal-title" id="new-access-token-label">New Access Token</h4>
+            </div>
+
+            <form method="post">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label class="control-label" for="level">Access Level:</label>
+
+                        <select id="level" class="form-control" name="Level">
+                            <option value="read">Read</option>
+                            <option value="write">Write</option>
+                            <option value="execute">Execute</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary" onclick="$(this).closest('form').submit()">Create</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+$('#new-access-token-modal').on('show.bs.modal', function (event) {
+    var button = $(event.relatedTarget);   // Button that triggered the modal
+    var appId = button.data('app-id');     // Extract info from data-* attributes
+    var modal = $(this);
+    modal.find('form').attr('action', '/clusters/' + appId + '/access-tokens');
+});
+
+$(document).ready(function() {
+    if($('.access-tokens tr').length > 1) {
+        $('.access-tokens').show();
+    }
+});
+</script>
+{{end}}

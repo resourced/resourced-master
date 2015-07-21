@@ -17,11 +17,12 @@ func NewAccessToken(db *sqlx.DB) *AccessToken {
 }
 
 type AccessTokenRow struct {
-	ID      int64  `db:"id"`
-	UserID  int64  `db:"user_id"`
-	Token   string `db:"token"`
-	Level   string `db:"level"` // read, write, execute
-	Enabled bool   `db:"enabled"`
+	ID        int64  `db:"id"`
+	UserID    int64  `db:"user_id"`
+	ClusterID int64  `db:"cluster_id"`
+	Token     string `db:"token"`
+	Level     string `db:"level"` // read, write, execute
+	Enabled   bool   `db:"enabled"`
 }
 
 type AccessToken struct {
@@ -56,22 +57,32 @@ func (t *AccessToken) GetByAccessToken(tx *sqlx.Tx, token string) (*AccessTokenR
 }
 
 // GetByUserId returns one record by user_id.
-func (t *AccessToken) GetByUserId(tx *sqlx.Tx, userId int64) (*AccessTokenRow, error) {
+func (t *AccessToken) GetByUserId(tx *sqlx.Tx, userID int64) (*AccessTokenRow, error) {
 	tokenRow := &AccessTokenRow{}
 	query := fmt.Sprintf("SELECT * FROM %v WHERE user_id=$1", t.table)
-	err := t.db.Get(tokenRow, query, userId)
+	err := t.db.Get(tokenRow, query, userID)
 
 	return tokenRow, err
 }
 
-func (t *AccessToken) Create(tx *sqlx.Tx, userId int64, level string) (*AccessTokenRow, error) {
+// GetByClusterID returns one record by cluster_id.
+func (t *AccessToken) GetByClusterID(tx *sqlx.Tx, clusterID int64) (*AccessTokenRow, error) {
+	tokenRow := &AccessTokenRow{}
+	query := fmt.Sprintf("SELECT * FROM %v WHERE cluster_id=$1", t.table)
+	err := t.db.Get(tokenRow, query, clusterID)
+
+	return tokenRow, err
+}
+
+func (t *AccessToken) Create(tx *sqlx.Tx, userID, clusterID int64, level string) (*AccessTokenRow, error) {
 	token, err := libstring.GeneratePassword(32)
 	if err != nil {
 		return nil, err
 	}
 
 	data := make(map[string]interface{})
-	data["user_id"] = userId
+	data["user_id"] = userID
+	data["cluster_id"] = clusterID
 	data["token"] = token
 	data["level"] = level
 	data["enabled"] = true
@@ -84,11 +95,20 @@ func (t *AccessToken) Create(tx *sqlx.Tx, userId int64, level string) (*AccessTo
 	return t.tokenRowFromSqlResult(tx, sqlResult)
 }
 
-// AllAccessTokens returns all user rows.
+// AllAccessTokens returns all access tokens.
 func (t *AccessToken) AllAccessTokens(tx *sqlx.Tx) ([]*AccessTokenRow, error) {
 	accessTokens := []*AccessTokenRow{}
 	query := fmt.Sprintf("SELECT * FROM %v", t.table)
 	err := t.db.Select(&accessTokens, query)
+
+	return accessTokens, err
+}
+
+// AllAccessTokens returns all access tokens by cluster id.
+func (t *AccessToken) AllAccessTokensByClusterID(tx *sqlx.Tx, clusterID int64) ([]*AccessTokenRow, error) {
+	accessTokens := []*AccessTokenRow{}
+	query := fmt.Sprintf("SELECT * FROM %v WHERE cluster_id=$1", t.table)
+	err := t.db.Select(&accessTokens, query, clusterID)
 
 	return accessTokens, err
 }

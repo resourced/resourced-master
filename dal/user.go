@@ -107,19 +107,6 @@ func (u *User) Signup(tx *sqlx.Tx, email, password, passwordAgain string) (*User
 	return u.userRowFromSqlResult(tx, sqlResult)
 }
 
-// CreateAccessTokenRow create a new token for a user.
-func (u *User) CreateAccessTokenRow(tx *sqlx.Tx, userId int64, level string) (*AccessTokenRow, error) {
-	tokenRow, err := NewAccessToken(u.db).Create(tx, userId, level)
-	if err != nil {
-		return nil, err
-	}
-	if tokenRow.ID <= 0 {
-		return nil, errors.New("AccessToken ID cannot be empty.")
-	}
-
-	return tokenRow, nil
-}
-
 // UpdateEmailAndPasswordById updates user email and password.
 func (u *User) UpdateEmailAndPasswordById(tx *sqlx.Tx, userId int64, email, password, passwordAgain string) (*UserRow, error) {
 	data := make(map[string]interface{})
