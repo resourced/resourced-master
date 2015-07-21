@@ -44,16 +44,6 @@ func (sq *SavedQuery) DeleteByID(tx *sqlx.Tx, id int64) error {
 	return err
 }
 
-// AllByAccessTokenID returns all saved_query rows.
-func (sq *SavedQuery) AllByAccessTokenID(tx *sqlx.Tx, accessTokenID int64) ([]*SavedQueryRow, error) {
-	accessTokenRow, err := NewAccessToken(sq.db).GetByID(tx, accessTokenID)
-	if err != nil {
-		return nil, err
-	}
-
-	return sq.AllByAccessToken(tx, accessTokenRow)
-}
-
 // AllByAccessToken returns all saved_query rows.
 func (sq *SavedQuery) AllByAccessToken(tx *sqlx.Tx, accessTokenRow *AccessTokenRow) ([]*SavedQueryRow, error) {
 	savedQueries := []*SavedQueryRow{}
