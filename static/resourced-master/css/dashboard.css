@@ -13,9 +13,26 @@ select {
     color: #fff;
 }
 
+.form-group-search-and-save, .form-group-new-task {
+    width: 100%;
+}
+.form-group-search-and-save .search-form, .form-group-search-and-save .search-form .input-group {
+    width: 1032px;
+}
+
+.form-group-new-task .new-task-form {
+    width: 100%;
+}
+.form-group-new-task .new-task-form .query {
+    width: 760px;
+}
+.form-group-new-task .new-task-form .cron {
+    width: 252px;
+}
+
 #search-input {
     font-size: 17px;
-    width: 700px;
+    width: 100%;
     padding: 0 10px;
 }
 .modal-backdrop {
@@ -38,6 +55,10 @@ select {
     padding-bottom: 7px;
 }
 .page-header > h1 {
+    margin: 0;
+}
+
+.nav-tabs li a {
     margin: 0;
 }
 .container.saved-queries h2, .container.hosts h2 {
@@ -74,21 +95,46 @@ select {
     margin-right: 14px;
 }
 
-@media(max-width:1198px) {
-    #search-input {
-        width: 520px;
+@media(max-width:1200px) {
+    .form-group-search-and-save .search-form, .form-group-search-and-save .search-form .input-group {
+        width: 832px;
+    }
+
+    .form-group-new-task .new-task-form .query {
+        width: 560px;
     }
 }
 
 @media(max-width:990px) {
-    #search-input {
-        width: 300px;
+    .form-group-search-and-save .search-form, .form-group-search-and-save .search-form .input-group {
+        width: 610px;
+    }
+
+    .form-group-new-task .new-task-form .query {
+        width: 360px;
+    }
+    .form-group-new-task .new-task-form .cron {
+        width: 232px;
     }
 }
+
 @media(max-width:767px) {
+    .form-group-search-and-save .search-form, .form-group-search-and-save .search-form .input-group {
+        margin: 0;
+        padding: 0;
+        width: 100%;
+    }
     .input-group, #search-input, .saved-queries-form .btn {
         width: 100%;
     }
+
+    .form-group-new-task .new-task-form {
+        margin: 0;
+    }
+    .form-group-new-task .new-task-form .query, .form-group-new-task .new-task-form .cron, .form-group-new-task .new-task-form button {
+        width: 100%;
+    }
+
     .saved-queries-form .btn {
         margin: 0;
     }

@@ -23,7 +23,7 @@
       <div class="container">
         <!-- Brand and toggle get grouped for better mobile display -->
         <div class="navbar-header">
-          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1">
+          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar-collapse-target">
             <span class="sr-only">Toggle navigation</span>
             <span class="icon-bar"></span>
             <span class="icon-bar"></span>
@@ -33,26 +33,11 @@
         </div>
 
         <!-- Collect the nav links, forms, and other content for toggling -->
-        <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
-          <form class="navbar-form navbar-left search-form" role="search" action="/">
-            <div class="form-group">
-              <div class="input-group">
-                <input id="search-input" name="q" type="text" class="form-control" placeholder="Press enter to search">
-              </div>
-            </div>
-          </form>
-
-          <form class="navbar-form navbar-left saved-queries-form" action="/saved-queries" method="post">
-            <input id="saved-queries-input" name="SavedQuery" type="hidden">
-
-            <div class="form-group">
-              <div class="input-group">
-                <span class="input-group-btn">
-                  <button type="submit" class="btn btn-primary">Save Query</button>
-                </span>
-              </div>
-            </div>
-          </form>
+        <div class="collapse navbar-collapse" id="navbar-collapse-target">
+          <ul class="nav navbar-nav nav-tabs">
+            <li class="nav-hosts"><a href="/">Hosts</a></li>
+            <li class="nav-tasks"><a href="/tasks">Tasks</a></li>
+          </ul>
 
           <ul class="nav navbar-nav navbar-right">
             <li class="dropdown">
@@ -72,6 +57,8 @@
         </div><!-- /.navbar-collapse -->
       </div><!-- /.container-fluid -->
     </nav>
+
+    {{template "second-navbar" .}}
 
     <!-- User Settings Modal -->
     <div class="modal fade" id="user-settings-modal" tabindex="-1" role="dialog" aria-labelledby="user-settings-label" aria-hidden="true">
@@ -117,32 +104,14 @@
 
     <script>
     $(window).load(function() {
-      var key = "q";
-      var value = "";
-      var sPageURL = window.location.search.substring(1);
-      var sURLVariables = sPageURL.split('&');
+      $('.nav-tabs').removeClass('active');
 
-      for (var i = 0; i < sURLVariables.length; i++) {
-        var sParameterName = sURLVariables[i].split('=');
-        if (sParameterName[0] == key) {
-          value = sParameterName[1];
-        }
+      var path = window.location.pathname;
+      if(path == '/') {
+        $('.nav-hosts').addClass('active');
+      } else if(path == '/tasks') {
+        $('.nav-tasks').addClass('active');
       }
-
-      value = value.replace(/\+/g, " ");
-
-      if(value != "") {
-        $('[name="q"]').val(decodeURIComponent(value));
-      }
-
-      // On load, cp search input to saved-queries input.
-      $('#saved-queries-input').val($('#search-input').val());
-    });
-
-    // This catches keyup, onchange, and paste events.
-    // cp search input to saved-queries input
-    $('#search-input').bind("input propertychange", function(e) {
-      $('#saved-queries-input').val($(this).val());
     });
     </script>
   </body>

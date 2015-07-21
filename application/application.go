@@ -70,6 +70,7 @@ func (app *Application) mux() *mux.Router {
 	router := mux.NewRouter()
 
 	router.Handle("/", MustLogin(http.HandlerFunc(handlers.GetHosts))).Methods("GET")
+	router.Handle("/tasks", MustLogin(http.HandlerFunc(handlers.GetTasks))).Methods("GET")
 
 	router.HandleFunc("/signup", handlers.GetSignup).Methods("GET")
 	router.HandleFunc("/signup", handlers.PostSignup).Methods("POST")
