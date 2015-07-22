@@ -57,6 +57,42 @@ func SetWSTraffickers(wsTraffickers *wstrafficker.WSTraffickers) func(http.Handl
 	}
 }
 
+// SetClusters sets clusters data in context based on logged in user ID.
+func SetClusters(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		cookieStore := context.Get(r, "cookieStore").(*sessions.CookieStore)
+		session, _ := cookieStore.Get(r, "resourcedmaster-session")
+		userRowInterface := session.Values["user"]
+
+		if userRowInterface == nil {
+			http.Redirect(w, r, "/login", 301)
+			return
+		}
+
+		userRow := userRowInterface.(*dal.UserRow)
+
+		db := context.Get(r, "db").(*sqlx.DB)
+
+		clusterRows, err := dal.NewCluster(db).AllClustersByUserID(nil, userRow.ID)
+		if err != nil {
+			libhttp.HandleErrorJson(w, err)
+			return
+		}
+
+		context.Set(r, "clusters", clusterRows)
+
+		// Set currentCluster if not previously set.
+		if len(clusterRows) > 0 {
+			currentClusterInterface := context.Get(r, "currentCluster")
+			if currentClusterInterface == nil {
+				context.Set(r, "currentCluster", clusterRows[0])
+			}
+		}
+
+		next.ServeHTTP(w, r)
+	})
+}
+
 // MustLogin is a middleware that checks existence of current user.
 func MustLogin(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

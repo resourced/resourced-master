@@ -6,6 +6,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/gorilla/sessions"
 	"github.com/jmoiron/sqlx"
+	"github.com/justinas/alice"
 	_ "github.com/lib/pq"
 	"github.com/mattes/migrate/migrate"
 	"github.com/resourced/resourced-master/handlers"
@@ -66,11 +67,9 @@ func (app *Application) MiddlewareStruct() (*interpose.Middleware, error) {
 func (app *Application) mux() *mux.Router {
 	MustLogin := middlewares.MustLogin
 	MustLoginApi := middlewares.MustLoginApi
+	SetClusters := middlewares.SetClusters
 
 	router := mux.NewRouter()
-
-	router.Handle("/", MustLogin(http.HandlerFunc(handlers.GetHosts))).Methods("GET")
-	router.Handle("/tasks", MustLogin(http.HandlerFunc(handlers.GetTasks))).Methods("GET")
 
 	router.HandleFunc("/signup", handlers.GetSignup).Methods("GET")
 	router.HandleFunc("/signup", handlers.PostSignup).Methods("POST")
@@ -78,25 +77,29 @@ func (app *Application) mux() *mux.Router {
 	router.HandleFunc("/login", handlers.PostLogin).Methods("POST")
 	router.HandleFunc("/logout", handlers.GetLogout).Methods("GET")
 
-	router.Handle("/users/{id:[0-9]+}", MustLogin(http.HandlerFunc(handlers.PostPutDeleteUsersID))).Methods("POST", "PUT", "DELETE")
+	router.Handle("/", alice.New(MustLogin, SetClusters).ThenFunc(handlers.GetHosts)).Methods("GET")
 
-	router.Handle("/clusters", MustLogin(http.HandlerFunc(handlers.GetClusters))).Methods("GET")
-	router.Handle("/clusters", MustLogin(http.HandlerFunc(handlers.PostClusters))).Methods("POST")
+	router.Handle("/tasks", alice.New(MustLogin, SetClusters).ThenFunc(handlers.GetTasks)).Methods("GET")
 
-	router.Handle("/clusters/current", MustLogin(http.HandlerFunc(handlers.PostClustersCurrent))).Methods("POST")
+	router.Handle("/users/{id:[0-9]+}", alice.New(MustLogin).ThenFunc(handlers.PostPutDeleteUsersID)).Methods("POST", "PUT", "DELETE")
 
-	router.Handle("/clusters/{id:[0-9]+}/access-tokens", MustLogin(http.HandlerFunc(handlers.PostAccessTokens))).Methods("POST")
+	router.Handle("/clusters", alice.New(MustLogin, SetClusters).ThenFunc(handlers.GetClusters)).Methods("GET")
+	router.Handle("/clusters", alice.New(MustLogin).ThenFunc(handlers.PostClusters)).Methods("POST")
 
-	router.Handle("/access-tokens/{id:[0-9]+}/level", MustLogin(http.HandlerFunc(handlers.PostAccessTokensLevel))).Methods("POST")
-	router.Handle("/access-tokens/{id:[0-9]+}/enabled", MustLogin(http.HandlerFunc(handlers.PostAccessTokensEnabled))).Methods("POST")
+	router.Handle("/clusters/current", alice.New(MustLogin, SetClusters).ThenFunc(handlers.PostClustersCurrent)).Methods("POST")
 
-	router.Handle("/saved-queries", MustLogin(http.HandlerFunc(handlers.PostSavedQueries))).Methods("POST")
-	router.Handle("/saved-queries/{id:[0-9]+}", MustLogin(http.HandlerFunc(handlers.PostPutDeleteSavedQueriesID))).Methods("POST", "PUT", "DELETE")
+	router.Handle("/clusters/{id:[0-9]+}/access-tokens", alice.New(MustLogin).ThenFunc(handlers.PostAccessTokens)).Methods("POST")
+
+	router.Handle("/access-tokens/{id:[0-9]+}/level", alice.New(MustLogin).ThenFunc(handlers.PostAccessTokensLevel)).Methods("POST")
+	router.Handle("/access-tokens/{id:[0-9]+}/enabled", alice.New(MustLogin).ThenFunc(handlers.PostAccessTokensEnabled)).Methods("POST")
+
+	router.Handle("/saved-queries", alice.New(MustLogin).ThenFunc(handlers.PostSavedQueries)).Methods("POST")
+	router.Handle("/saved-queries/{id:[0-9]+}", alice.New(MustLogin).ThenFunc(handlers.PostPutDeleteSavedQueriesID)).Methods("POST", "PUT", "DELETE")
 
 	router.HandleFunc("/api/ws/access-tokens/{id}", handlers.ApiWSAccessToken)
 
-	router.Handle("/api/hosts", MustLoginApi(http.HandlerFunc(handlers.GetApiHosts))).Methods("GET")
-	router.Handle("/api/hosts", MustLoginApi(http.HandlerFunc(handlers.PostApiHosts))).Methods("POST")
+	router.Handle("/api/hosts", alice.New(MustLoginApi).ThenFunc(handlers.GetApiHosts)).Methods("GET")
+	router.Handle("/api/hosts", alice.New(MustLoginApi).ThenFunc(handlers.PostApiHosts)).Methods("POST")
 
 	// Path of static files must be last!
 	router.PathPrefix("/").Handler(http.FileServer(http.Dir("static")))

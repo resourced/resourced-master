@@ -1,138 +1,141 @@
 <!DOCTYPE html>
 <html>
-  <head>
-    <title>ResourceD Master</title>
+    <head>
+        <title>ResourceD Master</title>
 
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge" />
 
-    <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.3.2/css/bootstrap.min.css">
-    <link rel="stylesheet" href="/bootstrap/themes/superhero/bootstrap.min.css">
-    <link rel="stylesheet" href="/bootstrap/switch/bootstrap-switch.min.css">
-    <link rel="stylesheet" href="/resourced-master/css/dashboard.css">
+        <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.3.2/css/bootstrap.min.css">
+        <link rel="stylesheet" href="/bootstrap/themes/superhero/bootstrap.min.css">
+        <link rel="stylesheet" href="/bootstrap/switch/bootstrap-switch.min.css">
+        <link rel="stylesheet" href="/resourced-master/css/dashboard.css">
 
-    <script src="/jquery/jquery-2.1.3.min.js"></script>
-    <script src="/jquery/jquery-cookie-1.4.1.min.js"></script>
-    <script src="/bootstrap/js/bootstrap.min.js"></script>
-    <script src="/bootstrap/switch/bootstrap-switch.min.js"></script>
-  </head>
+        <script src="/jquery/jquery-2.1.3.min.js"></script>
+        <script src="/jquery/jquery-cookie-1.4.1.min.js"></script>
+        <script src="/bootstrap/js/bootstrap.min.js"></script>
+        <script src="/bootstrap/switch/bootstrap-switch.min.js"></script>
+    </head>
 
-  <body>
+    <body>
     <nav class="navbar navbar-default">
-      <div class="container">
-        <!-- Brand and toggle get grouped for better mobile display -->
-        <div class="navbar-header">
-          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar-collapse-target">
-            <span class="sr-only">Toggle navigation</span>
-            <span class="icon-bar"></span>
-            <span class="icon-bar"></span>
-            <span class="icon-bar"></span>
-          </button>
-          <a class="navbar-brand" href="/">ResourceD Master</a>
-        </div>
+        <div class="container">
+            <!-- Brand and toggle get grouped for better mobile display -->
+            <div class="navbar-header">
+                <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar-collapse-target">
+                    <span class="sr-only">Toggle navigation</span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                </button>
+                <a class="navbar-brand" href="/">ResourceD Master</a>
+            </div>
 
-        <ul class="nav navbar-nav nav-tabs">
-          <li class="nav-clusters dropdown">
-            <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false"><span class="name">Cluster</span> <span class="caret"></span></a>
+            {{ if gt (len .Clusters) 0 }}
+            <ul class="nav navbar-nav nav-tabs">
+                <li class="nav-clusters dropdown">
+                    <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false"><span class="name">Cluster</span> <span class="caret"></span></a>
 
-            <ul class="dropdown-menu" role="menu">
-              <li>
-                <a><span class="name">Didip Cluster</span></a>
-              </li>
-              <li>
-                <a><span class="name">Couchtato</span></a>
-              </li>
+                    <ul class="dropdown-menu" role="menu">
+                        {{ range $cluster := .Clusters }}
+                        <li>
+                            <a><span class="name">{{ $cluster.Name }}</span></a>
+                        </li>
+                        {{ end }}
+                    </ul>
+                </li>
+
+                <li class="nav-hosts"><a href="/">Hosts</a></li>
+                <li class="nav-tasks"><a href="/tasks">Tasks</a></li>
             </ul>
-          </li>
+            {{ end }}
 
-          <li class="nav-hosts"><a href="/">Hosts</a></li>
-          <li class="nav-tasks"><a href="/tasks">Tasks</a></li>
-        </ul>
+            <!-- Collect the nav links, forms, and other content for toggling -->
+            <div class="collapse navbar-collapse" id="navbar-collapse-target">
+                <ul class="nav navbar-nav navbar-right">
+                    <li class="dropdown">
+                        <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">{{ .CurrentUser.Email }} <span class="caret"></span></a>
 
-        <!-- Collect the nav links, forms, and other content for toggling -->
-        <div class="collapse navbar-collapse" id="navbar-collapse-target">
-          <ul class="nav navbar-nav navbar-right">
-            <li class="dropdown">
-              <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">{{ .CurrentUser.Email }} <span class="caret"></span></a>
+                        <ul class="dropdown-menu" role="menu">
+                            <li><a href="/clusters">Clusters</a></li>
 
-              <ul class="dropdown-menu" role="menu">
-                <li><a href="/clusters">Clusters</a></li>
+                            <li><a href="javascript:void(0)" data-toggle="modal" data-target="#user-settings-modal">User Settings</a></li>
 
-                <li><a href="javascript:void(0)" data-toggle="modal" data-target="#user-settings-modal">User Settings</a></li>
+                            <li class="divider"></li>
 
-                <li class="divider"></li>
-
-                <li><a href="/logout">Logout</a></li>
-              </ul>
-            </li>
-          </ul>
-        </div><!-- /.navbar-collapse -->
-      </div><!-- /.container-fluid -->
+                            <li><a href="/logout">Logout</a></li>
+                        </ul>
+                    </li>
+                </ul>
+            </div><!-- /.navbar-collapse -->
+        </div><!-- /.container-fluid -->
     </nav>
 
     {{template "second-navbar" .}}
 
     <!-- User Settings Modal -->
     <div class="modal fade" id="user-settings-modal" tabindex="-1" role="dialog" aria-labelledby="user-settings-label" aria-hidden="true">
-      <div class="modal-dialog">
-        <div class="modal-content">
-          <div class="modal-header">
-            <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-            <h4 class="modal-title" id="user-settings-label">User Settings</h4>
-          </div>
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                    <h4 class="modal-title" id="user-settings-label">User Settings</h4>
+                </div>
 
-          <form method="post" action="/users/{{ .CurrentUser.ID }}">
+                <form method="post" action="/users/{{ .CurrentUser.ID }}">
+                    <div class="modal-body">
+                        <input type="hidden" name="_method" value="put">
 
-            <div class="modal-body">
-              <input type="hidden" name="_method" value="put">
+                        <div class="form-group">
+                            <label class="control-label" for="email">Email:</label>
+                            <input type="text" name="Email" id="email" class="form-control">
+                        </div>
 
-              <div class="form-group">
-                <label class="control-label" for="email">Email:</label>
-                <input type="text" name="Email" id="email" class="form-control">
-              </div>
+                        <div class="form-group">
+                            <label class="control-label" for="password">New Password:</label>
+                            <input type="password" name="Password" id="password" class="form-control">
+                        </div>
 
-              <div class="form-group">
-                <label class="control-label" for="password">New Password:</label>
-                <input type="password" name="Password" id="password" class="form-control">
-              </div>
+                        <div class="form-group">
+                            <label class="control-label" for="password-again">New Password Again:</label>
+                            <input type="password" name="PasswordAgain" id="password-again" class="form-control">
+                        </div>
+                    </div>
 
-              <div class="form-group">
-                <label class="control-label" for="password-again">New Password Again:</label>
-                <input type="password" name="PasswordAgain" id="password-again" class="form-control">
-              </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                        <button type="button" class="btn btn-primary" onclick="$(this).closest('form').submit()">Save changes</button>
+                    </div>
+                </form>
+
             </div>
-
-            <div class="modal-footer">
-              <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
-              <button type="button" class="btn btn-primary" onclick="$(this).closest('form').submit()">Save changes</button>
-            </div>
-
-          </form>
-
         </div>
-      </div>
     </div>
     {{template "content" .}}
 
     <script>
     $(window).load(function() {
-      $('.nav-tabs').removeClass('active');
+        $('.nav-tabs').removeClass('active');
 
-      var path = window.location.pathname;
-      if(path == '/') {
-        $('.nav-hosts').addClass('active');
-      } else if(path == '/tasks') {
-        $('.nav-tasks').addClass('active');
-      }
+        var path = window.location.pathname;
+        if(path == '/') {
+            $('.nav-hosts').addClass('active');
+        } else if(path == '/tasks') {
+            $('.nav-tasks').addClass('active');
+        }
     });
 
     // Set cluster on dropdown selection.
     $('.nav-clusters .dropdown-menu li').click(function(e) {
-      var text = $(this).find('.name').text();
-      $('.nav-clusters .dropdown-toggle .name').text(text);
-    });
+        var $li = $(this);
 
+        $.post('/clusters/current', { ClusterID: 1 } )
+        .done(function() {
+            var text = $li.find('.name').text();
+            $('.nav-clusters .dropdown-toggle .name').text(text);
+        });
+    });
     </script>
-  </body>
+    </body>
 </html>

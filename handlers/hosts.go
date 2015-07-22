@@ -19,7 +19,7 @@ func GetHosts(w http.ResponseWriter, r *http.Request) {
 	cookieStore := context.Get(r, "cookieStore").(*sessions.CookieStore)
 
 	session, _ := cookieStore.Get(r, "resourcedmaster-session")
-	currentUser, ok := session.Values["user"].(*dal.UserRow)
+	currentUserRow, ok := session.Values["user"].(*dal.UserRow)
 	if !ok {
 		http.Redirect(w, r, "/logout", 301)
 		return
@@ -32,23 +32,37 @@ func GetHosts(w http.ResponseWriter, r *http.Request) {
 	var hosts []*dal.HostRow
 	var savedQueries []*dal.SavedQueryRow
 
-	accessTokenRow, _ := dal.NewAccessToken(db).GetByUserId(nil, currentUser.ID)
+	accessTokenRow, _ := dal.NewAccessToken(db).GetByUserId(nil, currentUserRow.ID)
 
 	if accessTokenRow != nil {
 		hosts, _ = dal.NewHost(db).AllByAccessTokenIdAndQuery(nil, accessTokenRow.ID, query)
 		savedQueries, _ = dal.NewSavedQuery(db).AllByAccessToken(nil, accessTokenRow)
 	}
 
+	clusterRows := context.Get(r, "clusters").([]*dal.ClusterRow)
+	var currentClusterRow *dal.ClusterRow
+
+	currentClusterInterface := context.Get(r, "currentCluster")
+	if currentClusterInterface == nil {
+		currentClusterRow = nil
+	} else {
+		currentClusterRow = currentClusterInterface.(*dal.ClusterRow)
+	}
+
 	data := struct {
-		Addr         string
-		CurrentUser  *dal.UserRow
-		AccessToken  *dal.AccessTokenRow
-		Hosts        []*dal.HostRow
-		SavedQueries []*dal.SavedQueryRow
+		Addr           string
+		CurrentUser    *dal.UserRow
+		AccessToken    *dal.AccessTokenRow
+		Clusters       []*dal.ClusterRow
+		CurrentCluster *dal.ClusterRow
+		Hosts          []*dal.HostRow
+		SavedQueries   []*dal.SavedQueryRow
 	}{
 		context.Get(r, "addr").(string),
-		currentUser,
+		currentUserRow,
 		accessTokenRow,
+		clusterRows,
+		currentClusterRow,
 		hosts,
 		savedQueries,
 	}
