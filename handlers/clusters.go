@@ -1,0 +1,99 @@
+package handlers
+
+import (
+	"html/template"
+	"net/http"
+	"strconv"
+
+	"github.com/gorilla/context"
+	"github.com/gorilla/sessions"
+	"github.com/jmoiron/sqlx"
+	"github.com/resourced/resourced-master/dal"
+	"github.com/resourced/resourced-master/libhttp"
+)
+
+func GetClusters(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "text/html")
+
+	db := context.Get(r, "db").(*sqlx.DB)
+
+	currentUser := getCurrentUser(w, r)
+
+	clusters, err := dal.NewCluster(db).AllClustersByUserID(nil, currentUser.ID)
+	if err != nil {
+		libhttp.HandleErrorHTML(w, err, 500)
+		return
+	}
+
+	accessTokens := make(map[int64][]*dal.AccessTokenRow)
+
+	for _, app := range clusters {
+		accessTokensSlice, err := dal.NewAccessToken(db).AllAccessTokensByClusterID(nil, app.ID)
+		if err != nil {
+			libhttp.HandleErrorHTML(w, err, 500)
+			return
+		}
+
+		accessTokens[app.ID] = accessTokensSlice
+	}
+
+	data := struct {
+		CurrentUser  *dal.UserRow
+		Clusters     []*dal.ClusterRow
+		AccessTokens map[int64][]*dal.AccessTokenRow
+	}{
+		currentUser,
+		clusters,
+		accessTokens,
+	}
+
+	tmpl, err := template.ParseFiles("templates/dashboard.html.tmpl", "templates/clusters/list.html.tmpl")
+	if err != nil {
+		libhttp.HandleErrorHTML(w, err, 500)
+		return
+	}
+
+	tmpl.Execute(w, data)
+}
+
+func PostClusters(w http.ResponseWriter, r *http.Request) {
+	db := context.Get(r, "db").(*sqlx.DB)
+
+	cookieStore := context.Get(r, "cookieStore").(*sessions.CookieStore)
+
+	session, _ := cookieStore.Get(r, "resourcedmaster-session")
+
+	currentUser := session.Values["user"].(*dal.UserRow)
+
+	_, err := dal.NewCluster(db).Create(nil, currentUser.ID, r.FormValue("Name"))
+	if err != nil {
+		libhttp.HandleErrorHTML(w, err, 500)
+		return
+	}
+
+	http.Redirect(w, r, "/clusters", 301)
+}
+
+func PostClustersCurrent(w http.ResponseWriter, r *http.Request) {
+	cookieStore := context.Get(r, "cookieStore").(*sessions.CookieStore)
+
+	session, _ := cookieStore.Get(r, "resourcedmaster-session")
+
+	redirectPath := "/"
+
+	recentRequestPathInterface := session.Values["recentRequestPath"]
+	if recentRequestPathInterface != nil {
+		redirectPath = recentRequestPathInterface.(string)
+	}
+
+	clusterIDString := r.FormValue("ClusterID")
+	clusterID, err := strconv.ParseInt(clusterIDString, 10, 64)
+	if err != nil {
+		http.Redirect(w, r, redirectPath, 301)
+		return
+	}
+
+	session.Values["currentClusterID"] = clusterID
+
+	http.Redirect(w, r, redirectPath, 301)
+}

@@ -80,6 +80,13 @@ func (app *Application) mux() *mux.Router {
 
 	router.Handle("/users/{id:[0-9]+}", MustLogin(http.HandlerFunc(handlers.PostPutDeleteUsersID))).Methods("POST", "PUT", "DELETE")
 
+	router.Handle("/clusters", MustLogin(http.HandlerFunc(handlers.GetClusters))).Methods("GET")
+	router.Handle("/clusters", MustLogin(http.HandlerFunc(handlers.PostClusters))).Methods("POST")
+
+	router.Handle("/clusters/current", MustLogin(http.HandlerFunc(handlers.PostClustersCurrent))).Methods("POST")
+
+	router.Handle("/clusters/{id:[0-9]+}/access-tokens", MustLogin(http.HandlerFunc(handlers.PostAccessTokens))).Methods("POST")
+
 	router.Handle("/access-tokens", MustLogin(http.HandlerFunc(handlers.GetAccessTokens))).Methods("GET")
 	router.Handle("/access-tokens", MustLogin(http.HandlerFunc(handlers.PostAccessTokens))).Methods("POST")
 

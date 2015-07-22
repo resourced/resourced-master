@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"html/template"
 	"net/http"
 	"strings"
 )
@@ -54,4 +55,18 @@ func HandleErrorJson(w http.ResponseWriter, err error) {
 
 	errJson, _ := json.Marshal(errMap)
 	http.Error(w, string(errJson), http.StatusInternalServerError)
+}
+
+// HandleErrorHTML wraps error in HTML.
+func HandleErrorHTML(w http.ResponseWriter, err error, statusCode int) {
+	data := struct {
+		StatusCode int
+		Message    string
+	}{
+		statusCode,
+		err.Error(),
+	}
+
+	tmpl, _ := template.ParseFiles("templates/errors/error.html.tmpl")
+	tmpl.Execute(w, data)
 }
