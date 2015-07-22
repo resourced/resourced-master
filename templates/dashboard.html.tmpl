@@ -32,13 +32,26 @@
           <a class="navbar-brand" href="/">ResourceD Master</a>
         </div>
 
+        <ul class="nav navbar-nav nav-tabs">
+          <li class="nav-clusters dropdown">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false"><span class="name">Cluster</span> <span class="caret"></span></a>
+
+            <ul class="dropdown-menu" role="menu">
+              <li>
+                <a><span class="name">Didip Cluster</span></a>
+              </li>
+              <li>
+                <a><span class="name">Couchtato</span></a>
+              </li>
+            </ul>
+          </li>
+
+          <li class="nav-hosts"><a href="/">Hosts</a></li>
+          <li class="nav-tasks"><a href="/tasks">Tasks</a></li>
+        </ul>
+
         <!-- Collect the nav links, forms, and other content for toggling -->
         <div class="collapse navbar-collapse" id="navbar-collapse-target">
-          <ul class="nav navbar-nav nav-tabs">
-            <li class="nav-hosts"><a href="/">Hosts</a></li>
-            <li class="nav-tasks"><a href="/tasks">Tasks</a></li>
-          </ul>
-
           <ul class="nav navbar-nav navbar-right">
             <li class="dropdown">
               <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">{{ .CurrentUser.Email }} <span class="caret"></span></a>
@@ -113,6 +126,13 @@
         $('.nav-tasks').addClass('active');
       }
     });
+
+    // Set cluster on dropdown selection.
+    $('.nav-clusters .dropdown-menu li').click(function(e) {
+      var text = $(this).find('.name').text();
+      $('.nav-clusters .dropdown-toggle .name').text(text);
+    });
+
     </script>
   </body>
 </html>

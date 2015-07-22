@@ -35,6 +35,7 @@ select {
     width: 100%;
     padding: 0 10px;
 }
+
 .modal-backdrop {
     background-color: #aaa;
     bottom: 0;
@@ -44,12 +45,14 @@ select {
     top: 0;
     z-index: initial;
 }
+
 .navbar {
     margin-bottom: 0;
 }
 .navbar form {
     padding: 0 1px;
 }
+
 .page-header {
     margin: 18px 0;
     padding-bottom: 7px;
@@ -61,6 +64,7 @@ select {
 .nav-tabs li a {
     margin: 0;
 }
+
 .container.saved-queries h2, .container.hosts h2 {
     margin-top: 30px;
     margin-bottom: 5px;
