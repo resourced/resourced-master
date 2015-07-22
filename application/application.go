@@ -87,9 +87,6 @@ func (app *Application) mux() *mux.Router {
 
 	router.Handle("/clusters/{id:[0-9]+}/access-tokens", MustLogin(http.HandlerFunc(handlers.PostAccessTokens))).Methods("POST")
 
-	router.Handle("/access-tokens", MustLogin(http.HandlerFunc(handlers.GetAccessTokens))).Methods("GET")
-	router.Handle("/access-tokens", MustLogin(http.HandlerFunc(handlers.PostAccessTokens))).Methods("POST")
-
 	router.Handle("/access-tokens/{id:[0-9]+}/level", MustLogin(http.HandlerFunc(handlers.PostAccessTokensLevel))).Methods("POST")
 	router.Handle("/access-tokens/{id:[0-9]+}/enabled", MustLogin(http.HandlerFunc(handlers.PostAccessTokensEnabled))).Methods("POST")
 

@@ -6,42 +6,8 @@ import (
 	"github.com/jmoiron/sqlx"
 	"github.com/resourced/resourced-master/dal"
 	"github.com/resourced/resourced-master/libhttp"
-	"html/template"
 	"net/http"
 )
-
-func GetAccessTokens(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "text/html")
-
-	db := context.Get(r, "db").(*sqlx.DB)
-
-	cookieStore := context.Get(r, "cookieStore").(*sessions.CookieStore)
-
-	session, _ := cookieStore.Get(r, "resourcedmaster-session")
-	currentUser, ok := session.Values["user"].(*dal.UserRow)
-	if !ok {
-		http.Redirect(w, r, "/logout", 301)
-		return
-	}
-
-	accessTokens, _ := dal.NewAccessToken(db).AllAccessTokens(nil)
-
-	data := struct {
-		CurrentUser  *dal.UserRow
-		AccessTokens []*dal.AccessTokenRow
-	}{
-		currentUser,
-		accessTokens,
-	}
-
-	tmpl, err := template.ParseFiles("templates/dashboard.html.tmpl", "templates/access-tokens/list.html.tmpl")
-	if err != nil {
-		libhttp.HandleErrorJson(w, err)
-		return
-	}
-
-	tmpl.Execute(w, data)
-}
 
 func PostAccessTokens(w http.ResponseWriter, r *http.Request) {
 	db := context.Get(r, "db").(*sqlx.DB)
@@ -52,21 +18,27 @@ func PostAccessTokens(w http.ResponseWriter, r *http.Request) {
 
 	currentUser := session.Values["user"].(*dal.UserRow)
 
-	level := r.FormValue("Level")
-
-	_, err := dal.NewAccessToken(db).Create(nil, currentUser.ID, level)
+	clusterID, err := getIdFromPath(w, r)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
 	}
 
-	http.Redirect(w, r, "/access-tokens", 301)
+	level := r.FormValue("Level")
+
+	_, err = dal.NewAccessToken(db).Create(nil, currentUser.ID, clusterID, level)
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
+
+	http.Redirect(w, r, "/clusters", 301)
 }
 
 func PostAccessTokensLevel(w http.ResponseWriter, r *http.Request) {
 	db := context.Get(r, "db").(*sqlx.DB)
 
-	tokenId, err := getIdFromPath(w, r)
+	tokenID, err := getIdFromPath(w, r)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
@@ -77,19 +49,19 @@ func PostAccessTokensLevel(w http.ResponseWriter, r *http.Request) {
 	data := make(map[string]interface{})
 	data["level"] = level
 
-	_, err = dal.NewAccessToken(db).UpdateById(nil, data, tokenId)
+	_, err = dal.NewAccessToken(db).UpdateById(nil, data, tokenID)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
 	}
 
-	http.Redirect(w, r, "/access-tokens", 301)
+	http.Redirect(w, r, "/clusters", 301)
 }
 
 func PostAccessTokensEnabled(w http.ResponseWriter, r *http.Request) {
 	db := context.Get(r, "db").(*sqlx.DB)
 
-	tokenId, err := getIdFromPath(w, r)
+	tokenID, err := getIdFromPath(w, r)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
@@ -97,7 +69,7 @@ func PostAccessTokensEnabled(w http.ResponseWriter, r *http.Request) {
 
 	at := dal.NewAccessToken(db)
 
-	accessTokenRow, err := at.GetByID(nil, tokenId)
+	accessTokenRow, err := at.GetByID(nil, tokenID)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
@@ -106,11 +78,11 @@ func PostAccessTokensEnabled(w http.ResponseWriter, r *http.Request) {
 	data := make(map[string]interface{})
 	data["enabled"] = !accessTokenRow.Enabled
 
-	_, err = at.UpdateById(nil, data, tokenId)
+	_, err = at.UpdateById(nil, data, tokenID)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
 	}
 
-	http.Redirect(w, r, "/access-tokens", 301)
+	http.Redirect(w, r, "/clusters", 301)
 }
