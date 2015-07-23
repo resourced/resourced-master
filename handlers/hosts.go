@@ -40,29 +40,21 @@ func GetHosts(w http.ResponseWriter, r *http.Request) {
 	}
 
 	clusterRows := context.Get(r, "clusters").([]*dal.ClusterRow)
-	var currentClusterRow *dal.ClusterRow
-
-	currentClusterInterface := context.Get(r, "currentCluster")
-	if currentClusterInterface == nil {
-		currentClusterRow = nil
-	} else {
-		currentClusterRow = currentClusterInterface.(*dal.ClusterRow)
-	}
 
 	data := struct {
-		Addr           string
-		CurrentUser    *dal.UserRow
-		AccessToken    *dal.AccessTokenRow
-		Clusters       []*dal.ClusterRow
-		CurrentCluster *dal.ClusterRow
-		Hosts          []*dal.HostRow
-		SavedQueries   []*dal.SavedQueryRow
+		Addr               string
+		CurrentUser        *dal.UserRow
+		AccessToken        *dal.AccessTokenRow
+		Clusters           []*dal.ClusterRow
+		CurrentClusterJson string
+		Hosts              []*dal.HostRow
+		SavedQueries       []*dal.SavedQueryRow
 	}{
 		context.Get(r, "addr").(string),
 		currentUserRow,
 		accessTokenRow,
 		clusterRows,
-		currentClusterRow,
+		string(context.Get(r, "currentClusterJson").([]byte)),
 		hosts,
 		savedQueries,
 	}

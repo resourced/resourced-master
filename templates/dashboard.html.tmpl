@@ -16,6 +16,11 @@
         <script src="/jquery/jquery-cookie-1.4.1.min.js"></script>
         <script src="/bootstrap/js/bootstrap.min.js"></script>
         <script src="/bootstrap/switch/bootstrap-switch.min.js"></script>
+        <script src="/resourced-master/js/dashboard.js"></script>
+
+        <script>
+        ResourcedMaster.globals.currentCluster = JSON.parse('{{ .CurrentClusterJson }}');
+        </script>
     </head>
 
     <body>
@@ -39,7 +44,7 @@
 
                     <ul class="dropdown-menu" role="menu">
                         {{ range $cluster := .Clusters }}
-                        <li>
+                        <li data-cluster-id="{{ $cluster.ID }}">
                             <a><span class="name">{{ $cluster.Name }}</span></a>
                         </li>
                         {{ end }}
@@ -115,6 +120,17 @@
     {{template "content" .}}
 
     <script>
+    $(document).ready(function() {
+        $('.nav-clusters .dropdown-menu li').each(function(index) {
+            var $li = $(this);
+
+            var clusterID = $li.data('cluster-id');
+            if(clusterID == ResourcedMaster.globals.currentCluster.ID) {
+                $li.click();
+            }
+        });
+    });
+
     $(window).load(function() {
         $('.nav-tabs').removeClass('active');
 
@@ -129,11 +145,15 @@
     // Set cluster on dropdown selection.
     $('.nav-clusters .dropdown-menu li').click(function(e) {
         var $li = $(this);
+        var clusterID = $li.data('cluster-id');
+        var clusterName = $li.find('.name').text();
 
-        $.post('/clusters/current', { ClusterID: 1 } )
+        $.post('/clusters/current', { ClusterID: clusterID } )
         .done(function() {
-            var text = $li.find('.name').text();
-            $('.nav-clusters .dropdown-toggle .name').text(text);
+            ResourcedMaster.globals.currentCluster.ID = clusterID;
+            ResourcedMaster.globals.currentCluster.Name = clusterName;
+
+            $('.nav-clusters .dropdown-toggle .name').text(clusterName);
         });
     });
     </script>

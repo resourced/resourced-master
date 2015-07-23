@@ -2,6 +2,7 @@
 package middlewares
 
 import (
+	"encoding/json"
 	"net/http"
 	"strings"
 
@@ -83,10 +84,32 @@ func SetClusters(next http.Handler) http.Handler {
 
 		// Set currentCluster if not previously set.
 		if len(clusterRows) > 0 {
-			currentClusterInterface := context.Get(r, "currentCluster")
+			currentClusterInterface := session.Values["currentCluster"]
 			if currentClusterInterface == nil {
-				context.Set(r, "currentCluster", clusterRows[0])
+				session.Values["currentCluster"] = clusterRows[0]
+
+				err := session.Save(r, w)
+				if err != nil {
+					libhttp.HandleErrorJson(w, err)
+					return
+				}
 			}
+		}
+
+		// Set currentClusterJson
+		currentClusterInterface := session.Values["currentCluster"]
+		if currentClusterInterface != nil {
+			currentClusterRow := currentClusterInterface.(*dal.ClusterRow)
+
+			currentClusterJson, err := json.Marshal(currentClusterRow)
+			if err != nil {
+				libhttp.HandleErrorJson(w, err)
+				return
+			}
+			context.Set(r, "currentClusterJson", currentClusterJson)
+
+		} else {
+			context.Set(r, "currentClusterJson", []byte("{}"))
 		}
 
 		next.ServeHTTP(w, r)

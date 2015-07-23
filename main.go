@@ -14,6 +14,7 @@ import (
 
 func init() {
 	gob.Register(&dal.UserRow{})
+	gob.Register(&dal.ClusterRow{})
 }
 
 func main() {

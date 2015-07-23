@@ -96,7 +96,13 @@ func PostClustersCurrent(w http.ResponseWriter, r *http.Request) {
 	clusterRows := context.Get(r, "clusters").([]*dal.ClusterRow)
 	for _, clusterRow := range clusterRows {
 		if clusterRow.ID == clusterID {
-			context.Set(r, "currentCluster", clusterRow)
+			session.Values["currentCluster"] = clusterRow
+
+			err := session.Save(r, w)
+			if err != nil {
+				libhttp.HandleErrorJson(w, err)
+				return
+			}
 			break
 		}
 	}
