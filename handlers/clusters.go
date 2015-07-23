@@ -19,11 +19,7 @@ func GetClusters(w http.ResponseWriter, r *http.Request) {
 
 	currentUser := getCurrentUser(w, r)
 
-	clusters, err := dal.NewCluster(db).AllClustersByUserID(nil, currentUser.ID)
-	if err != nil {
-		libhttp.HandleErrorHTML(w, err, 500)
-		return
-	}
+	clusters := context.Get(r, "clusters").([]*dal.ClusterRow)
 
 	accessTokens := make(map[int64][]*dal.AccessTokenRow)
 
@@ -38,12 +34,14 @@ func GetClusters(w http.ResponseWriter, r *http.Request) {
 	}
 
 	data := struct {
-		CurrentUser  *dal.UserRow
-		Clusters     []*dal.ClusterRow
-		AccessTokens map[int64][]*dal.AccessTokenRow
+		CurrentUser        *dal.UserRow
+		Clusters           []*dal.ClusterRow
+		CurrentClusterJson string
+		AccessTokens       map[int64][]*dal.AccessTokenRow
 	}{
 		currentUser,
 		clusters,
+		string(context.Get(r, "currentClusterJson").([]byte)),
 		accessTokens,
 	}
 

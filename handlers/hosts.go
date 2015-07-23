@@ -39,8 +39,6 @@ func GetHosts(w http.ResponseWriter, r *http.Request) {
 		savedQueries, _ = dal.NewSavedQuery(db).AllByAccessToken(nil, accessTokenRow)
 	}
 
-	clusterRows := context.Get(r, "clusters").([]*dal.ClusterRow)
-
 	data := struct {
 		Addr               string
 		CurrentUser        *dal.UserRow
@@ -53,7 +51,7 @@ func GetHosts(w http.ResponseWriter, r *http.Request) {
 		context.Get(r, "addr").(string),
 		currentUserRow,
 		accessTokenRow,
-		clusterRows,
+		context.Get(r, "clusters").([]*dal.ClusterRow),
 		string(context.Get(r, "currentClusterJson").([]byte)),
 		hosts,
 		savedQueries,
