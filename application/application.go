@@ -79,6 +79,9 @@ func (app *Application) mux() *mux.Router {
 
 	router.Handle("/", alice.New(MustLogin, SetClusters).ThenFunc(handlers.GetHosts)).Methods("GET")
 
+	router.Handle("/metadata", alice.New(MustLogin, SetClusters).ThenFunc(handlers.GetMetadata)).Methods("GET")
+	router.Handle("/metadata", alice.New(MustLogin, SetClusters).ThenFunc(handlers.PostMetadata)).Methods("POST")
+
 	router.Handle("/tasks", alice.New(MustLogin, SetClusters).ThenFunc(handlers.GetTasks)).Methods("GET")
 
 	router.Handle("/users/{id:[0-9]+}", alice.New(MustLogin).ThenFunc(handlers.PostPutDeleteUsersID)).Methods("POST", "PUT", "DELETE")

@@ -52,6 +52,7 @@
                 </li>
 
                 <li class="nav-hosts"><a href="/">Hosts</a></li>
+                <li class="nav-metadata"><a href="/metadata">Metadata</a></li>
                 <!-- <li class="nav-tasks"><a href="/tasks">Tasks</a></li> -->
             </ul>
             {{ end }}
@@ -137,6 +138,8 @@
         var path = window.location.pathname;
         if(path == '/') {
             $('.nav-hosts').addClass('active');
+        } else if(path == '/metadata') {
+            $('.nav-metadata').addClass('active');
         } else if(path == '/tasks') {
             $('.nav-tasks').addClass('active');
         }

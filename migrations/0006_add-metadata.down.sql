@@ -1,0 +1,2 @@
+DROP TABLE IF EXISTS metadata CASCADE;
+DROP INDEX IF EXISTS idx_metadata_key;
