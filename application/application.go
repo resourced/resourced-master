@@ -105,8 +105,8 @@ func (app *Application) mux() *mux.Router {
 	router.Handle("/api/hosts", alice.New(MustLoginApi).ThenFunc(handlers.PostApiHosts)).Methods("POST")
 
 	router.Handle("/api/metadata", alice.New(MustLoginApi).ThenFunc(handlers.GetApiMetadata)).Methods("GET")
-	router.Handle("/api/metadata/{key}", alice.New(MustLoginApi).ThenFunc(handlers.PostApiMetadataKey)).Methods("POST")
-	router.Handle("/api/metadata/{key}", alice.New(MustLoginApi).ThenFunc(handlers.GetApiMetadataKey)).Methods("GET")
+	router.Handle(`/api/metadata/{key:[\w\/\-\_]+}`, alice.New(MustLoginApi).ThenFunc(handlers.PostApiMetadataKey)).Methods("POST")
+	router.Handle(`/api/metadata/{key:[\w\/\-\_]+}`, alice.New(MustLoginApi).ThenFunc(handlers.GetApiMetadataKey)).Methods("GET")
 
 	// Path of static files must be last!
 	router.PathPrefix("/").Handler(http.FileServer(http.Dir("static")))
