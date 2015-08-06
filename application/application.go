@@ -31,6 +31,8 @@ func New() (*Application, error) {
 		return nil, err
 	}
 
+	// As a user, you must provide your own secret
+	// But make sure you keep using the same one, otherwise sessions will expire.
 	cookieStoreSecret := libenv.EnvWithDefault("RESOURCED_MASTER_COOKIE_SECRET", "T0PS3CR3T")
 
 	app := &Application{}
@@ -107,6 +109,9 @@ func (app *Application) mux() *mux.Router {
 	router.Handle("/api/metadata", alice.New(MustLoginApi).ThenFunc(handlers.GetApiMetadata)).Methods("GET")
 	router.Handle(`/api/metadata/{key:[\w\/\-\_]+}`, alice.New(MustLoginApi).ThenFunc(handlers.PostApiMetadataKey)).Methods("POST")
 	router.Handle(`/api/metadata/{key:[\w\/\-\_]+}`, alice.New(MustLoginApi).ThenFunc(handlers.GetApiMetadataKey)).Methods("GET")
+
+	router.Handle("/api/stacks", alice.New(MustLoginApi).ThenFunc(handlers.GetApiStacks)).Methods("GET")
+	router.Handle("/api/stacks", alice.New(MustLoginApi).ThenFunc(handlers.PostApiStacks)).Methods("POST")
 
 	// Path of static files must be last!
 	router.PathPrefix("/").Handler(http.FileServer(http.Dir("static")))
