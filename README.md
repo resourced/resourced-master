@@ -5,6 +5,9 @@
 
 **ResourceD Master** receives server data from ResourceD agents and serves them as HTTP+JSON.
 
+**NOTE: This documentation refers to master branch. For stable release, checkout the [main website](http://resourced.io/).**
+
+
 ![Signup](http://i.imgur.com/UcNmeTF.png)
 
 ![Access Tokens](http://i.imgur.com/3H9ONza.png)
