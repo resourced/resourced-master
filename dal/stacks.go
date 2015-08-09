@@ -7,11 +7,11 @@ import (
 )
 
 func NewStacks(db *sqlx.DB) *Stacks {
-	metadata := &Stacks{}
-	metadata.db = db
-	metadata.table = "metadata"
+	stacks := &Stacks{}
+	stacks.db = db
+	stacks.table = "stacks"
 
-	return metadata
+	return stacks
 }
 
 type StacksRow struct {
@@ -19,8 +19,8 @@ type StacksRow struct {
 	Data      sqlx_types.JsonText `db:"data"`
 }
 
-func (metadataRow *StacksRow) DataString() string {
-	return string(metadataRow.Data)
+func (stacksRow *StacksRow) DataString() string {
+	return string(stacksRow.Data)
 }
 
 type Stacks struct {
@@ -28,19 +28,19 @@ type Stacks struct {
 }
 
 // GetByClusterID returns record by cluster_id.
-func (metadata *Stacks) GetByClusterID(tx *sqlx.Tx, clusterID int64) (*StacksRow, error) {
-	metadataRow := &StacksRow{}
-	query := fmt.Sprintf("SELECT * FROM %v WHERE cluster_id=$1", metadata.table)
-	err := metadata.db.Get(metadataRow, query, clusterID)
+func (stacks *Stacks) GetByClusterID(tx *sqlx.Tx, clusterID int64) (*StacksRow, error) {
+	stacksRow := &StacksRow{}
+	query := fmt.Sprintf("SELECT * FROM %v WHERE cluster_id=$1", stacks.table)
+	err := stacks.db.Get(stacksRow, query, clusterID)
 
-	return metadataRow, err
+	return stacksRow, err
 }
 
 // UpdateByClusterID updates record by cluster_id.
-func (metadata *Stacks) UpdateByClusterID(tx *sqlx.Tx, clusterID int64, data []byte) (*StacksRow, error) {
-	query := fmt.Sprintf("UPDATE %v SET data=$3 WHERE cluster_id=$1", metadata.table)
+func (stacks *Stacks) UpdateByClusterID(tx *sqlx.Tx, clusterID int64, data []byte) (*StacksRow, error) {
+	query := fmt.Sprintf("UPDATE %v SET data=$3 WHERE cluster_id=$1", stacks.table)
 
-	_, err := metadata.db.Exec(query, clusterID, data)
+	_, err := stacks.db.Exec(query, clusterID, data)
 	if err != nil {
 		return nil, err
 	}
@@ -48,17 +48,17 @@ func (metadata *Stacks) UpdateByClusterID(tx *sqlx.Tx, clusterID int64, data []b
 	return &StacksRow{clusterID, data}, nil
 }
 
-// CreateOrUpdate performs insert/update for one metadata data.
-func (metadata *Stacks) CreateOrUpdate(tx *sqlx.Tx, clusterID int64, data []byte) (*StacksRow, error) {
-	metadataRow, err := metadata.GetByClusterID(tx, clusterID)
+// CreateOrUpdate performs insert/update for one stacks data.
+func (stacks *Stacks) CreateOrUpdate(tx *sqlx.Tx, clusterID int64, data []byte) (*StacksRow, error) {
+	stacksRow, err := stacks.GetByClusterID(tx, clusterID)
 
 	// Perform INSERT
-	if metadataRow == nil || err != nil {
+	if stacksRow == nil || err != nil {
 		saveData := make(map[string]interface{})
 		saveData["cluster_id"] = clusterID
 		saveData["data"] = data
 
-		_, err := metadata.InsertIntoTable(tx, saveData)
+		_, err := stacks.InsertIntoTable(tx, saveData)
 		if err != nil {
 			return nil, err
 		}
@@ -67,5 +67,5 @@ func (metadata *Stacks) CreateOrUpdate(tx *sqlx.Tx, clusterID int64, data []byte
 	}
 
 	// Perform UPDATE
-	return metadata.UpdateByClusterID(tx, clusterID, data)
+	return stacks.UpdateByClusterID(tx, clusterID, data)
 }
