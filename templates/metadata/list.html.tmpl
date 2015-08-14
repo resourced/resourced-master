@@ -20,10 +20,10 @@
     {{ end }}
             <form method="post" action="/metadata">
                 <div class="form-group">
-                    <input type="text" class="form-control" name="Key" placeholder="slash/separated/key">
-                    <textarea class="form-control" rows="3" name="Data" placeholder="Data in JSON format"></textarea>
+                    <input type="text" class="form-control metadata-font" name="Key" placeholder="slash/separated/key">
+                    <textarea class="form-control metadata-value metadata-font" name="Data" placeholder="Data in JSON format"></textarea>
 
-                    <button type="submit" class="btn btn-primary btn-block">Save</button>
+                    <button type="submit" class="btn btn-primary btn-block btn-sm">Save</button>
                 </div>
             </form>
         </div>
@@ -32,16 +32,22 @@
         <div class="col-lg-6">
             <form method="post" action="/metadata">
                 <div class="form-group">
-                    <input type="text" class="form-control" name="Key" placeholder="slash/separated/key" value="{{ $metadata.Key }}">
-                    <textarea class="form-control" rows="3" name="Data" placeholder="Data in JSON format">
+                    <input type="text" class="form-control metadata-font" name="Key" placeholder="slash/separated/key" value="{{ $metadata.Key }}">
+                    <textarea class="form-control metadata-value metadata-font" name="Data" placeholder="Data in JSON format">
 {{ $metadata.DataString }}
                     </textarea>
 
-                    <button type="submit" class="btn btn-primary btn-block">Save</button>
+                    <button type="submit" class="btn btn-primary btn-block btn-sm">Save</button>
                 </div>
             </form>
         </div>
     {{ end }}
     </div>
 </div>
+
+<script>
+$('textarea').focus(function(e) {
+    ResourcedMaster.ui.resizeTextarea($(this));
+});
+</script>
 {{end}}

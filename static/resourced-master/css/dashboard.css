@@ -99,6 +99,15 @@ select {
     margin-right: 14px;
 }
 
+.metadata-value {
+    resize: vertical;
+    min-height: 40px;
+}
+.metadata-font {
+    font-size: 13px;
+    padding: 6px 12px;
+}
+
 @media(max-width:1200px) {
     .form-group-search-and-save .search-form, .form-group-search-and-save .search-form .input-group {
         width: 832px;
