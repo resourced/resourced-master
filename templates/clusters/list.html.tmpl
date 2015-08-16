@@ -18,7 +18,7 @@
 
             {{ range $cluster := .Clusters }}
                 <div class="page-header">
-                    <button class="btn btn-sm btn-info pull-right" type="button" data-toggle="modal" data-target="#new-access-token-modal" data-app-id="{{ $cluster.ID }}">New Access Token</button>
+                    <button class="btn btn-sm btn-info pull-right" type="button" data-toggle="modal" data-target="#new-access-token-modal" data-cluster-id="{{ $cluster.ID }}">New Access Token</button>
                     <h3>{{ $cluster.Name }}</h3>
                 </div>
 
@@ -122,10 +122,10 @@
 
 <script>
 $('#new-access-token-modal').on('show.bs.modal', function (event) {
-    var button = $(event.relatedTarget);   // Button that triggered the modal
-    var appId = button.data('app-id');     // Extract info from data-* attributes
+    var button = $(event.relatedTarget);           // Button that triggered the modal
+    var clusterID = button.data('cluster-id');     // Extract info from data-* attributes
     var modal = $(this);
-    modal.find('form').attr('action', '/clusters/' + appId + '/access-tokens');
+    modal.find('form').attr('action', '/clusters/' + clusterID + '/access-tokens');
 });
 
 $(document).ready(function() {

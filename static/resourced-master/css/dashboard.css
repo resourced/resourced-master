@@ -99,13 +99,21 @@ select {
     margin-right: 14px;
 }
 
-.metadata-value {
-    resize: vertical;
-    min-height: 40px;
+.metadata-row-highlight {
+    background-color: #4e5d6c;
+}
+.metadata-column-key {
+    width: 240px;
+}
+.metadata-column-save-btn {
+    width: 70px;
+}
+.metadata-column-details-btn {
+    width: 84px;
 }
 .metadata-font {
     font-size: 13px;
-    padding: 6px 12px;
+    padding: 0 10px;
 }
 
 @media(max-width:1200px) {
