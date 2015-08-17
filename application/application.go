@@ -2,6 +2,8 @@ package application
 
 import (
 	"fmt"
+	"net/http"
+
 	"github.com/carbocation/interpose"
 	"github.com/gorilla/mux"
 	"github.com/gorilla/sessions"
@@ -14,7 +16,6 @@ import (
 	"github.com/resourced/resourced-master/libunix"
 	"github.com/resourced/resourced-master/middlewares"
 	"github.com/resourced/resourced-master/wstrafficker"
-	"net/http"
 )
 
 // New is the constructor for Application struct.
@@ -110,8 +111,8 @@ func (app *Application) mux() *mux.Router {
 	router.Handle(`/api/metadata/{key:[\w\/\-\_]+}`, alice.New(MustLoginApi).ThenFunc(handlers.PostApiMetadataKey)).Methods("POST")
 	router.Handle(`/api/metadata/{key:[\w\/\-\_]+}`, alice.New(MustLoginApi).ThenFunc(handlers.GetApiMetadataKey)).Methods("GET")
 
-	router.Handle("/api/stacks", alice.New(MustLoginApi).ThenFunc(handlers.GetApiStacks)).Methods("GET")
-	router.Handle("/api/stacks", alice.New(MustLoginApi).ThenFunc(handlers.PostApiStacks)).Methods("POST")
+	router.Handle(`/api/executors`, alice.New(MustLoginApi).ThenFunc(handlers.GetApiExecutors)).Methods("GET")
+	router.Handle(`/api/executors/{hostname:[\w\-\_]+}`, alice.New(MustLoginApi).ThenFunc(handlers.PostApiExecutorsByHostname)).Methods("POST")
 
 	// Path of static files must be last!
 	router.PathPrefix("/").Handler(http.FileServer(http.Dir("static")))
