@@ -2,6 +2,7 @@ package dal
 
 import (
 	"fmt"
+
 	"github.com/jmoiron/sqlx"
 	sqlx_types "github.com/jmoiron/sqlx/types"
 )
@@ -56,6 +57,18 @@ func (metadata *Metadata) UpdateByClusterIDAndKey(tx *sqlx.Tx, clusterID int64, 
 	}
 
 	return &MetadataRow{clusterID, key, data}, nil
+}
+
+// DeleteByClusterIDAndKey updates record by cluster_id and key.
+func (metadata *Metadata) DeleteByClusterIDAndKey(tx *sqlx.Tx, clusterID int64, key string) (*MetadataRow, error) {
+	query := fmt.Sprintf("DELETE FROM %v WHERE cluster_id=$1 AND key=$2 LIMIT 1", metadata.table)
+
+	_, err := metadata.db.Exec(query, clusterID, key)
+	if err != nil {
+		return nil, err
+	}
+
+	return &MetadataRow{clusterID, key, nil}, nil
 }
 
 // CreateOrUpdate performs insert/update for one metadata data.

@@ -144,6 +144,31 @@ func PostApiMetadataKey(w http.ResponseWriter, r *http.Request) {
 	w.Write(metadataRowJson)
 }
 
+func DeleteApiMetadataKey(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	db := context.Get(r, "db").(*sqlx.DB)
+
+	accessTokenRow := context.Get(r, "accessTokenRow").(*dal.AccessTokenRow)
+
+	vars := mux.Vars(r)
+	key := vars["key"]
+
+	metadataRow, err := dal.NewMetadata(db).DeleteByClusterIDAndKey(nil, accessTokenRow.ClusterID, key)
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
+
+	metadataRowJson, err := json.Marshal(metadataRow)
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
+
+	w.Write(metadataRowJson)
+}
+
 func GetApiMetadataKey(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
