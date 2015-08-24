@@ -28,7 +28,7 @@ func PostSavedQueries(w http.ResponseWriter, r *http.Request) {
 
 	savedQuery := r.FormValue("SavedQuery")
 
-	_, err = rm_dal.NewSavedQuery(db).CreateOrUpdate(nil, accessTokenRow.ID, savedQuery)
+	_, err = rm_dal.NewSavedQuery(db).CreateOrUpdate(nil, accessTokenRow, savedQuery)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
