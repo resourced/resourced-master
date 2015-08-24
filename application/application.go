@@ -84,8 +84,6 @@ func (app *Application) mux() *mux.Router {
 	router.Handle("/metadata", alice.New(MustLogin, SetClusters).ThenFunc(handlers.GetMetadata)).Methods("GET")
 	router.Handle("/metadata", alice.New(MustLogin, SetClusters).ThenFunc(handlers.PostMetadata)).Methods("POST")
 
-	router.Handle("/tasks", alice.New(MustLogin, SetClusters).ThenFunc(handlers.GetTasks)).Methods("GET")
-
 	router.Handle("/users/{id:[0-9]+}", alice.New(MustLogin).ThenFunc(handlers.PostPutDeleteUsersID)).Methods("POST", "PUT", "DELETE")
 
 	router.Handle("/clusters", alice.New(MustLogin, SetClusters).ThenFunc(handlers.GetClusters)).Methods("GET")
@@ -109,9 +107,6 @@ func (app *Application) mux() *mux.Router {
 	router.Handle("/api/metadata", alice.New(MustLoginApi).ThenFunc(handlers.GetApiMetadata)).Methods("GET")
 	router.Handle(`/api/metadata/{key:[\w\/\-\_]+}`, alice.New(MustLoginApi).ThenFunc(handlers.PostApiMetadataKey)).Methods("POST")
 	router.Handle(`/api/metadata/{key:[\w\/\-\_]+}`, alice.New(MustLoginApi).ThenFunc(handlers.GetApiMetadataKey)).Methods("GET")
-
-	router.Handle("/api/stacks", alice.New(MustLoginApi).ThenFunc(handlers.GetApiStacks)).Methods("GET")
-	router.Handle("/api/stacks", alice.New(MustLoginApi).ThenFunc(handlers.PostApiStacks)).Methods("POST")
 
 	// Path of static files must be last!
 	router.PathPrefix("/").Handler(http.FileServer(http.Dir("static")))
