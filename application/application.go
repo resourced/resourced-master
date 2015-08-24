@@ -2,6 +2,8 @@ package application
 
 import (
 	"fmt"
+	"net/http"
+
 	"github.com/carbocation/interpose"
 	"github.com/gorilla/mux"
 	"github.com/gorilla/sessions"
@@ -14,7 +16,6 @@ import (
 	"github.com/resourced/resourced-master/libunix"
 	"github.com/resourced/resourced-master/middlewares"
 	"github.com/resourced/resourced-master/wstrafficker"
-	"net/http"
 )
 
 // New is the constructor for Application struct.
@@ -106,6 +107,7 @@ func (app *Application) mux() *mux.Router {
 
 	router.Handle("/api/metadata", alice.New(MustLoginApi).ThenFunc(handlers.GetApiMetadata)).Methods("GET")
 	router.Handle(`/api/metadata/{key:[\w\/\-\_]+}`, alice.New(MustLoginApi).ThenFunc(handlers.PostApiMetadataKey)).Methods("POST")
+	router.Handle(`/api/metadata/{key:[\w\/\-\_]+}`, alice.New(MustLoginApi).ThenFunc(handlers.DeleteApiMetadataKey)).Methods("DELETE")
 	router.Handle(`/api/metadata/{key:[\w\/\-\_]+}`, alice.New(MustLoginApi).ThenFunc(handlers.GetApiMetadataKey)).Methods("GET")
 
 	// Path of static files must be last!

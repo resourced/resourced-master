@@ -3,6 +3,7 @@ package dal
 import (
 	"database/sql"
 	"fmt"
+
 	"github.com/jmoiron/sqlx"
 )
 
@@ -48,7 +49,6 @@ func (a *Cluster) Create(tx *sqlx.Tx, userId int64, name string) (*ClusterRow, e
 
 	sqlResult, err := a.InsertIntoTable(tx, data)
 	if err != nil {
-		println(err.Error())
 		return nil, err
 	}
 

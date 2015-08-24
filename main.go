@@ -2,14 +2,15 @@ package main
 
 import (
 	"encoding/gob"
+	"net/http"
+	"os"
+	"time"
+
 	"github.com/Sirupsen/logrus"
 	"github.com/resourced/resourced-master/application"
 	"github.com/resourced/resourced-master/dal"
 	"github.com/resourced/resourced-master/libenv"
 	"github.com/stretchr/graceful"
-	"net/http"
-	"os"
-	"time"
 )
 
 func init() {
@@ -27,7 +28,7 @@ func main() {
 	errs, ok := app.MigrateUp()
 	if !ok {
 		for _, err := range errs {
-			println(err.Error())
+			logrus.Fatal(err)
 		}
 		os.Exit(1)
 	}

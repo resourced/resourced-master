@@ -50,6 +50,20 @@
                 </thead>
 
                 <tbody>
+                    <tr>
+                    <form method="post" action="/metadata">
+                        <td class="metadata-column-key"><input type="text" class="form-control metadata-font" name="Key" placeholder="slash/separated/key"></td>
+                        <td><input type="text" class="form-control metadata-font" name="Data" placeholder="Data in JSON format"></td>
+                        <td class="metadata-column-save-btn"><button type="submit" class="btn btn-primary btn-block">Add</button></td>
+                    </form>
+
+                        <td class="metadata-column-details-btn">
+                            <button class="btn btn-success btn-block" data-toggle="modal" data-target="#metadata-details-modal">
+                                Details
+                            </button>
+                        </td>
+                    </tr>
+
                 {{ range $metadata := .MetadataRows }}
                     <tr>
                     <form method="post" action="/metadata">
