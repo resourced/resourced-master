@@ -25,18 +25,34 @@ func GetHosts(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	currentClusterInterface := session.Values["currentCluster"]
+	if currentClusterInterface == nil {
+		http.Redirect(w, r, "/", 301)
+		return
+	}
+
+	currentCluster := currentClusterInterface.(*dal.ClusterRow)
+
 	db := context.Get(r, "db").(*sqlx.DB)
 
 	query := r.URL.Query().Get("q")
 
-	var hosts []*dal.HostRow
-	var savedQueries []*dal.SavedQueryRow
+	hosts, err := dal.NewHost(db).AllByClusterIDAndQuery(nil, currentCluster.ID, query)
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
 
-	accessTokenRow, _ := dal.NewAccessToken(db).GetByUserId(nil, currentUserRow.ID)
+	savedQueries, err := dal.NewSavedQuery(db).AllByClusterID(nil, currentCluster.ID)
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
 
-	if accessTokenRow != nil {
-		hosts, _ = dal.NewHost(db).AllByAccessTokenIdAndQuery(nil, accessTokenRow.ID, query)
-		savedQueries, _ = dal.NewSavedQuery(db).AllByAccessToken(nil, accessTokenRow)
+	accessTokenRow, err := dal.NewAccessToken(db).GetByUserID(nil, currentUserRow.ID)
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
 	}
 
 	data := struct {
@@ -79,7 +95,7 @@ func PostApiHosts(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	hostRow, err := dal.NewHost(db).CreateOrUpdate(nil, accessTokenRow.ID, dataJson)
+	hostRow, err := dal.NewHost(db).CreateOrUpdate(nil, accessTokenRow, dataJson)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
@@ -103,7 +119,7 @@ func GetApiHosts(w http.ResponseWriter, r *http.Request) {
 
 	query := r.URL.Query().Get("q")
 
-	hosts, err := dal.NewHost(db).AllByAccessTokenIdAndQuery(nil, accessTokenRow.ID, query)
+	hosts, err := dal.NewHost(db).AllByClusterIDAndQuery(nil, accessTokenRow.ID, query)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return

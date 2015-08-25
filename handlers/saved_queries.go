@@ -20,7 +20,7 @@ func PostSavedQueries(w http.ResponseWriter, r *http.Request) {
 
 	currentUser := session.Values["user"].(*rm_dal.UserRow)
 
-	accessTokenRow, err := rm_dal.NewAccessToken(db).GetByUserId(nil, currentUser.ID)
+	accessTokenRow, err := rm_dal.NewAccessToken(db).GetByUserID(nil, currentUser.ID)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return

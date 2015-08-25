@@ -47,7 +47,7 @@ func TestHostCRUD(t *testing.T) {
 	}
 
 	// Create host
-	hostRow, err := newHostForTest(t).CreateOrUpdate(nil, tokenRow.ID, []byte(`{"/stuff": {"Score": 100, "Host": {"Name": "localhost", "Tags": {"aaa": "bbb"}}}}`))
+	hostRow, err := newHostForTest(t).CreateOrUpdate(nil, tokenRow, []byte(`{"/stuff": {"Score": 100, "Host": {"Name": "localhost", "Tags": {"aaa": "bbb"}}}}`))
 	if err != nil {
 		t.Errorf("Creating a new host should work. Error: %v", err)
 	}
@@ -56,13 +56,13 @@ func TestHostCRUD(t *testing.T) {
 	}
 
 	// SELECT * FROM hosts
-	_, err = newHostForTest(t).AllByAccessTokenId(nil, tokenRow.ID)
+	_, err = newHostForTest(t).AllByClusterID(nil, tokenRow.ID)
 	if err != nil {
 		t.Fatalf("Selecting all hosts should not fail. Error: %v", err)
 	}
 
 	// SELECT * FROM hosts by query
-	_, err = newHostForTest(t).AllByAccessTokenIdAndQuery(nil, tokenRow.ID, `/stuff.Score = 100`)
+	_, err = newHostForTest(t).AllByClusterIDAndQuery(nil, tokenRow.ID, `/stuff.Score = 100`)
 	if err != nil {
 		t.Fatalf("Selecting all hosts by query should not fail. Error: %v", err)
 	}

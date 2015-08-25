@@ -36,6 +36,7 @@ type ResourcedPayload struct {
 type HostRow struct {
 	ID            int64               `db:"id" json:"-"`
 	AccessTokenID int64               `db:"access_token_id" json:"-"`
+	ClusterID     int64               `db:"cluster_id"`
 	Name          string              `db:"name"`
 	Updated       time.Time           `db:"updated"`
 	Tags          sqlx_types.JsonText `db:"tags"`
@@ -101,25 +102,25 @@ func (h *Host) hostRowFromSqlResult(tx *sqlx.Tx, sqlResult sql.Result) (*HostRow
 	return h.GetByID(tx, hostId)
 }
 
-// AllByAccessTokenId returns all user rows.
-func (h *Host) AllByAccessTokenId(tx *sqlx.Tx, accessTokenId int64) ([]*HostRow, error) {
+// AllByClusterID returns all user rows.
+func (h *Host) AllByClusterID(tx *sqlx.Tx, clusterID int64) ([]*HostRow, error) {
 	hosts := []*HostRow{}
-	query := fmt.Sprintf("SELECT * FROM %v WHERE access_token_id=$1 ORDER BY updated DESC", h.table)
-	err := h.db.Select(&hosts, query, accessTokenId)
+	query := fmt.Sprintf("SELECT * FROM %v WHERE cluster_id=$1 ORDER BY updated DESC", h.table)
+	err := h.db.Select(&hosts, query, clusterID)
 
 	return hosts, err
 }
 
-// AllByAccessTokenIdAndQuery returns all user rows by resourced query.
-func (h *Host) AllByAccessTokenIdAndQuery(tx *sqlx.Tx, accessTokenId int64, resourcedQuery string) ([]*HostRow, error) {
+// AllByClusterIDAndQuery returns all user rows by resourced query.
+func (h *Host) AllByClusterIDAndQuery(tx *sqlx.Tx, clusterID int64, resourcedQuery string) ([]*HostRow, error) {
 	pgQuery := querybuilder.Parse(resourcedQuery)
 	if pgQuery == "" {
-		return h.AllByAccessTokenId(tx, accessTokenId)
+		return h.AllByClusterID(tx, clusterID)
 	}
 
 	hosts := []*HostRow{}
-	query := fmt.Sprintf("SELECT * FROM %v WHERE access_token_id=$1 AND %v", h.table, pgQuery)
-	err := h.db.Select(&hosts, query, accessTokenId)
+	query := fmt.Sprintf("SELECT * FROM %v WHERE cluster_id=$1 AND %v", h.table, pgQuery)
+	err := h.db.Select(&hosts, query, clusterID)
 
 	return hosts, err
 }
@@ -142,7 +143,7 @@ func (h *Host) GetByName(tx *sqlx.Tx, name string) (*HostRow, error) {
 	return hostRow, err
 }
 
-func (h *Host) parseResourcedPayload(tx *sqlx.Tx, accessTokenId int64, jsonData []byte) (map[string]interface{}, error) {
+func (h *Host) parseResourcedPayload(tx *sqlx.Tx, accessTokenRow *AccessTokenRow, jsonData []byte) (map[string]interface{}, error) {
 	resourcedPayloads := make(map[string]*ResourcedPayload)
 
 	err := json.Unmarshal(jsonData, &resourcedPayloads)
@@ -153,7 +154,8 @@ func (h *Host) parseResourcedPayload(tx *sqlx.Tx, accessTokenId int64, jsonData 
 	resourcedPayloadJustData := make(map[string]map[string]interface{})
 
 	data := make(map[string]interface{})
-	data["access_token_id"] = accessTokenId
+	data["access_token_id"] = accessTokenRow.ID
+	data["cluster_id"] = accessTokenRow.ClusterID
 
 	for path, resourcedPayload := range resourcedPayloads {
 		data["name"] = resourcedPayload.Host.Name
@@ -178,8 +180,8 @@ func (h *Host) parseResourcedPayload(tx *sqlx.Tx, accessTokenId int64, jsonData 
 }
 
 // CreateOrUpdate performs insert/update for one host data.
-func (h *Host) CreateOrUpdate(tx *sqlx.Tx, accessTokenId int64, jsonData []byte) (*HostRow, error) {
-	data, err := h.parseResourcedPayload(tx, accessTokenId, jsonData)
+func (h *Host) CreateOrUpdate(tx *sqlx.Tx, accessTokenRow *AccessTokenRow, jsonData []byte) (*HostRow, error) {
+	data, err := h.parseResourcedPayload(tx, accessTokenRow, jsonData)
 	if err != nil {
 		return nil, err
 	}

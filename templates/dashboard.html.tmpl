@@ -124,8 +124,8 @@
     $(document).ready(function() {
         $('.nav-clusters .dropdown-menu li').each(function(index) {
             var $li = $(this);
-
             var clusterID = $li.data('cluster-id');
+
             if(clusterID == ResourcedMaster.globals.currentCluster.ID) {
                 $li.click();
             }

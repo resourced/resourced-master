@@ -43,11 +43,11 @@ func (sq *SavedQuery) DeleteByID(tx *sqlx.Tx, id int64) error {
 	return err
 }
 
-// AllByAccessToken returns all saved_query rows.
-func (sq *SavedQuery) AllByAccessToken(tx *sqlx.Tx, accessTokenRow *AccessTokenRow) ([]*SavedQueryRow, error) {
+// AllByClusterID returns all saved_query rows.
+func (sq *SavedQuery) AllByClusterID(tx *sqlx.Tx, clusterID int64) ([]*SavedQueryRow, error) {
 	savedQueries := []*SavedQueryRow{}
 	query := fmt.Sprintf("SELECT * FROM %v WHERE cluster_id=$1", sq.table)
-	err := sq.db.Select(&savedQueries, query, accessTokenRow.ClusterID)
+	err := sq.db.Select(&savedQueries, query, clusterID)
 
 	return savedQueries, err
 }
@@ -64,8 +64,8 @@ func (sq *SavedQuery) GetByID(tx *sqlx.Tx, id int64) (*SavedQueryRow, error) {
 // GetByAccessTokenAndQuery returns record by savedQuery.
 func (sq *SavedQuery) GetByAccessTokenAndQuery(tx *sqlx.Tx, accessTokenRow *AccessTokenRow, savedQuery string) (*SavedQueryRow, error) {
 	savedQueryRow := &SavedQueryRow{}
-	query := fmt.Sprintf("SELECT * FROM %v WHERE user_id=$1 AND cluster_id=$2 AND query=$3", sq.table)
-	err := sq.db.Get(savedQueryRow, query, accessTokenRow.UserID, accessTokenRow.ClusterID, savedQuery)
+	query := fmt.Sprintf("SELECT * FROM %v WHERE cluster_id=$1 AND query=$2", sq.table)
+	err := sq.db.Get(savedQueryRow, query, accessTokenRow.ClusterID, savedQuery)
 
 	return savedQueryRow, err
 }

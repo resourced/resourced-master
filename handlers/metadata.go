@@ -26,8 +26,6 @@ func GetMetadata(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	db := context.Get(r, "db").(*sqlx.DB)
-
 	currentClusterInterface := session.Values["currentCluster"]
 	if currentClusterInterface == nil {
 		http.Redirect(w, r, "/", 301)
@@ -35,6 +33,8 @@ func GetMetadata(w http.ResponseWriter, r *http.Request) {
 	}
 
 	currentCluster := currentClusterInterface.(*dal.ClusterRow)
+
+	db := context.Get(r, "db").(*sqlx.DB)
 
 	metadataRows, err := dal.NewMetadata(db).AllByClusterID(nil, currentCluster.ID)
 	if err != nil {
