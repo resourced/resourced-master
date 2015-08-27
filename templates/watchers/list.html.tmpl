@@ -1,0 +1,146 @@
+{{define "second-navbar"}}
+{{ end }}
+
+{{define "content"}}
+<!-- Watchers -->
+<div class="container hosts">
+    <div class="row">
+        <div class="col-lg-12">
+            <div class="page-header">
+                <h2>Watchers</h2>
+            </div>
+        </div>
+    </div>
+
+    <div class="row watchers">
+    {{ if eq (len .Watchers) 0 }}
+        <div class="col-lg-12">
+            <form method="post" action="/watchers">
+                <div class="form-group">
+                    <label>Saved Queries</label>
+                    <select name="SavedQueryID" class="form-control">
+                    {{ range $i, $savedQuery := .SavedQueries }}
+                        <option value="{{ $savedQuery.ID }}">{{ $savedQuery.Query }}</option>
+                    {{ end }}
+                    </select>
+                    <input type="hidden" class="form-control" name="SavedQuery" value="">
+                </div>
+
+                <div class="form-group">
+                    <label>Low Threshold</label>
+                    <input type="number" class="form-control" name="LowThreshold" value="1">
+                </div>
+
+                <div class="form-group">
+                    <label>High Threshold</label>
+                    <input type="number" class="form-control" name="HighThreshold" value="1">
+                </div>
+
+                <div class="form-group">
+                    <label>Minimum Affected Hosts</label>
+                    <input type="number" class="form-control" name="LowAffectedHosts" value="1">
+                </div>
+
+                <div class="form-group">
+                    <label>Hosts Last Updated</label>
+                    <select class="form-control">
+                        <option value="5 minutes ago">5 minutes ago</option>
+                        <option value="10 minutes ago">10 minutes ago</option>
+                        <option value="15 minutes ago">15 minutes ago</option>
+                        <option value="30 minutes ago">30 minutes ago</option>
+                        <option value="60 minutes ago">60 minutes ago</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <button type="submit" class="btn btn-primary btn-block">Save</button>
+                </div>
+            </form>
+        </div>
+
+    {{ else }}
+        <!-- Watchers -->
+        <div class="col-lg-12">
+            <table class="table table-condensed">
+                <thead>
+                    <tr>
+                        <th>Saved Queries</th>
+                        <th>Low Threshold</th>
+                        <th>High Threshold</th>
+                        <th>Minimum Affected Hosts</th>
+                        <th>Hosts Last Updated</th>
+                        <th></th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    <tr>
+                    <form method="post" action="/watchers">
+                        <td><input type="text" class="form-control watchers-font" name="Data" placeholder="Data in JSON format"></td>
+                        <td class="watchers-column-save-btn"><button type="submit" class="btn btn-primary btn-block">Add</button></td>
+                    </form>
+
+                        <td class="watchers-column-details-btn">
+                            <button class="btn btn-success btn-block" data-toggle="modal" data-target="#watchers-details-modal">
+                                Details
+                            </button>
+                        </td>
+                    </tr>
+
+                {{ range $watchers := .Watchers }}
+                    <tr>
+                        <form method="post" action="/watchers">
+                            <td class=""><input type="text" class="form-control" name="LowThreshold" value="{{ $watchers.LowThreshold }}"></td>
+                            <td class=""><button type="submit" class="btn btn-primary btn-block">Save</button></td>
+                        </form>
+                    </tr>
+                {{ end }}
+                </tbody>
+            </table>
+        </div>
+    {{ end }}
+</div>
+
+<!-- Watchers Details -->
+<div class="modal fade" id="watchers-details-modal" tabindex="-1" role="dialog" aria-labelledby="watchers-details-label" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                <h4 class="modal-title" id="watchers-details-label">Watchers Details</h4>
+            </div>
+
+            <form method="post" action="/watchers">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <input type="text" class="form-control watchers-font" name="LowThreshold">
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <!--
+                    <button type="button" class="btn btn-danger pull-left" data-dismiss="modal">
+                        Delete
+                    </button>
+                    -->
+
+                    <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary" onclick="$(this).closest('form').submit()">Save</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+$('select[name="SavedQueryID"]').change(function() {
+    var text = $('select[name="SavedQueryID"] option:selected').text();
+    $('input[name="SavedQuery"]').val(text);
+});
+
+$('.row.watchers tbody tr').hover(function() {
+    $('.row.watchers tbody tr').removeClass('watchers-row-highlight');
+    $(this).addClass('watchers-row-highlight');
+});
+</script>
+{{end}}

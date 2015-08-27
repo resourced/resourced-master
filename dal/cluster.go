@@ -26,12 +26,12 @@ type Cluster struct {
 }
 
 func (a *Cluster) clusterRowFromSqlResult(tx *sqlx.Tx, sqlResult sql.Result) (*ClusterRow, error) {
-	applicationId, err := sqlResult.LastInsertId()
+	id, err := sqlResult.LastInsertId()
 	if err != nil {
 		return nil, err
 	}
 
-	return a.GetById(tx, applicationId)
+	return a.GetById(tx, id)
 }
 
 // GetById returns one record by id.

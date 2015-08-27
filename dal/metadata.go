@@ -29,7 +29,7 @@ type Metadata struct {
 	Base
 }
 
-// AllByClusterID returns all user rows.
+// AllByClusterID returns all metadata rows.
 func (metadata *Metadata) AllByClusterID(tx *sqlx.Tx, clusterID int64) ([]*MetadataRow, error) {
 	metadataRows := []*MetadataRow{}
 	query := fmt.Sprintf("SELECT * FROM %v WHERE cluster_id=$1 ORDER BY key ASC", metadata.table)
