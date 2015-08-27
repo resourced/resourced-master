@@ -16,44 +16,90 @@
     {{ if eq (len .Watchers) 0 }}
         <div class="col-lg-12">
             <form method="post" action="/watchers">
-                <div class="form-group">
-                    <label>Saved Queries</label>
-                    <select name="SavedQueryID" class="form-control">
-                    {{ range $i, $savedQuery := .SavedQueries }}
-                        <option value="{{ $savedQuery.ID }}">{{ $savedQuery.Query }}</option>
-                    {{ end }}
-                    </select>
-                    <input type="hidden" class="form-control" name="SavedQuery" value="">
+                <div class="row form-group">
+                    <div class="col-sm-6">
+                        <label>Saved Queries</label>
+                        <select name="SavedQueryID" class="form-control">
+                        {{ range $i, $savedQuery := .SavedQueries }}
+                            <option value="{{ $savedQuery.ID }}">{{ $savedQuery.Query }}</option>
+                        {{ end }}
+                        </select>
+                        <input type="hidden" class="form-control" name="SavedQuery" value="">
+                    </div>
+
+                    <div class="col-sm-2">
+                        <label>Low Threshold</label>
+                        <input type="number" class="form-control" name="LowThreshold" value="1">
+                    </div>
+
+                    <div class="col-sm-2">
+                        <label>High Threshold</label>
+                        <input type="number" class="form-control" name="HighThreshold" value="1">
+                    </div>
+
+                    <div class="col-sm-2">
+                        <label>Min Affected Hosts</label>
+                        <input type="number" class="form-control" name="LowAffectedHosts" value="1">
+                    </div>
                 </div>
 
-                <div class="form-group">
-                    <label>Low Threshold</label>
-                    <input type="number" class="form-control" name="LowThreshold" value="1">
+                <div class="row form-group">
+                    <div class="col-sm-2">
+                        <label>Transport</label>
+                        <select class="form-control" name="ActionTransport">
+                            <option value="email">Email</option>
+                            <option value="sms">SMS</option>
+                            <option value="pagerduty">PagerDuty</option>
+                            <option value="hipchat">HipChat</option>
+                        </select>
+                    </div>
+
+                    <div class="col-sm-8 payload payload-email">
+                        <label>Email</label>
+                        <input type="email" class="form-control" name="ActionPayloadEmail" placeholder="bob@example.com" value="">
+                    </div>
+
+                    <div class="col-sm-8 payload payload-sms" style="display: none">
+                        <label>SMS Number</label>
+                        <input type="tel" class="form-control" name="ActionPayloadSMS" placeholder="555-555-5555" value="">
+                    </div>
+
+                    <div class="col-sm-4 payload payload-pagerduty" style="display: none">
+                        <label>PD Service Key</label>
+                        <input type="text" class="form-control" name="ActionPayloadPagerDutyDescription" placeholder="" value="">
+                    </div>
+
+                    <div class="col-sm-4 payload payload-pagerduty" style="display: none">
+                        <label>PD Description</label>
+                        <input type="text" class="form-control" name="ActionPayloadPagerDutyDescription" placeholder="" value="">
+                    </div>
+
+                    <div class="col-sm-4 payload payload-hipchat" style="display: none">
+                        <label>Auth Token</label>
+                        <input type="text" class="form-control" name="ActionPayloadHipChatAuthToken" placeholder="" value="">
+                    </div>
+
+                    <div class="col-sm-4 payload payload-hipchat" style="display: none">
+                        <label>Room Name</label>
+                        <input type="text" class="form-control" name="ActionPayloadHipChatRoomName" placeholder="" value="">
+                    </div>
+
+                    <div class="col-sm-2">
+                        <label>Hosts Last Updated</label>
+                        <select class="form-control">
+                            <option value="5 minutes ago">5 minutes ago</option>
+                            <option value="10 minutes ago">10 minutes ago</option>
+                            <option value="15 minutes ago">15 minutes ago</option>
+                            <option value="30 minutes ago">30 minutes ago</option>
+                            <option value="60 minutes ago">60 minutes ago</option>
+                        </select>
+                    </div>
                 </div>
 
-                <div class="form-group">
-                    <label>High Threshold</label>
-                    <input type="number" class="form-control" name="HighThreshold" value="1">
-                </div>
-
-                <div class="form-group">
-                    <label>Minimum Affected Hosts</label>
-                    <input type="number" class="form-control" name="LowAffectedHosts" value="1">
-                </div>
-
-                <div class="form-group">
-                    <label>Hosts Last Updated</label>
-                    <select class="form-control">
-                        <option value="5 minutes ago">5 minutes ago</option>
-                        <option value="10 minutes ago">10 minutes ago</option>
-                        <option value="15 minutes ago">15 minutes ago</option>
-                        <option value="30 minutes ago">30 minutes ago</option>
-                        <option value="60 minutes ago">60 minutes ago</option>
-                    </select>
-                </div>
-
-                <div class="form-group">
-                    <button type="submit" class="btn btn-primary btn-block">Save</button>
+                <div class="row form-group">
+                    <div class="col-sm-12">
+                        <button type="submit" class="btn btn-primary btn-block">Save</button>
+                    </div>
                 </div>
             </form>
         </div>
@@ -136,6 +182,12 @@
 $('select[name="SavedQueryID"]').change(function() {
     var text = $('select[name="SavedQueryID"] option:selected').text();
     $('input[name="SavedQuery"]').val(text);
+});
+
+$('select[name="ActionTransport"]').change(function() {
+    var transportVal = $('select[name="ActionTransport"] option:selected').val();
+    $('.payload').hide();
+    $('.payload-' + transportVal).show();
 });
 
 $('.row.watchers tbody tr').hover(function() {
