@@ -34,7 +34,7 @@
 
                     <div class="col-sm-2">
                         <label>High Threshold</label>
-                        <input type="number" class="form-control" name="HighThreshold" value="1">
+                        <input type="number" class="form-control" name="HighThreshold" value="20">
                     </div>
 
                     <div class="col-sm-2">
@@ -59,7 +59,21 @@
                         <input type="email" class="form-control" name="ActionPayloadEmail" placeholder="bob@example.com" value="">
                     </div>
 
-                    <div class="col-sm-8 payload payload-sms" style="display: none">
+                    <div class="col-sm-2 payload payload-sms" style="display: none">
+                        <label>SMS Carrier</label>
+                        <select class="form-control" name="ActionTransport">
+                            <option value="Alltel">Alltel</option>
+                            <option value="AT&T">AT&T</option>
+                            <option value="Boost Mobile">Boost Mobile</option>
+                            <option value="Sprint">Sprint</option>
+                            <option value="T-Mobile">T-Mobile</option>
+                            <option value="US Cellular">US Cellular</option>
+                            <option value="Verizon">Verizon</option>
+                            <option value="Virgin Mobile">Virgin Mobile</option>
+                        </select>
+                    </div>
+
+                    <div class="col-sm-6 payload payload-sms" style="display: none">
                         <label>SMS Number</label>
                         <input type="tel" class="form-control" name="ActionPayloadSMS" placeholder="555-555-5555" value="">
                     </div>
