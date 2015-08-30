@@ -50,18 +50,17 @@
                             <option value="email">Email</option>
                             <option value="sms">SMS</option>
                             <option value="pagerduty">PagerDuty</option>
-                            <option value="hipchat">HipChat</option>
                         </select>
                     </div>
 
                     <div class="col-sm-8 payload payload-email">
                         <label>Email</label>
-                        <input type="email" class="form-control" name="ActionPayloadEmail" placeholder="bob@example.com" value="">
+                        <input type="email" class="form-control" name="ActionEmail" placeholder="bob@example.com" value="">
                     </div>
 
                     <div class="col-sm-2 payload payload-sms" style="display: none">
                         <label>SMS Carrier</label>
-                        <select class="form-control" name="ActionTransport">
+                        <select class="form-control" name="ActionSMSCarrier">
                             <option value="Alltel">Alltel</option>
                             <option value="AT&T">AT&T</option>
                             <option value="Boost Mobile">Boost Mobile</option>
@@ -75,32 +74,22 @@
 
                     <div class="col-sm-6 payload payload-sms" style="display: none">
                         <label>SMS Number</label>
-                        <input type="tel" class="form-control" name="ActionPayloadSMS" placeholder="555-555-5555" value="">
+                        <input type="tel" class="form-control" name="ActionSMSPhone" placeholder="555-555-5555" value="">
                     </div>
 
                     <div class="col-sm-4 payload payload-pagerduty" style="display: none">
                         <label>PD Service Key</label>
-                        <input type="text" class="form-control" name="ActionPayloadPagerDutyDescription" placeholder="" value="">
+                        <input type="text" class="form-control" name="ActionPagerDutyServiceKey" placeholder="" value="">
                     </div>
 
                     <div class="col-sm-4 payload payload-pagerduty" style="display: none">
                         <label>PD Description</label>
-                        <input type="text" class="form-control" name="ActionPayloadPagerDutyDescription" placeholder="" value="">
-                    </div>
-
-                    <div class="col-sm-4 payload payload-hipchat" style="display: none">
-                        <label>Auth Token</label>
-                        <input type="text" class="form-control" name="ActionPayloadHipChatAuthToken" placeholder="" value="">
-                    </div>
-
-                    <div class="col-sm-4 payload payload-hipchat" style="display: none">
-                        <label>Room Name</label>
-                        <input type="text" class="form-control" name="ActionPayloadHipChatRoomName" placeholder="" value="">
+                        <input type="text" class="form-control" name="ActionPagerDutyDescription" placeholder="" value="">
                     </div>
 
                     <div class="col-sm-2">
                         <label>Hosts Last Updated</label>
-                        <select class="form-control">
+                        <select class="form-control" name="HostsLastUpdated">
                             <option value="5 minutes ago">5 minutes ago</option>
                             <option value="10 minutes ago">10 minutes ago</option>
                             <option value="15 minutes ago">15 minutes ago</option>
