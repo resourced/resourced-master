@@ -95,6 +95,11 @@ func PostWatchers(w http.ResponseWriter, r *http.Request) {
 
 	savedQuery := r.FormValue("SavedQuery")
 
+	name := r.FormValue("Name")
+	if name == "" {
+		name = savedQuery
+	}
+
 	lowThresholdString := r.FormValue("LowThreshold")
 	lowThreshold, err := strconv.ParseInt(lowThresholdString, 10, 64)
 	if err != nil {
@@ -117,6 +122,8 @@ func PostWatchers(w http.ResponseWriter, r *http.Request) {
 	}
 
 	hostsLastUpdated := r.FormValue("HostsLastUpdated")
+	checkInterval := r.FormValue("CheckInterval")
+
 	actionTransport := r.FormValue("ActionTransport")
 
 	actionEmail := r.FormValue("ActionEmail")
@@ -141,7 +148,7 @@ func PostWatchers(w http.ResponseWriter, r *http.Request) {
 
 	db := context.Get(r, "db").(*sqlx.DB)
 
-	_, err = dal.NewWatcher(db).Create(nil, currentCluster.ID, savedQueryID, savedQuery, lowThreshold, highThreshold, lowAffectedHosts, hostsLastUpdated, "", actionsJson)
+	_, err = dal.NewWatcher(db).Create(nil, currentCluster.ID, savedQueryID, savedQuery, name, lowThreshold, highThreshold, lowAffectedHosts, hostsLastUpdated, checkInterval, actionsJson)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return

@@ -3,166 +3,181 @@
 
 {{define "content"}}
 <!-- Watchers -->
-<div class="container hosts">
+<div class="container watchers">
+    {{ if eq (len .SavedQueries) 0 }}
+    <div class="jumbotron" style="margin-top: 40px">
+        <h2>Unable to create a watcher without saved queries</h2>
+        <p>What can a watcher do? A watcher can send alerts or execute arbitrary docker commands.</p>
+        <p><a class="btn btn-primary btn-lg" href="/">Click here to save a query</a></p>
+    </div>
+
+    {{ else }}
+
     <div class="row">
         <div class="col-lg-12">
             <div class="page-header">
+                <button class="btn btn-primary pull-right" data-toggle="modal" data-target="#watcher-modal">
+                    New Watcher
+                </button>
+
                 <h2>Watchers</h2>
             </div>
         </div>
     </div>
 
+    {{ if gt (len .Watchers) 0 }}
     <div class="row watchers">
-    {{ if eq (len .Watchers) 0 }}
         <div class="col-lg-12">
-            <form method="post" action="/watchers">
-                <div class="row form-group">
-                    <div class="col-sm-6">
-                        <label>Saved Queries</label>
-                        <select name="SavedQueryID" class="form-control">
-                        {{ range $i, $savedQuery := .SavedQueries }}
-                            <option value="{{ $savedQuery.ID }}">{{ $savedQuery.Query }}</option>
-                        {{ end }}
-                        </select>
-                        <input type="hidden" class="form-control" name="SavedQuery" value="">
-                    </div>
-
-                    <div class="col-sm-2">
-                        <label>Low Threshold</label>
-                        <input type="number" class="form-control" name="LowThreshold" value="1">
-                    </div>
-
-                    <div class="col-sm-2">
-                        <label>High Threshold</label>
-                        <input type="number" class="form-control" name="HighThreshold" value="20">
-                    </div>
-
-                    <div class="col-sm-2">
-                        <label>Min Affected Hosts</label>
-                        <input type="number" class="form-control" name="LowAffectedHosts" value="1">
-                    </div>
-                </div>
-
-                <div class="row form-group">
-                    <div class="col-sm-2">
-                        <label>Transport</label>
-                        <select class="form-control" name="ActionTransport">
-                            <option value="email">Email</option>
-                            <option value="sms">SMS</option>
-                            <option value="pagerduty">PagerDuty</option>
-                        </select>
-                    </div>
-
-                    <div class="col-sm-8 payload payload-email">
-                        <label>Email</label>
-                        <input type="email" class="form-control" name="ActionEmail" placeholder="bob@example.com" value="">
-                    </div>
-
-                    <div class="col-sm-2 payload payload-sms" style="display: none">
-                        <label>SMS Carrier</label>
-                        <select class="form-control" name="ActionSMSCarrier">
-                            <option value="Alltel">Alltel</option>
-                            <option value="AT&T">AT&T</option>
-                            <option value="Boost Mobile">Boost Mobile</option>
-                            <option value="Sprint">Sprint</option>
-                            <option value="T-Mobile">T-Mobile</option>
-                            <option value="US Cellular">US Cellular</option>
-                            <option value="Verizon">Verizon</option>
-                            <option value="Virgin Mobile">Virgin Mobile</option>
-                        </select>
-                    </div>
-
-                    <div class="col-sm-6 payload payload-sms" style="display: none">
-                        <label>SMS Number</label>
-                        <input type="tel" class="form-control" name="ActionSMSPhone" placeholder="555-555-5555" value="">
-                    </div>
-
-                    <div class="col-sm-4 payload payload-pagerduty" style="display: none">
-                        <label>PD Service Key</label>
-                        <input type="text" class="form-control" name="ActionPagerDutyServiceKey" placeholder="" value="">
-                    </div>
-
-                    <div class="col-sm-4 payload payload-pagerduty" style="display: none">
-                        <label>PD Description</label>
-                        <input type="text" class="form-control" name="ActionPagerDutyDescription" placeholder="" value="">
-                    </div>
-
-                    <div class="col-sm-2">
-                        <label>Hosts Last Updated</label>
-                        <select class="form-control" name="HostsLastUpdated">
-                            <option value="5 minutes ago">5 minutes ago</option>
-                            <option value="10 minutes ago">10 minutes ago</option>
-                            <option value="15 minutes ago">15 minutes ago</option>
-                            <option value="30 minutes ago">30 minutes ago</option>
-                            <option value="60 minutes ago">60 minutes ago</option>
-                        </select>
-                    </div>
-                </div>
-
-                <div class="row form-group">
-                    <div class="col-sm-12">
-                        <button type="submit" class="btn btn-primary btn-block">Save</button>
-                    </div>
-                </div>
-            </form>
-        </div>
-
-    {{ else }}
-        <!-- Watchers -->
-        <div class="col-lg-12">
-            <table class="table table-condensed">
+            <table class="table table-condensed table-striped">
                 <thead>
                     <tr>
+                        <th>Name</th>
                         <th>Saved Queries</th>
-                        <th>Low Threshold</th>
-                        <th>High Threshold</th>
-                        <th>Minimum Affected Hosts</th>
-                        <th>Hosts Last Updated</th>
+                        <th>Low/High Thresholds</th>
+                        <th>Min Affected Hosts</th>
+                        <th>Check Interval</th>
                         <th></th>
                     </tr>
                 </thead>
 
                 <tbody>
+                {{ range $i, $watcher := .Watchers }}
                     <tr>
-                    <form method="post" action="/watchers">
-                        <td><input type="text" class="form-control watchers-font" name="Data" placeholder="Data in JSON format"></td>
-                        <td class="watchers-column-save-btn"><button type="submit" class="btn btn-primary btn-block">Add</button></td>
-                    </form>
-
-                        <td class="watchers-column-details-btn">
-                            <button class="btn btn-success btn-block" data-toggle="modal" data-target="#watchers-details-modal">
+                        <td>{{ $watcher.Name }}</td>
+                        <td>{{ $watcher.SavedQuery }}</td>
+                        <td>{{ $watcher.LowThreshold }}/{{ $watcher.HighThreshold }}</td>
+                        <td>{{ $watcher.LowAffectedHosts }}</td>
+                        <td>{{ $watcher.CheckInterval }}</td>
+                        <td>
+                            <button class="btn btn-success btn-block btn-xs" data-toggle="modal" data-target="#watcher-modal"
+                                data-id="{{ $watcher.ID }}"
+                                data-name="{{ $watcher.Name }}"
+                                data-saved-query-id="{{ $watcher.SavedQueryID }}"
+                                data-low-threshold="{{ $watcher.LowThreshold }}"
+                                data-high-threshold="{{ $watcher.HighThreshold }}"
+                                data-low-affected-hosts="{{ $watcher.LowAffectedHosts }}"
+                                data-hosts-last-updated="{{ $watcher.HostsLastUpdated }}"
+                                data-check-interval="{{ $watcher.CheckInterval }}"
+                                data-action-transport="{{ $watcher.ActionTransport }}"
+                                data-action-email="{{ $watcher.ActionEmail }}">
                                 Details
                             </button>
                         </td>
-                    </tr>
-
-                {{ range $watchers := .Watchers }}
-                    <tr>
-                        <form method="post" action="/watchers">
-                            <td class=""><input type="text" class="form-control" name="LowThreshold" value="{{ $watchers.LowThreshold }}"></td>
-                            <td class=""><button type="submit" class="btn btn-primary btn-block">Save</button></td>
-                        </form>
                     </tr>
                 {{ end }}
                 </tbody>
             </table>
         </div>
+    </div>
+    {{ end }}
+
     {{ end }}
 </div>
 
-<!-- Watchers Details -->
-<div class="modal fade" id="watchers-details-modal" tabindex="-1" role="dialog" aria-labelledby="watchers-details-label" aria-hidden="true">
-    <div class="modal-dialog">
+<!-- Watcher Modal -->
+<div class="modal fade" id="watcher-modal" tabindex="-1" role="dialog" aria-labelledby="watchers-details-label" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
                 <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-                <h4 class="modal-title" id="watchers-details-label">Watchers Details</h4>
+                <h4 class="modal-title" id="watchers-details-label">New/Update Watcher</h4>
             </div>
 
             <form method="post" action="/watchers">
                 <div class="modal-body">
-                    <div class="form-group">
-                        <input type="text" class="form-control watchers-font" name="LowThreshold">
+                    <div class="row form-group">
+                        <div class="col-sm-6">
+                            <label>Name</label>
+                            <input type="text" class="form-control" name="Name" value="">
+                        </div>
+
+                        <div class="col-sm-6">
+                            <label>Saved Queries</label>
+                            <select name="SavedQueryID" class="form-control">
+                            {{ range $i, $savedQuery := .SavedQueries }}
+                                <option value="{{ $savedQuery.ID }}">{{ $savedQuery.Query }}</option>
+                            {{ end }}
+                            </select>
+                            <input type="hidden" class="form-control" name="SavedQuery" value="">
+                        </div>
+                    </div>
+
+                    <div class="row form-group">
+                        <div class="col-sm-2">
+                            <label>Low Threshold</label>
+                            <input type="number" class="form-control" name="LowThreshold" value="1">
+                        </div>
+
+                        <div class="col-sm-2">
+                            <label>High Threshold</label>
+                            <input type="number" class="form-control" name="HighThreshold" value="20">
+                        </div>
+
+                        <div class="col-sm-2">
+                            <label>Min Affected Hosts</label>
+                            <input type="number" class="form-control" name="LowAffectedHosts" value="1">
+                        </div>
+
+                        <div class="col-sm-3">
+                            <label>Hosts Last Updated</label>
+                            <select class="form-control" name="HostsLastUpdated">
+                                <option value="5 minutes ago">5 minutes ago</option>
+                                <option value="10 minutes ago">10 minutes ago</option>
+                                <option value="15 minutes ago">15 minutes ago</option>
+                                <option value="30 minutes ago">30 minutes ago</option>
+                                <option value="60 minutes ago">60 minutes ago</option>
+                            </select>
+                        </div>
+
+                        <div class="col-sm-3">
+                            <label>Check Interval</label>
+                            <input type="text" class="form-control" name="CheckInterval" value="10s">
+                        </div>
+                    </div>
+
+                    <div class="row form-group">
+                        <div class="col-sm-3">
+                            <label>Transport</label>
+                            <select class="form-control" name="ActionTransport">
+                                <option value="email">Email</option>
+                                <option value="sms">SMS</option>
+                                <option value="pagerduty">PagerDuty</option>
+                            </select>
+                        </div>
+
+                        <div class="col-sm-9 payload payload-email">
+                            <label>Email</label>
+                            <input type="email" class="form-control" name="ActionEmail" placeholder="bob@example.com" value="">
+                        </div>
+
+                        <div class="col-sm-3 payload payload-sms" style="display: none">
+                            <label>SMS Carrier</label>
+                            <select class="form-control" name="ActionSMSCarrier">
+                                <option value="Alltel">Alltel</option>
+                                <option value="AT&T">AT&T</option>
+                                <option value="Boost Mobile">Boost Mobile</option>
+                                <option value="Sprint">Sprint</option>
+                                <option value="T-Mobile">T-Mobile</option>
+                                <option value="US Cellular">US Cellular</option>
+                                <option value="Verizon">Verizon</option>
+                                <option value="Virgin Mobile">Virgin Mobile</option>
+                            </select>
+                        </div>
+
+                        <div class="col-sm-6 payload payload-sms" style="display: none">
+                            <label>SMS Number</label>
+                            <input type="tel" class="form-control" name="ActionSMSPhone" placeholder="555-555-5555" value="">
+                        </div>
+
+                        <div class="col-sm-4 payload payload-pagerduty" style="display: none">
+                            <label>PD Service Key</label>
+                            <input type="text" class="form-control" name="ActionPagerDutyServiceKey" placeholder="" value="">
+                        </div>
+
+                        <div class="col-sm-5 payload payload-pagerduty" style="display: none">
+                            <label>PD Description</label>
+                            <input type="text" class="form-control" name="ActionPagerDutyDescription" placeholder="" value="">
+                        </div>
                     </div>
                 </div>
 
@@ -193,9 +208,58 @@ $('select[name="ActionTransport"]').change(function() {
     $('.payload-' + transportVal).show();
 });
 
-$('.row.watchers tbody tr').hover(function() {
-    $('.row.watchers tbody tr').removeClass('watchers-row-highlight');
-    $(this).addClass('watchers-row-highlight');
+$('#watcher-modal').on('show.bs.modal', function (event) {
+    var button = $(event.relatedTarget);   // Button that triggered the modal
+    var id = button.data('id');
+    var name = button.data('name');
+    var savedQueryID = button.data('saved-query-id');
+    var lowThreshold = button.data('low-threshold');
+    var highThreshold = button.data('high-threshold');
+    var lowAffectedHosts = button.data('low-affected-hosts');
+    var hostsLastUpdated = button.data('hosts-last-updated');
+    var checkInterval = button.data('check-interval');
+    var actionTransport = button.data('action-transport');
+    var actionEmail = button.data('action-email');
+
+    var modal = $(this);
+
+    modal.find('input[name="Name"]').val(name);
+
+    if(savedQueryID) {
+        $('select[name="SavedQueryID"] option[value="' + savedQueryID + '"]').attr('selected', 'selected');
+    }
+    if(lowThreshold) {
+        modal.find('input[name="LowThreshold"]').val(lowThreshold);
+    }
+    if(highThreshold) {
+        modal.find('input[name="HighThreshold"]').val(highThreshold);
+    }
+    if(lowAffectedHosts) {
+        modal.find('input[name="LowAffectedHosts"]').val(lowAffectedHosts);
+    }
+    if(hostsLastUpdated) {
+        $('select[name="HostsLastUpdated"] option[value="' + hostsLastUpdated + '"]').attr('selected', 'selected');
+    }
+    if(checkInterval) {
+        modal.find('input[name="CheckInterval"]').val(checkInterval);
+    }
+    if(actionTransport) {
+        $('select[name="ActionTransport"] option[value="' + actionTransport + '"]').attr('selected', 'selected');
+    }
+    if(actionEmail) {
+        modal.find('input[name="ActionEmail"]').val(actionEmail);
+    }
+
+    // -----------------------------------------------
+
+    modal.find('.btn-danger').data('id', id);
+
+    var text = $('select[name="SavedQueryID"] option:selected').text();
+    $('input[name="SavedQuery"]').val(text);
+
+    var transportVal = $('select[name="ActionTransport"] option:selected').val();
+    $('.payload').hide();
+    $('.payload-' + transportVal).show();
 });
 </script>
 {{end}}

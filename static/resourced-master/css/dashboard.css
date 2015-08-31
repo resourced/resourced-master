@@ -17,7 +17,7 @@ select {
     width: 100%;
 }
 .form-group-search-and-save .search-form, .form-group-search-and-save .search-form .input-group {
-    width: 1031px;
+    width: 1030px;
 }
 
 .form-group-new-task .new-task-form {
@@ -114,6 +114,10 @@ select {
 .metadata-font {
     font-size: 13px;
     padding: 0 10px;
+}
+
+.container.watchers .jumbotron h2 {
+    font-size: 46px;
 }
 
 @media(max-width:1200px) {
