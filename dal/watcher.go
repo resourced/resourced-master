@@ -95,7 +95,7 @@ func (w *Watcher) GetByID(tx *sqlx.Tx, id int64) (*WatcherRow, error) {
 	return watcherRow, err
 }
 
-func (w *Watcher) Create(tx *sqlx.Tx, clusterID, savedQueryID int64, savedQuery, name string, lowThreshold, highThreshold, lowAffectedHosts int64, hostsLastUpdated, checkInterval string, actions []byte) (*WatcherRow, error) {
+func (w *Watcher) CreateOrUpdateParameters(clusterID, savedQueryID int64, savedQuery, name string, lowThreshold, highThreshold, lowAffectedHosts int64, hostsLastUpdated, checkInterval string, actions []byte) map[string]interface{} {
 	data := make(map[string]interface{})
 	data["cluster_id"] = clusterID
 	data["saved_query_id"] = savedQueryID
@@ -108,6 +108,10 @@ func (w *Watcher) Create(tx *sqlx.Tx, clusterID, savedQueryID int64, savedQuery,
 	data["check_interval"] = checkInterval
 	data["actions"] = actions
 
+	return data
+}
+
+func (w *Watcher) Create(tx *sqlx.Tx, data map[string]interface{}) (*WatcherRow, error) {
 	sqlResult, err := w.InsertIntoTable(tx, data)
 	if err != nil {
 		return nil, err

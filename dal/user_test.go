@@ -1,8 +1,9 @@
 package dal
 
 import (
-	_ "github.com/lib/pq"
 	"testing"
+
+	_ "github.com/lib/pq"
 )
 
 func newUserForTest(t *testing.T) *User {
@@ -25,7 +26,7 @@ func TestUserCRUD(t *testing.T) {
 	}
 
 	// DELETE FROM users WHERE id=...
-	_, err = u.DeleteById(nil, userRow.ID)
+	_, err = u.DeleteByID(nil, userRow.ID)
 	if err != nil {
 		t.Fatalf("Deleting user by id should not fail. Error: %v", err)
 	}

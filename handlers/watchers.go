@@ -2,11 +2,13 @@ package handlers
 
 import (
 	"encoding/json"
+	"errors"
 	"html/template"
 	"net/http"
 	"strconv"
 
 	"github.com/gorilla/context"
+	"github.com/gorilla/mux"
 	"github.com/gorilla/sessions"
 	"github.com/jmoiron/sqlx"
 	"github.com/resourced/resourced-master/dal"
@@ -72,25 +74,21 @@ func GetWatchers(w http.ResponseWriter, r *http.Request) {
 	tmpl.Execute(w, data)
 }
 
-func PostWatchers(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "text/html")
-
+func readFormData(r *http.Request) (map[string]interface{}, error) {
 	cookieStore := context.Get(r, "cookieStore").(*sessions.CookieStore)
 
 	session, _ := cookieStore.Get(r, "resourcedmaster-session")
 
 	currentClusterInterface := session.Values["currentCluster"]
 	if currentClusterInterface == nil {
-		http.Redirect(w, r, "/", 301)
-		return
+		return nil, errors.New("Current cluster is nil")
 	}
 	currentCluster := currentClusterInterface.(*dal.ClusterRow)
 
 	savedQueryIDString := r.FormValue("SavedQueryID")
 	savedQueryID, err := strconv.ParseInt(savedQueryIDString, 10, 64)
 	if err != nil {
-		libhttp.HandleErrorJson(w, err)
-		return
+		return nil, err
 	}
 
 	savedQuery := r.FormValue("SavedQuery")
@@ -103,22 +101,19 @@ func PostWatchers(w http.ResponseWriter, r *http.Request) {
 	lowThresholdString := r.FormValue("LowThreshold")
 	lowThreshold, err := strconv.ParseInt(lowThresholdString, 10, 64)
 	if err != nil {
-		libhttp.HandleErrorJson(w, err)
-		return
+		return nil, err
 	}
 
 	highThresholdString := r.FormValue("HighThreshold")
 	highThreshold, err := strconv.ParseInt(highThresholdString, 10, 64)
 	if err != nil {
-		libhttp.HandleErrorJson(w, err)
-		return
+		return nil, err
 	}
 
 	lowAffectedHostsString := r.FormValue("LowAffectedHosts")
 	lowAffectedHosts, err := strconv.ParseInt(lowAffectedHostsString, 10, 64)
 	if err != nil {
-		libhttp.HandleErrorJson(w, err)
-		return
+		return nil, err
 	}
 
 	hostsLastUpdated := r.FormValue("HostsLastUpdated")
@@ -142,13 +137,90 @@ func PostWatchers(w http.ResponseWriter, r *http.Request) {
 
 	actionsJson, err := json.Marshal(actions)
 	if err != nil {
+		return nil, err
+	}
+
+	db := context.Get(r, "db").(*sqlx.DB)
+
+	return dal.NewWatcher(db).CreateOrUpdateParameters(
+		currentCluster.ID, savedQueryID, savedQuery, name,
+		lowThreshold, highThreshold, lowAffectedHosts,
+		hostsLastUpdated, checkInterval, actionsJson), nil
+}
+
+func PostWatchers(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "text/html")
+
+	createParams, err := readFormData(r)
+	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
 	}
 
 	db := context.Get(r, "db").(*sqlx.DB)
 
-	_, err = dal.NewWatcher(db).Create(nil, currentCluster.ID, savedQueryID, savedQuery, name, lowThreshold, highThreshold, lowAffectedHosts, hostsLastUpdated, checkInterval, actionsJson)
+	_, err = dal.NewWatcher(db).Create(nil, createParams)
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
+
+	http.Redirect(w, r, "/watchers", 301)
+}
+
+func PostPutDeleteWatcherID(w http.ResponseWriter, r *http.Request) {
+	method := r.FormValue("_method")
+	if method == "" {
+		method = "put"
+	}
+
+	if method == "post" || method == "put" {
+		PutWatcherID(w, r)
+	} else if method == "delete" {
+		DeleteWatcherID(w, r)
+	}
+}
+
+func PutWatcherID(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+
+	idString := vars["id"]
+	id, err := strconv.ParseInt(idString, 10, 64)
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
+
+	updateParams, err := readFormData(r)
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
+
+	db := context.Get(r, "db").(*sqlx.DB)
+
+	_, err = dal.NewWatcher(db).UpdateByID(nil, updateParams, id)
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
+
+	http.Redirect(w, r, "/watchers", 301)
+}
+
+func DeleteWatcherID(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+
+	idString := vars["id"]
+	id, err := strconv.ParseInt(idString, 10, 64)
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
+
+	db := context.Get(r, "db").(*sqlx.DB)
+
+	_, err = dal.NewWatcher(db).DeleteByID(nil, id)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return

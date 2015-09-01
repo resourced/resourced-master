@@ -4,8 +4,9 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"github.com/jmoiron/sqlx"
 	"strings"
+
+	"github.com/jmoiron/sqlx"
 )
 
 type InsertResult struct {
@@ -153,7 +154,7 @@ func (b *Base) UpdateFromTable(tx *sqlx.Tx, data map[string]interface{}, where s
 	return result, err
 }
 
-func (b *Base) UpdateById(tx *sqlx.Tx, data map[string]interface{}, id int64) (sql.Result, error) {
+func (b *Base) UpdateByID(tx *sqlx.Tx, data map[string]interface{}, id int64) (sql.Result, error) {
 	var result sql.Result
 
 	if b.table == "" {
@@ -286,7 +287,7 @@ func (b *Base) DeleteFromTable(tx *sqlx.Tx, where string) (sql.Result, error) {
 	return result, err
 }
 
-func (b *Base) DeleteById(tx *sqlx.Tx, id int64) (sql.Result, error) {
+func (b *Base) DeleteByID(tx *sqlx.Tx, id int64) (sql.Result, error) {
 	var result sql.Result
 
 	if b.table == "" {

@@ -84,6 +84,8 @@
             </div>
 
             <form method="post" action="/watchers">
+                <input type="hidden" name="_method" value="post">
+
                 <div class="modal-body">
                     <div class="row form-group">
                         <div class="col-sm-6">
@@ -182,14 +184,12 @@
                 </div>
 
                 <div class="modal-footer">
-                    <!--
                     <button type="button" class="btn btn-danger pull-left" data-dismiss="modal">
                         Delete
                     </button>
-                    -->
 
                     <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
-                    <button type="button" class="btn btn-primary" onclick="$(this).closest('form').submit()">Save</button>
+                    <button type="button" class="btn btn-primary">Save</button>
                 </div>
             </form>
         </div>
@@ -206,6 +206,16 @@ $('select[name="ActionTransport"]').change(function() {
     var transportVal = $('select[name="ActionTransport"] option:selected').val();
     $('.payload').hide();
     $('.payload-' + transportVal).show();
+});
+
+$('#watcher-modal form .btn-danger').click(function() {
+    $('#watcher-modal form input[name="_method"]').val('delete');
+    $(this).closest('form').submit();
+});
+
+$('#watcher-modal form .btn-primary').click(function() {
+    $('#watcher-modal form input[name="_method"]').val('put');
+    $(this).closest('form').submit();
 });
 
 $('#watcher-modal').on('show.bs.modal', function (event) {
@@ -250,9 +260,13 @@ $('#watcher-modal').on('show.bs.modal', function (event) {
         modal.find('input[name="ActionEmail"]').val(actionEmail);
     }
 
-    // -----------------------------------------------
+    if(id) {
+        modal.find('form').attr('action', '/watchers/' + id);
+    } else {
+        modal.find('form').attr('action', '/watchers');
+    }
 
-    modal.find('.btn-danger').data('id', id);
+    // -----------------------------------------------
 
     var text = $('select[name="SavedQueryID"] option:selected').text();
     $('input[name="SavedQuery"]').val(text);

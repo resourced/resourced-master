@@ -1,8 +1,9 @@
 package dal
 
 import (
-	_ "github.com/lib/pq"
 	"testing"
+
+	_ "github.com/lib/pq"
 )
 
 func newHostForTest(t *testing.T) *Host {
@@ -80,25 +81,25 @@ func TestHostCRUD(t *testing.T) {
 	}
 
 	// DELETE FROM hosts WHERE id=...
-	_, err = newHostForTest(t).DeleteById(nil, hostRow.ID)
+	_, err = newHostForTest(t).DeleteByID(nil, hostRow.ID)
 	if err != nil {
 		t.Fatalf("Deleting access_tokens by id should not fail. Error: %v", err)
 	}
 
 	// DELETE FROM access_tokens WHERE id=...
-	_, err = at.DeleteById(nil, tokenRow.ID)
+	_, err = at.DeleteByID(nil, tokenRow.ID)
 	if err != nil {
 		t.Fatalf("Deleting access_tokens by id should not fail. Error: %v", err)
 	}
 
 	// DELETE FROM clusters WHERE id=...
-	_, err = cl.DeleteById(nil, clusterRow.ID)
+	_, err = cl.DeleteByID(nil, clusterRow.ID)
 	if err != nil {
 		t.Fatalf("Deleting clusters by id should not fail. Error: %v", err)
 	}
 
 	// DELETE FROM users WHERE id=...
-	_, err = u.DeleteById(nil, userRow.ID)
+	_, err = u.DeleteByID(nil, userRow.ID)
 	if err != nil {
 		t.Fatalf("Deleting user by id should not fail. Error: %v", err)
 	}

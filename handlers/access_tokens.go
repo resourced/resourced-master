@@ -1,12 +1,13 @@
 package handlers
 
 import (
+	"net/http"
+
 	"github.com/gorilla/context"
 	"github.com/gorilla/sessions"
 	"github.com/jmoiron/sqlx"
 	"github.com/resourced/resourced-master/dal"
 	"github.com/resourced/resourced-master/libhttp"
-	"net/http"
 )
 
 func PostAccessTokens(w http.ResponseWriter, r *http.Request) {
@@ -49,7 +50,7 @@ func PostAccessTokensLevel(w http.ResponseWriter, r *http.Request) {
 	data := make(map[string]interface{})
 	data["level"] = level
 
-	_, err = dal.NewAccessToken(db).UpdateById(nil, data, tokenID)
+	_, err = dal.NewAccessToken(db).UpdateByID(nil, data, tokenID)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
@@ -78,7 +79,7 @@ func PostAccessTokensEnabled(w http.ResponseWriter, r *http.Request) {
 	data := make(map[string]interface{})
 	data["enabled"] = !accessTokenRow.Enabled
 
-	_, err = at.UpdateById(nil, data, tokenID)
+	_, err = at.UpdateByID(nil, data, tokenID)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return

@@ -2,11 +2,12 @@ package dal
 
 import (
 	"fmt"
+	"testing"
+
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
 	"github.com/resourced/resourced-master/libunix"
 	"github.com/satori/go.uuid"
-	"testing"
 )
 
 func newEmailForTest() string {
@@ -93,7 +94,7 @@ func TestCreateDeleteGeneric(t *testing.T) {
 
 }
 
-func TestCreateDeleteById(t *testing.T) {
+func TestCreateDeleteByID(t *testing.T) {
 	base := newBaseForTest(t)
 	base.table = "users"
 
@@ -113,7 +114,7 @@ func TestCreateDeleteById(t *testing.T) {
 	}
 
 	// DELETE FROM users WHERE id=...
-	_, err = base.DeleteById(nil, lastInsertedId)
+	_, err = base.DeleteByID(nil, lastInsertedId)
 	if err != nil {
 		t.Fatalf("Deleting user by id should not fail. Error: %v", err)
 	}
@@ -149,14 +150,14 @@ func TestCreateUpdateGenericDelete(t *testing.T) {
 	}
 
 	// DELETE FROM users WHERE id=...
-	_, err = base.DeleteById(nil, lastInsertedId)
+	_, err = base.DeleteByID(nil, lastInsertedId)
 	if err != nil {
 		t.Fatalf("Deleting user by id should not fail. Error: %v", err)
 	}
 
 }
 
-func TestCreateUpdateByIdDelete(t *testing.T) {
+func TestCreateUpdateByIDDelete(t *testing.T) {
 	base := newBaseForTest(t)
 	base.table = "users"
 
@@ -178,13 +179,13 @@ func TestCreateUpdateByIdDelete(t *testing.T) {
 	// UPDATE users SET name=$1 WHERE id=$2
 	data["email"] = newEmailForTest()
 
-	_, err = base.UpdateById(nil, data, lastInsertedId)
+	_, err = base.UpdateByID(nil, data, lastInsertedId)
 	if err != nil {
 		t.Errorf("Updating existing user should not fail. Error: %v", err)
 	}
 
 	// DELETE FROM users WHERE id=...
-	_, err = base.DeleteById(nil, lastInsertedId)
+	_, err = base.DeleteByID(nil, lastInsertedId)
 	if err != nil {
 		t.Fatalf("Deleting user by id should not fail. Error: %v", err)
 	}
@@ -221,7 +222,7 @@ func TestCreateUpdateByKeyValueStringDelete(t *testing.T) {
 	}
 
 	// DELETE FROM users WHERE id=...
-	_, err = base.DeleteById(nil, lastInsertedId)
+	_, err = base.DeleteByID(nil, lastInsertedId)
 	if err != nil {
 		t.Fatalf("Deleting user by id should not fail. Error: %v", err)
 	}

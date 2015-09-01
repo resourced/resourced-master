@@ -1,8 +1,9 @@
 package dal
 
 import (
-	_ "github.com/lib/pq"
 	"testing"
+
+	_ "github.com/lib/pq"
 )
 
 func newClusterForTest(t *testing.T) *Cluster {
@@ -40,13 +41,13 @@ func TestClusterCRUD(t *testing.T) {
 	}
 
 	// DELETE FROM clusters WHERE id=...
-	_, err = NewCluster(u.db).DeleteById(nil, clusterRow.ID)
+	_, err = NewCluster(u.db).DeleteByID(nil, clusterRow.ID)
 	if err != nil {
 		t.Fatalf("Deleting clusters by id should not fail. Error: %v", err)
 	}
 
 	// DELETE FROM users WHERE id=...
-	_, err = u.DeleteById(nil, userRow.ID)
+	_, err = u.DeleteByID(nil, userRow.ID)
 	if err != nil {
 		t.Fatalf("Deleting user by id should not fail. Error: %v", err)
 	}

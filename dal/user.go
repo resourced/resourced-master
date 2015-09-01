@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+
 	"github.com/jmoiron/sqlx"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -125,7 +126,7 @@ func (u *User) UpdateEmailAndPasswordById(tx *sqlx.Tx, userId int64, email, pass
 	}
 
 	if len(data) > 0 {
-		_, err := u.UpdateById(tx, data, userId)
+		_, err := u.UpdateByID(tx, data, userId)
 		if err != nil {
 			return nil, err
 		}
