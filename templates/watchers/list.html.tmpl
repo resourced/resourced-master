@@ -266,8 +266,12 @@ $('#watcher-modal').on('show.bs.modal', function (event) {
 
     if(id) {
         modal.find('form').attr('action', '/watchers/' + id);
+        modal.find('.btn-danger').show();
+        modal.find('.modal-title').text('Update Watcher');
     } else {
         modal.find('form').attr('action', '/watchers');
+        modal.find('.btn-danger').hide();
+        modal.find('.modal-title').text('New Watcher');
     }
 
     // -----------------------------------------------
