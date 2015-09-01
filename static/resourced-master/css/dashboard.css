@@ -119,6 +119,9 @@ select {
 .container.watchers .jumbotron h2 {
     font-size: 46px;
 }
+.row.watchers table th {
+    cursor: pointer;
+}
 
 @media(max-width:1200px) {
     .form-group-search-and-save .search-form, .form-group-search-and-save .search-form .input-group {
