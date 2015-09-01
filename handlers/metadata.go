@@ -91,6 +91,47 @@ func PostMetadata(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/metadata", 301)
 }
 
+func PostDeleteMetadataKey(w http.ResponseWriter, r *http.Request) {
+	method := r.FormValue("_method")
+	if method == "" {
+		method = "delete"
+	}
+
+	if method == "post" || method == "delete" {
+		DeleteMetadataKey(w, r)
+	} else {
+		http.Redirect(w, r, "/metadata", 301)
+	}
+}
+
+func DeleteMetadataKey(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "text/html")
+
+	cookieStore := context.Get(r, "cookieStore").(*sessions.CookieStore)
+
+	session, _ := cookieStore.Get(r, "resourcedmaster-session")
+
+	currentClusterInterface := session.Values["currentCluster"]
+	if currentClusterInterface == nil {
+		http.Redirect(w, r, "/", 301)
+		return
+	}
+	currentCluster := currentClusterInterface.(*dal.ClusterRow)
+
+	db := context.Get(r, "db").(*sqlx.DB)
+
+	vars := mux.Vars(r)
+	key := vars["key"]
+
+	_, err := dal.NewMetadata(db).DeleteByClusterIDAndKey(nil, currentCluster.ID, key)
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
+
+	http.Redirect(w, r, "/metadata", 301)
+}
+
 func GetApiMetadata(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 

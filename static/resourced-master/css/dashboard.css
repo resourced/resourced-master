@@ -111,6 +111,9 @@ select {
 .metadata-column-details-btn {
     width: 84px;
 }
+.metadata-column-delete-btn {
+    width: 80px;
+}
 .metadata-font {
     font-size: 13px;
     padding: 0 10px;

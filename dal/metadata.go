@@ -61,7 +61,7 @@ func (metadata *Metadata) UpdateByClusterIDAndKey(tx *sqlx.Tx, clusterID int64, 
 
 // DeleteByClusterIDAndKey updates record by cluster_id and key.
 func (metadata *Metadata) DeleteByClusterIDAndKey(tx *sqlx.Tx, clusterID int64, key string) (*MetadataRow, error) {
-	query := fmt.Sprintf("DELETE FROM %v WHERE cluster_id=$1 AND key=$2 LIMIT 1", metadata.table)
+	query := fmt.Sprintf("DELETE FROM %v WHERE cluster_id=$1 AND key=$2", metadata.table)
 
 	_, err := metadata.db.Exec(query, clusterID, key)
 	if err != nil {

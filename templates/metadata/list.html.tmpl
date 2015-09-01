@@ -46,6 +46,7 @@
                         <th>Data</th>
                         <th></th>
                         <th></th>
+                        <th></th>
                     </tr>
                 </thead>
 
@@ -57,7 +58,7 @@
                         <td class="metadata-column-save-btn"><button type="submit" class="btn btn-primary btn-block">Add</button></td>
                     </form>
 
-                        <td class="metadata-column-details-btn">
+                        <td class="metadata-column-details-btn" colspan="2">
                             <button class="btn btn-success btn-block" data-toggle="modal" data-target="#metadata-details-modal">
                                 Details
                             </button>
@@ -76,6 +77,15 @@
                             <button class="btn btn-success btn-block" data-toggle="modal" data-target="#metadata-details-modal" data-key="{{ $metadata.Key }}" data-value="{{ $metadata.DataString }}">
                                 Details
                             </button>
+                        </td>
+
+                        <td class="metadata-column-delete-btn">
+                            <form method="post" action="/metadata/{{ $metadata.Key }}">
+                                <input type="hidden" name="_method" value="delete">
+                                <button class="btn btn-danger btn-block" data-key="{{ $metadata.Key }}">
+                                    Delete
+                                </button>
+                            </form>
                         </td>
                     </tr>
                 {{ end }}
@@ -103,11 +113,9 @@
                 </div>
 
                 <div class="modal-footer">
-                    <!--
                     <button type="button" class="btn btn-danger pull-left" data-dismiss="modal">
                         Delete
                     </button>
-                    -->
 
                     <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
                     <button type="button" class="btn btn-primary" onclick="$(this).closest('form').submit()">Save</button>
@@ -186,14 +194,20 @@ $('#metadata-details-modal').on('show.bs.modal', function (event) {
 
     modal.find('input[name="Key"]').val(key);
     modal.find('textarea').val(value);
-    modal.find('.btn-danger').data('key', key);
+
+    if(key) {
+        modal.find('.btn-danger').data('key', key);
+        $(modal).find('.btn-danger').show();
+    } else {
+        $(modal).find('.btn-danger').hide();
+    }
 });
 
 $('#metadata-details-modal .btn-danger').click(function() {
     var $button = $(this);
     var key = $button.data('key');
 
-    $button.closest('form').attr('action', '/clusters/' + ResourcedMaster.globals.currentCluster.ID + '/metadata/' + key);
+    $button.closest('form').attr('action', '/metadata/' + key);
     $button.closest('form').submit();
 });
 </script>
