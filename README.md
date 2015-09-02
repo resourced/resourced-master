@@ -40,7 +40,9 @@ See [INSTALL.md](docs/contributors/INSTALL.md) and [BUILD.md](docs/contributors/
 
 ## ENV variables as configuration
 
-* **RESOURCED_MASTER_ADDR:** HTTP server host:port. Default: `":55655"`
+* **RESOURCED_MASTER_ADDR:** HTTP server (host:port). Default: `":55655"`
+
+* **RESOURCED_MASTER_ALL_ADDRS:** Comma separated list of all instances (host:port,host:port). Default: `""`
 
 * **RESOURCED_MASTER_CERT_FILE:** Path to cert file. Default: `""`
 
@@ -49,6 +51,8 @@ See [INSTALL.md](docs/contributors/INSTALL.md) and [BUILD.md](docs/contributors/
 * **RESOURCED_MASTER_DSN** PostgreSQL DSN. Default: `"postgres://$PG_USER@$localhost:5432/resourced-master?sslmode=disable"`
 
 * **RESOURCED_MASTER_COOKIE_SECRET** Cookie secret key. Default: `"$SEE_THE_CODE"`
+
+* **RESOURCED_MASTER_WATCHER_INTERVAL:** Polling interval when fetching list of watchers. Default: `"60s"`
 
 
 ## RESTful Endpoints

@@ -52,13 +52,11 @@ func main() {
 		Server:  &http.Server{Addr: app.Addr, Handler: middle},
 	}
 
-	logrus.WithFields(logrus.Fields{
-		"Addr": app.Addr,
-	}).Info("Running HTTP server")
-
 	if certFile != "" && keyFile != "" {
+		logrus.WithFields(logrus.Fields{"Addr": app.Addr}).Info("Running HTTPS server")
 		srv.ListenAndServeTLS(certFile, keyFile)
 	} else {
+		logrus.WithFields(logrus.Fields{"Addr": app.Addr}).Info("Running HTTP server")
 		srv.ListenAndServe()
 	}
 }

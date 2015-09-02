@@ -3,6 +3,8 @@ package application
 import (
 	"fmt"
 	"net/http"
+	"os"
+	"strings"
 
 	"github.com/carbocation/interpose"
 	"github.com/gorilla/mux"
@@ -11,8 +13,10 @@ import (
 	"github.com/justinas/alice"
 	_ "github.com/lib/pq"
 	"github.com/mattes/migrate/migrate"
+	"github.com/resourced/resourced-master/dal"
 	"github.com/resourced/resourced-master/handlers"
 	"github.com/resourced/resourced-master/libenv"
+	"github.com/resourced/resourced-master/libtime"
 	"github.com/resourced/resourced-master/libunix"
 	"github.com/resourced/resourced-master/middlewares"
 	"github.com/resourced/resourced-master/wstrafficker"
@@ -38,21 +42,35 @@ func New() (*Application, error) {
 
 	app := &Application{}
 	app.Addr = libenv.EnvWithDefault("RESOURCED_MASTER_ADDR", ":55655")
+	app.WatcherInterval = libenv.EnvWithDefault("RESOURCED_MASTER_WATCHER_INTERVAL", "60s")
 	app.dsn = dsn
 	app.db = db
 	app.cookieStore = sessions.NewCookieStore([]byte(cookieStoreSecret))
 	app.WSTraffickers = wstrafficker.NewWSTraffickers()
+
+	allAddrsString := libenv.EnvWithDefault("RESOURCED_MASTER_ALL_ADDRS", "")
+	if allAddrsString != "" {
+		addrs := strings.Split(allAddrsString, ",")
+
+		for i, addr := range addrs {
+			addrs[i] = strings.TrimSpace(addr)
+		}
+
+		app.AllAddrs = addrs
+	}
 
 	return app, err
 }
 
 // Application is the application object that runs HTTP server.
 type Application struct {
-	Addr          string
-	dsn           string
-	db            *sqlx.DB
-	cookieStore   *sessions.CookieStore
-	WSTraffickers *wstrafficker.WSTraffickers
+	Addr            string
+	AllAddrs        []string
+	WatcherInterval string
+	dsn             string
+	db              *sqlx.DB
+	cookieStore     *sessions.CookieStore
+	WSTraffickers   *wstrafficker.WSTraffickers
 }
 
 func (app *Application) MiddlewareStruct() (*interpose.Middleware, error) {
@@ -123,4 +141,34 @@ func (app *Application) mux() *mux.Router {
 
 func (app *Application) MigrateUp() (err []error, ok bool) {
 	return migrate.UpSync(app.dsn, "./migrations")
+}
+
+func (app *Application) WatchAll() {
+	hostname, err := os.Hostname()
+	if err != nil {
+		return
+	}
+
+	clusterRows := dal.NewCluster(app.db).AllClusters(tx)
+	for _, clusterRow := range clusterRows {
+		// TODO(didip): We don't wan't to fetch all watchers. Use modulo!
+		watcherRows := dal.NewWatcher(app.db).AllByClusterID(nil, clusterRow.ID)
+
+		for _, watcherRow := range watcherRows {
+			go func() {
+				app.WatchOnce(clusterRow, watcherRow)
+				libtime.SleepString(watcherRow.CheckInterval)
+			}()
+		}
+	}
+}
+
+func (app *Application) WatchOnce(clusterRow *dal.ClusterRow, watcherRow *dal.WatcherRow) error {
+	hosts := dal.NewHost(app.db).AllByClusterIDAndQuery(cluster.ID, watcher.Query)
+
+	// TODO(Didip): Use select count(*), it's better.
+	numAffectedHosts := len(hosts)
+	if numAffectedHosts == 0 {
+		return
+	}
 }

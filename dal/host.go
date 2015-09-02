@@ -5,11 +5,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"time"
+
 	"github.com/jmoiron/sqlx"
 	sqlx_types "github.com/jmoiron/sqlx/types"
 	"github.com/nytlabs/gojsonexplode"
 	"github.com/resourced/resourced-master/querybuilder"
-	"time"
 )
 
 func NewHost(db *sqlx.DB) *Host {

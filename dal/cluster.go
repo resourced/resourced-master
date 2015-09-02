@@ -36,11 +36,11 @@ func (a *Cluster) clusterRowFromSqlResult(tx *sqlx.Tx, sqlResult sql.Result) (*C
 
 // GetById returns one record by id.
 func (a *Cluster) GetById(tx *sqlx.Tx, id int64) (*ClusterRow, error) {
-	applicationRow := &ClusterRow{}
+	row := &ClusterRow{}
 	query := fmt.Sprintf("SELECT * FROM %v WHERE id=$1", a.table)
-	err := a.db.Get(applicationRow, query, id)
+	err := a.db.Get(row, query, id)
 
-	return applicationRow, err
+	return row, err
 }
 
 func (a *Cluster) Create(tx *sqlx.Tx, userId int64, name string) (*ClusterRow, error) {
@@ -68,11 +68,20 @@ func (a *Cluster) Create(tx *sqlx.Tx, userId int64, name string) (*ClusterRow, e
 	return a.clusterRowFromSqlResult(tx, sqlResult)
 }
 
-// AllClustersByUserID returns all clusters rows.
+// AllClustersByUserID returns all clusters rows by user ID.
 func (a *Cluster) AllClustersByUserID(tx *sqlx.Tx, userId int64) ([]*ClusterRow, error) {
-	accessTokens := []*ClusterRow{}
+	rows := []*ClusterRow{}
 	query := fmt.Sprintf("SELECT id, name FROM %v JOIN clusters_users ON %v.id = clusters_users.cluster_id WHERE user_id=$1", a.table, a.table)
-	err := a.db.Select(&accessTokens, query, userId)
+	err := a.db.Select(&rows, query, userId)
 
-	return accessTokens, err
+	return rows, err
+}
+
+// AllClusters returns all clusters rows.
+func (a *Cluster) AllClusters(tx *sqlx.Tx) ([]*ClusterRow, error) {
+	rows := []*ClusterRow{}
+	query := fmt.Sprintf("SELECT * FROM %v", a.table)
+	err := a.db.Select(&rows, query)
+
+	return rows, err
 }
