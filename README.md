@@ -42,7 +42,7 @@ See [INSTALL.md](docs/contributors/INSTALL.md) and [BUILD.md](docs/contributors/
 
 * **RESOURCED_MASTER_ADDR:** HTTP server (host:port). Default: `":55655"`
 
-* **RESOURCED_MASTER_ALL_ADDRS:** Comma separated list of all instances (host:port,host:port). Default: `""`
+* **RESOURCED_MASTER_HOSTS:** Comma separated list of all instances (host,host). Default: `""`
 
 * **RESOURCED_MASTER_CERT_FILE:** Path to cert file. Default: `""`
 

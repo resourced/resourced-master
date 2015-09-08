@@ -48,15 +48,15 @@ func New() (*Application, error) {
 	app.cookieStore = sessions.NewCookieStore([]byte(cookieStoreSecret))
 	app.WSTraffickers = wstrafficker.NewWSTraffickers()
 
-	allAddrsString := libenv.EnvWithDefault("RESOURCED_MASTER_ALL_ADDRS", "")
-	if allAddrsString != "" {
-		addrs := strings.Split(allAddrsString, ",")
+	hostsString := libenv.EnvWithDefault("RESOURCED_MASTER_HOSTS", "")
+	if hostsString != "" {
+		hosts := strings.Split(hostsString, ",")
 
-		for i, addr := range addrs {
-			addrs[i] = strings.TrimSpace(addr)
+		for i, host := range hosts {
+			hosts[i] = strings.TrimSpace(host)
 		}
 
-		app.AllAddrs = addrs
+		app.Hosts = hosts
 	}
 
 	return app, err
@@ -65,7 +65,7 @@ func New() (*Application, error) {
 // Application is the application object that runs HTTP server.
 type Application struct {
 	Addr            string
-	AllAddrs        []string
+	Hosts           []string
 	WatcherInterval string
 	dsn             string
 	db              *sqlx.DB
@@ -144,31 +144,78 @@ func (app *Application) MigrateUp() (err []error, ok bool) {
 }
 
 func (app *Application) WatchAll() {
-	hostname, err := os.Hostname()
+	// hostname, err := os.Hostname()
+	// if err != nil {
+	// 	return
+	// }
+
+	clusterRows, err := dal.NewCluster(app.db).AllClusters(nil)
 	if err != nil {
 		return
 	}
 
-	clusterRows := dal.NewCluster(app.db).AllClusters(tx)
 	for _, clusterRow := range clusterRows {
 		// TODO(didip): We don't wan't to fetch all watchers. Use modulo!
-		watcherRows := dal.NewWatcher(app.db).AllByClusterID(nil, clusterRow.ID)
+		watcherRows, err := dal.NewWatcher(app.db).AllByClusterID(nil, clusterRow.ID)
+		if err != nil {
+			return
+		}
+
+		watcherResultRows, err := dal.NewWatcherResult(app.db).AllByClusterID(nil, clusterRow.ID)
+		if err != nil {
+			return
+		}
 
 		for _, watcherRow := range watcherRows {
 			go func() {
-				app.WatchOnce(clusterRow, watcherRow)
+
+				var watcherResultRow *dal.WatcherResultRow
+
+				for _, wr := range watcherResultRows {
+					if wr.ClusterID == clusterRow.ID {
+						watcherResultRow = wr
+						break
+					}
+				}
+
+				if watcherResultRow != nil {
+					app.WatchOnce(clusterRow, watcherRow, watcherResultRow)
+				}
+
 				libtime.SleepString(watcherRow.CheckInterval)
 			}()
 		}
 	}
 }
 
-func (app *Application) WatchOnce(clusterRow *dal.ClusterRow, watcherRow *dal.WatcherRow) error {
-	hosts := dal.NewHost(app.db).AllByClusterIDAndQuery(cluster.ID, watcher.Query)
+func (app *Application) WatchOnce(clusterRow *dal.ClusterRow, watcherRow *dal.WatcherRow, watcherResultRow *dal.WatcherResultRow) error {
+	var err error
 
-	// TODO(Didip): Use select count(*), it's better.
-	numAffectedHosts := len(hosts)
-	if numAffectedHosts == 0 {
-		return
+	lastUpdated := strings.Replace(watcherRow.HostsLastUpdated, " ago", "", 1)
+
+	numAffectedHosts, err := dal.NewHost(app.db).CountByClusterIDQueryAndUpdatedInterval(nil, clusterRow.ID, watcherRow.SavedQuery, lastUpdated)
+	if err != nil {
+		return err
 	}
+
+	watcherResult := dal.NewWatcherResult(app.db)
+
+	if numAffectedHosts == 0 || numAffectedHosts < watcherRow.LowThreshold {
+		watcherResultRow, err = watcherResult.ResetCountByClusterIDAndWatcherID(nil, clusterRow.ID, watcherRow.ID)
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+
+	if watcherRow.LowThreshold <= numAffectedHosts && numAffectedHosts <= watcherRow.HighThreshold {
+		watcherResultRow, err = watcherResult.IncrementCountByClusterIDAndWatcherID(nil, clusterRow.ID, watcherRow.ID, 1)
+		if err != nil {
+			return err
+		}
+
+		// TODO(didip): perform action
+	}
+
+	return nil
 }
