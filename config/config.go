@@ -38,5 +38,14 @@ type GeneralConfig struct {
 
 	Watchers struct {
 		ListFetchInterval string
+
+		Email struct {
+			From     string
+			Subject  string
+			Host     string
+			Port     int
+			Username string
+			Password string
+		}
 	}
 }

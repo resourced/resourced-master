@@ -55,6 +55,14 @@ KeyFile = ""
 
 [Watchers]
 ListFetchInterval = "60s"
+
+[Watchers.Email]
+From = "alert@example.com"
+Subject = ""
+Host = "smtp.example.com"
+Port = 25
+Username = ""
+Password = ""
 `
 
 	err := ioutil.WriteFile(path.Join(configDir, "general.toml"), []byte(generalToml), 0644)
