@@ -1,9 +1,7 @@
 package application
 
 import (
-	"errors"
 	"net/http"
-	"os"
 	"strings"
 
 	"github.com/carbocation/interpose"
@@ -22,12 +20,7 @@ import (
 )
 
 // New is the constructor for Application struct.
-func New() (*Application, error) {
-	configDir := os.Getenv("RESOURCED_MASTER_CONFIG_DIR")
-	if configDir == "" {
-		return nil, errors.New("RESOURCED_MASTER_CONFIG_DIR is required")
-	}
-
+func New(configDir string) (*Application, error) {
 	generalConfig, err := config.NewGeneralConfig(configDir)
 	if err != nil {
 		return nil, err

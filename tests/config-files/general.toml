@@ -1,4 +1,4 @@
-# Addr is the host and port of ResourceD Agent HTTP/S server
+# Addr is the host and port of ResourceD Master HTTP/S server
 Addr = "localhost:55655"
 
 # Valid LogLevel are: debug, info, warning, error, fatal, panic
