@@ -36,11 +36,9 @@ func (sq *SavedQuery) savedQueryRowFromSqlResult(tx *sqlx.Tx, sqlResult sql.Resu
 }
 
 // DeleteByID deletes record by id.
-func (sq *SavedQuery) DeleteByID(tx *sqlx.Tx, id int64) error {
+func (sq *SavedQuery) DeleteByID(tx *sqlx.Tx, id int64) (sql.Result, error) {
 	query := fmt.Sprintf("DELETE FROM %v WHERE id=$1", sq.table)
-	_, err := sq.db.Exec(query, id)
-
-	return err
+	return sq.db.Exec(query, id)
 }
 
 // AllByClusterID returns all saved_query rows.

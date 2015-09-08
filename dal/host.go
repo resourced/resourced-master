@@ -112,6 +112,15 @@ func (h *Host) AllByClusterID(tx *sqlx.Tx, clusterID int64) ([]*HostRow, error) 
 	return hosts, err
 }
 
+// CountByClusterIDAndUpdatedInterval returns all user rows.
+func (h *Host) CountByClusterIDAndUpdatedInterval(tx *sqlx.Tx, clusterID int64, updatedInterval string) (int64, error) {
+	var count int64
+	query := fmt.Sprintf("SELECT count(*) FROM %v WHERE cluster_id=$1 AND updated >= (NOW() - INTERVAL '%v')", h.table, updatedInterval)
+	err := h.db.Get(&count, query, clusterID)
+
+	return count, err
+}
+
 // AllByClusterIDAndQuery returns all user rows by resourced query.
 func (h *Host) AllByClusterIDAndQuery(tx *sqlx.Tx, clusterID int64, resourcedQuery string) ([]*HostRow, error) {
 	pgQuery := querybuilder.Parse(resourcedQuery)
@@ -124,6 +133,20 @@ func (h *Host) AllByClusterIDAndQuery(tx *sqlx.Tx, clusterID int64, resourcedQue
 	err := h.db.Select(&hosts, query, clusterID)
 
 	return hosts, err
+}
+
+// CountByClusterIDQueryAndUpdatedInterval returns all user rows by resourced query.
+func (h *Host) CountByClusterIDQueryAndUpdatedInterval(tx *sqlx.Tx, clusterID int64, resourcedQuery, updatedInterval string) (int64, error) {
+	pgQuery := querybuilder.Parse(resourcedQuery)
+	if pgQuery == "" {
+		return h.CountByClusterIDAndUpdatedInterval(tx, clusterID, updatedInterval)
+	}
+
+	var count int64
+	query := fmt.Sprintf("SELECT count(*) FROM %v WHERE cluster_id=$1 AND updated >= (NOW() - INTERVAL '%v') AND %v", h.table, updatedInterval, pgQuery)
+	err := h.db.Get(&count, query, clusterID)
+
+	return count, err
 }
 
 // GetByID returns record by id.

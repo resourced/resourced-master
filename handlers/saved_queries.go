@@ -79,7 +79,7 @@ func DeleteSavedQueriesID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = sq.DeleteByID(nil, savedQueryID)
+	_, err = sq.DeleteByID(nil, savedQueryID)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return

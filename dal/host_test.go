@@ -48,7 +48,7 @@ func TestHostCRUD(t *testing.T) {
 	}
 
 	// Create host
-	hostRow, err := newHostForTest(t).CreateOrUpdate(nil, tokenRow, []byte(`{"/stuff": {"Score": 100, "Host": {"Name": "localhost", "Tags": {"aaa": "bbb"}}}}`))
+	hostRow, err := newHostForTest(t).CreateOrUpdate(nil, tokenRow, []byte(`{"/stuff": {"Data": {"Score": 100}, "Host": {"Name": "localhost", "Tags": {"aaa": "bbb"}}}}`))
 	if err != nil {
 		t.Errorf("Creating a new host should work. Error: %v", err)
 	}
@@ -57,15 +57,31 @@ func TestHostCRUD(t *testing.T) {
 	}
 
 	// SELECT * FROM hosts
-	_, err = newHostForTest(t).AllByClusterID(nil, tokenRow.ID)
+	hostRows, err := newHostForTest(t).AllByClusterID(nil, clusterRow.ID)
 	if err != nil {
 		t.Fatalf("Selecting all hosts should not fail. Error: %v", err)
 	}
+	if len(hostRows) <= 0 {
+		t.Fatalf("There should be at least one host. Hosts length: %v", len(hostRows))
+	}
+
+	count, err := newHostForTest(t).CountByClusterIDAndUpdatedInterval(nil, clusterRow.ID, "5 minutes")
+	if err != nil {
+		t.Fatalf("Counting all hosts should not fail. Error: %v", err)
+	}
+	if count <= 0 {
+		t.Fatalf("Counting all hosts should not fail. Count: %v", count)
+	}
 
 	// SELECT * FROM hosts by query
-	_, err = newHostForTest(t).AllByClusterIDAndQuery(nil, tokenRow.ID, `/stuff.Score = 100`)
+	_, err = newHostForTest(t).AllByClusterIDAndQuery(nil, clusterRow.ID, `/stuff.Score = 100`)
 	if err != nil {
 		t.Fatalf("Selecting all hosts by query should not fail. Error: %v", err)
+	}
+
+	_, err = newHostForTest(t).CountByClusterIDQueryAndUpdatedInterval(nil, clusterRow.ID, `/stuff.Score = 100`, "5 minutes")
+	if err != nil {
+		t.Fatalf("Counting all hosts by query should not fail. Error: %v", err)
 	}
 
 	// SELECT * FROM hosts WHERE id=...

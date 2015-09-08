@@ -68,7 +68,7 @@ type Watcher struct {
 	Base
 }
 
-// AllByClusterID returns all watchers rows.
+// AllByClusterID returns all watchers rows by cluster_id.
 func (w *Watcher) AllByClusterID(tx *sqlx.Tx, clusterID int64) ([]*WatcherRow, error) {
 	rows := []*WatcherRow{}
 	query := fmt.Sprintf("SELECT * FROM %v WHERE cluster_id=$1 ORDER BY name ASC", w.table)
