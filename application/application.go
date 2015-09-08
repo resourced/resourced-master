@@ -1,7 +1,7 @@
 package application
 
 import (
-	"fmt"
+	"errors"
 	"net/http"
 	"os"
 	"strings"
@@ -13,69 +13,51 @@ import (
 	"github.com/justinas/alice"
 	_ "github.com/lib/pq"
 	"github.com/mattes/migrate/migrate"
+	"github.com/resourced/resourced-master/config"
 	"github.com/resourced/resourced-master/dal"
 	"github.com/resourced/resourced-master/handlers"
-	"github.com/resourced/resourced-master/libenv"
 	"github.com/resourced/resourced-master/libtime"
-	"github.com/resourced/resourced-master/libunix"
 	"github.com/resourced/resourced-master/middlewares"
 	"github.com/resourced/resourced-master/wstrafficker"
 )
 
 // New is the constructor for Application struct.
 func New() (*Application, error) {
-	u, err := libunix.CurrentUser()
+	configDir := os.Getenv("RESOURCED_MASTER_CONFIG_DIR")
+	if configDir == "" {
+		return nil, errors.New("RESOURCED_MASTER_CONFIG_DIR is required")
+	}
+
+	generalConfig, err := config.NewGeneralConfig(configDir)
 	if err != nil {
 		return nil, err
 	}
 
-	dsn := libenv.EnvWithDefault("RESOURCED_MASTER_DSN", fmt.Sprintf("postgres://%v@localhost:5432/resourced-master?sslmode=disable", u))
-
-	db, err := sqlx.Connect("postgres", dsn)
+	db, err := sqlx.Connect("postgres", generalConfig.DSN)
 	if err != nil {
 		return nil, err
 	}
-
-	// As a user, you must provide your own secret
-	// But make sure you keep using the same one, otherwise sessions will expire.
-	cookieStoreSecret := libenv.EnvWithDefault("RESOURCED_MASTER_COOKIE_SECRET", "T0PS3CR3T")
 
 	app := &Application{}
-	app.Addr = libenv.EnvWithDefault("RESOURCED_MASTER_ADDR", ":55655")
-	app.WatcherInterval = libenv.EnvWithDefault("RESOURCED_MASTER_WATCHER_INTERVAL", "60s")
-	app.dsn = dsn
+	app.GeneralConfig = generalConfig
 	app.db = db
-	app.cookieStore = sessions.NewCookieStore([]byte(cookieStoreSecret))
+	app.cookieStore = sessions.NewCookieStore([]byte(app.GeneralConfig.CookieSecret))
 	app.WSTraffickers = wstrafficker.NewWSTraffickers()
-
-	hostsString := libenv.EnvWithDefault("RESOURCED_MASTER_HOSTS", "")
-	if hostsString != "" {
-		hosts := strings.Split(hostsString, ",")
-
-		for i, host := range hosts {
-			hosts[i] = strings.TrimSpace(host)
-		}
-
-		app.Hosts = hosts
-	}
 
 	return app, err
 }
 
 // Application is the application object that runs HTTP server.
 type Application struct {
-	Addr            string
-	Hosts           []string
-	WatcherInterval string
-	dsn             string
-	db              *sqlx.DB
-	cookieStore     *sessions.CookieStore
-	WSTraffickers   *wstrafficker.WSTraffickers
+	GeneralConfig config.GeneralConfig
+	db            *sqlx.DB
+	cookieStore   *sessions.CookieStore
+	WSTraffickers *wstrafficker.WSTraffickers
 }
 
 func (app *Application) MiddlewareStruct() (*interpose.Middleware, error) {
 	middle := interpose.New()
-	middle.Use(middlewares.SetAddr(app.Addr))
+	middle.Use(middlewares.SetAddr(app.GeneralConfig.Addr))
 	middle.Use(middlewares.SetDB(app.db))
 	middle.Use(middlewares.SetCookieStore(app.cookieStore))
 	middle.Use(middlewares.SetWSTraffickers(app.WSTraffickers))
@@ -140,7 +122,7 @@ func (app *Application) mux() *mux.Router {
 }
 
 func (app *Application) MigrateUp() (err []error, ok bool) {
-	return migrate.UpSync(app.dsn, "./migrations")
+	return migrate.UpSync(app.GeneralConfig.DSN, "./migrations")
 }
 
 func (app *Application) WatchAll() {

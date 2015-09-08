@@ -10,10 +10,10 @@ import (
 	"strconv"
 )
 
-func getCurrentUser(w http.ResponseWriter, r *http.Request) *UserRow {
+func getCurrentUser(w http.ResponseWriter, r *http.Request) *dal.UserRow {
 	cookieStore := context.Get(r, "cookieStore").(*sessions.CookieStore)
 	session, _ := cookieStore.Get(r, "resourcedmaster-session")
-	return session.Values["user"].(*UserRow)
+	return session.Values["user"].(*dal.UserRow)
 }
 
 func getIdFromPath(w http.ResponseWriter, r *http.Request) (int64, error) {

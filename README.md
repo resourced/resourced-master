@@ -38,21 +38,15 @@
 See [INSTALL.md](docs/contributors/INSTALL.md) and [BUILD.md](docs/contributors/BUILD.md)
 
 
-## ENV variables as configuration
+## Configuration
 
-* **RESOURCED_MASTER_ADDR:** HTTP server (host:port). Default: `":55655"`
+ResourceD Master requires only 1 environment variable to run.
 
-* **RESOURCED_MASTER_HOSTS:** Comma separated list of all instances (host,host). Default: `""`
+**RESOURCED_CONFIG_DIR:** Path to root config directory. If directory does not exist, it will be created.
 
-* **RESOURCED_MASTER_CERT_FILE:** Path to cert file. Default: `""`
+In there, you will see the following file:
 
-* **RESOURCED_MASTER_KEY_FILE:** Path to key file. Default: `""`
-
-* **RESOURCED_MASTER_DSN** PostgreSQL DSN. Default: `"postgres://$PG_USER@$localhost:5432/resourced-master?sslmode=disable"`
-
-* **RESOURCED_MASTER_COOKIE_SECRET** Cookie secret key. Default: `"$SEE_THE_CODE"`
-
-* **RESOURCED_MASTER_WATCHER_INTERVAL:** Polling interval when fetching list of watchers. Default: `"60s"`
+* `general.toml` All default settings are defined in `general.toml`.
 
 
 ## RESTful Endpoints

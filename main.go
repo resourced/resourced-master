@@ -9,7 +9,6 @@ import (
 	"github.com/Sirupsen/logrus"
 	"github.com/resourced/resourced-master/application"
 	"github.com/resourced/resourced-master/dal"
-	"github.com/resourced/resourced-master/libenv"
 	"github.com/stretchr/graceful"
 )
 
@@ -38,25 +37,21 @@ func main() {
 		logrus.Fatal(err)
 	}
 
-	certFile := libenv.EnvWithDefault("RESOURCED_MASTER_CERT_FILE", "")
-	keyFile := libenv.EnvWithDefault("RESOURCED_MASTER_KEY_FILE", "")
-	requestTimeoutString := libenv.EnvWithDefault("RESOURCED_MASTER_REQUEST_TIMEOUT", "1s")
-
-	requestTimeout, err := time.ParseDuration(requestTimeoutString)
+	requestTimeout, err := time.ParseDuration(app.GeneralConfig.RequestTimeout)
 	if err != nil {
 		logrus.Fatal(err)
 	}
 
 	srv := &graceful.Server{
 		Timeout: requestTimeout,
-		Server:  &http.Server{Addr: app.Addr, Handler: middle},
+		Server:  &http.Server{Addr: app.GeneralConfig.Addr, Handler: middle},
 	}
 
-	if certFile != "" && keyFile != "" {
-		logrus.WithFields(logrus.Fields{"Addr": app.Addr}).Info("Running HTTPS server")
-		srv.ListenAndServeTLS(certFile, keyFile)
+	if app.GeneralConfig.HTTPS.CertFile != "" && app.GeneralConfig.HTTPS.KeyFile != "" {
+		logrus.WithFields(logrus.Fields{"Addr": app.GeneralConfig.Addr}).Info("Running HTTPS server")
+		srv.ListenAndServeTLS(app.GeneralConfig.HTTPS.CertFile, app.GeneralConfig.HTTPS.KeyFile)
 	} else {
-		logrus.WithFields(logrus.Fields{"Addr": app.Addr}).Info("Running HTTP server")
+		logrus.WithFields(logrus.Fields{"Addr": app.GeneralConfig.Addr}).Info("Running HTTP server")
 		srv.ListenAndServe()
 	}
 }

@@ -1,0 +1,26 @@
+# Addr is the host and port of ResourceD Agent HTTP/S server
+Addr = "localhost:55655"
+
+# Valid LogLevel are: debug, info, warning, error, fatal, panic
+LogLevel = "info"
+
+# List of all instances hostnames
+Hosts = []
+
+# DSN to PostgreSQL
+DSN = "postgres://localhost:5432/resourced-master?sslmode=disable"
+
+RequestTimeout = "1s"
+
+# Change this!
+CookieSecret = "T0PS3CR3T"
+
+[HTTPS]
+# Path to HTTPS cert file
+CertFile = ""
+
+# Path to HTTPS key file
+KeyFile = ""
+
+[Watchers]
+ListFetchInterval = "60s"
