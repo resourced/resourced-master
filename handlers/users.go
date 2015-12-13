@@ -2,14 +2,15 @@ package handlers
 
 import (
 	"errors"
-	"github.com/gorilla/context"
-	"github.com/gorilla/sessions"
-	"github.com/jmoiron/sqlx"
-	rm_dal "github.com/resourced/resourced-master/dal"
-	"github.com/resourced/resourced-master/libhttp"
 	"html/template"
 	"net/http"
 	"strings"
+
+	"github.com/gorilla/context"
+	"github.com/gorilla/sessions"
+	"github.com/jmoiron/sqlx"
+	"github.com/resourced/resourced-master/dal"
+	"github.com/resourced/resourced-master/libhttp"
 )
 
 func GetSignup(w http.ResponseWriter, r *http.Request) {
@@ -33,7 +34,21 @@ func PostSignup(w http.ResponseWriter, r *http.Request) {
 	password := r.FormValue("Password")
 	passwordAgain := r.FormValue("PasswordAgain")
 
-	_, err := rm_dal.NewUser(db).Signup(nil, email, password, passwordAgain)
+	userRow, err := dal.NewUser(db).Signup(nil, email, password, passwordAgain)
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
+
+	// Create a default cluster
+	clusterRow, err := dal.NewCluster(db).Create(nil, userRow.ID, "Default")
+	if err != nil {
+		libhttp.HandleErrorHTML(w, err, 500)
+		return
+	}
+
+	// Create a default access-token
+	_, err = dal.NewAccessToken(db).Create(nil, userRow.ID, clusterRow.ID, "execute")
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
@@ -82,7 +97,7 @@ func PostLogin(w http.ResponseWriter, r *http.Request) {
 	email := r.FormValue("Email")
 	password := r.FormValue("Password")
 
-	u := rm_dal.NewUser(db)
+	u := dal.NewUser(db)
 
 	user, err := u.GetUserByEmailAndPassword(nil, email, password)
 	if err != nil {
@@ -139,7 +154,7 @@ func PutUsersID(w http.ResponseWriter, r *http.Request) {
 
 	session, _ := cookieStore.Get(r, "resourcedmaster-session")
 
-	currentUser := session.Values["user"].(*rm_dal.UserRow)
+	currentUser := session.Values["user"].(*dal.UserRow)
 
 	if currentUser.ID != userId {
 		err := errors.New("Modifying other user is not allowed.")
@@ -151,7 +166,7 @@ func PutUsersID(w http.ResponseWriter, r *http.Request) {
 	password := r.FormValue("Password")
 	passwordAgain := r.FormValue("PasswordAgain")
 
-	u := rm_dal.NewUser(db)
+	u := dal.NewUser(db)
 
 	currentUser, err = u.UpdateEmailAndPasswordById(nil, currentUser.ID, email, password, passwordAgain)
 	if err != nil {

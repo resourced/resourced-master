@@ -38,13 +38,13 @@ func GetHosts(w http.ResponseWriter, r *http.Request) {
 	query := r.URL.Query().Get("q")
 
 	hosts, err := dal.NewHost(db).AllByClusterIDAndQuery(nil, currentCluster.ID, query)
-	if err != nil {
+	if err != nil && err.Error() != "sql: no rows in result set" {
 		libhttp.HandleErrorJson(w, err)
 		return
 	}
 
 	savedQueries, err := dal.NewSavedQuery(db).AllByClusterID(nil, currentCluster.ID)
-	if err != nil {
+	if err != nil && err.Error() != "sql: no rows in result set" {
 		libhttp.HandleErrorJson(w, err)
 		return
 	}
