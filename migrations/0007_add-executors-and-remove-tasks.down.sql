@@ -1,3 +1,7 @@
+DROP TABLE IF EXISTS executors CASCADE;
+DROP INDEX IF EXISTS idx_executors_hostname;
+DROP INDEX IF EXISTS idx_executors_data;
+
 CREATE TABLE tasks (
     id BIGSERIAL PRIMARY KEY NOT NULL,
     user_id bigint REFERENCES users (id),
