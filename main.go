@@ -58,6 +58,12 @@ func main() {
 		logrus.Fatal(err)
 	}
 
+	// Register daemon before launching
+	_, err = dal.NewDaemon(app.DB).CreateOrUpdate(nil, app.Hostname)
+	if err != nil {
+		logrus.Fatal(err)
+	}
+
 	srv := &graceful.Server{
 		Timeout: requestTimeout,
 		Server:  &http.Server{Addr: app.GeneralConfig.Addr, Handler: middle},
