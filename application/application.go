@@ -2,6 +2,7 @@ package application
 
 import (
 	"net/http"
+	"os"
 	"strings"
 
 	"github.com/carbocation/interpose"
@@ -31,9 +32,12 @@ func New(configDir string) (*Application, error) {
 		return nil, err
 	}
 
+	hostname, _ := os.Hostname()
+
 	app := &Application{}
+	app.Hostname = hostname
 	app.GeneralConfig = generalConfig
-	app.db = db
+	app.DB = db
 	app.cookieStore = sessions.NewCookieStore([]byte(app.GeneralConfig.CookieSecret))
 	app.WSTraffickers = wstrafficker.NewWSTraffickers()
 
@@ -42,8 +46,9 @@ func New(configDir string) (*Application, error) {
 
 // Application is the application object that runs HTTP server.
 type Application struct {
+	Hostname      string
 	GeneralConfig config.GeneralConfig
-	db            *sqlx.DB
+	DB            *sqlx.DB
 	cookieStore   *sessions.CookieStore
 	WSTraffickers *wstrafficker.WSTraffickers
 }
@@ -51,7 +56,7 @@ type Application struct {
 func (app *Application) MiddlewareStruct() (*interpose.Middleware, error) {
 	middle := interpose.New()
 	middle.Use(middlewares.SetAddr(app.GeneralConfig.Addr))
-	middle.Use(middlewares.SetDB(app.db))
+	middle.Use(middlewares.SetDB(app.DB))
 	middle.Use(middlewares.SetCookieStore(app.cookieStore))
 	middle.Use(middlewares.SetWSTraffickers(app.WSTraffickers))
 
@@ -124,19 +129,19 @@ func (app *Application) WatchAll() {
 	// 	return
 	// }
 
-	clusterRows, err := dal.NewCluster(app.db).AllClusters(nil)
+	clusterRows, err := dal.NewCluster(app.DB).AllClusters(nil)
 	if err != nil {
 		return
 	}
 
 	for _, clusterRow := range clusterRows {
 		// TODO(didip): We don't wan't to fetch all watchers. Use modulo!
-		watcherRows, err := dal.NewWatcher(app.db).AllByClusterID(nil, clusterRow.ID)
+		watcherRows, err := dal.NewWatcher(app.DB).AllByClusterID(nil, clusterRow.ID)
 		if err != nil {
 			return
 		}
 
-		watcherResultRows, err := dal.NewWatcherResult(app.db).AllByClusterID(nil, clusterRow.ID)
+		watcherResultRows, err := dal.NewWatcherResult(app.DB).AllByClusterID(nil, clusterRow.ID)
 		if err != nil {
 			return
 		}
@@ -168,12 +173,12 @@ func (app *Application) WatchOnce(clusterRow *dal.ClusterRow, watcherRow *dal.Wa
 
 	lastUpdated := strings.Replace(watcherRow.HostsLastUpdated, " ago", "", 1)
 
-	numAffectedHosts, err := dal.NewHost(app.db).CountByClusterIDQueryAndUpdatedInterval(nil, clusterRow.ID, watcherRow.SavedQuery, lastUpdated)
+	numAffectedHosts, err := dal.NewHost(app.DB).CountByClusterIDQueryAndUpdatedInterval(nil, clusterRow.ID, watcherRow.SavedQuery, lastUpdated)
 	if err != nil {
 		return err
 	}
 
-	watcherResult := dal.NewWatcherResult(app.db)
+	watcherResult := dal.NewWatcherResult(app.DB)
 
 	if numAffectedHosts == 0 || numAffectedHosts < watcherRow.LowThreshold {
 		watcherResultRow, err = watcherResult.ResetCountByClusterIDAndWatcherID(nil, clusterRow.ID, watcherRow.ID)
