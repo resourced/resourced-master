@@ -68,6 +68,46 @@ type Watcher struct {
 	Base
 }
 
+// All returns all watchers rows.
+func (w *Watcher) All(tx *sqlx.Tx) ([]*WatcherRow, error) {
+	rows := []*WatcherRow{}
+	query := fmt.Sprintf("SELECT * FROM %v", w.table)
+	err := w.db.Select(&rows, query)
+
+	return rows, err
+}
+
+// AllGroupByDaemons returns all watchers rows divided into daemons equally.
+func (w *Watcher) AllSplitToDaemons(tx *sqlx.Tx, daemons []string) (map[string][]*WatcherRow, error) {
+	watcherRows, err := w.All(tx)
+	if err != nil {
+		return nil, err
+	}
+
+	buckets := make([][]*WatcherRow, len(daemons))
+	for i, _ := range daemons {
+		buckets[i] = make([]*WatcherRow, 0)
+	}
+
+	bucketsPointer := 0
+	for _, watcherRow := range watcherRows {
+		buckets[bucketsPointer] = append(buckets[bucketsPointer], watcherRow)
+		bucketsPointer = bucketsPointer + 1
+
+		if bucketsPointer >= len(buckets) {
+			bucketsPointer = 0
+		}
+	}
+
+	result := make(map[string][]*WatcherRow)
+
+	for i, watchersInbucket := range buckets {
+		result[daemons[i]] = watchersInbucket
+	}
+
+	return result, err
+}
+
 // AllByClusterID returns all watchers rows by cluster_id.
 func (w *Watcher) AllByClusterID(tx *sqlx.Tx, clusterID int64) ([]*WatcherRow, error) {
 	rows := []*WatcherRow{}
