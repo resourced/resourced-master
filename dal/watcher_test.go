@@ -56,7 +56,7 @@ func TestWatcherCRUD(t *testing.T) {
 	// Create a watcher
 	w := newWatcherForTest(t)
 
-	data := w.CreateOrUpdateParameters(clusterRow.ID, sqRow.ID, sqRow.Query, "testing", 1, 1, 1, "5 minutes ago", "10s", []byte(`{"Email": "didip@example.com", "SMSPhone": "", "Transport": "email", "SMSCarrier": "Alltel", "PagerDutyServiceKey": "", "PagerDutyDescription": ""}`))
+	data := w.CreateOrUpdateParameters(clusterRow.ID, sqRow.ID, sqRow.Query, "testing", 1, "5 minutes ago", "10s")
 
 	watcherRow, err := w.Create(nil, data)
 	if err != nil {
@@ -146,7 +146,7 @@ func TestWatcherSplitToDaemons(t *testing.T) {
 	// Create a watcher
 	w := newWatcherForTest(t)
 
-	data := w.CreateOrUpdateParameters(clusterRow.ID, sqRow.ID, sqRow.Query, "testing", 1, 1, 1, "5 minutes ago", "10s", []byte(`{"Email": "didip@example.com", "SMSPhone": "", "Transport": "email", "SMSCarrier": "Alltel", "PagerDutyServiceKey": "", "PagerDutyDescription": ""}`))
+	data := w.CreateOrUpdateParameters(clusterRow.ID, sqRow.ID, sqRow.Query, "testing", 1, "5 minutes ago", "10s")
 
 	watcherRow, err := w.Create(nil, data)
 	if err != nil {

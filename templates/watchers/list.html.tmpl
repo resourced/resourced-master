@@ -33,7 +33,6 @@
                     <tr>
                         <th>Name</th>
                         <th>Saved Queries</th>
-                        <th>Low/High Thresholds</th>
                         <th>Min Affected Hosts</th>
                         <th>Check Interval</th>
                         <th></th>
@@ -45,23 +44,26 @@
                     <tr>
                         <td>{{ $watcher.Name }}</td>
                         <td>{{ $watcher.SavedQuery }}</td>
-                        <td>{{ $watcher.LowThreshold }}/{{ $watcher.HighThreshold }}</td>
                         <td>{{ $watcher.LowAffectedHosts }}</td>
                         <td>{{ $watcher.CheckInterval }}</td>
                         <td>
-                            <button class="btn btn-success btn-block btn-xs" data-toggle="modal" data-target="#watcher-modal"
-                                data-id="{{ $watcher.ID }}"
-                                data-name="{{ $watcher.Name }}"
-                                data-saved-query-id="{{ $watcher.SavedQueryID }}"
-                                data-low-threshold="{{ $watcher.LowThreshold }}"
-                                data-high-threshold="{{ $watcher.HighThreshold }}"
-                                data-low-affected-hosts="{{ $watcher.LowAffectedHosts }}"
-                                data-hosts-last-updated="{{ $watcher.HostsLastUpdated }}"
-                                data-check-interval="{{ $watcher.CheckInterval }}"
-                                data-action-transport="{{ $watcher.ActionTransport }}"
-                                data-action-email="{{ $watcher.ActionEmail }}">
-                                Details
-                            </button>
+                            <div class="btn-group" role="group" aria-label="Basic example">
+                                <button class="btn btn-primary btn-xs" data-toggle="modal" data-target="#watcher-modal"
+                                    data-id="{{ $watcher.ID }}"
+                                    data-name="{{ $watcher.Name }}"
+                                    data-saved-query-id="{{ $watcher.SavedQueryID }}"
+                                    data-low-affected-hosts="{{ $watcher.LowAffectedHosts }}"
+                                    data-hosts-last-updated="{{ $watcher.HostsLastUpdated }}"
+                                    data-check-interval="{{ $watcher.CheckInterval }}">
+                                    Details
+                                </button>
+
+                                <button class="btn btn-primary btn-xs" data-toggle="modal" data-target="#trigger-modal"
+                                    data-watcher-id="{{ $watcher.ID }}"
+                                    data-watcher-name="{{ $watcher.Name }}">
+                                    Triggers
+                                </button>
+                            </div>
                         </td>
                     </tr>
                 {{ end }}
@@ -105,22 +107,17 @@
                     </div>
 
                     <div class="row form-group">
-                        <div class="col-sm-2">
+                        <div class="col-sm-3">
                             <label>Min Affected Hosts</label>
                             <input type="number" class="form-control" name="LowAffectedHosts" value="1">
                         </div>
 
-                        <div class="col-sm-2">
-                            <label>Low Threshold</label>
-                            <input type="number" class="form-control" name="LowThreshold" value="1">
-                        </div>
-
-                        <div class="col-sm-2">
-                            <label>High Threshold</label>
-                            <input type="number" class="form-control" name="HighThreshold" value="20">
-                        </div>
-
                         <div class="col-sm-3">
+                            <label>Check Interval</label>
+                            <input type="text" class="form-control" name="CheckInterval" value="10s">
+                        </div>
+
+                        <div class="col-sm-6">
                             <label>Hosts Last Updated</label>
                             <select class="form-control" name="HostsLastUpdated">
                                 <option value="5 minutes ago">5 minutes ago</option>
@@ -130,20 +127,59 @@
                                 <option value="60 minutes ago">60 minutes ago</option>
                             </select>
                         </div>
+                    </div>
+                </div>
 
-                        <div class="col-sm-3">
-                            <label>Check Interval</label>
-                            <input type="text" class="form-control" name="CheckInterval" value="10s">
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-danger pull-left" data-dismiss="modal">
+                        Delete
+                    </button>
+
+                    <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary">Save</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Trigger Modal -->
+<div class="modal fade" id="trigger-modal" tabindex="-1" role="dialog" aria-labelledby="triggers-details-label" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                <h4 class="modal-title" id="triggers-details-label">New/Update Trigger</h4>
+            </div>
+
+            <form method="post" action="/watchers/triggers">
+                <input type="hidden" name="_method" value="post">
+
+                <div class="modal-body">
+                    <div class="row form-group">
+                        <div class="col-sm-12">
+                            <div class="input-group">
+                                <span class="input-group-addon" style="padding-left: 0">When violations occured between</span>
+
+                                <input type="number" class="form-control" name="LowViolationsCount" value="0">
+
+                                <span class="input-group-addon">and</span>
+
+                                <input type="number" class="form-control" name="HighViolationsCount">
+
+                                <span class="input-group-addon" style="padding-right: 0">times</span>
+                            </div>
                         </div>
                     </div>
 
                     <div class="row form-group">
-                        <div class="col-sm-3">
-                            <label>Transport</label>
+                        <div class="col-sm-3 actions-selector-wrapper">
+                            <label>Actions</label>
                             <select class="form-control" name="ActionTransport">
-                                <option value="email">Email</option>
-                                <option value="sms">SMS</option>
-                                <option value="pagerduty">PagerDuty</option>
+                                <option value="nothing">Do Nothing</option>
+                                <option value="email">Send Email</option>
+                                <option value="sms">Send SMS</option>
+                                <option value="pagerduty">Send PagerDuty</option>
                             </select>
                         </div>
 
@@ -197,6 +233,21 @@
 </div>
 
 <script>
+var changeActionTransport = function() {
+    var transportVal = $('select[name="ActionTransport"] option:selected').val();
+
+    if(transportVal == "nothing") {
+        $('.actions-selector-wrapper').removeClass('col-sm-3');
+        $('.actions-selector-wrapper').addClass('col-sm-12');
+    } else {
+        $('.actions-selector-wrapper').removeClass('col-sm-12');
+        $('.actions-selector-wrapper').addClass('col-sm-3');
+    }
+
+    $('.payload').hide();
+    $('.payload-' + transportVal).show();
+};
+
 $(document).ready(function() {
     $(".row.watchers table").tablesorter();
 });
@@ -206,11 +257,7 @@ $('select[name="SavedQueryID"]').change(function() {
     $('input[name="SavedQuery"]').val(text);
 });
 
-$('select[name="ActionTransport"]').change(function() {
-    var transportVal = $('select[name="ActionTransport"] option:selected').val();
-    $('.payload').hide();
-    $('.payload-' + transportVal).show();
-});
+$('select[name="ActionTransport"]').change(changeActionTransport);
 
 $('#watcher-modal form .btn-danger').click(function() {
     $('#watcher-modal form input[name="_method"]').val('delete');
@@ -227,13 +274,9 @@ $('#watcher-modal').on('show.bs.modal', function (event) {
     var id = button.data('id');
     var name = button.data('name');
     var savedQueryID = button.data('saved-query-id');
-    var lowThreshold = button.data('low-threshold');
-    var highThreshold = button.data('high-threshold');
     var lowAffectedHosts = button.data('low-affected-hosts');
     var hostsLastUpdated = button.data('hosts-last-updated');
     var checkInterval = button.data('check-interval');
-    var actionTransport = button.data('action-transport');
-    var actionEmail = button.data('action-email');
 
     var modal = $(this);
 
@@ -241,12 +284,6 @@ $('#watcher-modal').on('show.bs.modal', function (event) {
 
     if(savedQueryID) {
         $('select[name="SavedQueryID"] option[value="' + savedQueryID + '"]').attr('selected', 'selected');
-    }
-    if(lowThreshold) {
-        modal.find('input[name="LowThreshold"]').val(lowThreshold);
-    }
-    if(highThreshold) {
-        modal.find('input[name="HighThreshold"]').val(highThreshold);
     }
     if(lowAffectedHosts) {
         modal.find('input[name="LowAffectedHosts"]').val(lowAffectedHosts);
@@ -256,12 +293,6 @@ $('#watcher-modal').on('show.bs.modal', function (event) {
     }
     if(checkInterval) {
         modal.find('input[name="CheckInterval"]').val(checkInterval);
-    }
-    if(actionTransport) {
-        $('select[name="ActionTransport"] option[value="' + actionTransport + '"]').attr('selected', 'selected');
-    }
-    if(actionEmail) {
-        modal.find('input[name="ActionEmail"]').val(actionEmail);
     }
 
     if(id) {
@@ -278,10 +309,45 @@ $('#watcher-modal').on('show.bs.modal', function (event) {
 
     var text = $('select[name="SavedQueryID"] option:selected').text();
     $('input[name="SavedQuery"]').val(text);
+});
 
-    var transportVal = $('select[name="ActionTransport"] option:selected').val();
-    $('.payload').hide();
-    $('.payload-' + transportVal).show();
+$('#trigger-modal').on('show.bs.modal', function (event) {
+    var button = $(event.relatedTarget);   // Button that triggered the modal
+    var triggerID = button.data('trigger-id');
+    var watcherID = button.data('watcher-id');
+    var watcherName = button.data('watcher-name');
+    var actionTransport = button.data('action-transport');
+    var actionEmail = button.data('action-email');
+
+    var modal = $(this);
+
+    modal.find('input[name="Name"]').val(name);
+
+    if(actionTransport) {
+        $('select[name="ActionTransport"] option[value="' + actionTransport + '"]').attr('selected', 'selected');
+    }
+    if(actionEmail) {
+        modal.find('input[name="ActionEmail"]').val(actionEmail);
+    }
+
+    if(triggerID) {
+        modal.find('form').attr('action', '/watchers/' + watcherID + '/triggers/' + triggerID);
+        modal.find('.btn-danger').show();
+        modal.find('.modal-title').text('Update Trigger');
+    } else {
+        modal.find('form').attr('action', '/watchers/' + watcherID + '/triggers');
+        modal.find('.btn-danger').hide();
+        modal.find('.modal-title').text('New Trigger');
+    }
+
+    // -----------------------------------------------
+
+    changeActionTransport();
+});
+
+$('#trigger-modal form .btn-primary').click(function() {
+    // $('#trigger-modal form input[name="_method"]').val('put');
+    $(this).closest('form').submit();
 });
 </script>
 {{end}}

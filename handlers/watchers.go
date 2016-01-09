@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"encoding/json"
 	"errors"
 	"html/template"
 	"net/http"
@@ -98,18 +97,6 @@ func readFormData(r *http.Request) (map[string]interface{}, error) {
 		name = savedQuery
 	}
 
-	lowThresholdString := r.FormValue("LowThreshold")
-	lowThreshold, err := strconv.ParseInt(lowThresholdString, 10, 64)
-	if err != nil {
-		return nil, err
-	}
-
-	highThresholdString := r.FormValue("HighThreshold")
-	highThreshold, err := strconv.ParseInt(highThresholdString, 10, 64)
-	if err != nil {
-		return nil, err
-	}
-
 	lowAffectedHostsString := r.FormValue("LowAffectedHosts")
 	lowAffectedHosts, err := strconv.ParseInt(lowAffectedHostsString, 10, 64)
 	if err != nil {
@@ -119,33 +106,32 @@ func readFormData(r *http.Request) (map[string]interface{}, error) {
 	hostsLastUpdated := r.FormValue("HostsLastUpdated")
 	checkInterval := r.FormValue("CheckInterval")
 
-	actionTransport := r.FormValue("ActionTransport")
+	// actionTransport := r.FormValue("ActionTransport")
 
-	actionEmail := r.FormValue("ActionEmail")
-	actionSMSCarrier := r.FormValue("ActionSMSCarrier")
-	actionSMSPhone := r.FormValue("ActionSMSPhone")
-	actionPagerDutyServiceKey := r.FormValue("ActionPagerDutyServiceKey")
-	actionPagerDutyDescription := r.FormValue("ActionPagerDutyDescription")
+	// actionEmail := r.FormValue("ActionEmail")
+	// actionSMSCarrier := r.FormValue("ActionSMSCarrier")
+	// actionSMSPhone := r.FormValue("ActionSMSPhone")
+	// actionPagerDutyServiceKey := r.FormValue("ActionPagerDutyServiceKey")
+	// actionPagerDutyDescription := r.FormValue("ActionPagerDutyDescription")
 
-	actions := make(map[string]interface{})
-	actions["Transport"] = actionTransport
-	actions["Email"] = actionEmail
-	actions["SMSCarrier"] = actionSMSCarrier
-	actions["SMSPhone"] = actionSMSPhone
-	actions["PagerDutyServiceKey"] = actionPagerDutyServiceKey
-	actions["PagerDutyDescription"] = actionPagerDutyDescription
+	// actions := make(map[string]interface{})
+	// actions["Transport"] = actionTransport
+	// actions["Email"] = actionEmail
+	// actions["SMSCarrier"] = actionSMSCarrier
+	// actions["SMSPhone"] = actionSMSPhone
+	// actions["PagerDutyServiceKey"] = actionPagerDutyServiceKey
+	// actions["PagerDutyDescription"] = actionPagerDutyDescription
 
-	actionsJson, err := json.Marshal(actions)
-	if err != nil {
-		return nil, err
-	}
+	// actionsJson, err := json.Marshal(actions)
+	// if err != nil {
+	// 	return nil, err
+	// }
 
 	db := context.Get(r, "db").(*sqlx.DB)
 
 	return dal.NewWatcher(db).CreateOrUpdateParameters(
 		currentCluster.ID, savedQueryID, savedQuery, name,
-		lowThreshold, highThreshold, lowAffectedHosts,
-		hostsLastUpdated, checkInterval, actionsJson), nil
+		lowAffectedHosts, hostsLastUpdated, checkInterval), nil
 }
 
 func PostWatchers(w http.ResponseWriter, r *http.Request) {

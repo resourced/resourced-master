@@ -2,11 +2,9 @@ package dal
 
 import (
 	"database/sql"
-	"encoding/json"
 	"fmt"
 
 	"github.com/jmoiron/sqlx"
-	sqlx_types "github.com/jmoiron/sqlx/types"
 )
 
 func NewWatcher(db *sqlx.DB) *Watcher {
@@ -19,49 +17,14 @@ func NewWatcher(db *sqlx.DB) *Watcher {
 }
 
 type WatcherRow struct {
-	ID               int64               `db:"id" json:"-"`
-	ClusterID        int64               `db:"cluster_id"`
-	SavedQueryID     int64               `db:"saved_query_id"`
-	SavedQuery       string              `db:"saved_query"`
-	Name             string              `db:"name"`
-	LowThreshold     int64               `db:"low_threshold"`
-	HighThreshold    int64               `db:"high_threshold"`
-	LowAffectedHosts int64               `db:"low_affected_hosts"`
-	HostsLastUpdated string              `db:"hosts_last_updated"`
-	CheckInterval    string              `db:"check_interval"`
-	Actions          sqlx_types.JsonText `db:"actions"`
-}
-
-func (wr *WatcherRow) ActionTransport() string {
-	actions := make(map[string]interface{})
-
-	err := json.Unmarshal(wr.Actions, &actions)
-	if err != nil {
-		return ""
-	}
-
-	transportInterface := actions["Transport"]
-	if transportInterface == nil {
-		return ""
-	}
-
-	return transportInterface.(string)
-}
-
-func (wr *WatcherRow) ActionEmail() string {
-	actions := make(map[string]interface{})
-
-	err := json.Unmarshal(wr.Actions, &actions)
-	if err != nil {
-		return ""
-	}
-
-	emailInterface := actions["Email"]
-	if emailInterface == nil {
-		return ""
-	}
-
-	return emailInterface.(string)
+	ID               int64  `db:"id" json:"-"`
+	ClusterID        int64  `db:"cluster_id"`
+	SavedQueryID     int64  `db:"saved_query_id"`
+	SavedQuery       string `db:"saved_query"`
+	Name             string `db:"name"`
+	LowAffectedHosts int64  `db:"low_affected_hosts"`
+	HostsLastUpdated string `db:"hosts_last_updated"`
+	CheckInterval    string `db:"check_interval"`
 }
 
 type Watcher struct {
@@ -135,18 +98,15 @@ func (w *Watcher) GetByID(tx *sqlx.Tx, id int64) (*WatcherRow, error) {
 	return watcherRow, err
 }
 
-func (w *Watcher) CreateOrUpdateParameters(clusterID, savedQueryID int64, savedQuery, name string, lowThreshold, highThreshold, lowAffectedHosts int64, hostsLastUpdated, checkInterval string, actions []byte) map[string]interface{} {
+func (w *Watcher) CreateOrUpdateParameters(clusterID, savedQueryID int64, savedQuery, name string, lowAffectedHosts int64, hostsLastUpdated, checkInterval string) map[string]interface{} {
 	data := make(map[string]interface{})
 	data["cluster_id"] = clusterID
 	data["saved_query_id"] = savedQueryID
 	data["saved_query"] = savedQuery
 	data["name"] = name
-	data["low_threshold"] = lowThreshold
-	data["high_threshold"] = highThreshold
 	data["low_affected_hosts"] = lowAffectedHosts
 	data["hosts_last_updated"] = hostsLastUpdated
 	data["check_interval"] = checkInterval
-	data["actions"] = actions
 
 	return data
 }

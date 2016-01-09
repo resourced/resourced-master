@@ -89,6 +89,8 @@ func (app *Application) mux() *mux.Router {
 	router.Handle("/watchers", alice.New(MustLogin, SetClusters).ThenFunc(handlers.PostWatchers)).Methods("POST")
 	router.Handle("/watchers/{id:[0-9]+}", alice.New(MustLogin, SetClusters).ThenFunc(handlers.PostPutDeleteWatcherID)).Methods("POST", "PUT", "DELETE")
 
+	router.Handle("/watchers/{watcherid:[0-9]+}/triggers", alice.New(MustLogin, SetClusters).ThenFunc(handlers.PostWatchersTriggers)).Methods("POST")
+
 	router.Handle("/users/{id:[0-9]+}", alice.New(MustLogin).ThenFunc(handlers.PostPutDeleteUsersID)).Methods("POST", "PUT", "DELETE")
 
 	router.Handle("/clusters", alice.New(MustLogin, SetClusters).ThenFunc(handlers.GetClusters)).Methods("GET")
@@ -166,7 +168,7 @@ func (app *Application) WatchOnce(clusterID int64, watcherRow *dal.WatcherRow) e
 
 	numAffectedHosts := int64(len(affectedHosts))
 
-	if numAffectedHosts >= watcherRow.LowAffectedHosts {
+	if numAffectedHosts == 0 || numAffectedHosts >= watcherRow.LowAffectedHosts {
 		tsWatcherDataHosts := make([]string, numAffectedHosts)
 		for i, affectedHost := range affectedHosts {
 			tsWatcherDataHosts[i] = affectedHost.Name
