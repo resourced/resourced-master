@@ -64,6 +64,9 @@ func main() {
 		logrus.Fatal(err)
 	}
 
+	// Run watchers
+	app.WatchAll()
+
 	srv := &graceful.Server{
 		Timeout: requestTimeout,
 		Server:  &http.Server{Addr: app.GeneralConfig.Addr, Handler: middle},

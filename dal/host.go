@@ -112,13 +112,13 @@ func (h *Host) AllByClusterID(tx *sqlx.Tx, clusterID int64) ([]*HostRow, error) 
 	return hosts, err
 }
 
-// CountByClusterIDAndUpdatedInterval returns all user rows.
-func (h *Host) CountByClusterIDAndUpdatedInterval(tx *sqlx.Tx, clusterID int64, updatedInterval string) (int64, error) {
-	var count int64
-	query := fmt.Sprintf("SELECT count(*) FROM %v WHERE cluster_id=$1 AND updated >= (NOW() - INTERVAL '%v')", h.table, updatedInterval)
-	err := h.db.Get(&count, query, clusterID)
+// AllByClusterIDAndUpdatedInterval returns all user rows.
+func (h *Host) AllByClusterIDAndUpdatedInterval(tx *sqlx.Tx, clusterID int64, updatedInterval string) ([]*HostRow, error) {
+	hosts := []*HostRow{}
+	query := fmt.Sprintf("SELECT * FROM %v WHERE cluster_id=$1 AND updated >= (NOW() - INTERVAL '%v')", h.table, updatedInterval)
+	err := h.db.Select(&hosts, query, clusterID)
 
-	return count, err
+	return hosts, err
 }
 
 // AllByClusterIDAndQuery returns all user rows by resourced query.
@@ -135,18 +135,18 @@ func (h *Host) AllByClusterIDAndQuery(tx *sqlx.Tx, clusterID int64, resourcedQue
 	return hosts, err
 }
 
-// CountByClusterIDQueryAndUpdatedInterval returns all user rows by resourced query.
-func (h *Host) CountByClusterIDQueryAndUpdatedInterval(tx *sqlx.Tx, clusterID int64, resourcedQuery, updatedInterval string) (int64, error) {
+// AllByClusterIDQueryAndUpdatedInterval returns all user rows by resourced query.
+func (h *Host) AllByClusterIDQueryAndUpdatedInterval(tx *sqlx.Tx, clusterID int64, resourcedQuery, updatedInterval string) ([]*HostRow, error) {
 	pgQuery := querybuilder.Parse(resourcedQuery)
 	if pgQuery == "" {
-		return h.CountByClusterIDAndUpdatedInterval(tx, clusterID, updatedInterval)
+		return h.AllByClusterIDAndUpdatedInterval(tx, clusterID, updatedInterval)
 	}
 
-	var count int64
-	query := fmt.Sprintf("SELECT count(*) FROM %v WHERE cluster_id=$1 AND updated >= (NOW() - INTERVAL '%v') AND %v", h.table, updatedInterval, pgQuery)
-	err := h.db.Get(&count, query, clusterID)
+	hosts := []*HostRow{}
+	query := fmt.Sprintf("SELECT * FROM %v WHERE cluster_id=$1 AND updated >= (NOW() - INTERVAL '%v') AND %v", h.table, updatedInterval, pgQuery)
+	err := h.db.Select(&hosts, query, clusterID)
 
-	return count, err
+	return hosts, err
 }
 
 // GetByID returns record by id.

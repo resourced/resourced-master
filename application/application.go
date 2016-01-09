@@ -1,6 +1,7 @@
 package application
 
 import (
+	"encoding/json"
 	"net/http"
 	"os"
 	"strings"
@@ -124,78 +125,63 @@ func (app *Application) MigrateUp() (err []error, ok bool) {
 }
 
 func (app *Application) WatchAll() {
-	// hostname, err := os.Hostname()
-	// if err != nil {
-	// 	return
-	// }
+	watcherRowsChan := make(chan []*dal.WatcherRow)
 
-	clusterRows, err := dal.NewCluster(app.DB).AllClusters(nil)
-	if err != nil {
-		return
-	}
+	// Fetch daemons and watchers data every 5 minutes
+	go func() {
+		for {
+			daemonHostnames, _ := dal.NewDaemon(app.DB).AllHostnames(nil)
+			groupedWatcherRows, _ := dal.NewWatcher(app.DB).AllSplitToDaemons(nil, daemonHostnames)
+			watcherRowsChan <- groupedWatcherRows[app.Hostname]
 
-	for _, clusterRow := range clusterRows {
-		// TODO(didip): We don't wan't to fetch all watchers. Use modulo!
-		watcherRows, err := dal.NewWatcher(app.DB).AllByClusterID(nil, clusterRow.ID)
-		if err != nil {
-			return
+			libtime.SleepString("5s")
 		}
+	}()
 
-		watcherResultRows, err := dal.NewWatcherResult(app.DB).AllByClusterID(nil, clusterRow.ID)
-		if err != nil {
-			return
-		}
+	go func() {
+		for {
+			select {
+			case watcherRows := <-watcherRowsChan:
+				for _, watcherRow := range watcherRows {
+					go func() {
+						app.WatchOnce(watcherRow.ClusterID, watcherRow)
 
-		for _, watcherRow := range watcherRows {
-			go func() {
-
-				var watcherResultRow *dal.WatcherResultRow
-
-				for _, wr := range watcherResultRows {
-					if wr.ClusterID == clusterRow.ID {
-						watcherResultRow = wr
-						break
-					}
+						libtime.SleepString(watcherRow.CheckInterval)
+					}()
 				}
-
-				if watcherResultRow != nil {
-					app.WatchOnce(clusterRow, watcherRow, watcherResultRow)
-				}
-
-				libtime.SleepString(watcherRow.CheckInterval)
-			}()
+			}
 		}
-	}
+	}()
 }
 
-func (app *Application) WatchOnce(clusterRow *dal.ClusterRow, watcherRow *dal.WatcherRow, watcherResultRow *dal.WatcherResultRow) error {
+func (app *Application) WatchOnce(clusterID int64, watcherRow *dal.WatcherRow) error {
 	var err error
 
 	lastUpdated := strings.Replace(watcherRow.HostsLastUpdated, " ago", "", 1)
 
-	numAffectedHosts, err := dal.NewHost(app.DB).CountByClusterIDQueryAndUpdatedInterval(nil, clusterRow.ID, watcherRow.SavedQuery, lastUpdated)
+	affectedHosts, err := dal.NewHost(app.DB).AllByClusterIDQueryAndUpdatedInterval(nil, clusterID, watcherRow.SavedQuery, lastUpdated)
 	if err != nil {
 		return err
 	}
 
-	watcherResult := dal.NewWatcherResult(app.DB)
+	numAffectedHosts := int64(len(affectedHosts))
 
-	if numAffectedHosts == 0 || numAffectedHosts < watcherRow.LowThreshold {
-		watcherResultRow, err = watcherResult.ResetCountByClusterIDAndWatcherID(nil, clusterRow.ID, watcherRow.ID)
+	if numAffectedHosts >= watcherRow.LowAffectedHosts {
+		tsWatcherDataHosts := make([]string, numAffectedHosts)
+		for i, affectedHost := range affectedHosts {
+			tsWatcherDataHosts[i] = affectedHost.Name
+		}
+
+		tsWatcherData := make(map[string]interface{})
+		tsWatcherData["hosts"] = tsWatcherDataHosts
+
+		jsonData, err := json.Marshal(tsWatcherData)
 		if err != nil {
 			return err
 		}
-		return nil
+
+		err = dal.NewTSWatcher(app.DB).Create(nil, clusterID, watcherRow.ID, numAffectedHosts, jsonData)
 	}
 
-	if watcherRow.LowThreshold <= numAffectedHosts && numAffectedHosts <= watcherRow.HighThreshold {
-		watcherResultRow, err = watcherResult.IncrementCountByClusterIDAndWatcherID(nil, clusterRow.ID, watcherRow.ID, 1)
-		if err != nil {
-			return err
-		}
-
-		// TODO(didip): perform action
-	}
-
-	return nil
+	return err
 }

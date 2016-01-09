@@ -65,12 +65,12 @@ func TestHostCRUD(t *testing.T) {
 		t.Fatalf("There should be at least one host. Hosts length: %v", len(hostRows))
 	}
 
-	count, err := newHostForTest(t).CountByClusterIDAndUpdatedInterval(nil, clusterRow.ID, "5 minutes")
+	hostRows, err = newHostForTest(t).AllByClusterIDAndUpdatedInterval(nil, clusterRow.ID, "5 minutes")
 	if err != nil {
-		t.Fatalf("Counting all hosts should not fail. Error: %v", err)
+		t.Fatalf("Getting all hosts should not fail. Error: %v", err)
 	}
-	if count <= 0 {
-		t.Fatalf("Counting all hosts should not fail. Count: %v", count)
+	if len(hostRows) <= 0 {
+		t.Fatalf("Counting all hosts should not fail. Count: %v", hostRows)
 	}
 
 	// SELECT * FROM hosts by query
@@ -79,7 +79,7 @@ func TestHostCRUD(t *testing.T) {
 		t.Fatalf("Selecting all hosts by query should not fail. Error: %v", err)
 	}
 
-	_, err = newHostForTest(t).CountByClusterIDQueryAndUpdatedInterval(nil, clusterRow.ID, `/stuff.Score = 100`, "5 minutes")
+	_, err = newHostForTest(t).AllByClusterIDQueryAndUpdatedInterval(nil, clusterRow.ID, `/stuff.Score = 100`, "5 minutes")
 	if err != nil {
 		t.Fatalf("Counting all hosts by query should not fail. Error: %v", err)
 	}

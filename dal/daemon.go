@@ -79,11 +79,25 @@ func (d *Daemon) CreateOrUpdate(tx *sqlx.Tx, hostname string) (*DaemonRow, error
 	return daemonRow, nil
 }
 
-// AllDaemons returns all clusters rows.
-func (d *Daemon) AllDaemons(tx *sqlx.Tx) ([]*DaemonRow, error) {
+// All returns all rows.
+func (d *Daemon) All(tx *sqlx.Tx) ([]*DaemonRow, error) {
 	rows := []*DaemonRow{}
 	query := fmt.Sprintf("SELECT * FROM %v", d.table)
 	err := d.db.Select(&rows, query)
 
 	return rows, err
+}
+
+// AllHostnames returns all rows.
+func (d *Daemon) AllHostnames(tx *sqlx.Tx) ([]string, error) {
+	daemonRows, err := d.All(nil)
+	if err != nil {
+		return nil, err
+	}
+
+	daemonHostnames := make([]string, len(daemonRows))
+	for i, daemonRow := range daemonRows {
+		daemonHostnames[i] = daemonRow.Hostname
+	}
+	return daemonHostnames, nil
 }

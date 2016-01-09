@@ -77,7 +77,7 @@ func (w *Watcher) All(tx *sqlx.Tx) ([]*WatcherRow, error) {
 	return rows, err
 }
 
-// AllGroupByDaemons returns all watchers rows divided into daemons equally.
+// AllSplitToDaemons returns all watchers rows divided into daemons equally.
 func (w *Watcher) AllSplitToDaemons(tx *sqlx.Tx, daemons []string) (map[string][]*WatcherRow, error) {
 	watcherRows, err := w.All(tx)
 	if err != nil {
