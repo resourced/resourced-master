@@ -25,50 +25,58 @@
         </div>
     </div>
 
-    {{ if gt (len .Watchers) 0 }}
-    <div class="row watchers">
-        <div class="col-lg-12">
-            <table class="table table-condensed table-striped">
-                <thead>
-                    <tr>
-                        <th>Name</th>
-                        <th>Saved Queries</th>
-                        <th>Min Affected Hosts</th>
-                        <th>Check Interval</th>
-                        <th></th>
-                    </tr>
-                </thead>
+    {{ range $watcher := .Watchers }}
+    <div class="row hosts">
+        <div class="col-xs-12 col-lg-12">
+            <div>
+                <div class="pull-right">
+                    <div class="btn-group" role="group">
+                        <button class="btn btn-default btn-sm" data-toggle="modal" data-target="#watcher-modal"
+                            data-id="{{ $watcher.ID }}"
+                            data-name="{{ $watcher.Name }}"
+                            data-saved-query-id="{{ $watcher.SavedQueryID }}"
+                            data-low-affected-hosts="{{ $watcher.LowAffectedHosts }}"
+                            data-hosts-last-updated="{{ $watcher.HostsLastUpdated }}"
+                            data-check-interval="{{ $watcher.CheckInterval }}">
+                            Details
+                        </button>
 
-                <tbody>
-                {{ range $i, $watcher := .Watchers }}
-                    <tr>
-                        <td>{{ $watcher.Name }}</td>
-                        <td>{{ $watcher.SavedQuery }}</td>
-                        <td>{{ $watcher.LowAffectedHosts }}</td>
-                        <td>{{ $watcher.CheckInterval }}</td>
-                        <td>
-                            <div class="btn-group" role="group" aria-label="Basic example">
-                                <button class="btn btn-primary btn-xs" data-toggle="modal" data-target="#watcher-modal"
-                                    data-id="{{ $watcher.ID }}"
-                                    data-name="{{ $watcher.Name }}"
-                                    data-saved-query-id="{{ $watcher.SavedQueryID }}"
-                                    data-low-affected-hosts="{{ $watcher.LowAffectedHosts }}"
-                                    data-hosts-last-updated="{{ $watcher.HostsLastUpdated }}"
-                                    data-check-interval="{{ $watcher.CheckInterval }}">
-                                    Details
-                                </button>
+                        <button class="btn btn-default btn-sm" data-toggle="modal" data-target="#trigger-modal"
+                            data-watcher-id="{{ $watcher.ID }}"
+                            data-watcher-name="{{ $watcher.Name }}">
+                            New Trigger
+                        </button>
+                    </div>
+                </div>
 
-                                <button class="btn btn-primary btn-xs" data-toggle="modal" data-target="#trigger-modal"
-                                    data-watcher-id="{{ $watcher.ID }}"
-                                    data-watcher-name="{{ $watcher.Name }}">
-                                    Triggers
-                                </button>
-                            </div>
-                        </td>
-                    </tr>
-                {{ end }}
-                </tbody>
-            </table>
+                <h3>{{ $watcher.Name }}</h3>
+            </div>
+
+            <span class="label label-primary">{{ $watcher.SavedQuery }}</span>
+            <span class="label label-primary">Min Affected Hosts: {{ $watcher.LowAffectedHosts }}</span>
+            <span class="label label-primary">Check Interval: {{ $watcher.CheckInterval }}</span>
+
+            <div class="details">
+                <div class="detail-header">
+                    <div class="pull-right">
+                        <input type="checkbox" class="toggler toggler-body pull-right" data-size="mini" checked>
+                    </div>
+
+                    <h4>Triggers</h4>
+                </div>
+
+                <div class="detail-body table-responsive table-condensed">
+                    <table class="table table-striped">
+                        <thead></thead>
+                        <tbody>
+                            <tr>
+                                <td></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
         </div>
     </div>
     {{ end }}
@@ -249,7 +257,7 @@ var changeActionTransport = function() {
 };
 
 $(document).ready(function() {
-    $(".row.watchers table").tablesorter();
+    $('.toggler').bootstrapSwitch();
 });
 
 $('select[name="SavedQueryID"]').change(function() {
