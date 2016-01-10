@@ -48,6 +48,21 @@ func GetWatchers(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	triggers, err := dal.NewWatcherTrigger(db).AllByClusterID(nil, currentCluster.ID)
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
+
+	triggersByWatcher := make(map[int64][]*dal.WatcherTriggerRow)
+	for _, trigger := range triggers {
+		if _, ok := triggersByWatcher[trigger.WatcherID]; !ok {
+			triggersByWatcher[trigger.WatcherID] = make([]*dal.WatcherTriggerRow, 0)
+		}
+
+		triggersByWatcher[trigger.WatcherID] = append(triggersByWatcher[trigger.WatcherID], trigger)
+	}
+
 	data := struct {
 		Addr               string
 		CurrentUser        *dal.UserRow
@@ -55,6 +70,7 @@ func GetWatchers(w http.ResponseWriter, r *http.Request) {
 		CurrentClusterJson string
 		Watchers           []*dal.WatcherRow
 		SavedQueries       []*dal.SavedQueryRow
+		TriggersByWatcher  map[int64][]*dal.WatcherTriggerRow
 	}{
 		context.Get(r, "addr").(string),
 		currentUserRow,
@@ -62,6 +78,7 @@ func GetWatchers(w http.ResponseWriter, r *http.Request) {
 		string(context.Get(r, "currentClusterJson").([]byte)),
 		watchers,
 		savedQueries,
+		triggersByWatcher,
 	}
 
 	tmpl, err := template.ParseFiles("templates/dashboard.html.tmpl", "templates/watchers/list.html.tmpl")

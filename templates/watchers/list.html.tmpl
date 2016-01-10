@@ -26,7 +26,7 @@
     </div>
 
     {{ range $watcher := .Watchers }}
-    <div class="row hosts">
+    <div class="row watchers">
         <div class="col-xs-12 col-lg-12">
             <div>
                 <div class="pull-right">
@@ -56,23 +56,40 @@
             <span class="label label-primary">Min Affected Hosts: {{ $watcher.LowAffectedHosts }}</span>
             <span class="label label-primary">Check Interval: {{ $watcher.CheckInterval }}</span>
 
-            <div class="details">
-                <div class="detail-header">
+            <div class="triggers">
+                <div class="trigger-header" data-watcher-id="{{ $watcher.ID }}">
                     <div class="pull-right">
-                        <input type="checkbox" class="toggler toggler-body pull-right" data-size="mini" checked>
+                        <input type="checkbox" class="toggler toggler-body pull-right" data-size="mini">
                     </div>
 
                     <h4>Triggers</h4>
                 </div>
 
-                <div class="detail-body table-responsive table-condensed">
+                <div class="trigger-body table-responsive table-condensed" data-watcher-id="{{ $watcher.ID }}" style="display: none">
                     <table class="table table-striped">
-                        <thead></thead>
-                        <tbody>
+                        <thead>
                             <tr>
-                                <td></td>
+                                <th>Min Violations Reached</th>
+                                <th>Max Violations Reached</th>
+                                <th>Actions</th>
+                                <th></th>
                             </tr>
-                        </tbody>
+                        </thead>
+                        <tbody>
+                        {{ range $trigger := index $.TriggersByWatcher $watcher.ID }}
+                            <tr>
+                                <td>{{ $trigger.LowViolationsCount }}</td>
+                                <td>{{ $trigger.HighViolationsCount }}</td>
+                                <td>{{ $trigger.ActionTransport }} {{ $trigger.ActionEmail }}</td>
+                                <td>
+                                    <form action="/watchers/{{ $watcher.ID }}/triggers/{{ $trigger.ID }}" method="post" onsubmit="return confirm('Are you sure you want to delete?');">
+                                        <input type="hidden" name="_method" value="delete">
+                                        <button type="submit" class="btn btn-danger btn-block btn-xs">Delete</button>
+                                    </form>
+                                </td>
+                            </tr>
+                        {{ end }}
+                    </tbody>
                     </table>
                 </div>
             </div>
@@ -157,7 +174,7 @@
         <div class="modal-content">
             <div class="modal-header">
                 <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-                <h4 class="modal-title" id="triggers-details-label">New/Update Trigger</h4>
+                <h4 class="modal-title" id="triggers-details-label">New Trigger</h4>
             </div>
 
             <form method="post" action="/watchers/triggers">
@@ -258,6 +275,18 @@ var changeActionTransport = function() {
 
 $(document).ready(function() {
     $('.toggler').bootstrapSwitch();
+
+    // Load the state of ".row.watchers .toggler-body" from cookie
+    var state = $.cookie('.row.watchers .toggler-body');
+    if (state && state == 'true') {
+        $('.row.watchers .toggler-body').each(function() {
+            var $triggerHeader = $(this).closest('.trigger-header');
+            var watcherID = $triggerHeader.data('watcher-id');
+            $triggerHeader.siblings('.trigger-body[data-watcher-id="' + watcherID + '"]').show();
+
+            $(this).bootstrapSwitch('state', true, true);
+        });
+    }
 });
 
 $('select[name="SavedQueryID"]').change(function() {
@@ -321,7 +350,6 @@ $('#watcher-modal').on('show.bs.modal', function (event) {
 
 $('#trigger-modal').on('show.bs.modal', function (event) {
     var button = $(event.relatedTarget);   // Button that triggered the modal
-    var triggerID = button.data('trigger-id');
     var watcherID = button.data('watcher-id');
     var watcherName = button.data('watcher-name');
     var actionTransport = button.data('action-transport');
@@ -338,15 +366,9 @@ $('#trigger-modal').on('show.bs.modal', function (event) {
         modal.find('input[name="ActionEmail"]').val(actionEmail);
     }
 
-    if(triggerID) {
-        modal.find('form').attr('action', '/watchers/' + watcherID + '/triggers/' + triggerID);
-        modal.find('.btn-danger').show();
-        modal.find('.modal-title').text('Update Trigger');
-    } else {
-        modal.find('form').attr('action', '/watchers/' + watcherID + '/triggers');
-        modal.find('.btn-danger').hide();
-        modal.find('.modal-title').text('New Trigger');
-    }
+    modal.find('form').attr('action', '/watchers/' + watcherID + '/triggers');
+    modal.find('.btn-danger').hide();
+    modal.find('.modal-title').text('New Trigger');
 
     // -----------------------------------------------
 
@@ -356,6 +378,17 @@ $('#trigger-modal').on('show.bs.modal', function (event) {
 $('#trigger-modal form .btn-primary').click(function() {
     // $('#trigger-modal form input[name="_method"]').val('put');
     $(this).closest('form').submit();
+});
+
+$('.row.watchers .toggler-body').on('switchChange.bootstrapSwitch', function(event, state) {
+    var $triggerHeader = $(this).closest('.trigger-header');
+    var watcherID = $triggerHeader.data('watcher-id');
+    $triggerHeader.siblings('.trigger-body[data-watcher-id="' + watcherID + '"]').toggle();
+
+    $.cookie('.row.watchers .toggler-body', state, {
+        path: '/',
+        expires: 365
+    });
 });
 </script>
 {{end}}

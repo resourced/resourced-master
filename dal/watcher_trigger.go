@@ -63,11 +63,20 @@ type WatcherTrigger struct {
 	Base
 }
 
-// All returns all watchers rows.
+// All returns all rows.
 func (w *WatcherTrigger) All(tx *sqlx.Tx) ([]*WatcherTriggerRow, error) {
 	rows := []*WatcherTriggerRow{}
 	query := fmt.Sprintf("SELECT * FROM %v", w.table)
 	err := w.db.Select(&rows, query)
+
+	return rows, err
+}
+
+// AllByClusterID returns all rows by cluster_id.
+func (w *WatcherTrigger) AllByClusterID(tx *sqlx.Tx, clusterID int64) ([]*WatcherTriggerRow, error) {
+	rows := []*WatcherTriggerRow{}
+	query := fmt.Sprintf("SELECT * FROM %v WHERE cluster_id=$1 ORDER BY cluster_id,watcher_id,low_violations_count ASC", w.table)
+	err := w.db.Select(&rows, query, clusterID)
 
 	return rows, err
 }
@@ -90,6 +99,7 @@ func (w *WatcherTrigger) GetByID(tx *sqlx.Tx, id int64) (*WatcherTriggerRow, err
 	return watcherRow, err
 }
 
+// CreateOrUpdateParameters builds params for insert or update.
 func (w *WatcherTrigger) CreateOrUpdateParameters(clusterID, watcherID, lowViolationsCount, highViolationsCount int64, actionsJson []byte) map[string]interface{} {
 	data := make(map[string]interface{})
 	data["cluster_id"] = clusterID
@@ -101,6 +111,7 @@ func (w *WatcherTrigger) CreateOrUpdateParameters(clusterID, watcherID, lowViola
 	return data
 }
 
+// Create inserts one row
 func (w *WatcherTrigger) Create(tx *sqlx.Tx, data map[string]interface{}) (*WatcherTriggerRow, error) {
 	sqlResult, err := w.InsertIntoTable(tx, data)
 	if err != nil {

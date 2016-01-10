@@ -109,8 +109,7 @@ func PostPutDeleteWatcherTriggerID(w http.ResponseWriter, r *http.Request) {
 func PutWatcherTriggerID(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 
-	idString := vars["id"]
-	id, err := strconv.ParseInt(idString, 10, 64)
+	id, err := strconv.ParseInt(vars["id"], 10, 64)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
@@ -124,7 +123,7 @@ func PutWatcherTriggerID(w http.ResponseWriter, r *http.Request) {
 
 	db := context.Get(r, "db").(*sqlx.DB)
 
-	_, err = dal.NewWatcher(db).UpdateByID(nil, updateParams, id)
+	_, err = dal.NewWatcherTrigger(db).UpdateByID(nil, updateParams, id)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
@@ -136,8 +135,7 @@ func PutWatcherTriggerID(w http.ResponseWriter, r *http.Request) {
 func DeleteWatcherTriggerID(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 
-	idString := vars["id"]
-	id, err := strconv.ParseInt(idString, 10, 64)
+	id, err := strconv.ParseInt(vars["id"], 10, 64)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
@@ -145,7 +143,7 @@ func DeleteWatcherTriggerID(w http.ResponseWriter, r *http.Request) {
 
 	db := context.Get(r, "db").(*sqlx.DB)
 
-	_, err = dal.NewWatcher(db).DeleteByID(nil, id)
+	_, err = dal.NewWatcherTrigger(db).DeleteByID(nil, id)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return

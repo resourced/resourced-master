@@ -71,7 +71,7 @@ func (w *Watcher) AllSplitToDaemons(tx *sqlx.Tx, daemons []string) (map[string][
 	return result, err
 }
 
-// AllByClusterID returns all watchers rows by cluster_id.
+// AllByClusterID returns all rows by cluster_id.
 func (w *Watcher) AllByClusterID(tx *sqlx.Tx, clusterID int64) ([]*WatcherRow, error) {
 	rows := []*WatcherRow{}
 	query := fmt.Sprintf("SELECT * FROM %v WHERE cluster_id=$1 ORDER BY name ASC", w.table)
@@ -98,6 +98,7 @@ func (w *Watcher) GetByID(tx *sqlx.Tx, id int64) (*WatcherRow, error) {
 	return watcherRow, err
 }
 
+// CreateOrUpdateParameters builds params for insert or update.
 func (w *Watcher) CreateOrUpdateParameters(clusterID, savedQueryID int64, savedQuery, name string, lowAffectedHosts int64, hostsLastUpdated, checkInterval string) map[string]interface{} {
 	data := make(map[string]interface{})
 	data["cluster_id"] = clusterID
@@ -111,6 +112,7 @@ func (w *Watcher) CreateOrUpdateParameters(clusterID, savedQueryID int64, savedQ
 	return data
 }
 
+// Create inserts one row
 func (w *Watcher) Create(tx *sqlx.Tx, data map[string]interface{}) (*WatcherRow, error) {
 	sqlResult, err := w.InsertIntoTable(tx, data)
 	if err != nil {
