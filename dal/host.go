@@ -103,7 +103,7 @@ func (h *Host) hostRowFromSqlResult(tx *sqlx.Tx, sqlResult sql.Result) (*HostRow
 	return h.GetByID(tx, hostId)
 }
 
-// AllByClusterID returns all user rows.
+// AllByClusterID returns all rows.
 func (h *Host) AllByClusterID(tx *sqlx.Tx, clusterID int64) ([]*HostRow, error) {
 	hosts := []*HostRow{}
 	query := fmt.Sprintf("SELECT * FROM %v WHERE cluster_id=$1 ORDER BY updated DESC", h.table)
@@ -112,7 +112,7 @@ func (h *Host) AllByClusterID(tx *sqlx.Tx, clusterID int64) ([]*HostRow, error) 
 	return hosts, err
 }
 
-// AllByClusterIDAndUpdatedInterval returns all user rows.
+// AllByClusterIDAndUpdatedInterval returns all rows.
 func (h *Host) AllByClusterIDAndUpdatedInterval(tx *sqlx.Tx, clusterID int64, updatedInterval string) ([]*HostRow, error) {
 	hosts := []*HostRow{}
 	query := fmt.Sprintf("SELECT * FROM %v WHERE cluster_id=$1 AND updated >= (NOW() - INTERVAL '%v')", h.table, updatedInterval)
@@ -121,7 +121,7 @@ func (h *Host) AllByClusterIDAndUpdatedInterval(tx *sqlx.Tx, clusterID int64, up
 	return hosts, err
 }
 
-// AllByClusterIDAndQuery returns all user rows by resourced query.
+// AllByClusterIDAndQuery returns all rows by resourced query.
 func (h *Host) AllByClusterIDAndQuery(tx *sqlx.Tx, clusterID int64, resourcedQuery string) ([]*HostRow, error) {
 	pgQuery := querybuilder.Parse(resourcedQuery)
 	if pgQuery == "" {
@@ -135,7 +135,7 @@ func (h *Host) AllByClusterIDAndQuery(tx *sqlx.Tx, clusterID int64, resourcedQue
 	return hosts, err
 }
 
-// AllByClusterIDQueryAndUpdatedInterval returns all user rows by resourced query.
+// AllByClusterIDQueryAndUpdatedInterval returns all rows by resourced query.
 func (h *Host) AllByClusterIDQueryAndUpdatedInterval(tx *sqlx.Tx, clusterID int64, resourcedQuery, updatedInterval string) ([]*HostRow, error) {
 	pgQuery := querybuilder.Parse(resourcedQuery)
 	if pgQuery == "" {

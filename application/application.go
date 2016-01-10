@@ -1,11 +1,16 @@
 package application
 
 import (
+	"bytes"
 	"encoding/json"
+	"fmt"
 	"net/http"
+	"net/smtp"
 	"os"
 	"strings"
+	"text/template"
 
+	"github.com/Sirupsen/logrus"
 	"github.com/carbocation/interpose"
 	"github.com/gorilla/mux"
 	"github.com/gorilla/sessions"
@@ -137,7 +142,7 @@ func (app *Application) WatchAll() {
 			groupedWatcherRows, _ := dal.NewWatcher(app.DB).AllSplitToDaemons(nil, daemonHostnames)
 			watcherRowsChan <- groupedWatcherRows[app.Hostname]
 
-			libtime.SleepString("5s")
+			libtime.SleepString(app.GeneralConfig.Watchers.ListFetchInterval)
 		}
 	}()
 
@@ -148,6 +153,7 @@ func (app *Application) WatchAll() {
 				for _, watcherRow := range watcherRows {
 					go func() {
 						app.WatchOnce(watcherRow.ClusterID, watcherRow)
+						app.RunTrigger(watcherRow.ClusterID, watcherRow)
 
 						libtime.SleepString(watcherRow.CheckInterval)
 					}()
@@ -187,4 +193,96 @@ func (app *Application) WatchOnce(clusterID int64, watcherRow *dal.WatcherRow) e
 	}
 
 	return err
+}
+
+func (app *Application) RunTrigger(clusterID int64, watcherRow *dal.WatcherRow) error {
+	println("inside RunTrigger")
+
+	lastUpdated := strings.Replace(watcherRow.HostsLastUpdated, " ago", "", 1)
+
+	tsWatcherRows, err := dal.NewTSWatcher(app.DB).AllByClusterIDAndCreatedInterval(nil, clusterID, watcherRow.ID, lastUpdated)
+	if err != nil {
+		return err
+	}
+
+	println(fmt.Sprintf("Total tsWatchers: %v", len(tsWatcherRows)))
+
+	triggerRows, err := dal.NewWatcherTrigger(app.DB).AllByClusterIDAndWatcherID(nil, clusterID, watcherRow.ID)
+	if err != nil {
+		return err
+	}
+
+	counter := 0
+	for _, tsWatcher := range tsWatcherRows {
+		if tsWatcher.AffectedHosts > 0 {
+			counter = counter + 1
+		} else {
+			counter = 0
+		}
+
+		for _, triggerRow := range triggerRows {
+			println(counter)
+			println(triggerRow.LowViolationsCount)
+			println(triggerRow.HighViolationsCount)
+
+			if int64(counter) >= triggerRow.LowViolationsCount && int64(counter) <= triggerRow.HighViolationsCount {
+				println("About to send email")
+
+				if triggerRow.ActionTransport() == "nothing" {
+					// Do nothing
+				} else if triggerRow.ActionTransport() == "email" {
+					if triggerRow.ActionEmail() == "" {
+						continue
+					}
+
+					auth := smtp.PlainAuth(
+						app.GeneralConfig.Watchers.Email.Identity,
+						app.GeneralConfig.Watchers.Email.Username,
+						app.GeneralConfig.Watchers.Email.Password,
+						app.GeneralConfig.Watchers.Email.Host)
+
+					emailTemplate := `{{.Subject}}
+
+Alert from {{.Hostname}}
+`
+					t, err := template.New("emailTemplate").Parse(emailTemplate)
+					if err != nil {
+						logrus.Print("error trying to parse mail template ", err)
+					}
+
+					var msg bytes.Buffer
+
+					data := struct {
+						From     string
+						Subject  string
+						Hostname string
+					}{
+						app.GeneralConfig.Watchers.Email.From,
+						app.GeneralConfig.Watchers.Email.SubjectPrefix,
+						app.Hostname,
+					}
+
+					if err = t.Execute(&msg, data); err != nil {
+						logrus.Print("error trying to execute mail template ", err)
+					}
+
+					err = smtp.SendMail(
+						fmt.Sprintf("%v:%v", app.GeneralConfig.Watchers.Email.Host, app.GeneralConfig.Watchers.Email.Port),
+						auth,
+						app.GeneralConfig.Watchers.Email.From,
+						[]string{triggerRow.ActionEmail()},
+						msg.Bytes())
+
+					if err != nil {
+						logrus.Fatal(err)
+					}
+
+				} else if triggerRow.ActionTransport() == "sms" {
+				} else if triggerRow.ActionTransport() == "pagerduty" {
+				}
+			}
+		}
+	}
+
+	return nil
 }

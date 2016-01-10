@@ -81,6 +81,15 @@ func (w *WatcherTrigger) AllByClusterID(tx *sqlx.Tx, clusterID int64) ([]*Watche
 	return rows, err
 }
 
+// AllByClusterIDAndWatcherID returns all rows by cluster_id and watcher_id.
+func (w *WatcherTrigger) AllByClusterIDAndWatcherID(tx *sqlx.Tx, clusterID, watcherID int64) ([]*WatcherTriggerRow, error) {
+	rows := []*WatcherTriggerRow{}
+	query := fmt.Sprintf("SELECT * FROM %v WHERE cluster_id=$1 AND watcher_id=$2 ORDER BY cluster_id,watcher_id,low_violations_count ASC", w.table)
+	err := w.db.Select(&rows, query, clusterID, watcherID)
+
+	return rows, err
+}
+
 func (w *WatcherTrigger) rowFromSqlResult(tx *sqlx.Tx, sqlResult sql.Result) (*WatcherTriggerRow, error) {
 	id, err := sqlResult.LastInsertId()
 	if err != nil {

@@ -27,10 +27,10 @@ type TSWatcher struct {
 	Base
 }
 
-// AllByClusterIDAndWatcherID returns all rows by cluster_id and watcher_id.
-func (ts *TSWatcher) AllByClusterIDAndWatcherID(tx *sqlx.Tx, clusterID, watcherID int64) ([]*TSWatcherRow, error) {
+// AllByClusterIDAndCreatedInterval returns all rows by cluster_id and watcher_id within N interval.
+func (ts *TSWatcher) AllByClusterIDAndCreatedInterval(tx *sqlx.Tx, clusterID, watcherID int64, createdInterval string) ([]*TSWatcherRow, error) {
 	rows := []*TSWatcherRow{}
-	query := fmt.Sprintf("SELECT * FROM %v WHERE cluster_id=$1 AND watcher_id=$2 ORDER BY cluster_id,watcher_id ASC", ts.table)
+	query := fmt.Sprintf("SELECT * FROM %v WHERE cluster_id=$1 AND created >= (NOW() - INTERVAL '%v') ORDER BY cluster_id,watcher_id,created DESC", ts.table, createdInterval)
 	err := ts.db.Select(&rows, query, clusterID, watcherID)
 
 	return rows, err

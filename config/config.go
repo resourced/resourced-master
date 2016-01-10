@@ -40,12 +40,13 @@ type GeneralConfig struct {
 		ListFetchInterval string
 
 		Email struct {
-			From     string
-			Subject  string
-			Host     string
-			Port     int
-			Username string
-			Password string
+			From          string
+			SubjectPrefix string
+			Host          string
+			Port          int
+			Username      string
+			Password      string
+			Identity      string
 		}
 	}
 }
