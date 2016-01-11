@@ -2,8 +2,10 @@
 package libstring
 
 import (
+	"bytes"
 	"crypto/rand"
 	"encoding/base64"
+	"encoding/json"
 	"github.com/mitchellh/go-homedir"
 	"os"
 	"strings"
@@ -51,4 +53,16 @@ func StripChars(str, chr string) string {
 		}
 		return -1
 	}, str)
+}
+
+// PrettyPrintJSON indents JSON nicely
+func PrettyPrintJSON(jsonBytes []byte) ([]byte, error) {
+	var out bytes.Buffer
+
+	err := json.Indent(&out, jsonBytes, "", "    ")
+	if err != nil {
+		return nil, err
+	}
+
+	return out.Bytes(), err
 }

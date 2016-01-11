@@ -54,6 +54,15 @@ func (ts *TSWatcher) CountViolationsSinceLastGreenMarker(tx *sqlx.Tx) (int, erro
 	return count, nil
 }
 
+// LastViolation returns the last row where affected_hosts is not 0.
+func (ts *TSWatcher) LastViolation(tx *sqlx.Tx) (*TSWatcherRow, error) {
+	row := &TSWatcherRow{}
+	query := fmt.Sprintf("SELECT * FROM %v WHERE affected_hosts != 0 ORDER BY cluster_id,watcher_id,created DESC LIMIT 1", ts.table)
+	err := ts.db.Get(row, query)
+
+	return row, err
+}
+
 // Create a new record.
 func (ts *TSWatcher) Create(tx *sqlx.Tx, clusterID, watcherID, affectedHosts int64, data []byte) error {
 	insertData := make(map[string]interface{})

@@ -20,6 +20,7 @@ import (
 	"github.com/resourced/resourced-master/dal"
 	"github.com/resourced/resourced-master/handlers"
 	"github.com/resourced/resourced-master/libsmtp"
+	"github.com/resourced/resourced-master/libstring"
 	"github.com/resourced/resourced-master/libtime"
 	"github.com/resourced/resourced-master/middlewares"
 	"github.com/resourced/resourced-master/wstrafficker"
@@ -213,6 +214,11 @@ func (app *Application) RunTrigger(clusterID int64, watcherRow *dal.WatcherRow) 
 		return err
 	}
 
+	lastViolation, err := dal.NewTSWatcher(app.DB).LastViolation(nil)
+	if err != nil {
+		return err
+	}
+
 	for _, triggerRow := range triggerRows {
 		println("Low Threshold")
 		println(triggerRow.LowViolationsCount)
@@ -236,8 +242,14 @@ func (app *Application) RunTrigger(clusterID int64, watcherRow *dal.WatcherRow) 
 				hostAndPort := fmt.Sprintf("%v:%v", app.GeneralConfig.Watchers.Email.Host, app.GeneralConfig.Watchers.Email.Port)
 				from := app.GeneralConfig.Watchers.Email.From
 				to := triggerRow.ActionEmail()
-				subject := app.GeneralConfig.Watchers.Email.SubjectPrefix
-				body := fmt.Sprintf(`ERROR: Watcher(ID: %v): %v, Query: %v`, watcherRow.ID, watcherRow.Name, watcherRow.SavedQuery)
+				subject := fmt.Sprintf(`%v Watcher(ID: %v): %v, Query: %v`, app.GeneralConfig.Watchers.Email.SubjectPrefix, watcherRow.ID, watcherRow.Name, watcherRow.SavedQuery)
+
+				bodyBytes, err := libstring.PrettyPrintJSON([]byte(lastViolation.Data.String()))
+				if err != nil {
+					logrus.Fatal(err)
+				}
+
+				body := string(bodyBytes)
 
 				message := libsmtp.BuildMessage(from, to, subject, body)
 
