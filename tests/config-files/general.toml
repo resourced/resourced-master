@@ -27,8 +27,9 @@ ListFetchInterval = "60s"
 
 [Watchers.Email]
 From = "alert@example.com"
-Subject = ""
-Host = "smtp.example.com"
-Port = 25
+SubjectPrefix = "[ERROR]"
+Host = "smtp.gmail.com"
+Port = 587
 Username = ""
 Password = ""
+Identity = ""
