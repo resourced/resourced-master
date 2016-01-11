@@ -201,11 +201,8 @@ func (app *Application) RunTrigger(clusterID int64, watcherRow *dal.WatcherRow) 
 		return err
 	}
 
-	println("violations count")
-	println(violationsCount)
-
+	// Don't bother doing anything else if there are no new violations.
 	if violationsCount <= 0 {
-		// Don't bother doing anything else if there are no new violations.
 		return nil
 	}
 
@@ -220,11 +217,6 @@ func (app *Application) RunTrigger(clusterID int64, watcherRow *dal.WatcherRow) 
 	}
 
 	for _, triggerRow := range triggerRows {
-		println("Low Threshold")
-		println(triggerRow.LowViolationsCount)
-		println("High Threshold")
-		println(triggerRow.HighViolationsCount)
-
 		if int64(violationsCount) >= triggerRow.LowViolationsCount && int64(violationsCount) <= triggerRow.HighViolationsCount {
 			if triggerRow.ActionTransport() == "nothing" {
 				// Do nothing
