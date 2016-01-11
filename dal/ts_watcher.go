@@ -27,13 +27,31 @@ type TSWatcher struct {
 	Base
 }
 
-// AllByClusterIDWatcherID returns all rows by cluster_id and watcher_id with limit.
-func (ts *TSWatcher) AllByClusterIDWatcherID(tx *sqlx.Tx, clusterID, watcherID, limit int64, ascOrDesc string) ([]*TSWatcherRow, error) {
-	rows := []*TSWatcherRow{}
-	query := fmt.Sprintf("SELECT * FROM %v WHERE cluster_id=$1 AND watcher_id=$2 ORDER BY cluster_id,watcher_id,created %v LIMIT $3", ts.table, ascOrDesc)
-	err := ts.db.Select(&rows, query, clusterID, watcherID, limit)
+// LastGreenMarker returns a row where affected_hosts is 0.
+func (ts *TSWatcher) LastGreenMarker(tx *sqlx.Tx) (*TSWatcherRow, error) {
+	row := &TSWatcherRow{}
+	query := fmt.Sprintf("SELECT * FROM %v WHERE affected_hosts=0 ORDER BY cluster_id,watcher_id,created DESC LIMIT 1", ts.table)
+	err := ts.db.Get(row, query)
 
-	return rows, err
+	return row, err
+}
+
+// CountViolationsSinceLastGreenMarker
+func (ts *TSWatcher) CountViolationsSinceLastGreenMarker(tx *sqlx.Tx) (int, error) {
+	lastGreenMarker, err := ts.LastGreenMarker(tx)
+	if err != nil {
+		return -1, err
+	}
+
+	var count int
+	query := fmt.Sprintf("SELECT count(*) FROM %v WHERE affected_hosts != 0 AND cluster_id=$1 AND watcher_id=$2 AND created > $3", ts.table)
+
+	err = ts.db.Get(&count, query, lastGreenMarker.ClusterID, lastGreenMarker.WatcherID, lastGreenMarker.Created)
+	if err != nil {
+		return -1, err
+	}
+
+	return count, nil
 }
 
 // Create a new record.

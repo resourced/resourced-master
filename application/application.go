@@ -195,63 +195,60 @@ func (app *Application) WatchOnce(clusterID int64, watcherRow *dal.WatcherRow) e
 }
 
 func (app *Application) RunTrigger(clusterID int64, watcherRow *dal.WatcherRow) error {
+	violationsCount, err := dal.NewTSWatcher(app.DB).CountViolationsSinceLastGreenMarker(nil)
+	if err != nil {
+		return err
+	}
+
+	println("violations count")
+	println(violationsCount)
+
+	if violationsCount <= 0 {
+		// Don't bother doing anything else if there are no new violations.
+		return nil
+	}
+
 	triggerRows, err := dal.NewWatcherTrigger(app.DB).AllByClusterIDAndWatcherID(nil, clusterID, watcherRow.ID)
 	if err != nil {
 		return err
 	}
 
-	highestViolationsCount := int64(0)
 	for _, triggerRow := range triggerRows {
-		if triggerRow.HighViolationsCount > highestViolationsCount {
-			highestViolationsCount = triggerRow.HighViolationsCount
-		}
-	}
+		println("Low Threshold")
+		println(triggerRow.LowViolationsCount)
+		println("High Threshold")
+		println(triggerRow.HighViolationsCount)
 
-	tsWatcherRows, err := dal.NewTSWatcher(app.DB).AllByClusterIDWatcherID(nil, clusterID, watcherRow.ID, highestViolationsCount, "DESC")
-	if err != nil {
-		return err
-	}
-
-	counter := 0
-	for _, tsWatcher := range tsWatcherRows {
-		if tsWatcher.AffectedHosts > 0 {
-			counter = counter + 1
-		} else {
-			counter = 0
-		}
-
-		for _, triggerRow := range triggerRows {
-			if int64(counter) >= triggerRow.LowViolationsCount && int64(counter) <= triggerRow.HighViolationsCount {
-				if triggerRow.ActionTransport() == "nothing" {
-					// Do nothing
-				} else if triggerRow.ActionTransport() == "email" {
-					if triggerRow.ActionEmail() == "" {
-						continue
-					}
-
-					auth := smtp.PlainAuth(
-						app.GeneralConfig.Watchers.Email.Identity,
-						app.GeneralConfig.Watchers.Email.Username,
-						app.GeneralConfig.Watchers.Email.Password,
-						app.GeneralConfig.Watchers.Email.Host)
-
-					hostAndPort := fmt.Sprintf("%v:%v", app.GeneralConfig.Watchers.Email.Host, app.GeneralConfig.Watchers.Email.Port)
-					from := app.GeneralConfig.Watchers.Email.From
-					to := triggerRow.ActionEmail()
-					subject := app.GeneralConfig.Watchers.Email.SubjectPrefix
-					body := fmt.Sprintf(`ERROR: Watcher(%v): %v, Query: %v`, watcherRow.ID, watcherRow.Name, watcherRow.SavedQuery)
-
-					message := libsmtp.BuildMessage(from, to, subject, body)
-
-					err = smtp.SendMail(hostAndPort, auth, from, []string{to}, []byte(message))
-
-					if err != nil {
-						logrus.Fatal(err)
-					}
-
-				} else if triggerRow.ActionTransport() == "sms" {
-				} else if triggerRow.ActionTransport() == "pagerduty" {
+		if int64(violationsCount) >= triggerRow.LowViolationsCount && int64(violationsCount) <= triggerRow.HighViolationsCount {
+			if triggerRow.ActionTransport() == "nothing" {
+				// Do nothing
+			} else if triggerRow.ActionTransport() == "email" {
+				if triggerRow.ActionEmail() == "" {
+					continue
 				}
+
+				auth := smtp.PlainAuth(
+					app.GeneralConfig.Watchers.Email.Identity,
+					app.GeneralConfig.Watchers.Email.Username,
+					app.GeneralConfig.Watchers.Email.Password,
+					app.GeneralConfig.Watchers.Email.Host)
+
+				hostAndPort := fmt.Sprintf("%v:%v", app.GeneralConfig.Watchers.Email.Host, app.GeneralConfig.Watchers.Email.Port)
+				from := app.GeneralConfig.Watchers.Email.From
+				to := triggerRow.ActionEmail()
+				subject := app.GeneralConfig.Watchers.Email.SubjectPrefix
+				body := fmt.Sprintf(`ERROR: Watcher(ID: %v): %v, Query: %v`, watcherRow.ID, watcherRow.Name, watcherRow.SavedQuery)
+
+				message := libsmtp.BuildMessage(from, to, subject, body)
+
+				err = smtp.SendMail(hostAndPort, auth, from, []string{to}, []byte(message))
+
+				if err != nil {
+					logrus.Fatal(err)
+				}
+
+			} else if triggerRow.ActionTransport() == "sms" {
+			} else if triggerRow.ActionTransport() == "pagerduty" {
 			}
 		}
 	}
