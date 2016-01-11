@@ -1,14 +1,12 @@
 package application
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/smtp"
 	"os"
 	"strings"
-	"text/template"
 
 	"github.com/Sirupsen/logrus"
 	"github.com/carbocation/interpose"
@@ -21,6 +19,7 @@ import (
 	"github.com/resourced/resourced-master/config"
 	"github.com/resourced/resourced-master/dal"
 	"github.com/resourced/resourced-master/handlers"
+	"github.com/resourced/resourced-master/libsmtp"
 	"github.com/resourced/resourced-master/libtime"
 	"github.com/resourced/resourced-master/middlewares"
 	"github.com/resourced/resourced-master/wstrafficker"
@@ -196,18 +195,19 @@ func (app *Application) WatchOnce(clusterID int64, watcherRow *dal.WatcherRow) e
 }
 
 func (app *Application) RunTrigger(clusterID int64, watcherRow *dal.WatcherRow) error {
-	println("inside RunTrigger")
-
-	lastUpdated := strings.Replace(watcherRow.HostsLastUpdated, " ago", "", 1)
-
-	tsWatcherRows, err := dal.NewTSWatcher(app.DB).AllByClusterIDAndCreatedInterval(nil, clusterID, watcherRow.ID, lastUpdated)
+	triggerRows, err := dal.NewWatcherTrigger(app.DB).AllByClusterIDAndWatcherID(nil, clusterID, watcherRow.ID)
 	if err != nil {
 		return err
 	}
 
-	println(fmt.Sprintf("Total tsWatchers: %v", len(tsWatcherRows)))
+	highestViolationsCount := int64(0)
+	for _, triggerRow := range triggerRows {
+		if triggerRow.HighViolationsCount > highestViolationsCount {
+			highestViolationsCount = triggerRow.HighViolationsCount
+		}
+	}
 
-	triggerRows, err := dal.NewWatcherTrigger(app.DB).AllByClusterIDAndWatcherID(nil, clusterID, watcherRow.ID)
+	tsWatcherRows, err := dal.NewTSWatcher(app.DB).AllByClusterIDWatcherID(nil, clusterID, watcherRow.ID, highestViolationsCount, "DESC")
 	if err != nil {
 		return err
 	}
@@ -221,13 +221,7 @@ func (app *Application) RunTrigger(clusterID int64, watcherRow *dal.WatcherRow) 
 		}
 
 		for _, triggerRow := range triggerRows {
-			println(counter)
-			println(triggerRow.LowViolationsCount)
-			println(triggerRow.HighViolationsCount)
-
 			if int64(counter) >= triggerRow.LowViolationsCount && int64(counter) <= triggerRow.HighViolationsCount {
-				println("About to send email")
-
 				if triggerRow.ActionTransport() == "nothing" {
 					// Do nothing
 				} else if triggerRow.ActionTransport() == "email" {
@@ -241,37 +235,15 @@ func (app *Application) RunTrigger(clusterID int64, watcherRow *dal.WatcherRow) 
 						app.GeneralConfig.Watchers.Email.Password,
 						app.GeneralConfig.Watchers.Email.Host)
 
-					emailTemplate := `{{.Subject}}
+					hostAndPort := fmt.Sprintf("%v:%v", app.GeneralConfig.Watchers.Email.Host, app.GeneralConfig.Watchers.Email.Port)
+					from := app.GeneralConfig.Watchers.Email.From
+					to := triggerRow.ActionEmail()
+					subject := app.GeneralConfig.Watchers.Email.SubjectPrefix
+					body := fmt.Sprintf(`ERROR: Watcher(%v): %v, Query: %v`, watcherRow.ID, watcherRow.Name, watcherRow.SavedQuery)
 
-Alert from {{.Hostname}}
-`
-					t, err := template.New("emailTemplate").Parse(emailTemplate)
-					if err != nil {
-						logrus.Print("error trying to parse mail template ", err)
-					}
+					message := libsmtp.BuildMessage(from, to, subject, body)
 
-					var msg bytes.Buffer
-
-					data := struct {
-						From     string
-						Subject  string
-						Hostname string
-					}{
-						app.GeneralConfig.Watchers.Email.From,
-						app.GeneralConfig.Watchers.Email.SubjectPrefix,
-						app.Hostname,
-					}
-
-					if err = t.Execute(&msg, data); err != nil {
-						logrus.Print("error trying to execute mail template ", err)
-					}
-
-					err = smtp.SendMail(
-						fmt.Sprintf("%v:%v", app.GeneralConfig.Watchers.Email.Host, app.GeneralConfig.Watchers.Email.Port),
-						auth,
-						app.GeneralConfig.Watchers.Email.From,
-						[]string{triggerRow.ActionEmail()},
-						msg.Bytes())
+					err = smtp.SendMail(hostAndPort, auth, from, []string{to}, []byte(message))
 
 					if err != nil {
 						logrus.Fatal(err)
