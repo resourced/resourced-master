@@ -66,3 +66,12 @@ func PrettyPrintJSON(jsonBytes []byte) ([]byte, error) {
 
 	return out.Bytes(), err
 }
+
+func FlattenPhone(phone string) string {
+	result := strings.Replace(phone, "-", "", -1)
+	result = strings.Replace(result, "(", "", -1)
+	result = strings.Replace(result, ")", "", -1)
+	result = strings.Replace(result, " ", "", -1)
+
+	return result
+}

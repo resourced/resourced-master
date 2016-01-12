@@ -59,6 +59,38 @@ func (wt *WatcherTriggerRow) ActionEmail() string {
 	return emailInterface.(string)
 }
 
+func (wt *WatcherTriggerRow) ActionSMSPhone() string {
+	actions := make(map[string]interface{})
+
+	err := json.Unmarshal(wt.Actions, &actions)
+	if err != nil {
+		return ""
+	}
+
+	phoneInterface := actions["SMSPhone"]
+	if phoneInterface == nil {
+		return ""
+	}
+
+	return phoneInterface.(string)
+}
+
+func (wt *WatcherTriggerRow) ActionSMSCarrier() string {
+	actions := make(map[string]interface{})
+
+	err := json.Unmarshal(wt.Actions, &actions)
+	if err != nil {
+		return ""
+	}
+
+	carrierInterface := actions["SMSCarrier"]
+	if carrierInterface == nil {
+		return ""
+	}
+
+	return carrierInterface.(string)
+}
+
 type WatcherTrigger struct {
 	Base
 }

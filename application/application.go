@@ -252,6 +252,49 @@ func (app *Application) RunTrigger(clusterID int64, watcherRow *dal.WatcherRow) 
 				}
 
 			} else if triggerRow.ActionTransport() == "sms" {
+				//
+				// Big fat WIP
+				//
+				carrierGateway := ""
+
+				if strings.ToLower(triggerRow.ActionSMSCarrier()) == "att" {
+					carrierGateway = "@txt.att.net"
+				} else if strings.ToLower(triggerRow.ActionSMSCarrier()) == "alltel" {
+					carrierGateway = "@message.alltel.com"
+				} else if strings.ToLower(triggerRow.ActionSMSCarrier()) == "sprint" {
+					carrierGateway = "@messaging.sprintpcs.com"
+				} else if strings.ToLower(triggerRow.ActionSMSCarrier()) == "tmobile" {
+					carrierGateway = "@tmomail.net"
+				} else if strings.ToLower(triggerRow.ActionSMSCarrier()) == "verizon" {
+					carrierGateway = "@vtext.com"
+				} else if strings.ToLower(triggerRow.ActionSMSCarrier()) == "virgin" {
+					carrierGateway = "@vmobl.com"
+				}
+
+				if carrierGateway == "" {
+					continue
+				}
+
+				auth := smtp.PlainAuth(
+					app.GeneralConfig.Watchers.Email.Identity,
+					app.GeneralConfig.Watchers.Email.Username,
+					app.GeneralConfig.Watchers.Email.Password,
+					app.GeneralConfig.Watchers.Email.Host)
+
+				hostAndPort := fmt.Sprintf("%v:%v", app.GeneralConfig.Watchers.Email.Host, app.GeneralConfig.Watchers.Email.Port)
+				from := app.GeneralConfig.Watchers.Email.From
+				to := libstring.FlattenPhone(triggerRow.ActionSMSPhone()) + carrierGateway
+				subject := ""
+				body := fmt.Sprintf(`%v Watcher(ID: %v): %v, Query: %v, failed %v times`, app.GeneralConfig.Watchers.Email.SubjectPrefix, watcherRow.ID, watcherRow.Name, watcherRow.SavedQuery, violationsCount)
+
+				message := libsmtp.BuildMessage(from, to, subject, body)
+
+				err = smtp.SendMail(hostAndPort, auth, from, []string{to}, []byte(message))
+
+				if err != nil {
+					logrus.Fatal(err)
+				}
+
 			} else if triggerRow.ActionTransport() == "pagerduty" {
 			}
 		}
