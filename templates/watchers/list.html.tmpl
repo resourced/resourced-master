@@ -41,7 +41,9 @@
                             Details
                         </button>
 
-                        <button class="btn btn-default btn-sm" data-toggle="modal" data-target="#trigger-modal"
+                        <button class="btn btn-default btn-sm btn-show-triggers" data-watcher-id="{{ $watcher.ID }}">Show Triggers</button>
+
+                        <button class="btn btn-success btn-sm" data-toggle="modal" data-target="#trigger-modal"
                             data-watcher-id="{{ $watcher.ID }}"
                             data-watcher-name="{{ $watcher.Name }}">
                             New Trigger
@@ -56,15 +58,7 @@
             <span class="label label-primary">Min Affected Hosts: {{ $watcher.LowAffectedHosts }}</span>
             <span class="label label-primary">Check Interval: {{ $watcher.CheckInterval }}</span>
 
-            <div class="triggers">
-                <div class="trigger-header" data-watcher-id="{{ $watcher.ID }}">
-                    <div class="pull-right">
-                        <input type="checkbox" class="toggler toggler-body pull-right" data-size="mini">
-                    </div>
-
-                    <h4>Triggers</h4>
-                </div>
-
+            <div class="triggers" style="margin-top: 3px">
                 <div class="trigger-body table-responsive table-condensed" data-watcher-id="{{ $watcher.ID }}" style="display: none">
                     <table class="table table-striped">
                         <thead>
@@ -274,19 +268,20 @@ var changeActionTransport = function() {
 };
 
 $(document).ready(function() {
-    $('.toggler').bootstrapSwitch();
+    // Loop every single show triggers and enforce its state based on cookie value.
+    $('.btn-show-triggers').each(function() {
+        var $button = $(this);
+        var watcherID = $button.data('watcher-id');
+        var state = $.cookie('.row.watchers .trigger-body[data-watcher-id="' + watcherID + '"]');
 
-    // Load the state of ".row.watchers .toggler-body" from cookie
-    var state = $.cookie('.row.watchers .toggler-body');
-    if (state && state == 'true') {
-        $('.row.watchers .toggler-body').each(function() {
-            var $triggerHeader = $(this).closest('.trigger-header');
-            var watcherID = $triggerHeader.data('watcher-id');
-            $triggerHeader.siblings('.trigger-body[data-watcher-id="' + watcherID + '"]').show();
-
-            $(this).bootstrapSwitch('state', true, true);
-        });
-    }
+        if (state == 'true' || state == true) {
+            $('.trigger-body[data-watcher-id="' + watcherID + '"]').show();
+            $button.addClass('active');
+        } else {
+            $('.trigger-body[data-watcher-id="' + watcherID + '"]').hide();
+            $button.removeClass('active');
+        }
+    });
 });
 
 $('select[name="SavedQueryID"]').change(function() {
@@ -380,12 +375,18 @@ $('#trigger-modal form .btn-primary').click(function() {
     $(this).closest('form').submit();
 });
 
-$('.row.watchers .toggler-body').on('switchChange.bootstrapSwitch', function(event, state) {
-    var $triggerHeader = $(this).closest('.trigger-header');
-    var watcherID = $triggerHeader.data('watcher-id');
-    $triggerHeader.siblings('.trigger-body[data-watcher-id="' + watcherID + '"]').toggle();
+$('.btn-show-triggers').on('click', function(event) {
+    var watcherID = $(this).data('watcher-id');
+    var $triggerBody = $('.trigger-body[data-watcher-id="' + watcherID + '"]');
+    $triggerBody.toggle();
 
-    $.cookie('.row.watchers .toggler-body', state, {
+    if($triggerBody.is(':visible')) {
+        $('.btn-show-triggers[data-watcher-id="' + watcherID + '"]').addClass('active');
+    } else {
+        $('.btn-show-triggers[data-watcher-id="' + watcherID + '"]').removeClass('active');
+    }
+
+    $.cookie('.row.watchers .trigger-body[data-watcher-id="' + watcherID + '"]', $triggerBody.is(':visible'), {
         path: '/',
         expires: 365
     });
