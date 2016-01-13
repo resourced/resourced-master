@@ -15,6 +15,7 @@ import (
 	"github.com/jmoiron/sqlx"
 	"github.com/justinas/alice"
 	_ "github.com/lib/pq"
+	"github.com/marcw/pagerduty"
 	"github.com/mattes/migrate/migrate"
 	"github.com/resourced/resourced-master/config"
 	"github.com/resourced/resourced-master/dal"
@@ -33,11 +34,6 @@ func New(configDir string) (*Application, error) {
 		return nil, err
 	}
 
-	smsConfig, err := config.NewSMSConfig(configDir)
-	if err != nil {
-		return nil, err
-	}
-
 	db, err := sqlx.Connect("postgres", generalConfig.DSN)
 	if err != nil {
 		return nil, err
@@ -51,7 +47,6 @@ func New(configDir string) (*Application, error) {
 	app := &Application{}
 	app.Hostname = hostname
 	app.GeneralConfig = generalConfig
-	app.SMSConfig = smsConfig
 	app.DB = db
 	app.cookieStore = sessions.NewCookieStore([]byte(app.GeneralConfig.CookieSecret))
 	app.WSTraffickers = wstrafficker.NewWSTraffickers()
@@ -63,7 +58,6 @@ func New(configDir string) (*Application, error) {
 type Application struct {
 	Hostname      string
 	GeneralConfig config.GeneralConfig
-	SMSConfig     config.SMSConfig
 	DB            *sqlx.DB
 	cookieStore   *sessions.CookieStore
 	WSTraffickers *wstrafficker.WSTraffickers
@@ -267,7 +261,7 @@ func (app *Application) RunTrigger(clusterID int64, watcherRow *dal.WatcherRow) 
 				//
 				carrier := strings.ToLower(triggerRow.ActionSMSCarrier())
 
-				gateway, ok := app.SMSConfig.EmailGateway[carrier]
+				gateway, ok := app.GeneralConfig.Watchers.SMSEmailGateway[carrier]
 				if !ok {
 					logrus.Warningf("Unable to lookup SMS Gateway for carrier: %v", carrier)
 					continue
@@ -294,12 +288,28 @@ func (app *Application) RunTrigger(clusterID int64, watcherRow *dal.WatcherRow) 
 				message := libsmtp.BuildMessage(from, to, subject, body)
 
 				err = smtp.SendMail(hostAndPort, auth, from, []string{to}, []byte(message))
-
 				if err != nil {
 					logrus.Fatal(err)
 				}
 
 			} else if triggerRow.ActionTransport() == "pagerduty" {
+				// Create a new PD "trigger" event
+				event := pagerduty.NewTriggerEvent(triggerRow.ActionPagerDutyServiceKey(), triggerRow.ActionPagerDutyDescription())
+
+				// Add details to PD event
+				err = lastViolation.Data.Unmarshal(&event.Details)
+				if err != nil {
+					logrus.Fatal(err)
+				}
+
+				// Add Client to PD event
+				event.Client = fmt.Sprintf("ResourceD Master on: %v", app.Hostname)
+
+				// Submit PD event
+				_, _, err = pagerduty.Submit(event)
+				if err != nil {
+					logrus.Fatal(err)
+				}
 			}
 		}
 	}

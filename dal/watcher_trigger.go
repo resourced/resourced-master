@@ -91,6 +91,38 @@ func (wt *WatcherTriggerRow) ActionSMSCarrier() string {
 	return carrierInterface.(string)
 }
 
+func (wt *WatcherTriggerRow) ActionPagerDutyServiceKey() string {
+	actions := make(map[string]interface{})
+
+	err := json.Unmarshal(wt.Actions, &actions)
+	if err != nil {
+		return ""
+	}
+
+	pdServiceKeyInterface := actions["PagerDutyServiceKey"]
+	if pdServiceKeyInterface == nil {
+		return ""
+	}
+
+	return pdServiceKeyInterface.(string)
+}
+
+func (wt *WatcherTriggerRow) ActionPagerDutyDescription() string {
+	actions := make(map[string]interface{})
+
+	err := json.Unmarshal(wt.Actions, &actions)
+	if err != nil {
+		return ""
+	}
+
+	pdDescriptionInterface := actions["PagerDutyDescription"]
+	if pdDescriptionInterface == nil {
+		return ""
+	}
+
+	return pdDescriptionInterface.(string)
+}
+
 type WatcherTrigger struct {
 	Base
 }
