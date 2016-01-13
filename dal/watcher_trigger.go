@@ -107,6 +107,22 @@ func (wt *WatcherTriggerRow) ActionPagerDutyServiceKey() string {
 	return pdServiceKeyInterface.(string)
 }
 
+func (wt *WatcherTriggerRow) ActionPagerDutyIncidentKey() string {
+	actions := make(map[string]interface{})
+
+	err := json.Unmarshal(wt.Actions, &actions)
+	if err != nil {
+		return ""
+	}
+
+	pdIncidentKeyInterface := actions["PagerDutyIncidentKey"]
+	if pdIncidentKeyInterface == nil {
+		return ""
+	}
+
+	return pdIncidentKeyInterface.(string)
+}
+
 func (wt *WatcherTriggerRow) ActionPagerDutyDescription() string {
 	actions := make(map[string]interface{})
 
@@ -170,6 +186,19 @@ func (w *WatcherTrigger) GetByID(tx *sqlx.Tx, id int64) (*WatcherTriggerRow, err
 	err := w.db.Get(watcherRow, query, id)
 
 	return watcherRow, err
+}
+
+// ActionParamsByExistingTrigger builds action params based on existing trigger row data.
+func (w *WatcherTrigger) ActionParamsByExistingTrigger(triggerRow *WatcherTriggerRow) map[string]interface{} {
+	triggerActionParams := make(map[string]interface{})
+	triggerActionParams["Transport"] = triggerRow.ActionTransport()
+	triggerActionParams["Email"] = triggerRow.ActionEmail()
+	triggerActionParams["SMSCarrier"] = triggerRow.ActionSMSCarrier()
+	triggerActionParams["SMSPhone"] = triggerRow.ActionSMSPhone()
+	triggerActionParams["PagerDutyServiceKey"] = triggerRow.ActionPagerDutyServiceKey()
+	triggerActionParams["PagerDutyDescription"] = triggerRow.ActionPagerDutyDescription()
+
+	return triggerActionParams
 }
 
 // CreateOrUpdateParameters builds params for insert or update.

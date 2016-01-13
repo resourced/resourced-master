@@ -242,23 +242,20 @@ func (app *Application) RunTrigger(clusterID int64, watcherRow *dal.WatcherRow) 
 
 				bodyBytes, err := libstring.PrettyPrintJSON([]byte(lastViolation.Data.String()))
 				if err != nil {
-					logrus.Fatal(err)
+					logrus.Error(err)
+					continue
 				}
 
 				body := string(bodyBytes)
-
 				message := libsmtp.BuildMessage(from, to, subject, body)
 
 				err = smtp.SendMail(hostAndPort, auth, from, []string{to}, []byte(message))
-
 				if err != nil {
-					logrus.Fatal(err)
+					logrus.Error(err)
+					continue
 				}
 
 			} else if triggerRow.ActionTransport() == "sms" {
-				//
-				// Big fat WIP
-				//
 				carrier := strings.ToLower(triggerRow.ActionSMSCarrier())
 
 				gateway, ok := app.GeneralConfig.Watchers.SMSEmailGateway[carrier]
@@ -281,7 +278,7 @@ func (app *Application) RunTrigger(clusterID int64, watcherRow *dal.WatcherRow) 
 
 				hostAndPort := fmt.Sprintf("%v:%v", app.GeneralConfig.Watchers.Email.Host, app.GeneralConfig.Watchers.Email.Port)
 				from := app.GeneralConfig.Watchers.Email.From
-				to := flattenPhone + "@" + gateway
+				to := fmt.Sprintf("%v@%v", flattenPhone, gateway)
 				subject := ""
 				body := fmt.Sprintf(`%v Watcher(ID: %v): %v, Query: %v, failed %v times`, app.GeneralConfig.Watchers.Email.SubjectPrefix, watcherRow.ID, watcherRow.Name, watcherRow.SavedQuery, violationsCount)
 
@@ -289,7 +286,8 @@ func (app *Application) RunTrigger(clusterID int64, watcherRow *dal.WatcherRow) 
 
 				err = smtp.SendMail(hostAndPort, auth, from, []string{to}, []byte(message))
 				if err != nil {
-					logrus.Fatal(err)
+					logrus.Error(err)
+					continue
 				}
 
 			} else if triggerRow.ActionTransport() == "pagerduty" {
@@ -299,16 +297,40 @@ func (app *Application) RunTrigger(clusterID int64, watcherRow *dal.WatcherRow) 
 				// Add details to PD event
 				err = lastViolation.Data.Unmarshal(&event.Details)
 				if err != nil {
-					logrus.Fatal(err)
+					logrus.Error(err)
+					continue
 				}
 
 				// Add Client to PD event
 				event.Client = fmt.Sprintf("ResourceD Master on: %v", app.Hostname)
 
 				// Submit PD event
-				_, _, err = pagerduty.Submit(event)
+				pdResponse, _, err := pagerduty.Submit(event)
 				if err != nil {
-					logrus.Fatal(err)
+					logrus.Error(err)
+				}
+				if pdResponse == nil {
+					continue
+				}
+
+				// Update incident key into watchers_triggers row
+				wt := dal.NewWatcherTrigger(app.DB)
+
+				triggerUpdateActionParams := wt.ActionParamsByExistingTrigger(triggerRow)
+				triggerUpdateActionParams["PagerDutyIncidentKey"] = pdResponse.IncidentKey
+
+				triggerUpdateActionJSON, err := json.Marshal(triggerUpdateActionParams)
+				if err != nil {
+					logrus.Error(err)
+					continue
+				}
+
+				triggerUpdateParams := wt.CreateOrUpdateParameters(triggerRow.ClusterID, triggerRow.WatcherID, triggerRow.LowViolationsCount, triggerRow.HighViolationsCount, triggerUpdateActionJSON)
+
+				_, err = wt.UpdateFromTable(nil, triggerUpdateParams, fmt.Sprintf("id=%v", triggerRow.ID))
+				if err != nil {
+					logrus.Error(err)
+					continue
 				}
 			}
 		}

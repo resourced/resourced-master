@@ -74,7 +74,7 @@
                             <tr>
                                 <td>{{ $trigger.LowViolationsCount }}</td>
                                 <td>{{ $trigger.HighViolationsCount }}</td>
-                                <td>Send {{ $trigger.ActionTransport }} to {{ $trigger.ActionEmail }}{{ $trigger.ActionSMSPhone }}</td>
+                                <td>Send {{ $trigger.ActionTransport }} to {{ $trigger.ActionEmail }}{{ $trigger.ActionSMSPhone }}{{ $trigger.ActionPagerDutyServiceKey }}</td>
                                 <td>
                                     <form action="/watchers/{{ $watcher.ID }}/triggers/{{ $trigger.ID }}" method="post" onsubmit="return confirm('Are you sure you want to delete?');">
                                         <input type="hidden" name="_method" value="delete">
