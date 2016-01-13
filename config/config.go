@@ -50,3 +50,19 @@ type GeneralConfig struct {
 		}
 	}
 }
+
+// NewSMSConfig is the constructor for SMSConfig.
+func NewSMSConfig(configDir string) (SMSConfig, error) {
+	configDir = libstring.ExpandTildeAndEnv(configDir)
+	fullpath := path.Join(configDir, "sms.toml")
+
+	var config SMSConfig
+	_, err := toml.DecodeFile(fullpath, &config)
+
+	return config, err
+}
+
+// SMSConfig stores SMS related configuration.
+type SMSConfig struct {
+	EmailGateway map[string]string
+}

@@ -33,16 +33,25 @@ func New(configDir string) (*Application, error) {
 		return nil, err
 	}
 
+	smsConfig, err := config.NewSMSConfig(configDir)
+	if err != nil {
+		return nil, err
+	}
+
 	db, err := sqlx.Connect("postgres", generalConfig.DSN)
 	if err != nil {
 		return nil, err
 	}
 
-	hostname, _ := os.Hostname()
+	hostname, err := os.Hostname()
+	if err != nil {
+		return nil, err
+	}
 
 	app := &Application{}
 	app.Hostname = hostname
 	app.GeneralConfig = generalConfig
+	app.SMSConfig = smsConfig
 	app.DB = db
 	app.cookieStore = sessions.NewCookieStore([]byte(app.GeneralConfig.CookieSecret))
 	app.WSTraffickers = wstrafficker.NewWSTraffickers()
@@ -54,6 +63,7 @@ func New(configDir string) (*Application, error) {
 type Application struct {
 	Hostname      string
 	GeneralConfig config.GeneralConfig
+	SMSConfig     config.SMSConfig
 	DB            *sqlx.DB
 	cookieStore   *sessions.CookieStore
 	WSTraffickers *wstrafficker.WSTraffickers
@@ -255,23 +265,17 @@ func (app *Application) RunTrigger(clusterID int64, watcherRow *dal.WatcherRow) 
 				//
 				// Big fat WIP
 				//
-				carrierGateway := ""
+				carrier := strings.ToLower(triggerRow.ActionSMSCarrier())
 
-				if strings.ToLower(triggerRow.ActionSMSCarrier()) == "att" {
-					carrierGateway = "@txt.att.net"
-				} else if strings.ToLower(triggerRow.ActionSMSCarrier()) == "alltel" {
-					carrierGateway = "@message.alltel.com"
-				} else if strings.ToLower(triggerRow.ActionSMSCarrier()) == "sprint" {
-					carrierGateway = "@messaging.sprintpcs.com"
-				} else if strings.ToLower(triggerRow.ActionSMSCarrier()) == "tmobile" {
-					carrierGateway = "@tmomail.net"
-				} else if strings.ToLower(triggerRow.ActionSMSCarrier()) == "verizon" {
-					carrierGateway = "@vtext.com"
-				} else if strings.ToLower(triggerRow.ActionSMSCarrier()) == "virgin" {
-					carrierGateway = "@vmobl.com"
+				gateway, ok := app.SMSConfig.EmailGateway[carrier]
+				if !ok {
+					logrus.Warningf("Unable to lookup SMS Gateway for carrier: %v", carrier)
+					continue
 				}
 
-				if carrierGateway == "" {
+				flattenPhone := libstring.FlattenPhone(triggerRow.ActionSMSPhone())
+				if len(flattenPhone) != 10 {
+					logrus.Warningf("Length of phone number is not 10. Flatten phone number: %v. Length: %v", flattenPhone, len(flattenPhone))
 					continue
 				}
 
@@ -283,7 +287,7 @@ func (app *Application) RunTrigger(clusterID int64, watcherRow *dal.WatcherRow) 
 
 				hostAndPort := fmt.Sprintf("%v:%v", app.GeneralConfig.Watchers.Email.Host, app.GeneralConfig.Watchers.Email.Port)
 				from := app.GeneralConfig.Watchers.Email.From
-				to := libstring.FlattenPhone(triggerRow.ActionSMSPhone()) + carrierGateway
+				to := flattenPhone + "@" + gateway
 				subject := ""
 				body := fmt.Sprintf(`%v Watcher(ID: %v): %v, Query: %v, failed %v times`, app.GeneralConfig.Watchers.Email.SubjectPrefix, watcherRow.ID, watcherRow.Name, watcherRow.SavedQuery, violationsCount)
 

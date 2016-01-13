@@ -1,0 +1,7 @@
+[EmailGateway]
+att = "txt.att.net"
+alltel = "message.alltel.com"
+sprint = "messaging.sprintpcs.com"
+tmobile = "tmomail.com"
+verizon = "vtext.com"
+virgin = "vmobl.com"
