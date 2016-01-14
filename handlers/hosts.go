@@ -55,6 +55,12 @@ func GetHosts(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	metricsMap, err := dal.NewMetric(db).AllByClusterIDAsMap(nil, currentCluster.ID)
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
+
 	data := struct {
 		Addr               string
 		CurrentUser        *dal.UserRow
@@ -63,6 +69,7 @@ func GetHosts(w http.ResponseWriter, r *http.Request) {
 		CurrentClusterJson string
 		Hosts              []*dal.HostRow
 		SavedQueries       []*dal.SavedQueryRow
+		MetricsMap         map[string]bool
 	}{
 		context.Get(r, "addr").(string),
 		currentUserRow,
@@ -71,6 +78,7 @@ func GetHosts(w http.ResponseWriter, r *http.Request) {
 		string(context.Get(r, "currentClusterJson").([]byte)),
 		hosts,
 		savedQueries,
+		metricsMap,
 	}
 
 	tmpl, err := template.ParseFiles("templates/dashboard.html.tmpl", "templates/hosts/list.html.tmpl")

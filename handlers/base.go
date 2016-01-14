@@ -17,15 +17,15 @@ func getCurrentUser(w http.ResponseWriter, r *http.Request) *dal.UserRow {
 }
 
 func getIdFromPath(w http.ResponseWriter, r *http.Request) (int64, error) {
-	userIdString := mux.Vars(r)["id"]
-	if userIdString == "" {
+	idString := mux.Vars(r)["id"]
+	if idString == "" {
 		return -1, errors.New("user id cannot be empty.")
 	}
 
-	userId, err := strconv.ParseInt(userIdString, 10, 64)
+	id, err := strconv.ParseInt(idString, 10, 64)
 	if err != nil {
 		return -1, err
 	}
 
-	return userId, nil
+	return id, nil
 }

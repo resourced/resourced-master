@@ -94,6 +94,15 @@ select {
 .hosts .details {
     margin-top: 20px;
 }
+.hosts .graph-column-btn {
+    white-space: nowrap;
+    width: 1px;
+    padding: 0;
+}
+.hosts .graph-column-btn .btn {
+    width: 96px;
+}
+
 .updated-timestamp, .updated-queries-toggle {
     font-size: 75%;
     margin-right: 14px;

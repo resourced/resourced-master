@@ -10,6 +10,7 @@ import (
 
 	"github.com/Sirupsen/logrus"
 	"github.com/carbocation/interpose"
+	"github.com/gorilla/csrf"
 	"github.com/gorilla/mux"
 	"github.com/gorilla/sessions"
 	"github.com/jmoiron/sqlx"
@@ -49,6 +50,7 @@ func New(configDir string) (*Application, error) {
 	app.GeneralConfig = generalConfig
 	app.DB = db
 	app.cookieStore = sessions.NewCookieStore([]byte(app.GeneralConfig.CookieSecret))
+	app.csrfProtect = csrf.Protect([]byte(app.GeneralConfig.CookieSecret))
 	app.WSTraffickers = wstrafficker.NewWSTraffickers()
 
 	return app, err
@@ -60,6 +62,7 @@ type Application struct {
 	GeneralConfig config.GeneralConfig
 	DB            *sqlx.DB
 	cookieStore   *sessions.CookieStore
+	csrfProtect   func(http.Handler) http.Handler
 	WSTraffickers *wstrafficker.WSTraffickers
 }
 
@@ -109,6 +112,8 @@ func (app *Application) mux() *mux.Router {
 	router.Handle("/clusters/current", alice.New(MustLogin, SetClusters).ThenFunc(handlers.PostClustersCurrent)).Methods("POST")
 
 	router.Handle("/clusters/{id:[0-9]+}/access-tokens", alice.New(MustLogin).ThenFunc(handlers.PostAccessTokens)).Methods("POST")
+
+	router.Handle("/clusters/{id:[0-9]+}/metrics", alice.New(MustLogin).ThenFunc(handlers.PostMetrics)).Methods("POST")
 
 	router.Handle("/access-tokens/{id:[0-9]+}/level", alice.New(MustLogin).ThenFunc(handlers.PostAccessTokensLevel)).Methods("POST")
 	router.Handle("/access-tokens/{id:[0-9]+}/enabled", alice.New(MustLogin).ThenFunc(handlers.PostAccessTokensEnabled)).Methods("POST")

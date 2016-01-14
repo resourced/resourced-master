@@ -9,12 +9,12 @@ import (
 )
 
 func NewDaemon(db *sqlx.DB) *Daemon {
-	application := &Daemon{}
-	application.db = db
-	application.table = "daemons"
-	application.hasID = true
+	daemon := &Daemon{}
+	daemon.db = db
+	daemon.table = "daemons"
+	daemon.hasID = true
 
-	return application
+	return daemon
 }
 
 type DaemonRow struct {
