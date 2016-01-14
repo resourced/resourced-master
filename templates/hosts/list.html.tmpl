@@ -141,7 +141,7 @@ $('#search-input').bind("input propertychange", function(e) {
                                 <td>{{ $value }}</td>
                                 <td class="graph-column-btn">
                                     <div class="btn-group" role="group">
-                                        {{ if (eq true (index $.MetricsMap (print $path "." $key))) }}
+                                        {{ if (ne 0 (index $.MetricsMap (print $path "." $key))) }}
                                         <a class="btn btn-success btn-sm" href="">Graph</a>
                                         {{ else }}
                                         <form action="/clusters/{{ $host.ClusterID }}/metrics" method="post">
