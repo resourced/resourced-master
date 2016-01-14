@@ -89,8 +89,8 @@ func (d *Metric) AllByClusterID(tx *sqlx.Tx, clusterID int64) ([]*MetricRow, err
 }
 
 // AllByClusterIDAsMap returns all rows.
-func (d *Metric) AllByClusterIDAsMap(tx *sqlx.Tx, clusterID int64) (map[string]bool, error) {
-	result := make(map[string]bool)
+func (d *Metric) AllByClusterIDAsMap(tx *sqlx.Tx, clusterID int64) (map[string]int64, error) {
+	result := make(map[string]int64)
 
 	rows, err := d.AllByClusterID(tx, clusterID)
 	if err != nil {
@@ -98,7 +98,7 @@ func (d *Metric) AllByClusterIDAsMap(tx *sqlx.Tx, clusterID int64) (map[string]b
 	}
 
 	for _, row := range rows {
-		result[row.Key] = true
+		result[row.Key] = row.ID
 	}
 
 	return result, nil

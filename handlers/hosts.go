@@ -69,7 +69,7 @@ func GetHosts(w http.ResponseWriter, r *http.Request) {
 		CurrentClusterJson string
 		Hosts              []*dal.HostRow
 		SavedQueries       []*dal.SavedQueryRow
-		MetricsMap         map[string]bool
+		MetricsMap         map[string]int64
 	}{
 		context.Get(r, "addr").(string),
 		currentUserRow,
@@ -107,6 +107,47 @@ func PostApiHosts(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
+	}
+
+	metricsMap, err := dal.NewMetric(db).AllByClusterIDAsMap(nil, hostRow.ClusterID)
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
+
+	tsMetric := dal.NewTSMetric(db)
+
+	// Loop through every host's data and see if they are part of graph metrics.
+	// If they are, insert a record in ts_metrics.
+	for path, data := range hostRow.DataAsFlatKeyValue() {
+		for dataKey, value := range data {
+			metricKey := path + "." + dataKey
+
+			if metricID, ok := metricsMap[metricKey]; ok {
+				// Argh! Can't I use generic here?
+				if trueValueInt64, ok := value.(int64); ok {
+					err = tsMetric.Create(nil, hostRow.ClusterID, metricID, metricKey, hostRow.Name, float64(trueValueInt64))
+					if err != nil {
+						println(err.Error())
+					}
+				} else if trueValueInt, ok := value.(int); ok {
+					err = tsMetric.Create(nil, hostRow.ClusterID, metricID, metricKey, hostRow.Name, float64(trueValueInt))
+					if err != nil {
+						println(err.Error())
+					}
+				} else if trueValueFloat64, ok := value.(float64); ok {
+					err = tsMetric.Create(nil, hostRow.ClusterID, metricID, metricKey, hostRow.Name, trueValueFloat64)
+					if err != nil {
+						println(err.Error())
+					}
+				} else if trueValueFloat32, ok := value.(float32); ok {
+					err = tsMetric.Create(nil, hostRow.ClusterID, metricID, metricKey, hostRow.Name, float64(trueValueFloat32))
+					if err != nil {
+						println(err.Error())
+					}
+				}
+			}
+		}
 	}
 
 	hostRowJson, err := json.Marshal(hostRow)

@@ -4,5 +4,5 @@ CREATE TABLE ts_metrics (
     created TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT NOW(),
     key TEXT NOT NULL,
     host TEXT NOT NULL,
-    value bigint NOT NULL DEFAULT 0
+    value double precision NOT NULL DEFAULT 0
 );

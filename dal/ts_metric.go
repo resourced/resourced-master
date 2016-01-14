@@ -19,7 +19,7 @@ type TSMetricRow struct {
 	Created   time.Time `db:"created"`
 	Key       string    `db:"key"`
 	Host      string    `db:"host"`
-	Value     int64     `db:"value"`
+	Value     float64   `db:"value"`
 }
 
 type TSMetric struct {
@@ -27,7 +27,7 @@ type TSMetric struct {
 }
 
 // Create a new record.
-func (ts *TSMetric) Create(tx *sqlx.Tx, clusterID, metricID, key, host string, value int64) error {
+func (ts *TSMetric) Create(tx *sqlx.Tx, clusterID, metricID int64, key, host string, value float64) error {
 	insertData := make(map[string]interface{})
 	insertData["cluster_id"] = clusterID
 	insertData["metric_id"] = metricID
