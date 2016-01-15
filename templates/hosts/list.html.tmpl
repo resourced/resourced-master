@@ -238,7 +238,8 @@ $('#graph-modal').on('show.bs.modal', function (event) {
 
     modal.find('.graph-modal-container').highcharts({
         chart: {
-            type: 'spline'
+            type: 'spline',
+            animation: Highcharts.svg, // don't animate in old IE
         },
         title: {
             text: 'Snow depth at Vikjafjellet, Norway'
@@ -263,8 +264,10 @@ $('#graph-modal').on('show.bs.modal', function (event) {
             min: 0
         },
         tooltip: {
-            headerFormat: '<b>{series.name}</b><br>',
-            pointFormat: '{point.x:%e. %b}: {point.y:.2f} m'
+            // headerFormat: '<b>{series.name}</b><br>',
+            // pointFormat: '{point.x:%e. %b}: {point.y:.2f} m',
+            shared: true,
+            crosshairs: true
         },
         exporting: {
             enabled: false
@@ -306,10 +309,18 @@ $('#graph-modal').on('show.bs.modal', function (event) {
             name: 'Winter 2013-2014',
             data: [
                 [Date.UTC(1970, 9, 29), 0],
+                [Date.UTC(1970, 9, 21), 0],
+                [Date.UTC(1970, 10, 4), 0.28],
                 [Date.UTC(1970, 10, 9), 0.4],
+                [Date.UTC(1970, 10, 27), 0.2],
                 [Date.UTC(1970, 11, 1), 0.25],
+                [Date.UTC(1970, 11, 2), 0.28],
+                [Date.UTC(1970, 11, 26), 0.28],
+                [Date.UTC(1970, 11, 29), 0.47],
                 [Date.UTC(1971, 0, 1), 1.66],
                 [Date.UTC(1971, 0, 10), 1.8],
+                [Date.UTC(1971, 0, 11), 0.79],
+                [Date.UTC(1971, 0, 26), 0.72],
                 [Date.UTC(1971, 1, 19), 1.76],
                 [Date.UTC(1971, 2, 25), 2.62],
                 [Date.UTC(1971, 3, 19), 2.41],
@@ -322,6 +333,7 @@ $('#graph-modal').on('show.bs.modal', function (event) {
             name: 'Winter 2014-2015',
             data: [
                 [Date.UTC(1970, 10, 25), 0],
+                [Date.UTC(1970, 11, 1), 0.25],
                 [Date.UTC(1970, 11, 6), 0.25],
                 [Date.UTC(1970, 11, 20), 1.41],
                 [Date.UTC(1970, 11, 25), 1.64],
