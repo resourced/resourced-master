@@ -20,7 +20,7 @@ type TSWatcherRow struct {
 	WatcherID     int64               `db:"watcher_id"`
 	AffectedHosts int64               `db:"affected_hosts"`
 	Created       time.Time           `db:"created"`
-	Data          sqlx_types.JsonText `db:"data"`
+	Data          sqlx_types.JSONText `db:"data"`
 }
 
 type TSWatcher struct {

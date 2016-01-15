@@ -24,7 +24,7 @@ type WatcherTriggerRow struct {
 	WatcherID           int64               `db:"watcher_id"`
 	LowViolationsCount  int64               `db:"low_violations_count"`
 	HighViolationsCount int64               `db:"high_violations_count"`
-	Actions             sqlx_types.JsonText `db:"actions"`
+	Actions             sqlx_types.JSONText `db:"actions"`
 }
 
 func (wt *WatcherTriggerRow) ActionTransport() string {

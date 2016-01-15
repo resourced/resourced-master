@@ -38,3 +38,33 @@ func (ts *TSMetric) Create(tx *sqlx.Tx, clusterID, metricID int64, key, host str
 	_, err := ts.InsertIntoTable(tx, insertData)
 	return err
 }
+
+func (ts *TSMetric) CreateByHostRow(tx *sqlx.Tx, hostRow *HostRow) error {
+	metricsMap, err := NewMetric(ts.db).AllByClusterIDAsMap(tx, hostRow.ClusterID)
+	if err != nil {
+		return err
+	}
+
+	// Loop through every host's data and see if they are part of graph metrics.
+	// If they are, insert a record in ts_metrics.
+	for path, data := range hostRow.DataAsFlatKeyValue() {
+		for dataKey, value := range data {
+			metricKey := path + "." + dataKey
+
+			if metricID, ok := metricsMap[metricKey]; ok {
+				// Deserialized JSON number -> interface{} always have float64 as type.
+				if trueValueFloat64, ok := value.(float64); ok {
+					// What the...
+					toInt64AndBack := float64(int64(trueValueFloat64))
+					if toInt64AndBack == trueValueFloat64 {
+						trueValueFloat64 = toInt64AndBack
+					}
+
+					// Ignore error for now, there's no need to break the entire loop when one insert fails.
+					ts.Create(tx, hostRow.ClusterID, metricID, metricKey, hostRow.Name, trueValueFloat64)
+				}
+			}
+		}
+	}
+	return nil
+}

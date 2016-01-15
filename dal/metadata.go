@@ -18,7 +18,7 @@ func NewMetadata(db *sqlx.DB) *Metadata {
 type MetadataRow struct {
 	ClusterID int64               `db:"cluster_id" json:"-"`
 	Key       string              `db:"key"`
-	Data      sqlx_types.JsonText `db:"data"`
+	Data      sqlx_types.JSONText `db:"data"`
 }
 
 func (metadataRow *MetadataRow) DataString() string {
