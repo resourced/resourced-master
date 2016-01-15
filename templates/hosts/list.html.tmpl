@@ -179,8 +179,8 @@ $('#search-input').bind("input propertychange", function(e) {
             <form method="post" action="/graphs">
                 <input type="hidden" name="_method" value="post">
 
-                <div class="modal-body" style="padding: 0">
-                    <div class="graph-modal-container" style="min-width: 310px; height: 400px; margin: 0 auto"></div>
+                <div class="modal-body">
+                    <div class="graph-modal-container"></div>
                 </div>
 
                 <div class="modal-footer">
@@ -230,14 +230,26 @@ $('.row.hosts .toggler-body').on('switchChange.bootstrapSwitch', function(event,
     $detailHeader.siblings('.detail-body[data-path="' + path + '"]').toggle();
 });
 
+$('#graph-modal').on('shown.bs.modal', function() {
+    var modal = $(this);
+    modal.find('.graph-modal-container').css('visibility', 'initial');
+
+    var containerDOM = modal.find('.graph-modal-container');
+    containerDOM.highcharts().reflow();
+});
+
 $('#graph-modal').on('show.bs.modal', function (event) {
     var button = $(event.relatedTarget);   // Button that triggered the modal
     var metricId = button.data('metric-id');
 
     var modal = $(this);
+    var containerDOM = modal.find('.graph-modal-container');
 
-    modal.find('.graph-modal-container').highcharts({
+    containerDOM.css('visibility', 'hidden');
+
+    containerDOM.highcharts({
         chart: {
+            margin: 0,
             type: 'spline',
             animation: Highcharts.svg, // don't animate in old IE
         },
@@ -359,7 +371,6 @@ $('#graph-modal').on('show.bs.modal', function (event) {
             ]
         }]
     });
-
 });
 </script>
 {{end}}
