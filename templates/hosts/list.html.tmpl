@@ -143,7 +143,8 @@ $('#search-input').bind("input propertychange", function(e) {
                                     <div class="btn-group" role="group">
                                         {{ if (ne 0 (index $.MetricsMap (print $path "." $key))) }}
                                         <button class="btn btn-success btn-sm active" data-toggle="modal" data-target="#graph-modal"
-                                            data-metric-id="{{ index $.MetricsMap (print $path "." $key) }}"
+                                            data-metric-id="{{ index $.MetricsMap (print $path "." $key) }}",
+                                            data-metric-key="{{ print $path "." $key }}"
                                             data-host="{{ $host.Name }}">
                                             <span class="glyphicon glyphicon-stats" aria-hidden="true"></span>
                                         </button>
@@ -174,21 +175,23 @@ $('#search-input').bind("input propertychange", function(e) {
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-                <h4 class="modal-title" id="graph-label">Graph</h4>
+                <select class="form-control graph-modal-created-interval" name="CreatedInterval">
+                    <option value="5 minute">5 minutes ago</option>
+                    <option value="10 minute">10 minutes ago</option>
+                    <option value="15 minute">15 minutes ago</option>
+                    <option value="30 minute">30 minutes ago</option>
+                    <option value="60 minute" selected="selected">60 minutes ago</option>
+                    <option value="2 hour">2 hours ago</option>
+                </select>
             </div>
 
-            <form method="post" action="/graphs">
-                <input type="hidden" name="_method" value="post">
+            <div class="modal-body">
+                <div class="graph-modal-container"></div>
+            </div>
 
-                <div class="modal-body">
-                    <div class="graph-modal-container"></div>
-                </div>
-
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
-                </div>
-            </form>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+            </div>
         </div>
     </div>
 </div>
@@ -243,33 +246,35 @@ $('#graph-modal').on('shown.bs.modal', function() {
 $('#graph-modal').on('show.bs.modal', function (event) {
     var button = $(event.relatedTarget);   // Button that triggered the modal
     var metricId = button.data('metric-id');
+    var metricKey = button.data('metric-key');
     var host = button.data('host');
+
     var modal = $(this);
+    modal.data('metric-id', metricId);
+    modal.data('metric-key', metricKey);
+    modal.data('host', host);
+
+    // Fetch created interval from various places
+    var createdInterval = modal.data('created-interval');
+    if(!createdInterval) {
+        createdInterval = $('.graph-modal-created-interval').val();
+    }
+    if(!createdInterval) {
+        createdInterval = '1 hour'
+    }
 
     var containerDOM = modal.find('.graph-modal-container');
     containerDOM.css('visibility', 'hidden');
 
     $.ajax({
-        url: "/api/metrics/" + metricId + "/hosts/" + host,
+        url: "/api/metrics/" + metricId + "/hosts/" + host + "?CreatedInterval=" + createdInterval,
         beforeSend: function(xhr) {
             xhr.setRequestHeader("Authorization", "Basic " + window.btoa("{{ $.AccessToken.Token }}:"));
         },
         success: function(result) {
             containerDOM.highcharts({
-                chart: {
-                    margin: 0,
-                    type: 'spline',
-                    animation: Highcharts.svg, // don't animate in old IE
-                },
-                xAxis: {
-                    type: 'datetime',
-                    dateTimeLabelFormats: { // don't display the dummy year
-                        month: '%e. %b',
-                        year: '%b'
-                    },
-                    title: {
-                        text: 'Date'
-                    }
+                title: {
+                    text: metricKey
                 },
                 yAxis: {
                     title: {
@@ -277,23 +282,42 @@ $('#graph-modal').on('show.bs.modal', function (event) {
                     },
                     min: 0
                 },
-                tooltip: {
-                    // headerFormat: '<b>{series.name}</b><br>',
-                    // pointFormat: '{point.x:%e. %b}: {point.y:.2f} m',
-                    shared: true,
-                    crosshairs: true
-                },
-                exporting: {
-                    enabled: false
-                },
-                plotOptions: {
-                    spline: {
-                        marker: {
-                            enabled: true
-                        }
-                    }
-                },
+                // tooltip: {
+                //     headerFormat: '<b>{series.name}</b><br>',
+                //     pointFormat: '{point.x:%e. %b}: {point.y:.2f} m'
+                // },
+                series: [result]
+            });
+        }
+    });
+});
 
+$('.graph-modal-created-interval').on('change', function(event) {
+    var modal = $('#graph-modal');
+    var metricId = modal.data('metric-id');
+    var metricKey = modal.data('metric-key');
+    var host = modal.data('host');
+    var containerDOM = modal.find('.graph-modal-container');
+    var createdInterval = $(this).val();
+
+    modal.data('created-interval', createdInterval);
+
+    $.ajax({
+        url: "/api/metrics/" + metricId + "/hosts/" + host + "?CreatedInterval=" + createdInterval,
+        beforeSend: function(xhr) {
+            xhr.setRequestHeader("Authorization", "Basic " + window.btoa("{{ $.AccessToken.Token }}:"));
+        },
+        success: function(result) {
+            containerDOM.highcharts({
+                title: {
+                    text: metricKey
+                },
+                yAxis: {
+                    title: {
+                        text: 'Snow depth (m)'
+                    },
+                    min: 0
+                },
                 series: [result]
             });
         }

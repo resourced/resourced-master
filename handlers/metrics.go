@@ -33,6 +33,11 @@ func PostMetrics(w http.ResponseWriter, r *http.Request) {
 func GetApiTSMetricsByHost(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
+	createdInterval := r.URL.Query().Get("CreatedInterval")
+	if createdInterval == "" {
+		createdInterval = "1 hour"
+	}
+
 	db := context.Get(r, "db").(*sqlx.DB)
 
 	id, err := getIdFromPath(w, r)
@@ -43,7 +48,7 @@ func GetApiTSMetricsByHost(w http.ResponseWriter, r *http.Request) {
 
 	host := mux.Vars(r)["host"]
 
-	hcMetrics, err := dal.NewTSMetric(db).AllByMetricIDHostAndIntervalForHighchart(nil, id, host, "")
+	hcMetrics, err := dal.NewTSMetric(db).AllByMetricIDHostAndIntervalForHighchart(nil, id, host, createdInterval)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
