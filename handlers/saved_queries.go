@@ -12,7 +12,7 @@ import (
 )
 
 func PostSavedQueries(w http.ResponseWriter, r *http.Request) {
-	db := context.Get(r, "db").(*sqlx.DB)
+	db := context.Get(r, "db.Core").(*sqlx.DB)
 
 	cookieStore := context.Get(r, "cookieStore").(*sessions.CookieStore)
 
@@ -61,7 +61,7 @@ func DeleteSavedQueriesID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	db := context.Get(r, "db").(*sqlx.DB)
+	db := context.Get(r, "db.Core").(*sqlx.DB)
 
 	cookieStore := context.Get(r, "cookieStore").(*sessions.CookieStore)
 

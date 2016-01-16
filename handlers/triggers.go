@@ -68,7 +68,7 @@ func readTriggersFormData(r *http.Request) (map[string]interface{}, error) {
 		return nil, err
 	}
 
-	db := context.Get(r, "db").(*sqlx.DB)
+	db := context.Get(r, "db.Core").(*sqlx.DB)
 
 	return dal.NewWatcherTrigger(db).CreateOrUpdateParameters(currentCluster.ID, watcherID, lowViolationsCount, highViolationsCount, actionsJson), nil
 }
@@ -82,7 +82,7 @@ func PostWatchersTriggers(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	db := context.Get(r, "db").(*sqlx.DB)
+	db := context.Get(r, "db.Core").(*sqlx.DB)
 
 	_, err = dal.NewWatcherTrigger(db).Create(nil, createParams)
 	if err != nil {
@@ -121,7 +121,7 @@ func PutWatcherTriggerID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	db := context.Get(r, "db").(*sqlx.DB)
+	db := context.Get(r, "db.Core").(*sqlx.DB)
 
 	_, err = dal.NewWatcherTrigger(db).UpdateByID(nil, updateParams, id)
 	if err != nil {
@@ -141,7 +141,7 @@ func DeleteWatcherTriggerID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	db := context.Get(r, "db").(*sqlx.DB)
+	db := context.Get(r, "db.Core").(*sqlx.DB)
 
 	_, err = dal.NewWatcherTrigger(db).DeleteByID(nil, id)
 	if err != nil {

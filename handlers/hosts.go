@@ -33,7 +33,7 @@ func GetHosts(w http.ResponseWriter, r *http.Request) {
 
 	currentCluster := currentClusterInterface.(*dal.ClusterRow)
 
-	db := context.Get(r, "db").(*sqlx.DB)
+	db := context.Get(r, "db.Core").(*sqlx.DB)
 
 	query := r.URL.Query().Get("q")
 
@@ -93,7 +93,7 @@ func GetHosts(w http.ResponseWriter, r *http.Request) {
 func PostApiHosts(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	db := context.Get(r, "db").(*sqlx.DB)
+	db := context.Get(r, "db.Core").(*sqlx.DB)
 
 	accessTokenRow := context.Get(r, "accessTokenRow").(*dal.AccessTokenRow)
 
@@ -126,7 +126,7 @@ func PostApiHosts(w http.ResponseWriter, r *http.Request) {
 func GetApiHosts(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	db := context.Get(r, "db").(*sqlx.DB)
+	db := context.Get(r, "db.Core").(*sqlx.DB)
 
 	accessTokenRow := context.Get(r, "accessTokenRow").(*dal.AccessTokenRow)
 

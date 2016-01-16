@@ -15,7 +15,7 @@ import (
 func GetClusters(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html")
 
-	db := context.Get(r, "db").(*sqlx.DB)
+	db := context.Get(r, "db.Core").(*sqlx.DB)
 
 	currentUser := getCurrentUser(w, r)
 
@@ -55,7 +55,7 @@ func GetClusters(w http.ResponseWriter, r *http.Request) {
 }
 
 func PostClusters(w http.ResponseWriter, r *http.Request) {
-	db := context.Get(r, "db").(*sqlx.DB)
+	db := context.Get(r, "db.Core").(*sqlx.DB)
 
 	cookieStore := context.Get(r, "cookieStore").(*sessions.CookieStore)
 

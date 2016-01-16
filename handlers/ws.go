@@ -39,7 +39,7 @@ var upgrader = websocket.Upgrader{
 func ApiWSAccessToken(w http.ResponseWriter, r *http.Request) {
 	accessToken := mux.Vars(r)["id"]
 
-	db := context.Get(r, "db").(*sqlx.DB)
+	db := context.Get(r, "db.Core").(*sqlx.DB)
 
 	// Check if access token exists
 	accessTokenRow, err := dal.NewAccessToken(db).GetByAccessToken(nil, accessToken)

@@ -34,7 +34,7 @@ func GetMetadata(w http.ResponseWriter, r *http.Request) {
 
 	currentCluster := currentClusterInterface.(*dal.ClusterRow)
 
-	db := context.Get(r, "db").(*sqlx.DB)
+	db := context.Get(r, "db.Core").(*sqlx.DB)
 
 	metadataRows, err := dal.NewMetadata(db).AllByClusterID(nil, currentCluster.ID)
 	if err != nil {
@@ -80,7 +80,7 @@ func PostMetadata(w http.ResponseWriter, r *http.Request) {
 	key := r.FormValue("Key")
 	data := r.FormValue("Data")
 
-	db := context.Get(r, "db").(*sqlx.DB)
+	db := context.Get(r, "db.Core").(*sqlx.DB)
 
 	_, err := dal.NewMetadata(db).CreateOrUpdate(nil, currentCluster.ID, key, []byte(data))
 	if err != nil {
@@ -118,7 +118,7 @@ func DeleteMetadataKey(w http.ResponseWriter, r *http.Request) {
 	}
 	currentCluster := currentClusterInterface.(*dal.ClusterRow)
 
-	db := context.Get(r, "db").(*sqlx.DB)
+	db := context.Get(r, "db.Core").(*sqlx.DB)
 
 	vars := mux.Vars(r)
 	key := vars["key"]
@@ -135,7 +135,7 @@ func DeleteMetadataKey(w http.ResponseWriter, r *http.Request) {
 func GetApiMetadata(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	db := context.Get(r, "db").(*sqlx.DB)
+	db := context.Get(r, "db.Core").(*sqlx.DB)
 
 	accessTokenRow := context.Get(r, "accessTokenRow").(*dal.AccessTokenRow)
 
@@ -157,7 +157,7 @@ func GetApiMetadata(w http.ResponseWriter, r *http.Request) {
 func PostApiMetadataKey(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	db := context.Get(r, "db").(*sqlx.DB)
+	db := context.Get(r, "db.Core").(*sqlx.DB)
 
 	accessTokenRow := context.Get(r, "accessTokenRow").(*dal.AccessTokenRow)
 
@@ -188,7 +188,7 @@ func PostApiMetadataKey(w http.ResponseWriter, r *http.Request) {
 func DeleteApiMetadataKey(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	db := context.Get(r, "db").(*sqlx.DB)
+	db := context.Get(r, "db.Core").(*sqlx.DB)
 
 	accessTokenRow := context.Get(r, "accessTokenRow").(*dal.AccessTokenRow)
 
@@ -213,7 +213,7 @@ func DeleteApiMetadataKey(w http.ResponseWriter, r *http.Request) {
 func GetApiMetadataKey(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	db := context.Get(r, "db").(*sqlx.DB)
+	db := context.Get(r, "db.Core").(*sqlx.DB)
 
 	accessTokenRow := context.Get(r, "accessTokenRow").(*dal.AccessTokenRow)
 

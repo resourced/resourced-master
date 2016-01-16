@@ -67,7 +67,7 @@ type Application struct {
 func (app *Application) MiddlewareStruct() (*interpose.Middleware, error) {
 	middle := interpose.New()
 	middle.Use(middlewares.SetAddr(app.GeneralConfig.Addr))
-	middle.Use(middlewares.SetDB(app.DBConfig.Core))
+	middle.Use(middlewares.SetDBs(app.DBConfig))
 	middle.Use(middlewares.SetCookieStore(app.cookieStore))
 	middle.Use(middlewares.SetWSTraffickers(app.WSTraffickers))
 

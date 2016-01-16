@@ -9,6 +9,7 @@ import (
 	"github.com/gorilla/context"
 	"github.com/gorilla/sessions"
 	"github.com/jmoiron/sqlx"
+	"github.com/resourced/resourced-master/config"
 	"github.com/resourced/resourced-master/dal"
 	"github.com/resourced/resourced-master/libhttp"
 	"github.com/resourced/resourced-master/wstrafficker"
@@ -28,10 +29,12 @@ func SetAddr(addr string) func(http.Handler) http.Handler {
 	}
 }
 
-func SetDB(db *sqlx.DB) func(http.Handler) http.Handler {
+func SetDBs(dbConfig *config.DBConfig) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			context.Set(r, "db", db)
+			context.Set(r, "db.Core", dbConfig.Core)
+			context.Set(r, "db.TSWatchers", dbConfig.TSWatchers)
+			context.Set(r, "db.TSMetrics", dbConfig.TSMetrics)
 
 			next.ServeHTTP(w, r)
 		})
@@ -72,7 +75,7 @@ func SetClusters(next http.Handler) http.Handler {
 
 		userRow := userRowInterface.(*dal.UserRow)
 
-		db := context.Get(r, "db").(*sqlx.DB)
+		db := context.Get(r, "db.Core").(*sqlx.DB)
 
 		clusterRows, err := dal.NewCluster(db).AllClustersByUserID(nil, userRow.ID)
 		if err != nil {
@@ -148,7 +151,7 @@ func MustLoginApi(next http.Handler) http.Handler {
 			return
 		}
 
-		db := context.Get(r, "db").(*sqlx.DB)
+		db := context.Get(r, "db.Core").(*sqlx.DB)
 
 		accessTokenRow, err := dal.NewAccessToken(db).GetByAccessToken(nil, accessTokenString)
 		if err != nil {

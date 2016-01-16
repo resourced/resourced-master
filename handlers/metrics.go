@@ -11,7 +11,7 @@ import (
 )
 
 func PostMetrics(w http.ResponseWriter, r *http.Request) {
-	db := context.Get(r, "db").(*sqlx.DB)
+	db := context.Get(r, "db.Core").(*sqlx.DB)
 
 	clusterID, err := getIdFromPath(w, r)
 	if err != nil {
@@ -38,7 +38,7 @@ func GetApiTSMetricsByHost(w http.ResponseWriter, r *http.Request) {
 		createdInterval = "1 hour"
 	}
 
-	db := context.Get(r, "db").(*sqlx.DB)
+	db := context.Get(r, "db.Core").(*sqlx.DB)
 
 	id, err := getIdFromPath(w, r)
 	if err != nil {

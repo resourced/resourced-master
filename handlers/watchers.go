@@ -34,7 +34,7 @@ func GetWatchers(w http.ResponseWriter, r *http.Request) {
 
 	currentCluster := currentClusterInterface.(*dal.ClusterRow)
 
-	db := context.Get(r, "db").(*sqlx.DB)
+	db := context.Get(r, "db.Core").(*sqlx.DB)
 
 	watchers, err := dal.NewWatcher(db).AllByClusterID(nil, currentCluster.ID)
 	if err != nil {
@@ -144,7 +144,7 @@ func readFormData(r *http.Request) (map[string]interface{}, error) {
 	// 	return nil, err
 	// }
 
-	db := context.Get(r, "db").(*sqlx.DB)
+	db := context.Get(r, "db.Core").(*sqlx.DB)
 
 	return dal.NewWatcher(db).CreateOrUpdateParameters(
 		currentCluster.ID, savedQueryID, savedQuery, name,
@@ -160,7 +160,7 @@ func PostWatchers(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	db := context.Get(r, "db").(*sqlx.DB)
+	db := context.Get(r, "db.Core").(*sqlx.DB)
 
 	_, err = dal.NewWatcher(db).Create(nil, createParams)
 	if err != nil {
@@ -200,7 +200,7 @@ func PutWatcherID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	db := context.Get(r, "db").(*sqlx.DB)
+	db := context.Get(r, "db.Core").(*sqlx.DB)
 
 	_, err = dal.NewWatcher(db).UpdateByID(nil, updateParams, id)
 	if err != nil {
@@ -221,7 +221,7 @@ func DeleteWatcherID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	db := context.Get(r, "db").(*sqlx.DB)
+	db := context.Get(r, "db.Core").(*sqlx.DB)
 
 	_, err = dal.NewWatcher(db).DeleteByID(nil, id)
 	if err != nil {
