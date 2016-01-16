@@ -17,7 +17,6 @@ import (
 	"github.com/justinas/alice"
 	_ "github.com/lib/pq"
 	"github.com/marcw/pagerduty"
-	"github.com/mattes/migrate/migrate"
 	"github.com/resourced/resourced-master/config"
 	"github.com/resourced/resourced-master/dal"
 	"github.com/resourced/resourced-master/handlers"
@@ -137,10 +136,6 @@ func (app *Application) mux() *mux.Router {
 	router.PathPrefix("/").Handler(http.FileServer(http.Dir("static")))
 
 	return router
-}
-
-func (app *Application) MigrateUp() (err []error, ok bool) {
-	return migrate.UpSync(app.GeneralConfig.DSN, "./migrations")
 }
 
 func (app *Application) WatchAll() {

@@ -24,6 +24,10 @@ KeyFile = ""
 
 [Watchers]
 ListFetchInterval = "60s"
+DSNs = [
+    "postgres://localhost:5432/resourced-master-ts-watchers-1?sslmode=disable",
+    "postgres://localhost:5432/resourced-master-ts-watchers-2?sslmode=disable"
+]
 
 [Watchers.Email]
 From = "alert@example.com"
@@ -41,3 +45,9 @@ sprint = "messaging.sprintpcs.com"
 tmobile = "tmomail.com"
 verizon = "vtext.com"
 virgin = "vmobl.com"
+
+[Metrics]
+DSNs = [
+    "postgres://localhost:5432/resourced-master-ts-metrics-1?sslmode=disable",
+    "postgres://localhost:5432/resourced-master-ts-metrics-2?sslmode=disable"
+]

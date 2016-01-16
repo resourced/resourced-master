@@ -38,6 +38,7 @@ type GeneralConfig struct {
 
 	Watchers struct {
 		ListFetchInterval string
+		DSNs              []string
 
 		Email struct {
 			From          string
@@ -50,5 +51,9 @@ type GeneralConfig struct {
 		}
 
 		SMSEmailGateway map[string]string
+	}
+
+	Metrics struct {
+		DSNs []string
 	}
 }
