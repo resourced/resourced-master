@@ -5,6 +5,7 @@ import (
 
 	"github.com/BurntSushi/toml"
 	"github.com/jmoiron/sqlx"
+	"github.com/resourced/resourced-master/multidbs"
 	"github.com/resourced/resourced/libstring"
 )
 
@@ -62,10 +63,6 @@ type GeneralConfig struct {
 // NewDBConfig is the constructor for DBConfig.
 func NewDBConfig(generalConfig GeneralConfig) (*DBConfig, error) {
 	conf := &DBConfig{}
-	conf.TSWatchers = make([]*sqlx.DB, len(generalConfig.Watchers.DSNs))
-	conf.TSWatcherDSNs = make([]string, len(generalConfig.Watchers.DSNs))
-	conf.TSMetrics = make([]*sqlx.DB, len(generalConfig.Metrics.DSNs))
-	conf.TSMetricDSNs = make([]string, len(generalConfig.Metrics.DSNs))
 
 	coreDB, err := sqlx.Connect("postgres", generalConfig.DSN)
 	if err != nil {
@@ -74,35 +71,24 @@ func NewDBConfig(generalConfig GeneralConfig) (*DBConfig, error) {
 	conf.Core = coreDB
 	conf.CoreDSN = generalConfig.DSN
 
-	for i, dsn := range generalConfig.Watchers.DSNs {
-		conf.TSWatcherDSNs[i] = dsn
-
-		db, err := sqlx.Connect("postgres", dsn)
-		if err != nil {
-			return nil, err
-		}
-		conf.TSWatchers[i] = db
+	tsWatcherMultiDBs, err := multidbs.New(generalConfig.Watchers.DSNs, 100)
+	if err != nil {
+		return nil, err
 	}
-	for i, dsn := range generalConfig.Metrics.DSNs {
-		conf.TSMetricDSNs[i] = dsn
+	conf.TSWatchers = tsWatcherMultiDBs
 
-		db, err := sqlx.Connect("postgres", dsn)
-		if err != nil {
-			return nil, err
-		}
-		conf.TSMetrics[i] = db
+	tsMetricMultiDBs, err := multidbs.New(generalConfig.Metrics.DSNs, 100)
+	if err != nil {
+		return nil, err
 	}
+	conf.TSMetrics = tsMetricMultiDBs
 
 	return conf, nil
 }
 
 type DBConfig struct {
-	Core    *sqlx.DB
-	CoreDSN string
-
-	TSWatchers    []*sqlx.DB
-	TSWatcherDSNs []string
-
-	TSMetrics    []*sqlx.DB
-	TSMetricDSNs []string
+	Core       *sqlx.DB
+	CoreDSN    string
+	TSWatchers *multidbs.MultiDBs
+	TSMetrics  *multidbs.MultiDBs
 }
