@@ -5,7 +5,7 @@ import (
 
 	"github.com/BurntSushi/toml"
 	"github.com/jmoiron/sqlx"
-	"github.com/resourced/resourced-master/multidbs"
+	"github.com/resourced/resourced-master/multidb"
 	"github.com/resourced/resourced/libstring"
 )
 
@@ -40,7 +40,6 @@ type GeneralConfig struct {
 
 	Watchers struct {
 		ListFetchInterval string
-		DSNs              []string
 
 		Email struct {
 			From          string
@@ -53,15 +52,27 @@ type GeneralConfig struct {
 		}
 
 		SMSEmailGateway map[string]string
+
+		DSNs                  []string
+		ReplicationPercentage int
 	}
 
 	Metrics struct {
-		DSNs []string
+		DSNs                  []string
+		ReplicationPercentage int
 	}
 }
 
 // NewDBConfig is the constructor for DBConfig.
 func NewDBConfig(generalConfig GeneralConfig) (*DBConfig, error) {
+	// Set defaults
+	if generalConfig.Watchers.ReplicationPercentage == 0 {
+		generalConfig.Watchers.ReplicationPercentage = 100
+	}
+	if generalConfig.Metrics.ReplicationPercentage == 0 {
+		generalConfig.Metrics.ReplicationPercentage = 100
+	}
+
 	conf := &DBConfig{}
 
 	coreDB, err := sqlx.Connect("postgres", generalConfig.DSN)
@@ -71,17 +82,17 @@ func NewDBConfig(generalConfig GeneralConfig) (*DBConfig, error) {
 	conf.Core = coreDB
 	conf.CoreDSN = generalConfig.DSN
 
-	tsWatcherMultiDBs, err := multidbs.New(generalConfig.Watchers.DSNs, 100)
+	tsWatcherMultiDB, err := multidb.New(generalConfig.Watchers.DSNs, generalConfig.Watchers.ReplicationPercentage)
 	if err != nil {
 		return nil, err
 	}
-	conf.TSWatchers = tsWatcherMultiDBs
+	conf.TSWatchers = tsWatcherMultiDB
 
-	tsMetricMultiDBs, err := multidbs.New(generalConfig.Metrics.DSNs, 100)
+	tsMetricMultiDB, err := multidb.New(generalConfig.Metrics.DSNs, generalConfig.Metrics.ReplicationPercentage)
 	if err != nil {
 		return nil, err
 	}
-	conf.TSMetrics = tsMetricMultiDBs
+	conf.TSMetrics = tsMetricMultiDB
 
 	return conf, nil
 }
@@ -89,6 +100,6 @@ func NewDBConfig(generalConfig GeneralConfig) (*DBConfig, error) {
 type DBConfig struct {
 	Core       *sqlx.DB
 	CoreDSN    string
-	TSWatchers *multidbs.MultiDBs
-	TSMetrics  *multidbs.MultiDBs
+	TSWatchers *multidb.MultiDB
+	TSMetrics  *multidb.MultiDB
 }

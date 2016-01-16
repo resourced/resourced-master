@@ -1,4 +1,4 @@
-package multidbs
+package multidb
 
 import (
 	"math"
@@ -8,8 +8,8 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
-func New(dsns []string, replicationPercentage int) (*MultiDBs, error) {
-	m := &MultiDBs{}
+func New(dsns []string, replicationPercentage int) (*MultiDB, error) {
+	m := &MultiDB{}
 	m.currentIndex = 0
 	m.replicationPercentage = replicationPercentage
 	m.dsns = dsns
@@ -26,21 +26,21 @@ func New(dsns []string, replicationPercentage int) (*MultiDBs, error) {
 	return m, nil
 }
 
-type MultiDBs struct {
+type MultiDB struct {
 	dbs                   []*sqlx.DB
 	dsns                  []string
 	currentIndex          int
 	replicationPercentage int
 }
 
-func (mdb *MultiDBs) PickRandom() *sqlx.DB {
+func (mdb *MultiDB) PickRandom() *sqlx.DB {
 	rand.Seed(time.Now().Unix())
 	index := rand.Intn(len(mdb.dbs))
 
 	return mdb.dbs[index]
 }
 
-func (mdb *MultiDBs) PickNext() *sqlx.DB {
+func (mdb *MultiDB) PickNext() *sqlx.DB {
 	mdb.currentIndex = mdb.currentIndex + 1
 	if mdb.currentIndex >= len(mdb.dbs) {
 		mdb.currentIndex = 0
@@ -49,11 +49,11 @@ func (mdb *MultiDBs) PickNext() *sqlx.DB {
 	return mdb.dbs[mdb.currentIndex]
 }
 
-func (mdb *MultiDBs) NumOfConnectionsByReplicationPercentage() int {
+func (mdb *MultiDB) NumOfConnectionsByReplicationPercentage() int {
 	return int(math.Ceil(float64(mdb.replicationPercentage / 100 * len(mdb.dbs))))
 }
 
-func (mdb *MultiDBs) PickMultipleForWrites() []*sqlx.DB {
+func (mdb *MultiDB) PickMultipleForWrites() []*sqlx.DB {
 	dbs := make([]*sqlx.DB, mdb.NumOfConnectionsByReplicationPercentage())
 
 	for i := 0; i < len(dbs); i++ {

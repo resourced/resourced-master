@@ -11,6 +11,7 @@ import (
 	"github.com/jmoiron/sqlx"
 	"github.com/resourced/resourced-master/dal"
 	"github.com/resourced/resourced-master/libhttp"
+	"github.com/resourced/resourced-master/multidb"
 )
 
 func GetHosts(w http.ResponseWriter, r *http.Request) {
@@ -109,10 +110,16 @@ func PostApiHosts(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Asynchronously append to ts_metrics
-	go func() {
-		dal.NewTSMetric(db).CreateByHostRow(nil, hostRow)
-	}()
+	// Asynchronously write time series data to ts_metrics
+	dbs := context.Get(r, "multidb.TSMetrics").(*multidb.MultiDB).PickMultipleForWrites()
+	for _, db := range dbs {
+		go func() {
+			err := dal.NewTSMetric(db).CreateByHostRow(nil, hostRow)
+			if err != nil {
+				println(err.Error())
+			}
+		}()
+	}
 
 	hostRowJson, err := json.Marshal(hostRow)
 	if err != nil {

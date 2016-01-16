@@ -28,6 +28,7 @@ DSNs = [
     "postgres://localhost:5432/resourced-master-ts-watchers-1?sslmode=disable",
     "postgres://localhost:5432/resourced-master-ts-watchers-2?sslmode=disable"
 ]
+ReplicationPercentage = 100
 
 [Watchers.Email]
 From = "alert@example.com"
@@ -51,3 +52,5 @@ DSNs = [
     "postgres://localhost:5432/resourced-master-ts-metrics-1?sslmode=disable",
     "postgres://localhost:5432/resourced-master-ts-metrics-2?sslmode=disable"
 ]
+
+ReplicationPercentage = 100
