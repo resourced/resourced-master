@@ -13,7 +13,6 @@ import (
 	"github.com/gorilla/csrf"
 	"github.com/gorilla/mux"
 	"github.com/gorilla/sessions"
-	"github.com/jmoiron/sqlx"
 	"github.com/justinas/alice"
 	_ "github.com/lib/pq"
 	"github.com/marcw/pagerduty"
@@ -34,7 +33,7 @@ func New(configDir string) (*Application, error) {
 		return nil, err
 	}
 
-	db, err := sqlx.Connect("postgres", generalConfig.DSN)
+	dbConfig, err := config.NewDBConfig(generalConfig)
 	if err != nil {
 		return nil, err
 	}
@@ -47,7 +46,7 @@ func New(configDir string) (*Application, error) {
 	app := &Application{}
 	app.Hostname = hostname
 	app.GeneralConfig = generalConfig
-	app.DB = db
+	app.DBConfig = dbConfig
 	app.cookieStore = sessions.NewCookieStore([]byte(app.GeneralConfig.CookieSecret))
 	app.csrfProtect = csrf.Protect([]byte(app.GeneralConfig.CookieSecret))
 	app.WSTraffickers = wstrafficker.NewWSTraffickers()
@@ -59,7 +58,7 @@ func New(configDir string) (*Application, error) {
 type Application struct {
 	Hostname      string
 	GeneralConfig config.GeneralConfig
-	DB            *sqlx.DB
+	DBConfig      *config.DBConfig
 	cookieStore   *sessions.CookieStore
 	csrfProtect   func(http.Handler) http.Handler
 	WSTraffickers *wstrafficker.WSTraffickers
@@ -68,7 +67,7 @@ type Application struct {
 func (app *Application) MiddlewareStruct() (*interpose.Middleware, error) {
 	middle := interpose.New()
 	middle.Use(middlewares.SetAddr(app.GeneralConfig.Addr))
-	middle.Use(middlewares.SetDB(app.DB))
+	middle.Use(middlewares.SetDB(app.DBConfig.Core))
 	middle.Use(middlewares.SetCookieStore(app.cookieStore))
 	middle.Use(middlewares.SetWSTraffickers(app.WSTraffickers))
 
@@ -144,8 +143,8 @@ func (app *Application) WatchAll() {
 	// Fetch daemons and watchers data every 5 minutes
 	go func() {
 		for {
-			daemonHostnames, _ := dal.NewDaemon(app.DB).AllHostnames(nil)
-			groupedWatcherRows, _ := dal.NewWatcher(app.DB).AllSplitToDaemons(nil, daemonHostnames)
+			daemonHostnames, _ := dal.NewDaemon(app.DBConfig.Core).AllHostnames(nil)
+			groupedWatcherRows, _ := dal.NewWatcher(app.DBConfig.Core).AllSplitToDaemons(nil, daemonHostnames)
 			watcherRowsChan <- groupedWatcherRows[app.Hostname]
 
 			libtime.SleepString(app.GeneralConfig.Watchers.ListFetchInterval)
@@ -174,7 +173,7 @@ func (app *Application) WatchOnce(clusterID int64, watcherRow *dal.WatcherRow) e
 
 	lastUpdated := strings.Replace(watcherRow.HostsLastUpdated, " ago", "", 1)
 
-	affectedHosts, err := dal.NewHost(app.DB).AllByClusterIDQueryAndUpdatedInterval(nil, clusterID, watcherRow.SavedQuery, lastUpdated)
+	affectedHosts, err := dal.NewHost(app.DBConfig.Core).AllByClusterIDQueryAndUpdatedInterval(nil, clusterID, watcherRow.SavedQuery, lastUpdated)
 	if err != nil {
 		return err
 	}
@@ -195,14 +194,14 @@ func (app *Application) WatchOnce(clusterID int64, watcherRow *dal.WatcherRow) e
 			return err
 		}
 
-		err = dal.NewTSWatcher(app.DB).Create(nil, clusterID, watcherRow.ID, numAffectedHosts, jsonData)
+		err = dal.NewTSWatcher(app.DBConfig.Core).Create(nil, clusterID, watcherRow.ID, numAffectedHosts, jsonData)
 	}
 
 	return err
 }
 
 func (app *Application) RunTrigger(clusterID int64, watcherRow *dal.WatcherRow) error {
-	violationsCount, err := dal.NewTSWatcher(app.DB).CountViolationsSinceLastGreenMarker(nil)
+	violationsCount, err := dal.NewTSWatcher(app.DBConfig.Core).CountViolationsSinceLastGreenMarker(nil)
 	if err != nil {
 		return err
 	}
@@ -212,12 +211,12 @@ func (app *Application) RunTrigger(clusterID int64, watcherRow *dal.WatcherRow) 
 		return nil
 	}
 
-	triggerRows, err := dal.NewWatcherTrigger(app.DB).AllByClusterIDAndWatcherID(nil, clusterID, watcherRow.ID)
+	triggerRows, err := dal.NewWatcherTrigger(app.DBConfig.Core).AllByClusterIDAndWatcherID(nil, clusterID, watcherRow.ID)
 	if err != nil {
 		return err
 	}
 
-	lastViolation, err := dal.NewTSWatcher(app.DB).LastViolation(nil)
+	lastViolation, err := dal.NewTSWatcher(app.DBConfig.Core).LastViolation(nil)
 	if err != nil {
 		return err
 	}
@@ -316,7 +315,7 @@ func (app *Application) RunTrigger(clusterID int64, watcherRow *dal.WatcherRow) 
 				}
 
 				// Update incident key into watchers_triggers row
-				wt := dal.NewWatcherTrigger(app.DB)
+				wt := dal.NewWatcherTrigger(app.DBConfig.Core)
 
 				triggerUpdateActionParams := wt.ActionParamsByExistingTrigger(triggerRow)
 				triggerUpdateActionParams["PagerDutyIncidentKey"] = pdResponse.IncidentKey

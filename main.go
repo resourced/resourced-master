@@ -75,7 +75,7 @@ func main() {
 	}
 
 	// Register daemon before launching
-	_, err = dal.NewDaemon(app.DB).CreateOrUpdate(nil, app.Hostname)
+	_, err = dal.NewDaemon(app.DBConfig.Core).CreateOrUpdate(nil, app.Hostname)
 	if err != nil {
 		logrus.Fatal(err)
 	}
