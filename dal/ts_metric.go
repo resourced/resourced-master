@@ -1,6 +1,7 @@
 package dal
 
 import (
+	"fmt"
 	"github.com/jmoiron/sqlx"
 	"time"
 )
@@ -11,6 +12,11 @@ func NewTSMetric(db *sqlx.DB) *TSMetric {
 	ts.table = "ts_metrics"
 
 	return ts
+}
+
+type HighchartPayload struct {
+	Name string          `json:"name"`
+	Data [][]interface{} `json:"data"`
 }
 
 type TSMetricRow struct {
@@ -67,4 +73,42 @@ func (ts *TSMetric) CreateByHostRow(tx *sqlx.Tx, hostRow *HostRow) error {
 		}
 	}
 	return nil
+}
+
+func (ts *TSMetric) AllByMetricIDHostAndInterval(tx *sqlx.Tx, metricID int64, host string, interval string) ([]*TSMetricRow, error) {
+	if interval == "" {
+		interval = "1 hour"
+	}
+
+	metricRow, err := NewMetric(ts.db).GetById(tx, metricID)
+	if err != nil {
+		return nil, err
+	}
+
+	rows := []*TSMetricRow{}
+	query := fmt.Sprintf("SELECT * FROM %v WHERE cluster_id=$1 AND metric_id=$2 AND host=$3 AND created >= (NOW() - INTERVAL '%v') ORDER BY cluster_id,metric_id,created ASC", ts.table, interval)
+	err = ts.db.Select(&rows, query, metricRow.ClusterID, metricID, host)
+
+	return rows, err
+}
+
+func (ts *TSMetric) AllByMetricIDHostAndIntervalForHighchart(tx *sqlx.Tx, metricID int64, host string, interval string) (*HighchartPayload, error) {
+	tsMetricRows, err := ts.AllByMetricIDHostAndInterval(tx, metricID, host, interval)
+	if err != nil {
+		return nil, err
+	}
+
+	hcPayload := &HighchartPayload{}
+	hcPayload.Name = host
+	hcPayload.Data = make([][]interface{}, len(tsMetricRows))
+
+	for i, tsMetricRow := range tsMetricRows {
+		row := make([]interface{}, 2)
+		row[0] = tsMetricRow.Created.UnixNano() / 1000000
+		row[1] = tsMetricRow.Value
+
+		hcPayload.Data[i] = row
+	}
+
+	return hcPayload, nil
 }
