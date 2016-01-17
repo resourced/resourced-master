@@ -45,12 +45,7 @@ func (ts *TSMetric) Create(tx *sqlx.Tx, clusterID, metricID int64, key, host str
 	return err
 }
 
-func (ts *TSMetric) CreateByHostRow(tx *sqlx.Tx, hostRow *HostRow) error {
-	metricsMap, err := NewMetric(ts.db).AllByClusterIDAsMap(tx, hostRow.ClusterID)
-	if err != nil {
-		return err
-	}
-
+func (ts *TSMetric) CreateByHostRow(tx *sqlx.Tx, hostRow *HostRow, metricsMap map[string]int64) error {
 	// Loop through every host's data and see if they are part of graph metrics.
 	// If they are, insert a record in ts_metrics.
 	for path, data := range hostRow.DataAsFlatKeyValue() {
@@ -60,14 +55,11 @@ func (ts *TSMetric) CreateByHostRow(tx *sqlx.Tx, hostRow *HostRow) error {
 			if metricID, ok := metricsMap[metricKey]; ok {
 				// Deserialized JSON number -> interface{} always have float64 as type.
 				if trueValueFloat64, ok := value.(float64); ok {
-					// What the...
-					toInt64AndBack := float64(int64(trueValueFloat64))
-					if toInt64AndBack == trueValueFloat64 {
-						trueValueFloat64 = toInt64AndBack
-					}
-
 					// Ignore error for now, there's no need to break the entire loop when one insert fails.
-					ts.Create(tx, hostRow.ClusterID, metricID, metricKey, hostRow.Name, trueValueFloat64)
+					err := ts.Create(tx, hostRow.ClusterID, metricID, metricKey, hostRow.Name, trueValueFloat64)
+					if err != nil {
+						println(err.Error())
+					}
 				}
 			}
 		}
@@ -75,25 +67,20 @@ func (ts *TSMetric) CreateByHostRow(tx *sqlx.Tx, hostRow *HostRow) error {
 	return nil
 }
 
-func (ts *TSMetric) AllByMetricIDHostAndInterval(tx *sqlx.Tx, metricID int64, host string, interval string) ([]*TSMetricRow, error) {
+func (ts *TSMetric) AllByMetricIDHostAndInterval(tx *sqlx.Tx, clusterID, metricID int64, host string, interval string) ([]*TSMetricRow, error) {
 	if interval == "" {
 		interval = "1 hour"
 	}
 
-	metricRow, err := NewMetric(ts.db).GetById(tx, metricID)
-	if err != nil {
-		return nil, err
-	}
-
 	rows := []*TSMetricRow{}
 	query := fmt.Sprintf("SELECT * FROM %v WHERE cluster_id=$1 AND metric_id=$2 AND host=$3 AND created >= (NOW() - INTERVAL '%v') ORDER BY cluster_id,metric_id,created ASC", ts.table, interval)
-	err = ts.db.Select(&rows, query, metricRow.ClusterID, metricID, host)
+	err := ts.db.Select(&rows, query, clusterID, metricID, host)
 
 	return rows, err
 }
 
-func (ts *TSMetric) AllByMetricIDHostAndIntervalForHighchart(tx *sqlx.Tx, metricID int64, host string, interval string) (*HighchartPayload, error) {
-	tsMetricRows, err := ts.AllByMetricIDHostAndInterval(tx, metricID, host, interval)
+func (ts *TSMetric) AllByMetricIDHostAndIntervalForHighchart(tx *sqlx.Tx, clusterID, metricID int64, host string, interval string) (*HighchartPayload, error) {
+	tsMetricRows, err := ts.AllByMetricIDHostAndInterval(tx, clusterID, metricID, host, interval)
 	if err != nil {
 		return nil, err
 	}

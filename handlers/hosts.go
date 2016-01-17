@@ -110,11 +110,17 @@ func PostApiHosts(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	metricsMap, err := dal.NewMetric(db).AllByClusterIDAsMap(nil, hostRow.ClusterID)
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
+
 	// Asynchronously write time series data to ts_metrics
 	dbs := context.Get(r, "multidb.TSMetrics").(*multidb.MultiDB).PickMultipleForWrites()
 	for _, db := range dbs {
 		go func() {
-			err := dal.NewTSMetric(db).CreateByHostRow(nil, hostRow)
+			err := dal.NewTSMetric(db).CreateByHostRow(nil, hostRow, metricsMap)
 			if err != nil {
 				println(err.Error())
 			}

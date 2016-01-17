@@ -5,9 +5,11 @@ import (
 	"github.com/gorilla/context"
 	"github.com/gorilla/mux"
 	"github.com/jmoiron/sqlx"
+	"net/http"
+
 	"github.com/resourced/resourced-master/dal"
 	"github.com/resourced/resourced-master/libhttp"
-	"net/http"
+	"github.com/resourced/resourced-master/multidb"
 )
 
 func PostMetrics(w http.ResponseWriter, r *http.Request) {
@@ -48,7 +50,15 @@ func GetApiTSMetricsByHost(w http.ResponseWriter, r *http.Request) {
 
 	host := mux.Vars(r)["host"]
 
-	hcMetrics, err := dal.NewTSMetric(db).AllByMetricIDHostAndIntervalForHighchart(nil, id, host, createdInterval)
+	metricRow, err := dal.NewMetric(db).GetById(nil, id)
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
+
+	tsMetricsDB := context.Get(r, "multidb.TSMetrics").(*multidb.MultiDB).PickRandom()
+
+	hcMetrics, err := dal.NewTSMetric(tsMetricsDB).AllByMetricIDHostAndIntervalForHighchart(nil, metricRow.ClusterID, id, host, createdInterval)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
