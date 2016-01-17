@@ -152,7 +152,7 @@ $('#search-input').bind("input propertychange", function(e) {
                                         {{ else }}
                                         <form action="/clusters/{{ $host.ClusterID }}/metrics" method="post">
                                             <input type="hidden" name="Key" value="{{ $path }}.{{ $key }}">
-                                            <button type="submit" class="btn btn-success btn-sm">Graph Metric?</button>
+                                            <button type="submit" class="btn btn-success btn-sm">Chart Metric?</button>
                                         </form>
                                         {{ end }}
                                     </div>
@@ -170,7 +170,7 @@ $('#search-input').bind("input propertychange", function(e) {
     {{ end }}
 </div>
 
-<!-- Graph Modal -->
+<!-- Chart Modal -->
 <div class="modal fade" id="graph-modal" tabindex="-1" role="dialog" aria-labelledby="graph-label" aria-hidden="true">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">

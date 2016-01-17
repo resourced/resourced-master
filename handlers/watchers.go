@@ -123,27 +123,6 @@ func readFormData(r *http.Request) (map[string]interface{}, error) {
 	hostsLastUpdated := r.FormValue("HostsLastUpdated")
 	checkInterval := r.FormValue("CheckInterval")
 
-	// actionTransport := r.FormValue("ActionTransport")
-
-	// actionEmail := r.FormValue("ActionEmail")
-	// actionSMSCarrier := r.FormValue("ActionSMSCarrier")
-	// actionSMSPhone := r.FormValue("ActionSMSPhone")
-	// actionPagerDutyServiceKey := r.FormValue("ActionPagerDutyServiceKey")
-	// actionPagerDutyDescription := r.FormValue("ActionPagerDutyDescription")
-
-	// actions := make(map[string]interface{})
-	// actions["Transport"] = actionTransport
-	// actions["Email"] = actionEmail
-	// actions["SMSCarrier"] = actionSMSCarrier
-	// actions["SMSPhone"] = actionSMSPhone
-	// actions["PagerDutyServiceKey"] = actionPagerDutyServiceKey
-	// actions["PagerDutyDescription"] = actionPagerDutyDescription
-
-	// actionsJson, err := json.Marshal(actions)
-	// if err != nil {
-	// 	return nil, err
-	// }
-
 	db := context.Get(r, "db.Core").(*sqlx.DB)
 
 	return dal.NewWatcher(db).CreateOrUpdateParameters(

@@ -8,12 +8,12 @@ import (
 )
 
 func NewCluster(db *sqlx.DB) *Cluster {
-	application := &Cluster{}
-	application.db = db
-	application.table = "clusters"
-	application.hasID = true
+	c := &Cluster{}
+	c.db = db
+	c.table = "clusters"
+	c.hasID = true
 
-	return application
+	return c
 }
 
 type ClusterRow struct {
