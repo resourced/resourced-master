@@ -157,8 +157,23 @@ func (app *Application) WatchAll() {
 			case watcherRows := <-watcherRowsChan:
 				for _, watcherRow := range watcherRows {
 					go func() {
-						app.WatchOnce(watcherRow.ClusterID, watcherRow)
-						app.RunTrigger(watcherRow.ClusterID, watcherRow)
+						err := app.WatchOnce(watcherRow.ClusterID, watcherRow)
+						if err != nil {
+							logrus.WithFields(logrus.Fields{
+								"Method":    "Application.WatchOnce",
+								"ClusterID": watcherRow.ClusterID,
+								"WatcherID": watcherRow.ID,
+							}).Error(err)
+						}
+
+						err = app.RunTrigger(watcherRow.ClusterID, watcherRow)
+						if err != nil {
+							logrus.WithFields(logrus.Fields{
+								"Method":    "Application.RunTrigger",
+								"ClusterID": watcherRow.ClusterID,
+								"WatcherID": watcherRow.ID,
+							}).Error(err)
+						}
 
 						libtime.SleepString(watcherRow.CheckInterval)
 					}()
@@ -169,8 +184,6 @@ func (app *Application) WatchAll() {
 }
 
 func (app *Application) WatchOnce(clusterID int64, watcherRow *dal.WatcherRow) error {
-	var err error
-
 	lastUpdated := strings.Replace(watcherRow.HostsLastUpdated, " ago", "", 1)
 
 	affectedHosts, err := dal.NewHost(app.DBConfig.Core).AllByClusterIDQueryAndUpdatedInterval(nil, clusterID, watcherRow.SavedQuery, lastUpdated)
@@ -198,8 +211,15 @@ func (app *Application) WatchOnce(clusterID int64, watcherRow *dal.WatcherRow) e
 		dbs := app.DBConfig.TSWatchers.PickMultipleForWrites()
 		for _, db := range dbs {
 			go func() {
-				// Ignore error for now, this should be logged.
-				dal.NewTSWatcher(db).Create(nil, clusterID, watcherRow.ID, numAffectedHosts, jsonData)
+				writeErr := dal.NewTSWatcher(db).Create(nil, clusterID, watcherRow.ID, numAffectedHosts, jsonData)
+				if writeErr != nil {
+					logrus.WithFields(logrus.Fields{
+						"Method":          "TSWatcher.Create",
+						"ClusterID":       clusterID,
+						"WatcherID":       watcherRow.ID,
+						"NumAffectedHost": numAffectedHosts,
+					}).Error(writeErr)
+				}
 			}()
 		}
 	}
@@ -210,7 +230,7 @@ func (app *Application) WatchOnce(clusterID int64, watcherRow *dal.WatcherRow) e
 func (app *Application) RunTrigger(clusterID int64, watcherRow *dal.WatcherRow) error {
 	tsWatcherDB := app.DBConfig.TSWatchers.PickRandom()
 
-	violationsCount, err := dal.NewTSWatcher(tsWatcherDB).CountViolationsSinceLastGreenMarker(nil)
+	violationsCount, err := dal.NewTSWatcher(tsWatcherDB).CountViolationsSinceLastGreenMarker(nil, clusterID, watcherRow.ID)
 	if err != nil {
 		return err
 	}
@@ -225,43 +245,55 @@ func (app *Application) RunTrigger(clusterID int64, watcherRow *dal.WatcherRow) 
 		return err
 	}
 
-	lastViolation, err := dal.NewTSWatcher(tsWatcherDB).LastViolation(nil)
+	lastViolation, err := dal.NewTSWatcher(tsWatcherDB).LastViolation(nil, clusterID, watcherRow.ID)
 	if err != nil {
 		return err
 	}
 
 	for _, triggerRow := range triggerRows {
 		if int64(violationsCount) >= triggerRow.LowViolationsCount && int64(violationsCount) <= triggerRow.HighViolationsCount {
+			emailAuth := smtp.PlainAuth(
+				app.GeneralConfig.Watchers.Email.Identity,
+				app.GeneralConfig.Watchers.Email.Username,
+				app.GeneralConfig.Watchers.Email.Password,
+				app.GeneralConfig.Watchers.Email.Host)
+
+			emailHostAndPort := fmt.Sprintf("%v:%v", app.GeneralConfig.Watchers.Email.Host, app.GeneralConfig.Watchers.Email.Port)
+
+			emailFrom := app.GeneralConfig.Watchers.Email.From
+
 			if triggerRow.ActionTransport() == "nothing" {
 				// Do nothing
+
 			} else if triggerRow.ActionTransport() == "email" {
 				if triggerRow.ActionEmail() == "" {
 					continue
 				}
 
-				auth := smtp.PlainAuth(
-					app.GeneralConfig.Watchers.Email.Identity,
-					app.GeneralConfig.Watchers.Email.Username,
-					app.GeneralConfig.Watchers.Email.Password,
-					app.GeneralConfig.Watchers.Email.Host)
-
-				hostAndPort := fmt.Sprintf("%v:%v", app.GeneralConfig.Watchers.Email.Host, app.GeneralConfig.Watchers.Email.Port)
-				from := app.GeneralConfig.Watchers.Email.From
 				to := triggerRow.ActionEmail()
 				subject := fmt.Sprintf(`%v Watcher(ID: %v): %v, Query: %v`, app.GeneralConfig.Watchers.Email.SubjectPrefix, watcherRow.ID, watcherRow.Name, watcherRow.SavedQuery)
+				body := ""
 
-				bodyBytes, err := libstring.PrettyPrintJSON([]byte(lastViolation.Data.String()))
-				if err != nil {
-					logrus.Error(err)
-					continue
+				if lastViolation != nil {
+					bodyBytes, err := libstring.PrettyPrintJSON([]byte(lastViolation.Data.String()))
+					if err != nil {
+						continue
+					}
+
+					body = string(bodyBytes)
 				}
 
-				body := string(bodyBytes)
-				message := libsmtp.BuildMessage(from, to, subject, body)
+				message := libsmtp.BuildMessage(emailFrom, to, subject, body)
 
-				err = smtp.SendMail(hostAndPort, auth, from, []string{to}, []byte(message))
+				err = smtp.SendMail(emailHostAndPort, emailAuth, emailFrom, []string{to}, []byte(message))
 				if err != nil {
-					logrus.Error(err)
+					logrus.WithFields(logrus.Fields{
+						"Method":          "smtp.SendMail",
+						"ActionTransport": triggerRow.ActionTransport(),
+						"HostAndPort":     emailHostAndPort,
+						"From":            emailFrom,
+						"To":              to,
+					}).Error(err)
 					continue
 				}
 
@@ -280,23 +312,21 @@ func (app *Application) RunTrigger(clusterID int64, watcherRow *dal.WatcherRow) 
 					continue
 				}
 
-				auth := smtp.PlainAuth(
-					app.GeneralConfig.Watchers.Email.Identity,
-					app.GeneralConfig.Watchers.Email.Username,
-					app.GeneralConfig.Watchers.Email.Password,
-					app.GeneralConfig.Watchers.Email.Host)
-
-				hostAndPort := fmt.Sprintf("%v:%v", app.GeneralConfig.Watchers.Email.Host, app.GeneralConfig.Watchers.Email.Port)
-				from := app.GeneralConfig.Watchers.Email.From
 				to := fmt.Sprintf("%v@%v", flattenPhone, gateway)
 				subject := ""
 				body := fmt.Sprintf(`%v Watcher(ID: %v): %v, Query: %v, failed %v times`, app.GeneralConfig.Watchers.Email.SubjectPrefix, watcherRow.ID, watcherRow.Name, watcherRow.SavedQuery, violationsCount)
 
-				message := libsmtp.BuildMessage(from, to, subject, body)
+				message := libsmtp.BuildMessage(emailFrom, to, subject, body)
 
-				err = smtp.SendMail(hostAndPort, auth, from, []string{to}, []byte(message))
+				err = smtp.SendMail(emailHostAndPort, emailAuth, emailFrom, []string{to}, []byte(message))
 				if err != nil {
-					logrus.Error(err)
+					logrus.WithFields(logrus.Fields{
+						"Method":          "smtp.SendMail",
+						"ActionTransport": triggerRow.ActionTransport(),
+						"HostAndPort":     emailHostAndPort,
+						"From":            emailFrom,
+						"To":              to,
+					}).Error(err)
 					continue
 				}
 
@@ -305,10 +335,12 @@ func (app *Application) RunTrigger(clusterID int64, watcherRow *dal.WatcherRow) 
 				event := pagerduty.NewTriggerEvent(triggerRow.ActionPagerDutyServiceKey(), triggerRow.ActionPagerDutyDescription())
 
 				// Add details to PD event
-				err = lastViolation.Data.Unmarshal(&event.Details)
-				if err != nil {
-					logrus.Error(err)
-					continue
+				if lastViolation != nil {
+					err = lastViolation.Data.Unmarshal(&event.Details)
+					if err != nil {
+						logrus.Error(err)
+						continue
+					}
 				}
 
 				// Add Client to PD event

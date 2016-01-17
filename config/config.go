@@ -66,10 +66,10 @@ type GeneralConfig struct {
 // NewDBConfig is the constructor for DBConfig.
 func NewDBConfig(generalConfig GeneralConfig) (*DBConfig, error) {
 	// Set defaults
-	if generalConfig.Watchers.ReplicationPercentage == 0 {
+	if generalConfig.Watchers.ReplicationPercentage <= 0 {
 		generalConfig.Watchers.ReplicationPercentage = 100
 	}
-	if generalConfig.Metrics.ReplicationPercentage == 0 {
+	if generalConfig.Metrics.ReplicationPercentage <= 0 {
 		generalConfig.Metrics.ReplicationPercentage = 100
 	}
 
