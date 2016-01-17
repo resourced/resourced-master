@@ -111,7 +111,7 @@ $('#search-input').bind("input propertychange", function(e) {
             <div>
                 <div class="pull-right">
                     <small class="updated-timestamp">{{ $host.Updated }}</small>
-                    <input type="checkbox" class="toggler toggler-header pull-right" data-size="mini">
+                    <input type="checkbox" class="toggler toggler-header pull-right" data-size="mini" data-host-id="{{ $host.ID }}">
                 </div>
 
                 <h3>{{ $host.Name }}</h3>
@@ -125,7 +125,7 @@ $('#search-input').bind("input propertychange", function(e) {
                 {{ range $path, $data := $host.DataAsFlatKeyValue }}
                 <div class="detail-header" data-path="{{ $path }}">
                     <div class="pull-right">
-                        <input type="checkbox" class="toggler toggler-body pull-right" data-size="mini" checked>
+                        <input type="checkbox" class="toggler toggler-body pull-right" data-size="mini" data-path="{{ $path }}" checked>
                     </div>
 
                     <h4>{{ $path }}</h4>
@@ -216,6 +216,31 @@ $(document).ready(function() {
             $(this).closest('.container.saved-queries').find('.row.saved-queries').show();
         }
     });
+
+    // Show row details if toggler is set to on.
+    $('.row.hosts .toggler-header').each(function() {
+        var hostID = $(this).data('host-id');
+        var state = $.cookie('.row.hosts .toggler-header[data-host-id="' + hostID + '"]');
+
+        if (state && state == 'true') {
+            $(this).bootstrapSwitch('state', true, true);
+            $(this).closest('.hosts').find('.details').show();
+        }
+    });
+
+    // Show row/path details if toggler is set to on.
+    $('.row.hosts .toggler-body').each(function() {
+        var path = $(this).data('path');
+        var state = $.cookie('.row.hosts .toggler-body[data-path="' + path + '"]');
+
+        if (state && state == 'true') {
+            $(this).bootstrapSwitch('state', true, true);
+            $(this).closest('.detail-header').siblings('.detail-body[data-path="' + path + '"]').show();
+        } else if (state && state == 'false') {
+            $(this).bootstrapSwitch('state', false, false);
+            $(this).closest('.detail-header').siblings('.detail-body[data-path="' + path + '"]').hide();
+        }
+    });
 });
 
 $('.container.saved-queries .toggler-header').on('switchChange.bootstrapSwitch', function(event, state) {
@@ -234,12 +259,27 @@ $('.container.saved-queries .toggler-header').on('switchChange.bootstrapSwitch',
 
 $('.row.hosts .toggler-header').on('switchChange.bootstrapSwitch', function(event, state) {
     $(this).closest('.hosts').find('.details').toggle();
+
+    var hostID = $(this).data('host-id');
+
+    // Set state in cookie
+    $.cookie('.row.hosts .toggler-header[data-host-id="' + hostID + '"]', state, {
+        path: '/',
+        expires: 365
+    });
 });
 
 $('.row.hosts .toggler-body').on('switchChange.bootstrapSwitch', function(event, state) {
     var $detailHeader = $(this).closest('.detail-header');
     var path = $detailHeader.data('path');
+
     $detailHeader.siblings('.detail-body[data-path="' + path + '"]').toggle();
+
+    // Set state in cookie
+    $.cookie('.row.hosts .toggler-body[data-path="' + path + '"]', state, {
+        path: '/',
+        expires: 365
+    });
 });
 
 $('#graph-modal').on('shown.bs.modal', function() {
