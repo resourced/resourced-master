@@ -23,7 +23,6 @@ import (
 	"github.com/resourced/resourced-master/libstring"
 	"github.com/resourced/resourced-master/libtime"
 	"github.com/resourced/resourced-master/middlewares"
-	"github.com/resourced/resourced-master/wstrafficker"
 )
 
 // New is the constructor for Application struct.
@@ -49,7 +48,6 @@ func New(configDir string) (*Application, error) {
 	app.DBConfig = dbConfig
 	app.cookieStore = sessions.NewCookieStore([]byte(app.GeneralConfig.CookieSecret))
 	app.csrfProtect = csrf.Protect([]byte(app.GeneralConfig.CookieSecret))
-	app.WSTraffickers = wstrafficker.NewWSTraffickers()
 
 	return app, err
 }
@@ -61,7 +59,6 @@ type Application struct {
 	DBConfig      *config.DBConfig
 	cookieStore   *sessions.CookieStore
 	csrfProtect   func(http.Handler) http.Handler
-	WSTraffickers *wstrafficker.WSTraffickers
 }
 
 func (app *Application) MiddlewareStruct() (*interpose.Middleware, error) {
@@ -69,7 +66,6 @@ func (app *Application) MiddlewareStruct() (*interpose.Middleware, error) {
 	middle.Use(middlewares.SetAddr(app.GeneralConfig.Addr))
 	middle.Use(middlewares.SetDBs(app.DBConfig))
 	middle.Use(middlewares.SetCookieStore(app.cookieStore))
-	middle.Use(middlewares.SetWSTraffickers(app.WSTraffickers))
 
 	middle.UseHandler(app.mux())
 
@@ -118,8 +114,6 @@ func (app *Application) mux() *mux.Router {
 
 	router.Handle("/saved-queries", alice.New(MustLogin).ThenFunc(handlers.PostSavedQueries)).Methods("POST")
 	router.Handle("/saved-queries/{id:[0-9]+}", alice.New(MustLogin).ThenFunc(handlers.PostPutDeleteSavedQueriesID)).Methods("POST", "PUT", "DELETE")
-
-	router.HandleFunc("/api/ws/access-tokens/{id}", handlers.ApiWSAccessToken)
 
 	router.Handle("/api/hosts", alice.New(MustLoginApi).ThenFunc(handlers.GetApiHosts)).Methods("GET")
 	router.Handle("/api/hosts", alice.New(MustLoginApi).ThenFunc(handlers.PostApiHosts)).Methods("POST")

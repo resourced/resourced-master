@@ -12,7 +12,6 @@ import (
 	"github.com/resourced/resourced-master/config"
 	"github.com/resourced/resourced-master/dal"
 	"github.com/resourced/resourced-master/libhttp"
-	"github.com/resourced/resourced-master/wstrafficker"
 )
 
 func SetAddr(addr string) func(http.Handler) http.Handler {
@@ -45,16 +44,6 @@ func SetCookieStore(cookieStore *sessions.CookieStore) func(http.Handler) http.H
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			context.Set(r, "cookieStore", cookieStore)
-
-			next.ServeHTTP(w, r)
-		})
-	}
-}
-
-func SetWSTraffickers(wsTraffickers *wstrafficker.WSTraffickers) func(http.Handler) http.Handler {
-	return func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			context.Set(r, "wsTraffickers", wsTraffickers)
 
 			next.ServeHTTP(w, r)
 		})
