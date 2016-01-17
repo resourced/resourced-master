@@ -331,45 +331,7 @@ func (app *Application) RunTrigger(clusterID int64, watcherRow *dal.WatcherRow) 
 				}
 
 			} else if triggerRow.ActionTransport() == "pagerduty" {
-				// Create a new PD "trigger" event
-				event := pagerduty.NewTriggerEvent(triggerRow.ActionPagerDutyServiceKey(), triggerRow.ActionPagerDutyDescription())
-
-				// Add details to PD event
-				if lastViolation != nil {
-					err = lastViolation.Data.Unmarshal(&event.Details)
-					if err != nil {
-						logrus.Error(err)
-						continue
-					}
-				}
-
-				// Add Client to PD event
-				event.Client = fmt.Sprintf("ResourceD Master on: %v", app.Hostname)
-
-				// Submit PD event
-				pdResponse, _, err := pagerduty.Submit(event)
-				if err != nil {
-					logrus.Error(err)
-				}
-				if pdResponse == nil {
-					continue
-				}
-
-				// Update incident key into watchers_triggers row
-				wt := dal.NewWatcherTrigger(app.DBConfig.Core)
-
-				triggerUpdateActionParams := wt.ActionParamsByExistingTrigger(triggerRow)
-				triggerUpdateActionParams["PagerDutyIncidentKey"] = pdResponse.IncidentKey
-
-				triggerUpdateActionJSON, err := json.Marshal(triggerUpdateActionParams)
-				if err != nil {
-					logrus.Error(err)
-					continue
-				}
-
-				triggerUpdateParams := wt.CreateOrUpdateParameters(triggerRow.ClusterID, triggerRow.WatcherID, triggerRow.LowViolationsCount, triggerRow.HighViolationsCount, triggerUpdateActionJSON)
-
-				_, err = wt.UpdateFromTable(nil, triggerUpdateParams, fmt.Sprintf("id=%v", triggerRow.ID))
+				err = app.RunTriggerPagerDuty(triggerRow, lastViolation)
 				if err != nil {
 					logrus.Error(err)
 					continue
@@ -379,4 +341,49 @@ func (app *Application) RunTrigger(clusterID int64, watcherRow *dal.WatcherRow) 
 	}
 
 	return nil
+}
+
+func (app *Application) RunTriggerPagerDuty(triggerRow *dal.WatcherTriggerRow, lastViolation *dal.TSWatcherRow) (err error) {
+	// Create a new PD "trigger" event
+	event := pagerduty.NewTriggerEvent(triggerRow.ActionPagerDutyServiceKey(), triggerRow.ActionPagerDutyDescription())
+
+	// Add details to PD event
+	if lastViolation != nil {
+		err = lastViolation.Data.Unmarshal(&event.Details)
+		if err != nil {
+			return err
+		}
+	}
+
+	// Add Client to PD event
+	event.Client = fmt.Sprintf("ResourceD Master on: %v", app.Hostname)
+
+	// Submit PD event
+	pdResponse, _, err := pagerduty.Submit(event)
+	if err != nil {
+		return err
+	}
+	if pdResponse == nil {
+		return nil
+	}
+
+	// Update incident key into watchers_triggers row
+	wt := dal.NewWatcherTrigger(app.DBConfig.Core)
+
+	triggerUpdateActionParams := wt.ActionParamsByExistingTrigger(triggerRow)
+	triggerUpdateActionParams["PagerDutyIncidentKey"] = pdResponse.IncidentKey
+
+	triggerUpdateActionJSON, err := json.Marshal(triggerUpdateActionParams)
+	if err != nil {
+		return err
+	}
+
+	triggerUpdateParams := wt.CreateOrUpdateParameters(triggerRow.ClusterID, triggerRow.WatcherID, triggerRow.LowViolationsCount, triggerRow.HighViolationsCount, triggerUpdateActionJSON)
+
+	_, err = wt.UpdateFromTable(nil, triggerUpdateParams, fmt.Sprintf("id=%v", triggerRow.ID))
+	if err != nil {
+		return err
+	}
+
+	return err
 }
