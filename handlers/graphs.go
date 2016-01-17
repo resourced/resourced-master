@@ -29,18 +29,28 @@ func GetGraphs(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// currentCluster := currentClusterInterface.(*dal.ClusterRow)
+	currentCluster := currentClusterInterface.(*dal.ClusterRow)
+
+	db := context.Get(r, "db.Core").(*sqlx.DB)
+
+	graphs, err := dal.NewGraph(db).AllByClusterID(nil, currentCluster.ID)
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
 
 	data := struct {
 		Addr               string
 		CurrentUser        *dal.UserRow
 		Clusters           []*dal.ClusterRow
 		CurrentClusterJson string
+		Graphs             []*dal.GraphRow
 	}{
 		context.Get(r, "addr").(string),
 		currentUserRow,
 		context.Get(r, "clusters").([]*dal.ClusterRow),
 		string(context.Get(r, "currentClusterJson").([]byte)),
+		graphs,
 	}
 
 	tmpl, err := template.ParseFiles("templates/dashboard.html.tmpl", "templates/graphs/list.html.tmpl")

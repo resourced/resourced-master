@@ -15,6 +15,28 @@
             </div>
         </div>
     </div>
+
+    {{ range $graph := .Graphs }}
+    <div class="row graphs">
+        <div class="col-xs-12 col-lg-12">
+            <div class="pull-right">
+                <div class="btn-group" role="group">
+                    <button class="btn btn-default btn-xs" data-toggle="modal" data-target="#graphs-modal"
+                        data-id="{{ $graph.ID }}"
+                        data-name="{{ $graph.Name }}"
+                        data-description="{{ $graph.Description }}">
+                        Details
+                    </button>
+
+                    <a class="btn btn-success btn-xs" href="">View</a>
+                </div>
+            </div>
+
+            <h4 style="margin-top: 0">{{ $graph.Name }}</h4>
+            <p>{{ $graph.Description }}</p>
+        </div>
+    </div>
+    {{ end }}
 </div>
 
 <!-- Graphs Modal -->
@@ -56,4 +78,32 @@
         </div>
     </div>
 </div>
+
+<script>
+$('#graphs-modal').on('show.bs.modal', function (event) {
+    var button = $(event.relatedTarget);   // Button that triggered the modal
+    var id = button.data('id');
+    var name = button.data('name');
+    var description = button.data('description');
+
+    var modal = $(this);
+
+    if(name) {
+        modal.find('input[name="Name"]').val(name);
+    }
+    if(description) {
+        modal.find('textarea').val(description);
+    }
+
+    if(id) {
+        modal.find('form').attr('action', '/graphs/' + id);
+        modal.find('.btn-danger').show();
+        modal.find('.modal-title').text('Update Graphs');
+    } else {
+        modal.find('form').attr('action', '/graphs');
+        modal.find('.btn-danger').hide();
+        modal.find('.modal-title').text('New Graphs');
+    }
+});
+</script>
 {{end}}

@@ -59,10 +59,10 @@ func (a *Graph) Create(tx *sqlx.Tx, clusterID int64, name, description string) (
 	return a.rowFromSqlResult(tx, sqlResult)
 }
 
-// AllGraphsByUserID returns all rows by cluster_id.
-func (a *Graph) AllGraphsByClusterID(tx *sqlx.Tx, clusterID int64) ([]*GraphRow, error) {
+// AllByClusterID returns all rows by cluster_id.
+func (a *Graph) AllByClusterID(tx *sqlx.Tx, clusterID int64) ([]*GraphRow, error) {
 	rows := []*GraphRow{}
-	query := fmt.Sprintf("SELECT id, name FROM %v WHERE cluster_id=$1", a.table)
+	query := fmt.Sprintf("SELECT * FROM %v WHERE cluster_id=$1", a.table)
 	err := a.db.Select(&rows, query, clusterID)
 
 	return rows, err

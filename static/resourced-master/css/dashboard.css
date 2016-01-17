@@ -145,6 +145,14 @@ select {
     cursor: pointer;
 }
 
+.container.graphs .row.graphs .btn {
+    width: 57px;
+}
+.container.graphs .row.graphs p {
+    padding-bottom: 15px;
+    border-bottom: 1px solid #4e5d6c;
+}
+
 @media(max-width:1200px) {
     .form-group-search-and-save .search-form, .form-group-search-and-save .search-form .input-group {
         width: 832px;
