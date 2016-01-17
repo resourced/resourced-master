@@ -194,14 +194,23 @@ func (app *Application) WatchOnce(clusterID int64, watcherRow *dal.WatcherRow) e
 			return err
 		}
 
-		err = dal.NewTSWatcher(app.DBConfig.Core).Create(nil, clusterID, watcherRow.ID, numAffectedHosts, jsonData)
+		// Write to ts_watchers asynchronously
+		dbs := app.DBConfig.TSWatchers.PickMultipleForWrites()
+		for _, db := range dbs {
+			go func() {
+				// Ignore error for now, this should be logged.
+				dal.NewTSWatcher(db).Create(nil, clusterID, watcherRow.ID, numAffectedHosts, jsonData)
+			}()
+		}
 	}
 
 	return err
 }
 
 func (app *Application) RunTrigger(clusterID int64, watcherRow *dal.WatcherRow) error {
-	violationsCount, err := dal.NewTSWatcher(app.DBConfig.Core).CountViolationsSinceLastGreenMarker(nil)
+	tsWatcherDB := app.DBConfig.TSWatchers.PickRandom()
+
+	violationsCount, err := dal.NewTSWatcher(tsWatcherDB).CountViolationsSinceLastGreenMarker(nil)
 	if err != nil {
 		return err
 	}
@@ -216,7 +225,7 @@ func (app *Application) RunTrigger(clusterID int64, watcherRow *dal.WatcherRow) 
 		return err
 	}
 
-	lastViolation, err := dal.NewTSWatcher(app.DBConfig.Core).LastViolation(nil)
+	lastViolation, err := dal.NewTSWatcher(tsWatcherDB).LastViolation(nil)
 	if err != nil {
 		return err
 	}
