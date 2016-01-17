@@ -55,11 +55,13 @@ type GeneralConfig struct {
 
 		DSNs                  []string
 		ReplicationPercentage int
+		DataRetention         int
 	}
 
 	Metrics struct {
 		DSNs                  []string
 		ReplicationPercentage int
+		DataRetention         int
 	}
 }
 

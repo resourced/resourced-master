@@ -137,6 +137,43 @@ func (app *Application) mux() *mux.Router {
 	return router
 }
 
+func (app *Application) PruneAll() {
+	for {
+		app.PruneTSWatchersOnce()
+		app.PruneTSMetricsOnce()
+
+		libtime.SleepString("24h")
+	}
+}
+
+func (app *Application) PruneTSWatchersOnce() {
+	for _, db := range app.DBConfig.TSWatchers.DBs {
+		go func() {
+			err := dal.NewTSWatcher(db).DeleteByDayInterval(nil, app.GeneralConfig.Watchers.DataRetention)
+			if err != nil {
+				logrus.WithFields(logrus.Fields{
+					"Method":        "TSWatcher.DeleteByDayInterval",
+					"DataRetention": app.GeneralConfig.Watchers.DataRetention,
+				}).Error(err)
+			}
+		}()
+	}
+}
+
+func (app *Application) PruneTSMetricsOnce() {
+	for _, db := range app.DBConfig.TSMetrics.DBs {
+		go func() {
+			err := dal.NewTSMetric(db).DeleteByDayInterval(nil, app.GeneralConfig.Metrics.DataRetention)
+			if err != nil {
+				logrus.WithFields(logrus.Fields{
+					"Method":        "TSMetric.DeleteByDayInterval",
+					"DataRetention": app.GeneralConfig.Metrics.DataRetention,
+				}).Error(err)
+			}
+		}()
+	}
+}
+
 func (app *Application) WatchAll() {
 	watcherRowsChan := make(chan []*dal.WatcherRow)
 

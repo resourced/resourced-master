@@ -13,21 +13,21 @@ func New(dsns []string, replicationPercentage int) (*MultiDB, error) {
 	m.currentIndex = 0
 	m.replicationPercentage = replicationPercentage
 	m.dsns = dsns
-	m.dbs = make([]*sqlx.DB, len(dsns))
+	m.DBs = make([]*sqlx.DB, len(dsns))
 
 	for i, dsn := range dsns {
 		db, err := sqlx.Connect("postgres", dsn)
 		if err != nil {
 			return nil, err
 		}
-		m.dbs[i] = db
+		m.DBs[i] = db
 	}
 
 	return m, nil
 }
 
 type MultiDB struct {
-	dbs                   []*sqlx.DB
+	DBs                   []*sqlx.DB
 	dsns                  []string
 	currentIndex          int
 	replicationPercentage int
@@ -35,22 +35,22 @@ type MultiDB struct {
 
 func (mdb *MultiDB) PickRandom() *sqlx.DB {
 	rand.Seed(time.Now().Unix())
-	index := rand.Intn(len(mdb.dbs))
+	index := rand.Intn(len(mdb.DBs))
 
-	return mdb.dbs[index]
+	return mdb.DBs[index]
 }
 
 func (mdb *MultiDB) PickNext() *sqlx.DB {
 	mdb.currentIndex = mdb.currentIndex + 1
-	if mdb.currentIndex >= len(mdb.dbs) {
+	if mdb.currentIndex >= len(mdb.DBs) {
 		mdb.currentIndex = 0
 	}
 
-	return mdb.dbs[mdb.currentIndex]
+	return mdb.DBs[mdb.currentIndex]
 }
 
 func (mdb *MultiDB) NumOfConnectionsByReplicationPercentage() int {
-	return int(math.Ceil(float64(mdb.replicationPercentage / 100 * len(mdb.dbs))))
+	return int(math.Ceil(float64(mdb.replicationPercentage / 100 * len(mdb.DBs))))
 }
 
 func (mdb *MultiDB) PickMultipleForWrites() []*sqlx.DB {

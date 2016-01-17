@@ -1,12 +1,13 @@
 package dal
 
 import (
+	"errors"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/jmoiron/sqlx"
 	sqlx_types "github.com/jmoiron/sqlx/types"
-	"time"
 )
 
 func NewTSWatcher(db *sqlx.DB) *TSWatcher {
@@ -94,5 +95,30 @@ func (ts *TSWatcher) Create(tx *sqlx.Tx, clusterID, watcherID, affectedHosts int
 	insertData["created"] = time.Now()
 
 	_, err := ts.InsertIntoTable(tx, insertData)
+	return err
+}
+
+// DeleteByDayInterval deletes all record older than x days ago.
+func (ts *TSWatcher) DeleteByDayInterval(tx *sqlx.Tx, dayInterval int) error {
+	if ts.table == "" {
+		return errors.New("Table must not be empty.")
+	}
+
+	tx, wrapInSingleTransaction, err := ts.newTransactionIfNeeded(tx)
+	if tx == nil {
+		return errors.New("Transaction struct must not be empty.")
+	}
+	if err != nil {
+		return err
+	}
+
+	query := fmt.Sprintf("DELETE FROM %v WHERE created < (NOW() - INTERVAL '%v day')", ts.table, dayInterval)
+
+	_, err = tx.Exec(query)
+
+	if wrapInSingleTransaction == true {
+		err = tx.Commit()
+	}
+
 	return err
 }
