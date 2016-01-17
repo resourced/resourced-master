@@ -60,8 +60,7 @@
 
                         <div class="col-sm-12">
                             <label>Description</label>
-                            <textarea class="form-control" name="Description" row="7" placeholder="Put keywords in here for easier search">
-                            </textarea>
+                            <textarea class="form-control" name="Description" row="7" placeholder="Put keywords in here for easier search"></textarea>
                         </div>
                     </div>
                 </div>
@@ -80,6 +79,16 @@
 </div>
 
 <script>
+$('#graphs-modal form .btn-danger').click(function() {
+    $('#graphs-modal form input[name="_method"]').val('delete');
+    $(this).closest('form').submit();
+});
+
+$('#graphs-modal form .btn-primary').click(function() {
+    $('#graphs-modal form input[name="_method"]').val('put');
+    $(this).closest('form').submit();
+});
+
 $('#graphs-modal').on('show.bs.modal', function (event) {
     var button = $(event.relatedTarget);   // Button that triggered the modal
     var id = button.data('id');
@@ -100,6 +109,9 @@ $('#graphs-modal').on('show.bs.modal', function (event) {
         modal.find('.btn-danger').show();
         modal.find('.modal-title').text('Update Graphs');
     } else {
+        modal.find('input[name="Name"]').val('');
+        modal.find('textarea').val('');
+
         modal.find('form').attr('action', '/graphs');
         modal.find('.btn-danger').hide();
         modal.find('.modal-title').text('New Graphs');

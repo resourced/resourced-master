@@ -3,8 +3,10 @@ package handlers
 import (
 	"html/template"
 	"net/http"
+	"strconv"
 
 	"github.com/gorilla/context"
+	"github.com/gorilla/mux"
 	"github.com/gorilla/sessions"
 	"github.com/jmoiron/sqlx"
 	"github.com/resourced/resourced-master/dal"
@@ -82,6 +84,65 @@ func PostGraphs(w http.ResponseWriter, r *http.Request) {
 	db := context.Get(r, "db.Core").(*sqlx.DB)
 
 	_, err := dal.NewGraph(db).Create(nil, currentCluster.ID, name, description)
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
+
+	http.Redirect(w, r, "/graphs", 301)
+}
+
+func PostPutDeleteGraphsID(w http.ResponseWriter, r *http.Request) {
+	method := r.FormValue("_method")
+	if method == "" {
+		method = "put"
+	}
+
+	if method == "post" || method == "put" {
+		PutGraphsID(w, r)
+	} else if method == "delete" {
+		DeleteGraphsID(w, r)
+	}
+}
+
+func PutGraphsID(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+
+	idString := vars["id"]
+	id, err := strconv.ParseInt(idString, 10, 64)
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
+
+	data := make(map[string]interface{})
+	data["name"] = r.FormValue("Name")
+	data["description"] = r.FormValue("Description")
+
+	db := context.Get(r, "db.Core").(*sqlx.DB)
+
+	_, err = dal.NewGraph(db).UpdateByID(nil, data, id)
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
+
+	http.Redirect(w, r, "/graphs", 301)
+}
+
+func DeleteGraphsID(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+
+	idString := vars["id"]
+	id, err := strconv.ParseInt(idString, 10, 64)
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
+
+	db := context.Get(r, "db.Core").(*sqlx.DB)
+
+	_, err = dal.NewGraph(db).DeleteByID(nil, id)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
