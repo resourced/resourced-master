@@ -145,6 +145,12 @@ func GetGraphsID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	metrics, err := dal.NewMetric(db).AllByClusterID(nil, currentCluster.ID)
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
+
 	data := struct {
 		Addr               string
 		CurrentUser        *dal.UserRow
@@ -152,6 +158,7 @@ func GetGraphsID(w http.ResponseWriter, r *http.Request) {
 		CurrentClusterJson string
 		CurrentGraph       *dal.GraphRow
 		Graphs             []*dal.GraphRow
+		Metrics            []*dal.MetricRow
 	}{
 		context.Get(r, "addr").(string),
 		currentUserRow,
@@ -159,6 +166,7 @@ func GetGraphsID(w http.ResponseWriter, r *http.Request) {
 		string(context.Get(r, "currentClusterJson").([]byte)),
 		currentGraph,
 		graphs,
+		metrics,
 	}
 
 	tmpl, err := template.ParseFiles("templates/dashboard.html.tmpl", "templates/graphs/dashboard.html.tmpl")
