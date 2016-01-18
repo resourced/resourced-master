@@ -4,7 +4,7 @@
     <div class="container graphs">
         <div class="row">
             <div class="col-lg-10" style="padding-right: 0">
-                <select class="form-control graphs-select" name="GraphSwitcher">
+                <select class="form-control graphs-select">
                 {{ range $graph := .Graphs }}
                     <option value="{{ $graph.ID }}" {{if eq $graph.ID $.CurrentGraph.ID }}selected="selected"{{ end }}>{{ $graph.Name }}</option>
                 {{ end }}
@@ -12,7 +12,7 @@
             </div>
 
             <div class="col-lg-2" style="padding-left: 0">
-                <button class="btn btn-primary btn-block" data-toggle="modal" data-target="#add-chart-modal">
+                <button class="btn btn-primary btn-block" data-toggle="modal" data-target="#add-chart-modal" data-graph-id="{{ $.CurrentGraph.ID }}">
                     Add Chart
                 </button>
             </div>
@@ -31,26 +31,30 @@
                 <h4 class="modal-title" id="watchers-details-label">Add a Chart</h4>
             </div>
 
-            <div class="modal-body">
-                <div class="row">
-                    <div class="col-md-6">
-                        <select class="form-control chart-keys" name="ChartSelector" multiple size="16">
-                        {{ range $metric := .Metrics }}
-                            <option value="{{ $metric.ID }}">{{ $metric.Key }}</option>
-                        {{ end }}
-                        </select>
+            <form action="/graphs/{{ $.CurrentGraph.ID }}" method="post">
+                <input type="hidden" name="_method" value="put">
+
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <select class="form-control chart-keys" name="Metrics" multiple size="16">
+                            {{ range $metric := .Metrics }}
+                                <option data-graph-id="{{ $.CurrentGraph.ID }}" value="{{ $metric.ID }}-{{ $metric.Key }}">{{ $metric.Key }}</option>
+                            {{ end }}
+                            </select>
+                        </div>
+
+                         <div class="col-md-6">
+                            <div class="add-chart-modal-container"></div>
+                         </div>
                     </div>
-
-                     <div class="col-md-6">
-                        <div class="add-chart-modal-container"></div>
-                     </div>
                 </div>
-            </div>
 
-            <div class="modal-footer">
-                <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
-                <button type="button" class="btn btn-primary">Save</button>
-            </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                    <button type="submit" class="btn btn-primary">Save</button>
+                </div>
+            </form>
         </div>
     </div>
 </div>
@@ -62,13 +66,15 @@ $('.graphs-select').change(function() {
 
 // The previous select selector has non obvious syntax error.
 $(document).on('change','.chart-keys', function(){
-    var metricIDs = $(this).val();
-    var lastMetricID = metricIDs[metricIDs.length -1];
-    var lastMetricKey = $('.chart-keys option:selected[value="' + lastMetricID + '"]').text();
+    var metrics = $(this).val();
+    var lastMetricIDAndKey = metrics[metrics.length -1].split('-');
+    var lastMetricID = lastMetricIDAndKey[0];
+    var lastMetricKey = lastMetricIDAndKey[1];
     var createdInterval = '15 minute'; // Don't fetch too many things since this is just a preview.
 
     var modal = $('#add-chart-modal');
     var containerDOM = modal.find('.add-chart-modal-container');
+
 
     $.ajax({
         url: "/api/metrics/" + lastMetricID + "?CreatedInterval=" + createdInterval,
@@ -80,10 +86,6 @@ $(document).on('change','.chart-keys', function(){
                 title: {
                     text: lastMetricKey
                 },
-                // tooltip: {
-                //     headerFormat: '<b>{series.name}</b><br>',
-                //     pointFormat: '{point.x:%e. %b}: {point.y:.2f} m'
-                // },
                 series: result
             });
         }

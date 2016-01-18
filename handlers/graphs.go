@@ -189,6 +189,8 @@ func GetGraphsID(w http.ResponseWriter, r *http.Request) {
 func PutGraphsID(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 
+	db := context.Get(r, "db.Core").(*sqlx.DB)
+
 	idString := vars["id"]
 	id, err := strconv.ParseInt(idString, 10, 64)
 	if err != nil {
@@ -196,11 +198,31 @@ func PutGraphsID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	data := make(map[string]interface{})
-	data["name"] = r.FormValue("Name")
-	data["description"] = r.FormValue("Description")
+	err = r.ParseForm()
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
 
-	db := context.Get(r, "db.Core").(*sqlx.DB)
+	name := r.FormValue("Name")
+	description := r.FormValue("Description")
+
+	metrics := r.Form["Metrics"]
+
+	data := make(map[string]interface{})
+	if name != "" {
+		data["name"] = name
+	}
+	if description != "" {
+		data["description"] = description
+	}
+
+	metricsJSONBytes, err := dal.NewGraph(db).BuildMetricsJSONForSave(nil, metrics)
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
+	data["metrics"] = metricsJSONBytes
 
 	_, err = dal.NewGraph(db).UpdateByID(nil, data, id)
 	if err != nil {

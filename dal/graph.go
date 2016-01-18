@@ -2,9 +2,13 @@ package dal
 
 import (
 	"database/sql"
+	"encoding/json"
 	"fmt"
+	"strconv"
+	"strings"
 
 	"github.com/jmoiron/sqlx"
+	sqlx_types "github.com/jmoiron/sqlx/types"
 )
 
 func NewGraph(db *sqlx.DB) *Graph {
@@ -17,10 +21,11 @@ func NewGraph(db *sqlx.DB) *Graph {
 }
 
 type GraphRow struct {
-	ID          int64  `db:"id"`
-	ClusterID   int64  `db:"cluster_id"`
-	Name        string `db:"name"`
-	Description string `db:"description"`
+	ID          int64               `db:"id"`
+	ClusterID   int64               `db:"cluster_id"`
+	Name        string              `db:"name"`
+	Description string              `db:"description"`
+	Metrics     sqlx_types.JSONText `db:"metrics"`
 }
 
 type Graph struct {
@@ -34,6 +39,34 @@ func (a *Graph) rowFromSqlResult(tx *sqlx.Tx, sqlResult sql.Result) (*GraphRow, 
 	}
 
 	return a.GetById(tx, id)
+}
+
+func (a *Graph) BuildMetricsJSONForSave(tx *sqlx.Tx, idsAndKeys []string) ([]byte, error) {
+	idsAndKeysLen := 0
+	if idsAndKeys != nil {
+		idsAndKeysLen = len(idsAndKeys)
+	}
+
+	ids := make([]int, idsAndKeysLen)
+	keys := make([]string, idsAndKeysLen)
+
+	for i, idAndKey := range idsAndKeys {
+		idAndKeySlice := strings.Split(idAndKey, "-")
+
+		idInt, err := strconv.Atoi(idAndKeySlice[0])
+		if err != nil {
+			return nil, err
+		}
+
+		ids[i] = idInt
+		keys[i] = idAndKeySlice[1]
+	}
+
+	metrics := make(map[string]interface{})
+	metrics["ids"] = ids
+	metrics["keys"] = keys
+
+	return json.Marshal(metrics)
 }
 
 // GetById returns one record by id.
@@ -50,6 +83,12 @@ func (a *Graph) Create(tx *sqlx.Tx, clusterID int64, name, description string) (
 	data["cluster_id"] = clusterID
 	data["name"] = name
 	data["description"] = description
+
+	metricsJSONBytes, err := a.BuildMetricsJSONForSave(tx, nil)
+	if err != nil {
+		return nil, err
+	}
+	data["metrics"] = metricsJSONBytes
 
 	sqlResult, err := a.InsertIntoTable(tx, data)
 	if err != nil {
