@@ -367,6 +367,8 @@
         var path = window.location.pathname;
         if(path == '/') {
             $('.nav-hosts').addClass('active');
+        } else if(path.slice(0, '/graphs'.length) == '/graphs') {
+            $('.nav-graphs').addClass('active');
         } else if(path == '/metadata') {
             $('.nav-metadata').addClass('active');
         } else if(path == '/watchers') {

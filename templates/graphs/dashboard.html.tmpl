@@ -1,0 +1,27 @@
+{{define "second-navbar"}}
+<!-- Graphs Nav -->
+<nav class="navbar navbar-default">
+    <div class="container graphs">
+        <div class="row">
+            <div class="col-lg-10" style="padding-right: 0">
+                <select class="form-control" name="GraphSwitcher">
+                {{ range $graph := .Graphs }}
+                    <option value="{{ $graph.ID }}" {{if eq $graph.ID $.CurrentGraph.ID }}selected="selected"{{ end }}>{{ $graph.Name }}</option>
+                {{ end }}
+                </select>
+            </div>
+
+            <div class="col-lg-2" style="padding-left: 0">
+                <button class="btn btn-primary btn-block" data-toggle="modal" data-target="#graphs-modal">
+                    Add Chart
+                </button>
+            </div>
+        </div>
+    </div>
+</nav>
+{{ end }}
+
+{{define "content"}}
+<script>
+</script>
+{{end}}

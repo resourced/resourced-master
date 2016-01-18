@@ -92,17 +92,82 @@ func PostGraphs(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/graphs", 301)
 }
 
-func PostPutDeleteGraphsID(w http.ResponseWriter, r *http.Request) {
+func GetPostPutDeleteGraphsID(w http.ResponseWriter, r *http.Request) {
 	method := r.FormValue("_method")
-	if method == "" {
-		method = "put"
-	}
 
-	if method == "post" || method == "put" {
+	if method == "" || method == "get" {
+		GetGraphsID(w, r)
+	} else if method == "post" || method == "put" {
 		PutGraphsID(w, r)
 	} else if method == "delete" {
 		DeleteGraphsID(w, r)
 	}
+}
+
+func GetGraphsID(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "text/html")
+
+	idString := mux.Vars(r)["id"]
+	id, err := strconv.ParseInt(idString, 10, 64)
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
+
+	cookieStore := context.Get(r, "cookieStore").(*sessions.CookieStore)
+	session, _ := cookieStore.Get(r, "resourcedmaster-session")
+
+	currentUserRow, ok := session.Values["user"].(*dal.UserRow)
+	if !ok {
+		http.Redirect(w, r, "/logout", 301)
+		return
+	}
+
+	currentClusterInterface := session.Values["currentCluster"]
+	if currentClusterInterface == nil {
+		http.Redirect(w, r, "/", 301)
+		return
+	}
+
+	currentCluster := currentClusterInterface.(*dal.ClusterRow)
+
+	db := context.Get(r, "db.Core").(*sqlx.DB)
+
+	graphs, err := dal.NewGraph(db).AllByClusterID(nil, currentCluster.ID)
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
+
+	currentGraph, err := dal.NewGraph(db).GetById(nil, id)
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
+
+	data := struct {
+		Addr               string
+		CurrentUser        *dal.UserRow
+		Clusters           []*dal.ClusterRow
+		CurrentClusterJson string
+		CurrentGraph       *dal.GraphRow
+		Graphs             []*dal.GraphRow
+	}{
+		context.Get(r, "addr").(string),
+		currentUserRow,
+		context.Get(r, "clusters").([]*dal.ClusterRow),
+		string(context.Get(r, "currentClusterJson").([]byte)),
+		currentGraph,
+		graphs,
+	}
+
+	tmpl, err := template.ParseFiles("templates/dashboard.html.tmpl", "templates/graphs/dashboard.html.tmpl")
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
+
+	tmpl.Execute(w, data)
 }
 
 func PutGraphsID(w http.ResponseWriter, r *http.Request) {

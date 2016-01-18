@@ -92,7 +92,7 @@ func (app *Application) mux() *mux.Router {
 
 	router.Handle("/graphs", alice.New(MustLogin, SetClusters).ThenFunc(handlers.GetGraphs)).Methods("GET")
 	router.Handle("/graphs", alice.New(MustLogin, SetClusters).ThenFunc(handlers.PostGraphs)).Methods("POST")
-	router.Handle("/graphs/{id:[0-9]+}", alice.New(MustLogin, SetClusters).ThenFunc(handlers.PostPutDeleteGraphsID)).Methods("POST", "PUT", "DELETE")
+	router.Handle("/graphs/{id:[0-9]+}", alice.New(MustLogin, SetClusters).ThenFunc(handlers.GetPostPutDeleteGraphsID)).Methods("GET", "POST", "PUT", "DELETE")
 
 	router.Handle("/watchers", alice.New(MustLogin, SetClusters).ThenFunc(handlers.GetWatchers)).Methods("GET")
 	router.Handle("/watchers", alice.New(MustLogin, SetClusters).ThenFunc(handlers.PostWatchers)).Methods("POST")
