@@ -34,6 +34,22 @@ type TSMetric struct {
 	Base
 }
 
+func (ts *TSMetric) metricRowsForHighchart(tx *sqlx.Tx, host string, tsMetricRows []*TSMetricRow) (*HighchartPayload, error) {
+	hcPayload := &HighchartPayload{}
+	hcPayload.Name = host
+	hcPayload.Data = make([][]interface{}, len(tsMetricRows))
+
+	for i, tsMetricRow := range tsMetricRows {
+		row := make([]interface{}, 2)
+		row[0] = tsMetricRow.Created.UnixNano() / 1000000
+		row[1] = tsMetricRow.Value
+
+		hcPayload.Data[i] = row
+	}
+
+	return hcPayload, nil
+}
+
 // Create a new record.
 func (ts *TSMetric) Create(tx *sqlx.Tx, clusterID, metricID int64, key, host string, value float64) error {
 	insertData := make(map[string]interface{})
@@ -87,19 +103,52 @@ func (ts *TSMetric) AllByMetricIDHostAndIntervalForHighchart(tx *sqlx.Tx, cluste
 		return nil, err
 	}
 
-	hcPayload := &HighchartPayload{}
-	hcPayload.Name = host
-	hcPayload.Data = make([][]interface{}, len(tsMetricRows))
+	return ts.metricRowsForHighchart(tx, host, tsMetricRows)
+}
 
-	for i, tsMetricRow := range tsMetricRows {
-		row := make([]interface{}, 2)
-		row[0] = tsMetricRow.Created.UnixNano() / 1000000
-		row[1] = tsMetricRow.Value
-
-		hcPayload.Data[i] = row
+func (ts *TSMetric) AllByMetricIDAndInterval(tx *sqlx.Tx, clusterID, metricID int64, interval string) ([]*TSMetricRow, error) {
+	if interval == "" {
+		interval = "1 hour"
 	}
 
-	return hcPayload, nil
+	rows := []*TSMetricRow{}
+	query := fmt.Sprintf("SELECT * FROM %v WHERE cluster_id=$1 AND metric_id=$2 AND created >= (NOW() - INTERVAL '%v') ORDER BY cluster_id,metric_id,created ASC", ts.table, interval)
+	err := ts.db.Select(&rows, query, clusterID, metricID)
+
+	return rows, err
+}
+
+func (ts *TSMetric) AllByMetricIDAndIntervalForHighchart(tx *sqlx.Tx, clusterID, metricID int64, interval string) ([]*HighchartPayload, error) {
+	tsMetricRows, err := ts.AllByMetricIDAndInterval(tx, clusterID, metricID, interval)
+	if err != nil {
+		return nil, err
+	}
+
+	// Group all TSMetricRows per host
+	mapHostsAndMetrics := make(map[string][]*TSMetricRow)
+
+	for _, tsMetricRow := range tsMetricRows {
+		host := tsMetricRow.Host
+
+		if _, ok := mapHostsAndMetrics[host]; !ok {
+			mapHostsAndMetrics[host] = make([]*TSMetricRow, 0)
+		}
+
+		mapHostsAndMetrics[host] = append(mapHostsAndMetrics[host], tsMetricRow)
+	}
+
+	// Then generate multiple Highchart payloads per all these hosts.
+	highChartPayloads := make([]*HighchartPayload, 0)
+
+	for host, tsMetricRows := range mapHostsAndMetrics {
+		highChartPayload, err := ts.metricRowsForHighchart(tx, host, tsMetricRows)
+		if err != nil {
+			return nil, err
+		}
+		highChartPayloads = append(highChartPayloads, highChartPayload)
+	}
+
+	return highChartPayloads, nil
 }
 
 // DeleteByDayInterval deletes all record older than x days ago.

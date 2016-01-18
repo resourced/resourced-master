@@ -4,7 +4,7 @@
     <div class="container graphs">
         <div class="row">
             <div class="col-lg-10" style="padding-right: 0">
-                <select class="form-control" name="GraphSwitcher">
+                <select class="form-control graphs-select" name="GraphSwitcher">
                 {{ range $graph := .Graphs }}
                     <option value="{{ $graph.ID }}" {{if eq $graph.ID $.CurrentGraph.ID }}selected="selected"{{ end }}>{{ $graph.Name }}</option>
                 {{ end }}
@@ -34,7 +34,7 @@
             <div class="modal-body">
                 <div class="row">
                     <div class="col-md-6">
-                        <select class="form-control" name="ChartSelector" multiple>
+                        <select class="form-control chart-keys" name="ChartSelector" multiple size="16">
                         {{ range $metric := .Metrics }}
                             <option value="{{ $metric.ID }}">{{ $metric.Key }}</option>
                         {{ end }}
@@ -42,7 +42,7 @@
                     </div>
 
                      <div class="col-md-6">
-                         2nd col 3
+                        <div class="add-chart-modal-container"></div>
                      </div>
                 </div>
             </div>
@@ -56,5 +56,10 @@
 </div>
 
 <script>
+$('.graphs-select').change(function() {
+    window.location = '/graphs/' + $(this).val();
+});
+
+// The previous select selector has non obvious syntax error.
 </script>
 {{end}}
