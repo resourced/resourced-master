@@ -323,16 +323,6 @@ $('#graph-modal').on('show.bs.modal', function (event) {
                 title: {
                     text: metricKey
                 },
-                yAxis: {
-                    title: {
-                        text: 'Snow depth (m)'
-                    },
-                    min: 0
-                },
-                // tooltip: {
-                //     headerFormat: '<b>{series.name}</b><br>',
-                //     pointFormat: '{point.x:%e. %b}: {point.y:.2f} m'
-                // },
                 series: [result]
             });
         }

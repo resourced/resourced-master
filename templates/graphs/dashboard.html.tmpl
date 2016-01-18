@@ -61,5 +61,33 @@ $('.graphs-select').change(function() {
 });
 
 // The previous select selector has non obvious syntax error.
+$(document).on('change','.chart-keys', function(){
+    var metricIDs = $(this).val();
+    var lastMetricID = metricIDs[metricIDs.length -1];
+    var lastMetricKey = $('.chart-keys option:selected[value="' + lastMetricID + '"]').text();
+    var createdInterval = '15 minute'; // Don't fetch too many things since this is just a preview.
+
+    var modal = $('#add-chart-modal');
+    var containerDOM = modal.find('.add-chart-modal-container');
+
+    $.ajax({
+        url: "/api/metrics/" + lastMetricID + "?CreatedInterval=" + createdInterval,
+        beforeSend: function(xhr) {
+            xhr.setRequestHeader("Authorization", "Basic " + window.btoa("{{ $.AccessToken.Token }}:"));
+        },
+        success: function(result) {
+            containerDOM.highcharts({
+                title: {
+                    text: lastMetricKey
+                },
+                // tooltip: {
+                //     headerFormat: '<b>{series.name}</b><br>',
+                //     pointFormat: '{point.x:%e. %b}: {point.y:.2f} m'
+                // },
+                series: result
+            });
+        }
+    });
+});
 </script>
 {{end}}

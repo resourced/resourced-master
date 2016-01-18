@@ -107,6 +107,8 @@ func GetPostPutDeleteGraphsID(w http.ResponseWriter, r *http.Request) {
 func GetGraphsID(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html")
 
+	db := context.Get(r, "db.Core").(*sqlx.DB)
+
 	idString := mux.Vars(r)["id"]
 	id, err := strconv.ParseInt(idString, 10, 64)
 	if err != nil {
@@ -123,6 +125,12 @@ func GetGraphsID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	accessTokenRow, err := dal.NewAccessToken(db).GetByUserID(nil, currentUserRow.ID)
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
+
 	currentClusterInterface := session.Values["currentCluster"]
 	if currentClusterInterface == nil {
 		http.Redirect(w, r, "/", 301)
@@ -130,8 +138,6 @@ func GetGraphsID(w http.ResponseWriter, r *http.Request) {
 	}
 
 	currentCluster := currentClusterInterface.(*dal.ClusterRow)
-
-	db := context.Get(r, "db.Core").(*sqlx.DB)
 
 	graphs, err := dal.NewGraph(db).AllByClusterID(nil, currentCluster.ID)
 	if err != nil {
@@ -154,6 +160,7 @@ func GetGraphsID(w http.ResponseWriter, r *http.Request) {
 	data := struct {
 		Addr               string
 		CurrentUser        *dal.UserRow
+		AccessToken        *dal.AccessTokenRow
 		Clusters           []*dal.ClusterRow
 		CurrentClusterJson string
 		CurrentGraph       *dal.GraphRow
@@ -162,6 +169,7 @@ func GetGraphsID(w http.ResponseWriter, r *http.Request) {
 	}{
 		context.Get(r, "addr").(string),
 		currentUserRow,
+		accessTokenRow,
 		context.Get(r, "clusters").([]*dal.ClusterRow),
 		string(context.Get(r, "currentClusterJson").([]byte)),
 		currentGraph,
