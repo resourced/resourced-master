@@ -11,6 +11,8 @@
                     New Graphs
                 </button>
 
+                <input id="search-input" name="q" type="text" class="form-control pull-right" placeholder="Type to search" style="width: 400px" onkeyup="filter(this)">
+
                 <h2>Graphs</h2>
             </div>
         </div>
@@ -79,6 +81,28 @@
 </div>
 
 <script>
+function filter(element) {
+    var value = $(element).val();
+    if(value == '') {
+        $('.row.graphs').show();
+    }
+    else {
+        value = value.toLowerCase();
+
+        $('.row.graphs').each(function() {
+            var title = $(this).find('h4').text().toLowerCase().trim();
+            var description = $(this).find('p').text().toLowerCase().trim();
+
+            if(title.search(value) > -1 || description.search(value) > -1) {
+                $(this).show();
+            }
+            else {
+                $(this).hide();
+            }
+        });
+    }
+};
+
 $('#graphs-modal form .btn-danger').click(function() {
     $('#graphs-modal form input[name="_method"]').val('delete');
     $(this).closest('form').submit();
