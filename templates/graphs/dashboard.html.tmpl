@@ -28,7 +28,7 @@
         {{ range $metric := $metricsContainer }}
         <div class="col-md-3">
             <div class="panel panel-default">
-                <div class="panel-heading">{{ $metric.Key }}</div>
+                <div class="panel-heading" data-key="{{ $metric.Key }}">{{ $metric.Key }}</div>
                 <div class="panel-body">
                     Panel content
                 </div>
@@ -56,7 +56,7 @@
                         <div class="col-md-6">
                             <select class="form-control chart-keys" name="Metrics" multiple size="16">
                             {{ range $metric := .Metrics }}
-                                <option data-graph-id="{{ $.CurrentGraph.ID }}" value="{{ $metric.ID }}-{{ $metric.Key }}">{{ $metric.Key }}</option>
+                                <option data-graph-id="{{ $.CurrentGraph.ID }}" value="{{ $metric.ID }}-{{ $metric.Key }}" data-key="{{ $metric.Key }}">{{ $metric.Key }}</option>
                             {{ end }}
                             </select>
                         </div>
@@ -77,13 +77,8 @@
 </div>
 
 <script>
-$('.graphs-select').change(function() {
-    window.location = '/graphs/' + $(this).val();
-});
-
-// The previous select selector has non obvious syntax error.
-$(document).on('change','.chart-keys', function(){
-    var metrics = $(this).val();
+function renderChartPreview() {
+    var metrics = $('.chart-keys').val();
     var lastMetricIDAndKey = metrics[metrics.length -1].split('-');
     var lastMetricID = lastMetricIDAndKey[0];
     var lastMetricKey = lastMetricIDAndKey[1];
@@ -107,6 +102,30 @@ $(document).on('change','.chart-keys', function(){
             });
         }
     });
+}
+
+$('.graphs-select').change(function() {
+    window.location = '/graphs/' + $(this).val();
+});
+
+// The previous select selector has non obvious syntax error.
+$(document).on('change','.chart-keys', renderChartPreview);
+
+$('#add-chart-modal').on('shown.bs.modal', function() {
+    var modal = $(this);
+    var currentMetricKeysDOM = $('.graphs-metrics-container .panel-heading');
+
+    modal.find('.chart-keys option').each(function(index) {
+        var chartKeyOption = $(this);
+
+        $('.graphs-metrics-container .panel-heading').each(function(index) {
+            if(chartKeyOption.data('key') == $(this).data('key')) {
+                chartKeyOption.attr('selected', 'selected');
+            }
+        });
+    });
+
+    renderChartPreview();
 });
 </script>
 {{end}}
