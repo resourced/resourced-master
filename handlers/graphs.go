@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"fmt"
 	"html/template"
 	"net/http"
 	"strconv"
@@ -108,6 +109,8 @@ func GetGraphsID(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html")
 
 	db := context.Get(r, "db.Core").(*sqlx.DB)
+	cookieStore := context.Get(r, "cookieStore").(*sessions.CookieStore)
+	session, _ := cookieStore.Get(r, "resourcedmaster-session")
 
 	idString := mux.Vars(r)["id"]
 	id, err := strconv.ParseInt(idString, 10, 64)
@@ -115,9 +118,6 @@ func GetGraphsID(w http.ResponseWriter, r *http.Request) {
 		libhttp.HandleErrorJson(w, err)
 		return
 	}
-
-	cookieStore := context.Get(r, "cookieStore").(*sessions.CookieStore)
-	session, _ := cookieStore.Get(r, "resourcedmaster-session")
 
 	currentUserRow, ok := session.Values["user"].(*dal.UserRow)
 	if !ok {
@@ -190,6 +190,8 @@ func PutGraphsID(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 
 	db := context.Get(r, "db.Core").(*sqlx.DB)
+	cookieStore := context.Get(r, "cookieStore").(*sessions.CookieStore)
+	session, _ := cookieStore.Get(r, "resourcedmaster-session")
 
 	idString := vars["id"]
 	id, err := strconv.ParseInt(idString, 10, 64)
@@ -204,6 +206,14 @@ func PutGraphsID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	currentClusterInterface := session.Values["currentCluster"]
+	if currentClusterInterface == nil {
+		http.Redirect(w, r, "/", 301)
+		return
+	}
+
+	currentCluster := currentClusterInterface.(*dal.ClusterRow)
+
 	name := r.FormValue("Name")
 	description := r.FormValue("Description")
 
@@ -217,7 +227,7 @@ func PutGraphsID(w http.ResponseWriter, r *http.Request) {
 		data["description"] = description
 	}
 
-	metricsJSONBytes, err := dal.NewGraph(db).BuildMetricsJSONForSave(nil, metrics)
+	metricsJSONBytes, err := dal.NewGraph(db).BuildMetricsJSONForSave(nil, currentCluster.ID, metrics)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
@@ -230,11 +240,13 @@ func PutGraphsID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	http.Redirect(w, r, "/graphs", 301)
+	http.Redirect(w, r, fmt.Sprintf("/graphs/%v", idString), 301)
 }
 
 func DeleteGraphsID(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
+
+	db := context.Get(r, "db.Core").(*sqlx.DB)
 
 	idString := vars["id"]
 	id, err := strconv.ParseInt(idString, 10, 64)
@@ -242,8 +254,6 @@ func DeleteGraphsID(w http.ResponseWriter, r *http.Request) {
 		libhttp.HandleErrorJson(w, err)
 		return
 	}
-
-	db := context.Get(r, "db.Core").(*sqlx.DB)
 
 	_, err = dal.NewGraph(db).DeleteByID(nil, id)
 	if err != nil {

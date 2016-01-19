@@ -13,7 +13,7 @@
 
             <div class="col-lg-2" style="padding-left: 0">
                 <button class="btn btn-primary btn-block" data-toggle="modal" data-target="#add-chart-modal" data-graph-id="{{ $.CurrentGraph.ID }}">
-                    Add Chart
+                    Add Charts
                 </button>
             </div>
         </div>
@@ -22,13 +22,23 @@
 {{ end }}
 
 {{define "content"}}
+<div class="container-fluid">
+    {{ range $metricsContainer := .CurrentGraph.MetricsFromJSONGroupByFour }}
+    <div class="row">
+        {{ range $metric := $metricsContainer }}
+        <div class="col-md-3">.col-md-3 {{ $metric.Key }}</div>
+        {{ end }}
+    </div>
+    {{ end }}
+</div>
+
 <!-- Add a Chart Modal -->
 <div class="modal fade" id="add-chart-modal" tabindex="-1" role="dialog" aria-labelledby="graph-label" aria-hidden="true">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
                 <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-                <h4 class="modal-title" id="watchers-details-label">Add a Chart</h4>
+                <h4 class="modal-title" id="watchers-details-label">Add Charts</h4>
             </div>
 
             <form action="/graphs/{{ $.CurrentGraph.ID }}" method="post">

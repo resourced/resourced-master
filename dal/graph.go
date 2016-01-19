@@ -28,6 +28,30 @@ type GraphRow struct {
 	Metrics     sqlx_types.JSONText `db:"metrics"`
 }
 
+func (g *GraphRow) MetricsFromJSON() []*MetricRow {
+	metricRows := make([]*MetricRow, 0)
+	g.Metrics.Unmarshal(&metricRows)
+	return metricRows
+}
+
+func (g *GraphRow) MetricsFromJSONGroupByN(n int) [][]*MetricRow {
+	container := make([][]*MetricRow, 0)
+
+	for metricIndex, metricRow := range g.MetricsFromJSON() {
+		if metricIndex%n == 0 {
+			container = append(container, make([]*MetricRow, 0))
+		}
+
+		container[len(container)-1] = append(container[len(container)-1], metricRow)
+	}
+
+	return container
+}
+
+func (g *GraphRow) MetricsFromJSONGroupByFour() [][]*MetricRow {
+	return g.MetricsFromJSONGroupByN(4)
+}
+
 type Graph struct {
 	Base
 }
@@ -41,30 +65,31 @@ func (a *Graph) rowFromSqlResult(tx *sqlx.Tx, sqlResult sql.Result) (*GraphRow, 
 	return a.GetById(tx, id)
 }
 
-func (a *Graph) BuildMetricsJSONForSave(tx *sqlx.Tx, idsAndKeys []string) ([]byte, error) {
+func (a *Graph) BuildMetricsJSONForSave(tx *sqlx.Tx, clusterID int64, idsAndKeys []string) ([]byte, error) {
 	idsAndKeysLen := 0
 	if idsAndKeys != nil {
 		idsAndKeysLen = len(idsAndKeys)
 	}
 
-	ids := make([]int, idsAndKeysLen)
-	keys := make([]string, idsAndKeysLen)
+	metrics := make([]*MetricRow, idsAndKeysLen)
 
-	for i, idAndKey := range idsAndKeys {
-		idAndKeySlice := strings.Split(idAndKey, "-")
+	if idsAndKeys != nil {
+		for i, idAndKey := range idsAndKeys {
+			idAndKeySlice := strings.Split(idAndKey, "-")
 
-		idInt, err := strconv.Atoi(idAndKeySlice[0])
-		if err != nil {
-			return nil, err
+			idInt64, err := strconv.ParseInt(idAndKeySlice[0], 10, 64)
+			if err != nil {
+				return nil, err
+			}
+
+			metricRow := &MetricRow{}
+			metricRow.ID = idInt64
+			metricRow.Key = idAndKeySlice[1]
+			metricRow.ClusterID = clusterID
+
+			metrics[i] = metricRow
 		}
-
-		ids[i] = idInt
-		keys[i] = idAndKeySlice[1]
 	}
-
-	metrics := make(map[string]interface{})
-	metrics["ids"] = ids
-	metrics["keys"] = keys
 
 	return json.Marshal(metrics)
 }
@@ -84,7 +109,7 @@ func (a *Graph) Create(tx *sqlx.Tx, clusterID int64, name, description string) (
 	data["name"] = name
 	data["description"] = description
 
-	metricsJSONBytes, err := a.BuildMetricsJSONForSave(tx, nil)
+	metricsJSONBytes, err := a.BuildMetricsJSONForSave(tx, clusterID, nil)
 	if err != nil {
 		return nil, err
 	}
