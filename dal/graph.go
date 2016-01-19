@@ -84,7 +84,7 @@ func (a *Graph) BuildMetricsJSONForSave(tx *sqlx.Tx, clusterID int64, idsAndKeys
 
 			metricRow := &MetricRow{}
 			metricRow.ID = idInt64
-			metricRow.Key = idAndKeySlice[1]
+			metricRow.Key = strings.Join(idAndKeySlice[1:], "-")
 			metricRow.ClusterID = clusterID
 
 			metrics[i] = metricRow
