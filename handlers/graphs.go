@@ -217,8 +217,6 @@ func PutGraphsID(w http.ResponseWriter, r *http.Request) {
 	name := r.FormValue("Name")
 	description := r.FormValue("Description")
 
-	metrics := r.Form["Metrics"]
-
 	data := make(map[string]interface{})
 	if name != "" {
 		data["name"] = name
@@ -227,12 +225,16 @@ func PutGraphsID(w http.ResponseWriter, r *http.Request) {
 		data["description"] = description
 	}
 
-	metricsJSONBytes, err := dal.NewGraph(db).BuildMetricsJSONForSave(nil, currentCluster.ID, metrics)
-	if err != nil {
-		libhttp.HandleErrorJson(w, err)
-		return
+	metrics := r.Form["Metrics"]
+
+	if len(metrics) > 0 {
+		metricsJSONBytes, err := dal.NewGraph(db).BuildMetricsJSONForSave(nil, currentCluster.ID, metrics)
+		if err != nil {
+			libhttp.HandleErrorJson(w, err)
+			return
+		}
+		data["metrics"] = metricsJSONBytes
 	}
-	data["metrics"] = metricsJSONBytes
 
 	_, err = dal.NewGraph(db).UpdateByID(nil, data, id)
 	if err != nil {
