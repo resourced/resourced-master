@@ -48,8 +48,8 @@ func (g *GraphRow) MetricsFromJSONGroupByN(n int) [][]*MetricRow {
 	return container
 }
 
-func (g *GraphRow) MetricsFromJSONGroupByFour() [][]*MetricRow {
-	return g.MetricsFromJSONGroupByN(4)
+func (g *GraphRow) MetricsFromJSONGroupByThree() [][]*MetricRow {
+	return g.MetricsFromJSONGroupByN(3)
 }
 
 type Graph struct {

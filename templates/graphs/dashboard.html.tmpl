@@ -23,12 +23,12 @@
 
 {{define "content"}}
 <div class="container-fluid graphs-metrics-container">
-    {{ range $metricsContainer := .CurrentGraph.MetricsFromJSONGroupByFour }}
+    {{ range $metricsContainer := .CurrentGraph.MetricsFromJSONGroupByThree }}
     <div class="row">
         {{ range $metric := $metricsContainer }}
-        <div class="col-md-3">
+        <div class="col-md-4">
             <div class="panel panel-default">
-                <div class="panel-heading" data-key="{{ $metric.Key }}">{{ $metric.Key }}</div>
+                <div class="panel-heading" data-id="{{ $metric.ID }}" data-key="{{ $metric.Key }}">{{ $metric.Key }}</div>
                 <div class="panel-body">
                     Panel content
                 </div>
@@ -54,14 +54,14 @@
                 <div class="modal-body">
                     <div class="row">
                         <div class="col-md-6">
-                            <select class="form-control chart-keys" name="Metrics" multiple size="16">
+                            <select class="form-control chart-keys" name="Metrics" multiple size="15">
                             {{ range $metric := .Metrics }}
                                 <option data-graph-id="{{ $.CurrentGraph.ID }}" value="{{ $metric.ID }}-{{ $metric.Key }}" data-key="{{ $metric.Key }}">{{ $metric.Key }}</option>
                             {{ end }}
                             </select>
                         </div>
 
-                         <div class="col-md-6">
+                         <div class="col-md-6" style="padding-left: 0">
                             <div class="add-chart-modal-container"></div>
                          </div>
                     </div>
@@ -79,7 +79,7 @@
 <script>
 function renderChartPreview() {
     var metrics = $('.chart-keys').val();
-    var lastMetricIDAndKey = metrics[metrics.length -1].split('-');
+    var lastMetricIDAndKey = metrics[metrics.length -1].split(/\-(.+)?/);
     var lastMetricID = lastMetricIDAndKey[0];
     var lastMetricKey = lastMetricIDAndKey[1];
     var createdInterval = '15 minute'; // Don't fetch too many things since this is just a preview.
@@ -95,6 +95,9 @@ function renderChartPreview() {
         },
         success: function(result) {
             containerDOM.highcharts({
+                chart: {
+                    height: ResourcedMaster.highcharts.defaultHeight + 6
+                },
                 title: {
                     text: lastMetricKey
                 },
@@ -104,12 +107,52 @@ function renderChartPreview() {
     });
 }
 
+function renderChart() {
+    $('.graphs-metrics-container .panel-heading').each(function() {
+        var metricID = $(this).data('id');
+        var metricKey = $(this).data('key');
+        var createdInterval = '15 minute';
+
+        var containerDOM = $(this).siblings('.panel-body');
+
+        $.ajax({
+            url: "/api/metrics/" + metricID + "?CreatedInterval=" + createdInterval,
+            beforeSend: function(xhr) {
+                xhr.setRequestHeader("Authorization", "Basic " + window.btoa("{{ $.AccessToken.Token }}:"));
+            },
+            success: function(result) {
+                containerDOM.highcharts({
+                    chart: {
+                        width: containerDOM.width(),
+                        height: ResourcedMaster.highcharts.defaultHeight
+                    },
+                    title: {
+                        text: ''
+                    },
+                    series: result
+                });
+            }
+        });
+    });
+}
+
+$(window).resize(function() {
+    $('.graphs-metrics-container .panel-body').each(function() {
+        $(this).highcharts().setSize(
+            $(this).width(), ResourcedMaster.highcharts.defaultHeight, doAnimation = false
+        );
+    });
+});
+
+$(document).ready(function() {
+    renderChart();
+});
+
+$(document).on('change','.chart-keys', renderChartPreview);
+
 $('.graphs-select').change(function() {
     window.location = '/graphs/' + $(this).val();
 });
-
-// The previous select selector has non obvious syntax error.
-$(document).on('change','.chart-keys', renderChartPreview);
 
 $('#add-chart-modal').on('shown.bs.modal', function() {
     var modal = $(this);

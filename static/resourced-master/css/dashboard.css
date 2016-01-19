@@ -160,6 +160,12 @@ select {
 .graphs-metrics-container {
     padding-top: 30px;
 }
+.graphs-metrics-container .panel-heading {
+    padding: 10px;
+}
+.graphs-metrics-container .panel-body {
+    padding: 0;
+}
 
 @media(max-width:1200px) {
     .form-group-search-and-save .search-form, .form-group-search-and-save .search-form .input-group {
