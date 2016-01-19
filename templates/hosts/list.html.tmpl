@@ -175,7 +175,7 @@ $('#search-input').bind("input propertychange", function(e) {
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
-                <select class="form-control graph-modal-created-interval" name="CreatedInterval">
+                <select class="form-control chart-created-interval" name="CreatedInterval">
                     <option value="5 minute">5 minutes ago</option>
                     <option value="10 minute">10 minutes ago</option>
                     <option value="15 minute">15 minutes ago</option>
@@ -304,7 +304,7 @@ $('#graph-modal').on('show.bs.modal', function (event) {
     // Fetch created interval from various places
     var createdInterval = modal.data('created-interval');
     if(!createdInterval) {
-        createdInterval = $('.graph-modal-created-interval').val();
+        createdInterval = $('.chart-created-interval').val();
     }
     if(!createdInterval) {
         createdInterval = '1 hour'
@@ -329,7 +329,7 @@ $('#graph-modal').on('show.bs.modal', function (event) {
     });
 });
 
-$('.graph-modal-created-interval').on('change', function(event) {
+$('.chart-created-interval').on('change', function(event) {
     var modal = $('#graph-modal');
     var metricId = modal.data('metric-id');
     var metricKey = modal.data('metric-key');

@@ -28,10 +28,27 @@
         {{ range $metric := $metricsContainer }}
         <div class="col-md-4">
             <div class="panel panel-default">
-                <div class="panel-heading" data-id="{{ $metric.ID }}" data-key="{{ $metric.Key }}">{{ $metric.Key }}</div>
-                <div class="panel-body">
-                    Panel content
+                <div class="panel-heading" data-id="{{ $metric.ID }}" data-key="{{ $metric.Key }}">
+                    <select class="form-control chart-created-interval pull-right" data-id="{{ $metric.ID }}" data-key="{{ $metric.Key }}" data-interval="15 minute">
+                        <option value="5 minute">5 minutes ago</option>
+                        <option value="10 minute">10 minutes ago</option>
+                        <option value="15 minute">15 minutes ago</option>
+                        <option value="30 minute">30 minutes ago</option>
+                        <option value="60 minute">60 minutes ago</option>
+                        <option value="2 hour">2 hours ago</option>
+                        <option value="3 hour">3 hours ago</option>
+                        <option value="6 hour">6 hours ago</option>
+                        <option value="12 hour">12 hours ago</option>
+                        <option value="24 hour">24 hours ago</option>
+                        <option value="2 day">2 days ago</option>
+                        <option value="3 day">3 days ago</option>
+                        <option value="7 day">7 days ago</option>
+                    </select>
+
+                    {{ $metric.Key }}
                 </div>
+
+                <div class="panel-body"></div>
             </div>
         </div>
         {{ end }}
@@ -107,32 +124,35 @@ function renderChartPreview() {
     });
 }
 
-function renderChart() {
+function renderOneChart(metricID, metricKey, createdInterval, containerDOM) {
+    $.ajax({
+        url: "/api/metrics/" + metricID + "?CreatedInterval=" + createdInterval,
+        beforeSend: function(xhr) {
+            xhr.setRequestHeader("Authorization", "Basic " + window.btoa("{{ $.AccessToken.Token }}:"));
+        },
+        success: function(result) {
+            containerDOM.highcharts({
+                chart: {
+                    width: containerDOM.width(),
+                    height: ResourcedMaster.highcharts.defaultHeight
+                },
+                title: {
+                    text: ''
+                },
+                series: result
+            });
+        }
+    });
+}
+
+function renderAllChart() {
     $('.graphs-metrics-container .panel-heading').each(function() {
         var metricID = $(this).data('id');
         var metricKey = $(this).data('key');
-        var createdInterval = '15 minute';
-
+        var createdInterval = $(this).find('select').data('interval');
         var containerDOM = $(this).siblings('.panel-body');
 
-        $.ajax({
-            url: "/api/metrics/" + metricID + "?CreatedInterval=" + createdInterval,
-            beforeSend: function(xhr) {
-                xhr.setRequestHeader("Authorization", "Basic " + window.btoa("{{ $.AccessToken.Token }}:"));
-            },
-            success: function(result) {
-                containerDOM.highcharts({
-                    chart: {
-                        width: containerDOM.width(),
-                        height: ResourcedMaster.highcharts.defaultHeight
-                    },
-                    title: {
-                        text: ''
-                    },
-                    series: result
-                });
-            }
-        });
+        renderOneChart(metricID, metricKey, createdInterval, containerDOM);
     });
 }
 
@@ -145,7 +165,7 @@ $(window).resize(function() {
 });
 
 $(document).ready(function() {
-    renderChart();
+    renderAllChart();
 });
 
 $(document).on('change','.chart-keys', renderChartPreview);
@@ -154,6 +174,17 @@ $('.graphs-select').change(function() {
     window.location = '/graphs/' + $(this).val();
 });
 
+$('.chart-created-interval').change(function() {
+    var metricID = $(this).data('id');
+    var metricKey = $(this).data('key');
+    var createdInterval = $(this).val();
+    var containerDOM = $(this).closest('.panel-heading').siblings('.panel-body');
+
+    $(this).data('interval', createdInterval);
+    renderOneChart(metricID, metricKey, createdInterval, containerDOM);
+});
+
+// Highlight charts already selected
 $('#add-chart-modal').on('shown.bs.modal', function() {
     var modal = $(this);
     var currentMetricKeysDOM = $('.graphs-metrics-container .panel-heading');

@@ -166,6 +166,13 @@ select {
 .graphs-metrics-container .panel-body {
     padding: 0;
 }
+.graphs-metrics-container .chart-created-interval {
+    width: auto;
+    height: 24px;
+    font-size: 14px;
+    padding: 0 4px;
+    line-height: 1.0;
+}
 
 @media(max-width:1200px) {
     .form-group-search-and-save .search-form, .form-group-search-and-save .search-form .input-group {
