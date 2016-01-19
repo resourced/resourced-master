@@ -1,6 +1,7 @@
 package migrator
 
 import (
+	_ "github.com/mattes/migrate/driver/postgres"
 	"github.com/mattes/migrate/migrate"
 	"github.com/resourced/resourced-master/config"
 )
