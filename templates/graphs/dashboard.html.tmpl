@@ -22,11 +22,18 @@
 {{ end }}
 
 {{define "content"}}
-<div class="container-fluid">
+<div class="container-fluid graphs-metrics-container">
     {{ range $metricsContainer := .CurrentGraph.MetricsFromJSONGroupByFour }}
     <div class="row">
         {{ range $metric := $metricsContainer }}
-        <div class="col-md-3">.col-md-3 {{ $metric.Key }}</div>
+        <div class="col-md-3">
+            <div class="panel panel-default">
+                <div class="panel-heading">{{ $metric.Key }}</div>
+                <div class="panel-body">
+                    Panel content
+                </div>
+            </div>
+        </div>
         {{ end }}
     </div>
     {{ end }}

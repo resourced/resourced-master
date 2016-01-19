@@ -157,6 +157,10 @@ select {
     border-bottom: 1px solid #4e5d6c;
 }
 
+.graphs-metrics-container {
+    padding-top: 30px;
+}
+
 @media(max-width:1200px) {
     .form-group-search-and-save .search-form, .form-group-search-and-save .search-form .input-group {
         width: 832px;
