@@ -1,3 +1,12 @@
+/*The following 2 rules are here to fix Bootstrap modal zooming bug in Safari.*/
+body {
+  padding-right: 0px !important
+}
+.modal-open {
+  overflow-y: auto;
+}
+/*End*/
+
 select {
     color: #333;
     padding: 1px 0;
