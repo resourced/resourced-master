@@ -31,7 +31,7 @@
             <div>
                 <div class="pull-right">
                     <div class="btn-group" role="group">
-                        <button class="btn btn-default btn-sm" data-toggle="modal" data-target="#watcher-modal"
+                        <button class="btn btn-default btn-xs" data-toggle="modal" data-target="#watcher-modal"
                             data-id="{{ $watcher.ID }}"
                             data-name="{{ $watcher.Name }}"
                             data-saved-query-id="{{ $watcher.SavedQueryID }}"
@@ -41,9 +41,9 @@
                             Details
                         </button>
 
-                        <button class="btn btn-default btn-sm btn-show-triggers" data-watcher-id="{{ $watcher.ID }}">Show Triggers</button>
+                        <button class="btn btn-default btn-xs btn-show-triggers" data-watcher-id="{{ $watcher.ID }}">Show Triggers</button>
 
-                        <button class="btn btn-success btn-sm" data-toggle="modal" data-target="#trigger-modal"
+                        <button class="btn btn-success btn-xs" data-toggle="modal" data-target="#trigger-modal"
                             data-watcher-id="{{ $watcher.ID }}"
                             data-watcher-name="{{ $watcher.Name }}">
                             New Trigger
