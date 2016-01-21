@@ -46,18 +46,32 @@ create table ts_metrics_m12_2016
     (check (created >= date '2016-12-01' and created <= date '2016-12-31'))
     inherits (ts_metrics);
 
-create index ts_metrics_m1_2016_created on ts_metrics_m1_2016 using brin (cluster_id, metric_id, key, host, created);
-create index ts_metrics_m2_2016_created on ts_metrics_m2_2016 using brin (cluster_id, metric_id, key, host, created);
-create index ts_metrics_m3_2016_created on ts_metrics_m3_2016 using brin (cluster_id, metric_id, key, host, created);
-create index ts_metrics_m4_2016_created on ts_metrics_m4_2016 using brin (cluster_id, metric_id, key, host, created);
-create index ts_metrics_m5_2016_created on ts_metrics_m5_2016 using brin (cluster_id, metric_id, key, host, created);
-create index ts_metrics_m6_2016_created on ts_metrics_m6_2016 using brin (cluster_id, metric_id, key, host, created);
-create index ts_metrics_m7_2016_created on ts_metrics_m7_2016 using brin (cluster_id, metric_id, key, host, created);
-create index ts_metrics_m8_2016_created on ts_metrics_m8_2016 using brin (cluster_id, metric_id, key, host, created);
-create index ts_metrics_m9_2016_created on ts_metrics_m9_2016 using brin (cluster_id, metric_id, key, host, created);
-create index ts_metrics_m10_2016_created on ts_metrics_m10_2016 using brin (cluster_id, metric_id, key, host, created);
-create index ts_metrics_m11_2016_created on ts_metrics_m11_2016 using brin (cluster_id, metric_id, key, host, created);
-create index ts_metrics_m12_2016_created on ts_metrics_m12_2016 using brin (cluster_id, metric_id, key, host, created);
+create index ts_metrics_m1_2016_simple_select on ts_metrics_m1_2016 using brin (cluster_id, metric_id, created);
+create index ts_metrics_m2_2016_simple_select on ts_metrics_m2_2016 using brin (cluster_id, metric_id, created);
+create index ts_metrics_m3_2016_simple_select on ts_metrics_m3_2016 using brin (cluster_id, metric_id, created);
+create index ts_metrics_m4_2016_simple_select on ts_metrics_m4_2016 using brin (cluster_id, metric_id, created);
+create index ts_metrics_m5_2016_simple_select on ts_metrics_m5_2016 using brin (cluster_id, metric_id, created);
+create index ts_metrics_m6_2016_simple_select on ts_metrics_m6_2016 using brin (cluster_id, metric_id, created);
+create index ts_metrics_m7_2016_simple_select on ts_metrics_m7_2016 using brin (cluster_id, metric_id, created);
+create index ts_metrics_m8_2016_simple_select on ts_metrics_m8_2016 using brin (cluster_id, metric_id, created);
+create index ts_metrics_m9_2016_simple_select on ts_metrics_m9_2016 using brin (cluster_id, metric_id, created);
+create index ts_metrics_m10_2016_simple_select on ts_metrics_m10_2016 using brin (cluster_id, metric_id, created);
+create index ts_metrics_m11_2016_simple_select on ts_metrics_m11_2016 using brin (cluster_id, metric_id, created);
+create index ts_metrics_m12_2016_simple_select on ts_metrics_m12_2016 using brin (cluster_id, metric_id, created);
+
+create index ts_metrics_m1_2016_aggregate_select on ts_metrics_m1_2016 using brin (created, key);
+create index ts_metrics_m2_2016_aggregate_select on ts_metrics_m2_2016 using brin (created, key);
+create index ts_metrics_m3_2016_aggregate_select on ts_metrics_m3_2016 using brin (created, key);
+create index ts_metrics_m4_2016_aggregate_select on ts_metrics_m4_2016 using brin (created, key);
+create index ts_metrics_m5_2016_aggregate_select on ts_metrics_m5_2016 using brin (created, key);
+create index ts_metrics_m6_2016_aggregate_select on ts_metrics_m6_2016 using brin (created, key);
+create index ts_metrics_m7_2016_aggregate_select on ts_metrics_m7_2016 using brin (created, key);
+create index ts_metrics_m8_2016_aggregate_select on ts_metrics_m8_2016 using brin (created, key);
+create index ts_metrics_m9_2016_aggregate_select on ts_metrics_m9_2016 using brin (created, key);
+create index ts_metrics_m10_2016_aggregate_select on ts_metrics_m10_2016 using brin (created, key);
+create index ts_metrics_m11_2016_aggregate_select on ts_metrics_m11_2016 using brin (created, key);
+create index ts_metrics_m12_2016_aggregate_select on ts_metrics_m12_2016 using brin (created, key);
+
 
 create or replace function on_ts_metrics_insert_2016() returns trigger as $$
 begin
