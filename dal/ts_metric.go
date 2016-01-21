@@ -21,6 +21,15 @@ type HighchartPayload struct {
 	Data [][]interface{} `json:"data"`
 }
 
+type TSMetricAggregateRow struct {
+	CreatedUnix int64   `db:"created_unix"`
+	Key         string  `db:"key"`
+	Avg         float64 `db:"avg"`
+	Max         float64 `db:"max"`
+	Min         float64 `db:"min"`
+	Sum         float64 `db:"sum"`
+}
+
 type TSMetricRow struct {
 	ClusterID int64     `db:"cluster_id"`
 	MetricID  int64     `db:"metric_id"`
@@ -83,6 +92,18 @@ func (ts *TSMetric) CreateByHostRow(tx *sqlx.Tx, hostRow *HostRow, metricsMap ma
 		}
 	}
 	return nil
+}
+
+func (ts *TSMetric) AggregateEvery(tx *sqlx.Tx, clusterID int64, interval string) ([]*TSMetricAggregateRow, error) {
+	if interval == "" {
+		interval = "15 minute"
+	}
+
+	rows := []*TSMetricAggregateRow{}
+	query := fmt.Sprintf("SELECT cluster_id,CEILING(extract('epoch' from created)/900)*900 AS created_unix, key, avg(value) as avg, max(value) as max, min(value) as min, sum(value) as sum FROM %v WHERE cluster_id=$1 AND created >= (NOW() - INTERVAL '%v') GROUP BY cluster_id, created_unix, key ORDER BY created_unix ASC", ts.table, interval)
+	err := ts.db.Select(&rows, query, clusterID)
+
+	return rows, err
 }
 
 func (ts *TSMetric) AllByMetricIDHostAndInterval(tx *sqlx.Tx, clusterID, metricID int64, host string, interval string) ([]*TSMetricRow, error) {
