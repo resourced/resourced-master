@@ -99,13 +99,22 @@ func (ts *TSMetric) CreateByHostRow(tx *sqlx.Tx, hostRow *HostRow, metricsMap ma
 					} else {
 						// Store those 15 minutes aggregation values
 						for _, selectAggrRow := range selectAggrRows {
-							err := tsAggr15m.Upsert(tx, hostRow.ClusterID, metricID, selectAggrRow)
+							tx, err := ts.db.Beginx()
+							if err != nil {
+								logrus.Error(err)
+							}
+
+							err = tsAggr15m.Upsert(tx, hostRow.ClusterID, metricID, metricKey, selectAggrRow)
+							if err != nil {
+								logrus.Error(err)
+							}
+
+							err = tx.Commit()
 							if err != nil {
 								logrus.Error(err)
 							}
 						}
 					}
-
 				}
 			}
 		}

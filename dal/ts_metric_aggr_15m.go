@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/Sirupsen/logrus"
 	"github.com/jmoiron/sqlx"
 )
 
@@ -33,7 +34,12 @@ type TSMetricAggr15m struct {
 }
 
 // Upsert a new record.
-func (ts *TSMetricAggr15m) Upsert(tx *sqlx.Tx, clusterID, metricID int64, selectAggrRow *TSMetricSelectAggregateRow) error {
+func (ts *TSMetricAggr15m) Upsert(tx *sqlx.Tx, clusterID, metricID int64, metricKey string, selectAggrRow *TSMetricSelectAggregateRow) error {
+	// Check if metricKey is correct, if not don't do anything
+	if metricKey != selectAggrRow.Key {
+		return nil
+	}
+
 	created := time.Unix(int64(selectAggrRow.CreatedUnix), 0)
 
 	data := make(map[string]interface{})
@@ -46,17 +52,45 @@ func (ts *TSMetricAggr15m) Upsert(tx *sqlx.Tx, clusterID, metricID int64, select
 	data["min"] = selectAggrRow.Min
 	data["sum"] = selectAggrRow.Sum
 
-	something := make([]*TSMetricAggr15mRow, 0)
-	err := ts.db.Select(&something, fmt.Sprintf("SELECT * from %v WHERE cluster_id=$1 AND metric_id=$2 AND created=$3 AND key=$4 LIMIT 1", ts.table), clusterID, metricID, created, selectAggrRow.Key)
+	query := fmt.Sprintf("SELECT * from %v WHERE cluster_id=$1 AND created=$2 AND key=$3 LIMIT 1", ts.table)
+	aggrSelectRows := make([]*TSMetricAggr15mRow, 0)
+	err := ts.db.Select(&aggrSelectRows, query, clusterID, created, selectAggrRow.Key)
 
 	if err != nil {
-		println(err.Error())
+		logrus.WithFields(logrus.Fields{
+			"Method":    "TSMetricAggr15m.Upsert",
+			"ClusterID": clusterID,
+			"MetricID":  metricID,
+			"MetricKey": metricKey,
+			"Query":     query,
+		}).Error(err)
+
+		return err
 	}
 
-	if err != nil || len(something) == 0 {
+	if err != nil || len(aggrSelectRows) == 0 {
 		_, err = ts.InsertIntoTable(tx, data)
+		if err != nil {
+			logrus.WithFields(logrus.Fields{
+				"Method":    "TSMetricAggr15m.Upsert.InsertIntoTable",
+				"ClusterID": clusterID,
+				"MetricID":  metricID,
+				"MetricKey": metricKey,
+			}).Error(err)
+		}
+
 	} else {
-		_, err = ts.UpdateFromTable(tx, data, fmt.Sprintf("cluster_id=%v AND metric_id=%v AND created=%v AND key=%v", clusterID, metricID, created, selectAggrRow.Key))
+		query := fmt.Sprintf(`UPDATE %v SET avg=$1,max=$2,min=$3,sum=$4 WHERE cluster_id=$5 AND created=$6 AND key=$7`, ts.table)
+		_, err = tx.Exec(query, selectAggrRow.Avg, selectAggrRow.Max, selectAggrRow.Min, selectAggrRow.Sum, clusterID, created, selectAggrRow.Key)
+		if err != nil {
+			logrus.WithFields(logrus.Fields{
+				"Method":    "TSMetricAggr15m.Upsert.UpdateFromTable",
+				"ClusterID": clusterID,
+				"MetricID":  metricID,
+				"MetricKey": metricKey,
+				"Query":     query,
+			}).Error(err)
+		}
 	}
 
 	return err
