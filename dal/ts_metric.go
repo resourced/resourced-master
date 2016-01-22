@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/Sirupsen/logrus"
 	"github.com/jmoiron/sqlx"
 )
 
@@ -21,7 +22,8 @@ type HighchartPayload struct {
 	Data [][]interface{} `json:"data"`
 }
 
-type TSMetricAggregateRow struct {
+type TSMetricSelectAggregateRow struct {
+	ClusterID   int64   `db:"cluster_id"`
 	CreatedUnix int64   `db:"created_unix"`
 	Key         string  `db:"key"`
 	Avg         float64 `db:"avg"`
@@ -73,6 +75,8 @@ func (ts *TSMetric) Create(tx *sqlx.Tx, clusterID, metricID int64, key, host str
 }
 
 func (ts *TSMetric) CreateByHostRow(tx *sqlx.Tx, hostRow *HostRow, metricsMap map[string]int64) error {
+	tsAggr15m := NewTSMetricAggr15m(ts.db)
+
 	// Loop through every host's data and see if they are part of graph metrics.
 	// If they are, insert a record in ts_metrics.
 	for path, data := range hostRow.DataAsFlatKeyValue() {
@@ -85,8 +89,23 @@ func (ts *TSMetric) CreateByHostRow(tx *sqlx.Tx, hostRow *HostRow, metricsMap ma
 					// Ignore error for now, there's no need to break the entire loop when one insert fails.
 					err := ts.Create(tx, hostRow.ClusterID, metricID, metricKey, hostRow.Name, trueValueFloat64)
 					if err != nil {
-						println(err.Error())
+						logrus.Error(err)
 					}
+
+					// Fetch 15 minutes aggregation values
+					selectAggrRows, err := ts.AggregateEvery(tx, hostRow.ClusterID, "15 minute")
+					if err != nil {
+						logrus.Error(err)
+					} else {
+						// Store those 15 minutes aggregation values
+						for _, selectAggrRow := range selectAggrRows {
+							err := tsAggr15m.Upsert(tx, hostRow.ClusterID, metricID, selectAggrRow)
+							if err != nil {
+								logrus.Error(err)
+							}
+						}
+					}
+
 				}
 			}
 		}
@@ -94,13 +113,14 @@ func (ts *TSMetric) CreateByHostRow(tx *sqlx.Tx, hostRow *HostRow, metricsMap ma
 	return nil
 }
 
-func (ts *TSMetric) AggregateEvery(tx *sqlx.Tx, clusterID int64, interval string) ([]*TSMetricAggregateRow, error) {
+func (ts *TSMetric) AggregateEvery(tx *sqlx.Tx, clusterID int64, interval string) ([]*TSMetricSelectAggregateRow, error) {
 	if interval == "" {
 		interval = "15 minute"
 	}
 
-	rows := []*TSMetricAggregateRow{}
-	query := fmt.Sprintf("SELECT cluster_id,CEILING(extract('epoch' from created)/900)*900 AS created_unix, key, avg(value) as avg, max(value) as max, min(value) as min, sum(value) as sum FROM %v WHERE cluster_id=$1 AND created >= (NOW() - INTERVAL '%v') GROUP BY cluster_id, created_unix, key ORDER BY created_unix ASC", ts.table, interval)
+	rows := []*TSMetricSelectAggregateRow{}
+	query := fmt.Sprintf("SELECT cluster_id, cast(CEILING(extract('epoch' from created)/900)*900 as bigint) AS created_unix, key, avg(value) as avg, max(value) as max, min(value) as min, sum(value) as sum FROM %v WHERE cluster_id=$1 AND created >= (NOW() - INTERVAL '%v') GROUP BY cluster_id, created_unix, key ORDER BY created_unix ASC", ts.table, interval)
+	println(query)
 	err := ts.db.Select(&rows, query, clusterID)
 
 	return rows, err
