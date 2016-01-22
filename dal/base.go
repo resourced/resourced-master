@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/Sirupsen/logrus"
 	"github.com/jmoiron/sqlx"
 )
 
@@ -86,6 +87,11 @@ func (b *Base) InsertIntoTable(tx *sqlx.Tx, data map[string]interface{}) (sql.Re
 	if b.hasID {
 		query = query + " RETURNING id"
 
+		logrus.WithFields(logrus.Fields{
+			"Method": "Base.InsertIntoTable",
+			"Query":  query,
+		}).Info("Insert Query")
+
 		var lastInsertId int64
 		err = tx.QueryRow(query, values...).Scan(&lastInsertId)
 		if err != nil {
@@ -95,6 +101,11 @@ func (b *Base) InsertIntoTable(tx *sqlx.Tx, data map[string]interface{}) (sql.Re
 		result.lastInsertId = lastInsertId
 
 	} else {
+		logrus.WithFields(logrus.Fields{
+			"Method": "Base.InsertIntoTable",
+			"Query":  query,
+		}).Info("Insert Query")
+
 		_, err := tx.Exec(query, values...)
 		if err != nil {
 			return nil, err
@@ -140,6 +151,11 @@ func (b *Base) UpdateFromTable(tx *sqlx.Tx, data map[string]interface{}, where s
 		b.table,
 		strings.Join(keysWithDollarMarks, ","),
 		where)
+
+	logrus.WithFields(logrus.Fields{
+		"Method": "Base.UpdateFromTable",
+		"Query":  query,
+	}).Info("Update Query")
 
 	result, err = tx.Exec(query, values...)
 
@@ -189,6 +205,11 @@ func (b *Base) UpdateByID(tx *sqlx.Tx, data map[string]interface{}, id int64) (s
 		b.table,
 		strings.Join(keysWithDollarMarks, ","),
 		loopCounter)
+
+	logrus.WithFields(logrus.Fields{
+		"Method": "Base.UpdateByID",
+		"Query":  query,
+	}).Info("Update Query")
 
 	result, err = tx.Exec(query, values...)
 
@@ -240,6 +261,11 @@ func (b *Base) UpdateByKeyValueString(tx *sqlx.Tx, data map[string]interface{}, 
 		key,
 		loopCounter)
 
+	logrus.WithFields(logrus.Fields{
+		"Method": "Base.UpdateByKeyValueString",
+		"Query":  query,
+	}).Info("Update Query")
+
 	result, err = tx.Exec(query, values...)
 
 	if err != nil {
@@ -274,6 +300,11 @@ func (b *Base) DeleteFromTable(tx *sqlx.Tx, where string) (sql.Result, error) {
 		query = query + " WHERE " + where
 	}
 
+	logrus.WithFields(logrus.Fields{
+		"Method": "Base.DeleteFromTable",
+		"Query":  query,
+	}).Info("Delete Query")
+
 	result, err = tx.Exec(query)
 
 	if wrapInSingleTransaction == true {
@@ -303,6 +334,11 @@ func (b *Base) DeleteByID(tx *sqlx.Tx, id int64) (sql.Result, error) {
 	}
 
 	query := fmt.Sprintf("DELETE FROM %v WHERE id=$1", b.table)
+
+	logrus.WithFields(logrus.Fields{
+		"Method": "Base.DeleteByID",
+		"Query":  query,
+	}).Info("Delete Query")
 
 	result, err = tx.Exec(query, id)
 
