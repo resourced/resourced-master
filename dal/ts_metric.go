@@ -120,7 +120,6 @@ func (ts *TSMetric) AggregateEvery(tx *sqlx.Tx, clusterID int64, interval string
 
 	rows := []*TSMetricSelectAggregateRow{}
 	query := fmt.Sprintf("SELECT cluster_id, cast(CEILING(extract('epoch' from created)/900)*900 as bigint) AS created_unix, key, avg(value) as avg, max(value) as max, min(value) as min, sum(value) as sum FROM %v WHERE cluster_id=$1 AND created >= (NOW() - INTERVAL '%v') GROUP BY cluster_id, created_unix, key ORDER BY created_unix ASC", ts.table, interval)
-	println(query)
 	err := ts.db.Select(&rows, query, clusterID)
 
 	return rows, err

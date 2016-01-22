@@ -46,18 +46,18 @@ create table ts_watchers_m12_2016
     (check (created >= date '2016-12-01' and created <= date '2016-12-31'))
     inherits (ts_watchers);
 
-create index ts_watchers_m1_2016_created on ts_watchers_m1_2016 using brin (cluster_id, watcher_id, created);
-create index ts_watchers_m2_2016_created on ts_watchers_m2_2016 using brin (cluster_id, watcher_id, created);
-create index ts_watchers_m3_2016_created on ts_watchers_m3_2016 using brin (cluster_id, watcher_id, created);
-create index ts_watchers_m4_2016_created on ts_watchers_m4_2016 using brin (cluster_id, watcher_id, created);
-create index ts_watchers_m5_2016_created on ts_watchers_m5_2016 using brin (cluster_id, watcher_id, created);
-create index ts_watchers_m6_2016_created on ts_watchers_m6_2016 using brin (cluster_id, watcher_id, created);
-create index ts_watchers_m7_2016_created on ts_watchers_m7_2016 using brin (cluster_id, watcher_id, created);
-create index ts_watchers_m8_2016_created on ts_watchers_m8_2016 using brin (cluster_id, watcher_id, created);
-create index ts_watchers_m9_2016_created on ts_watchers_m9_2016 using brin (cluster_id, watcher_id, created);
-create index ts_watchers_m10_2016_created on ts_watchers_m10_2016 using brin (cluster_id, watcher_id, created);
-create index ts_watchers_m11_2016_created on ts_watchers_m11_2016 using brin (cluster_id, watcher_id, created);
-create index ts_watchers_m12_2016_created on ts_watchers_m12_2016 using brin (cluster_id, watcher_id, created);
+create index idx_ts_watchers_m1_2016_created on ts_watchers_m1_2016 using brin (cluster_id, watcher_id, created);
+create index idx_ts_watchers_m2_2016_created on ts_watchers_m2_2016 using brin (cluster_id, watcher_id, created);
+create index idx_ts_watchers_m3_2016_created on ts_watchers_m3_2016 using brin (cluster_id, watcher_id, created);
+create index idx_ts_watchers_m4_2016_created on ts_watchers_m4_2016 using brin (cluster_id, watcher_id, created);
+create index idx_ts_watchers_m5_2016_created on ts_watchers_m5_2016 using brin (cluster_id, watcher_id, created);
+create index idx_ts_watchers_m6_2016_created on ts_watchers_m6_2016 using brin (cluster_id, watcher_id, created);
+create index idx_ts_watchers_m7_2016_created on ts_watchers_m7_2016 using brin (cluster_id, watcher_id, created);
+create index idx_ts_watchers_m8_2016_created on ts_watchers_m8_2016 using brin (cluster_id, watcher_id, created);
+create index idx_ts_watchers_m9_2016_created on ts_watchers_m9_2016 using brin (cluster_id, watcher_id, created);
+create index idx_ts_watchers_m10_2016_created on ts_watchers_m10_2016 using brin (cluster_id, watcher_id, created);
+create index idx_ts_watchers_m11_2016_created on ts_watchers_m11_2016 using brin (cluster_id, watcher_id, created);
+create index idx_ts_watchers_m12_2016_created on ts_watchers_m12_2016 using brin (cluster_id, watcher_id, created);
 
 create or replace function on_ts_watchers_insert_2016() returns trigger as $$
 begin

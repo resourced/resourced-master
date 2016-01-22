@@ -34,12 +34,30 @@ type TSMetricAggr15m struct {
 
 // Upsert a new record.
 func (ts *TSMetricAggr15m) Upsert(tx *sqlx.Tx, clusterID, metricID int64, selectAggrRow *TSMetricSelectAggregateRow) error {
-	println("Am i in Upsert?")
-	query := fmt.Sprintf(`INSERT INTO %v (cluster_id,metric_id,created,key,avg,max,min,sum) VALUES ($1,$2,$3,$4,$5,$6,$7,$8) ON CONFLICT DO UPDATE SET avg=excluded.avg,max=excluded.max,min=excluded.min,sum=excluded.sum;`, ts.table)
-
 	created := time.Unix(int64(selectAggrRow.CreatedUnix), 0)
 
-	_, err := ts.db.Exec(query, clusterID, metricID, created, selectAggrRow.Key, selectAggrRow.Avg, selectAggrRow.Max, selectAggrRow.Min, selectAggrRow.Sum)
+	data := make(map[string]interface{})
+	data["cluster_id"] = clusterID
+	data["metric_id"] = metricID
+	data["created"] = created
+	data["key"] = selectAggrRow.Key
+	data["avg"] = selectAggrRow.Avg
+	data["max"] = selectAggrRow.Max
+	data["min"] = selectAggrRow.Min
+	data["sum"] = selectAggrRow.Sum
+
+	something := make([]*TSMetricAggr15mRow, 0)
+	err := ts.db.Select(&something, fmt.Sprintf("SELECT * from %v WHERE cluster_id=$1 AND metric_id=$2 AND created=$3 AND key=$4 LIMIT 1", ts.table), clusterID, metricID, created, selectAggrRow.Key)
+
+	if err != nil {
+		println(err.Error())
+	}
+
+	if err != nil || len(something) == 0 {
+		_, err = ts.InsertIntoTable(tx, data)
+	} else {
+		_, err = ts.UpdateFromTable(tx, data, fmt.Sprintf("cluster_id=%v AND metric_id=%v AND created=%v AND key=%v", clusterID, metricID, created, selectAggrRow.Key))
+	}
 
 	return err
 }
