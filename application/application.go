@@ -129,6 +129,7 @@ func (app *Application) mux() *mux.Router {
 
 	router.Handle("/api/metrics/{id}/hosts/{host}", alice.New(MustLoginApi).ThenFunc(handlers.GetApiTSMetricsByHost)).Methods("GET")
 	router.Handle("/api/metrics/{id}", alice.New(MustLoginApi).ThenFunc(handlers.GetApiTSMetrics)).Methods("GET")
+	router.Handle("/api/metrics/{id}/15min", alice.New(MustLoginApi).ThenFunc(handlers.GetApiTSMetrics15Min)).Methods("GET")
 
 	// Path of static files must be last!
 	router.PathPrefix("/").Handler(http.FileServer(http.Dir("static")))

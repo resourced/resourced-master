@@ -2,6 +2,7 @@ package dal
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"time"
 
@@ -33,11 +34,30 @@ type TSMetricAggr15m struct {
 	Base
 }
 
-// Upsert a new record.
-func (ts *TSMetricAggr15m) Upsert(tx *sqlx.Tx, clusterID, metricID int64, metricKey string, selectAggrRow *TSMetricSelectAggregateRow) error {
+func (ts *TSMetricAggr15m) metricRowsForHighchart(tx *sqlx.Tx, host string, tsMetricAggrRows []*TSMetricAggr15mRow) (*HighchartPayload, error) {
+	hcPayload := &HighchartPayload{}
+	hcPayload.Name = host
+	hcPayload.Data = make([][]interface{}, len(tsMetricAggrRows))
+
+	for i, tsMetricAggrRow := range tsMetricAggrRows {
+		row := make([]interface{}, 2)
+		row[0] = tsMetricAggrRow.Created.UnixNano() / 1000000
+		row[1] = tsMetricAggrRow.Avg
+
+		hcPayload.Data[i] = row
+	}
+
+	return hcPayload, nil
+}
+
+// InsertOrUpdate a new record.
+func (ts *TSMetricAggr15m) InsertOrUpdate(tx *sqlx.Tx, clusterID, metricID int64, metricKey string, selectAggrRow *TSMetricSelectAggregateRow) error {
 	// Check if metricKey is correct, if not don't do anything
 	if metricKey != selectAggrRow.Key {
 		return nil
+	}
+	if selectAggrRow == nil {
+		return errors.New("Aggregate row cannot be nil")
 	}
 
 	created := time.Unix(int64(selectAggrRow.CreatedUnix), 0)
@@ -58,7 +78,7 @@ func (ts *TSMetricAggr15m) Upsert(tx *sqlx.Tx, clusterID, metricID int64, metric
 
 	if err != nil {
 		logrus.WithFields(logrus.Fields{
-			"Method":    "TSMetricAggr15m.Upsert",
+			"Method":    "TSMetricAggr15m.InsertOrUpdate",
 			"ClusterID": clusterID,
 			"MetricID":  metricID,
 			"MetricKey": metricKey,
@@ -72,7 +92,7 @@ func (ts *TSMetricAggr15m) Upsert(tx *sqlx.Tx, clusterID, metricID int64, metric
 		_, err = ts.InsertIntoTable(tx, data)
 		if err != nil {
 			logrus.WithFields(logrus.Fields{
-				"Method":    "TSMetricAggr15m.Upsert.InsertIntoTable",
+				"Method":    "TSMetricAggr15m.InsertOrUpdate.InsertIntoTable",
 				"ClusterID": clusterID,
 				"MetricID":  metricID,
 				"MetricKey": metricKey,
@@ -84,7 +104,7 @@ func (ts *TSMetricAggr15m) Upsert(tx *sqlx.Tx, clusterID, metricID int64, metric
 		_, err = tx.Exec(query, selectAggrRow.Avg, selectAggrRow.Max, selectAggrRow.Min, selectAggrRow.Sum, clusterID, created, selectAggrRow.Key)
 		if err != nil {
 			logrus.WithFields(logrus.Fields{
-				"Method":    "TSMetricAggr15m.Upsert.UpdateFromTable",
+				"Method":    "TSMetricAggr15m.InsertOrUpdate.UpdateFromTable",
 				"ClusterID": clusterID,
 				"MetricID":  metricID,
 				"MetricKey": metricKey,
@@ -94,4 +114,49 @@ func (ts *TSMetricAggr15m) Upsert(tx *sqlx.Tx, clusterID, metricID int64, metric
 	}
 
 	return err
+}
+
+func (ts *TSMetricAggr15m) AllByMetricIDAndInterval(tx *sqlx.Tx, clusterID, metricID int64, interval string) ([]*TSMetricAggr15mRow, error) {
+	if interval == "" {
+		interval = "1 hour"
+	}
+
+	rows := []*TSMetricAggr15mRow{}
+	query := fmt.Sprintf("SELECT * FROM %v WHERE cluster_id=$1 AND metric_id=$2 AND created >= (NOW() - INTERVAL '%v') ORDER BY cluster_id,metric_id,created ASC", ts.table, interval)
+	err := ts.db.Select(&rows, query, clusterID, metricID)
+
+	return rows, err
+}
+
+func (ts *TSMetricAggr15m) AllByMetricIDAndIntervalForHighchart(tx *sqlx.Tx, clusterID, metricID int64, interval string) ([]*HighchartPayload, error) {
+	tsMetricRows, err := ts.AllByMetricIDAndInterval(tx, clusterID, metricID, interval)
+	if err != nil {
+		return nil, err
+	}
+
+	// Group all TSMetricAggr15mRows per host
+	mapHostsAndMetrics := make(map[string][]*TSMetricAggr15mRow)
+
+	for _, tsMetricRow := range tsMetricRows {
+		host := tsMetricRow.Host.String
+
+		if _, ok := mapHostsAndMetrics[host]; !ok {
+			mapHostsAndMetrics[host] = make([]*TSMetricAggr15mRow, 0)
+		}
+
+		mapHostsAndMetrics[host] = append(mapHostsAndMetrics[host], tsMetricRow)
+	}
+
+	// Then generate multiple Highchart payloads per all these hosts.
+	highChartPayloads := make([]*HighchartPayload, 0)
+
+	for host, tsMetricRows := range mapHostsAndMetrics {
+		highChartPayload, err := ts.metricRowsForHighchart(tx, host, tsMetricRows)
+		if err != nil {
+			return nil, err
+		}
+		highChartPayloads = append(highChartPayloads, highChartPayload)
+	}
+
+	return highChartPayloads, nil
 }

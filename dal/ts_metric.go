@@ -90,7 +90,7 @@ func (ts *TSMetric) CreateByHostRow(tx *sqlx.Tx, hostRow *HostRow, metricsMap ma
 					err := ts.Create(tx, hostRow.ClusterID, metricID, metricKey, hostRow.Name, trueValueFloat64)
 					if err != nil {
 						logrus.WithFields(logrus.Fields{
-							"Method":    "TSMetric.CreateByHostRow",
+							"Method":    "TSMetric.Create",
 							"ClusterID": hostRow.ClusterID,
 							"MetricID":  metricID,
 							"MetricKey": metricKey,
@@ -104,17 +104,27 @@ func (ts *TSMetric) CreateByHostRow(tx *sqlx.Tx, hostRow *HostRow, metricsMap ma
 					if err != nil {
 						logrus.Error(err)
 					} else {
+						aggrTx, err := ts.db.Beginx()
+						if err != nil {
+							logrus.Error(err)
+						}
+
 						// Store those 15 minutes aggregation values
 						for _, selectAggrRow := range selectAggrRows {
-							err = tsAggr15m.Upsert(tx, hostRow.ClusterID, metricID, metricKey, selectAggrRow)
+							err = tsAggr15m.InsertOrUpdate(aggrTx, hostRow.ClusterID, metricID, metricKey, selectAggrRow)
 							if err != nil {
 								logrus.WithFields(logrus.Fields{
-									"Method":    "tsAggr15m.Upsert",
+									"Method":    "tsAggr15m.InsertOrUpdate",
 									"ClusterID": hostRow.ClusterID,
 									"MetricID":  metricID,
 									"MetricKey": metricKey,
 								}).Error(err)
 							}
+						}
+
+						err = aggrTx.Commit()
+						if err != nil {
+							logrus.Error(err)
 						}
 					}
 				}

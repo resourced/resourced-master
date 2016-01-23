@@ -144,6 +144,26 @@ function renderOneChart(metricID, metricKey, createdInterval, containerDOM) {
         }
     });
 }
+function renderOneChartAggr(metricID, metricKey, shortAggrInterval, createdInterval, containerDOM) {
+    $.ajax({
+        url: "/api/metrics/" + metricID + "/" + shortAggrInterval + "?CreatedInterval=" + createdInterval,
+        beforeSend: function(xhr) {
+            xhr.setRequestHeader("Authorization", "Basic " + window.btoa("{{ $.AccessToken.Token }}:"));
+        },
+        success: function(result) {
+            containerDOM.highcharts({
+                chart: {
+                    width: containerDOM.width(),
+                    height: ResourcedMaster.highcharts.defaultHeight
+                },
+                title: {
+                    text: ''
+                },
+                series: result
+            });
+        }
+    });
+}
 
 function renderAllChart() {
     $('.graphs-metrics-container .panel-heading').each(function() {
@@ -152,7 +172,11 @@ function renderAllChart() {
         var createdInterval = $(this).find('select').data('interval');
         var containerDOM = $(this).siblings('.panel-body');
 
-        renderOneChart(metricID, metricKey, createdInterval, containerDOM);
+        if(createdInterval.indexOf('day') > -1 || createdInterval.indexOf('6 hour') > -1 || createdInterval.indexOf('12 hour') > -1 || createdInterval.indexOf('24 hour') > -1) {
+            renderOneChartAggr(metricID, metricKey, '15min', createdInterval, containerDOM);
+        } else {
+            renderOneChart(metricID, metricKey, createdInterval, containerDOM);
+        }
     });
 }
 
@@ -181,7 +205,12 @@ $('.chart-created-interval').change(function() {
     var containerDOM = $(this).closest('.panel-heading').siblings('.panel-body');
 
     $(this).data('interval', createdInterval);
-    renderOneChart(metricID, metricKey, createdInterval, containerDOM);
+
+    if(createdInterval.indexOf('day') > -1 || createdInterval.indexOf('6 hour') > -1 || createdInterval.indexOf('12 hour') > -1 || createdInterval.indexOf('24 hour') > -1) {
+        renderOneChartAggr(metricID, metricKey, '15min', createdInterval, containerDOM);
+    } else {
+        renderOneChart(metricID, metricKey, createdInterval, containerDOM);
+    }
 });
 
 // Highlight charts already selected
