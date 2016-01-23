@@ -72,6 +72,10 @@ func (ts *TSMetricAggr15m) InsertOrUpdate(tx *sqlx.Tx, clusterID, metricID int64
 	data["min"] = selectAggrRow.Min
 	data["sum"] = selectAggrRow.Sum
 
+	if selectAggrRow.Host != "" {
+		data["host"] = selectAggrRow.Host
+	}
+
 	query := fmt.Sprintf("SELECT * from %v WHERE cluster_id=$1 AND created=$2 AND key=$3 LIMIT 1", ts.table)
 	aggrSelectRows := make([]*TSMetricAggr15mRow, 0)
 	err := ts.db.Select(&aggrSelectRows, query, clusterID, created, selectAggrRow.Key)
@@ -92,10 +96,24 @@ func (ts *TSMetricAggr15m) InsertOrUpdate(tx *sqlx.Tx, clusterID, metricID int64
 		_, err = ts.InsertIntoTable(tx, data)
 		if err != nil {
 			logrus.WithFields(logrus.Fields{
-				"Method":    "TSMetricAggr15m.InsertOrUpdate.InsertIntoTable",
+				"Method":    "TSMetricAggr15m.InsertOrUpdate.Insert",
 				"ClusterID": clusterID,
 				"MetricID":  metricID,
 				"MetricKey": metricKey,
+			}).Error(err)
+		}
+
+	} else if selectAggrRow.Host != "" {
+		query := fmt.Sprintf(`UPDATE %v SET avg=$1,max=$2,min=$3,sum=$4 WHERE cluster_id=$5 AND created=$6 AND key=$7 AND host=$8`, ts.table)
+		_, err = tx.Exec(query, selectAggrRow.Avg, selectAggrRow.Max, selectAggrRow.Min, selectAggrRow.Sum, clusterID, created, selectAggrRow.Key, selectAggrRow.Host)
+		if err != nil {
+			logrus.WithFields(logrus.Fields{
+				"Method":    "TSMetricAggr15m.InsertOrUpdate.Update",
+				"ClusterID": clusterID,
+				"MetricID":  metricID,
+				"MetricKey": metricKey,
+				"Host":      selectAggrRow.Host,
+				"Query":     query,
 			}).Error(err)
 		}
 
@@ -104,7 +122,7 @@ func (ts *TSMetricAggr15m) InsertOrUpdate(tx *sqlx.Tx, clusterID, metricID int64
 		_, err = tx.Exec(query, selectAggrRow.Avg, selectAggrRow.Max, selectAggrRow.Min, selectAggrRow.Sum, clusterID, created, selectAggrRow.Key)
 		if err != nil {
 			logrus.WithFields(logrus.Fields{
-				"Method":    "TSMetricAggr15m.InsertOrUpdate.UpdateFromTable",
+				"Method":    "TSMetricAggr15m.InsertOrUpdate.Update",
 				"ClusterID": clusterID,
 				"MetricID":  metricID,
 				"MetricKey": metricKey,

@@ -26,6 +26,7 @@ type TSMetricSelectAggregateRow struct {
 	ClusterID   int64   `db:"cluster_id"`
 	CreatedUnix int64   `db:"created_unix"`
 	Key         string  `db:"key"`
+	Host        string  `db:"host"`
 	Avg         float64 `db:"avg"`
 	Max         float64 `db:"max"`
 	Min         float64 `db:"min"`
@@ -99,34 +100,67 @@ func (ts *TSMetric) CreateByHostRow(tx *sqlx.Tx, hostRow *HostRow, metricsMap ma
 						}).Error(err)
 					}
 
-					// Fetch 15 minutes aggregation values
-					selectAggrRows, err := ts.AggregateEvery(tx, hostRow.ClusterID, "15 minute")
-					if err != nil {
-						logrus.Error(err)
-					} else {
-						aggrTx, err := ts.db.Beginx()
+					// Aggregate avg,max,min,sum values per 15 minutes.
+					go func() {
+						selectAggrRows, err := ts.AggregateEvery(tx, hostRow.ClusterID, "15 minute")
 						if err != nil {
 							logrus.Error(err)
-						}
-
-						// Store those 15 minutes aggregation values
-						for _, selectAggrRow := range selectAggrRows {
-							err = tsAggr15m.InsertOrUpdate(aggrTx, hostRow.ClusterID, metricID, metricKey, selectAggrRow)
+						} else {
+							aggrTx, err := ts.db.Beginx()
 							if err != nil {
-								logrus.WithFields(logrus.Fields{
-									"Method":    "tsAggr15m.InsertOrUpdate",
-									"ClusterID": hostRow.ClusterID,
-									"MetricID":  metricID,
-									"MetricKey": metricKey,
-								}).Error(err)
+								logrus.Error(err)
+							}
+
+							// Store those 15 minutes aggregation values
+							for _, selectAggrRow := range selectAggrRows {
+								err = tsAggr15m.InsertOrUpdate(aggrTx, hostRow.ClusterID, metricID, metricKey, selectAggrRow)
+								if err != nil {
+									logrus.WithFields(logrus.Fields{
+										"Method":    "tsAggr15m.InsertOrUpdate",
+										"ClusterID": hostRow.ClusterID,
+										"MetricID":  metricID,
+										"MetricKey": metricKey,
+									}).Error(err)
+								}
+							}
+
+							err = aggrTx.Commit()
+							if err != nil {
+								logrus.Error(err)
 							}
 						}
+					}()
 
-						err = aggrTx.Commit()
+					// Aggregate avg,max,min,sum values per 15 minutes per host.
+					go func() {
+						selectAggrRows, err := ts.AggregateEveryPerHost(tx, hostRow.ClusterID, "15 minute")
 						if err != nil {
 							logrus.Error(err)
+						} else {
+							aggrTx, err := ts.db.Beginx()
+							if err != nil {
+								logrus.Error(err)
+							}
+
+							// Store those 15 minutes aggregation values per host
+							for _, selectAggrRow := range selectAggrRows {
+								err = tsAggr15m.InsertOrUpdate(aggrTx, hostRow.ClusterID, metricID, metricKey, selectAggrRow)
+								if err != nil {
+									logrus.WithFields(logrus.Fields{
+										"Method":    "tsAggr15m.InsertOrUpdate",
+										"ClusterID": hostRow.ClusterID,
+										"MetricID":  metricID,
+										"MetricKey": metricKey,
+									}).Error(err)
+								}
+							}
+
+							err = aggrTx.Commit()
+							if err != nil {
+								logrus.Error(err)
+							}
 						}
-					}
+					}()
 				}
 			}
 		}
@@ -141,6 +175,18 @@ func (ts *TSMetric) AggregateEvery(tx *sqlx.Tx, clusterID int64, interval string
 
 	rows := []*TSMetricSelectAggregateRow{}
 	query := fmt.Sprintf("SELECT cluster_id, cast(CEILING(extract('epoch' from created)/900)*900 as bigint) AS created_unix, key, avg(value) as avg, max(value) as max, min(value) as min, sum(value) as sum FROM %v WHERE cluster_id=$1 AND created >= (NOW() - INTERVAL '%v') GROUP BY cluster_id, created_unix, key ORDER BY created_unix ASC", ts.table, interval)
+	err := ts.db.Select(&rows, query, clusterID)
+
+	return rows, err
+}
+
+func (ts *TSMetric) AggregateEveryPerHost(tx *sqlx.Tx, clusterID int64, interval string) ([]*TSMetricSelectAggregateRow, error) {
+	if interval == "" {
+		interval = "15 minute"
+	}
+
+	rows := []*TSMetricSelectAggregateRow{}
+	query := fmt.Sprintf("SELECT cluster_id, cast(CEILING(extract('epoch' from created)/900)*900 as bigint) AS created_unix, host, key, avg(value) as avg, max(value) as max, min(value) as min, sum(value) as sum FROM %v WHERE cluster_id=$1 AND created >= (NOW() - INTERVAL '%v') GROUP BY cluster_id, created_unix, host, key ORDER BY created_unix ASC", ts.table, interval)
 	err := ts.db.Select(&rows, query, clusterID)
 
 	return rows, err
