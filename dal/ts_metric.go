@@ -89,7 +89,14 @@ func (ts *TSMetric) CreateByHostRow(tx *sqlx.Tx, hostRow *HostRow, metricsMap ma
 					// Ignore error for now, there's no need to break the entire loop when one insert fails.
 					err := ts.Create(tx, hostRow.ClusterID, metricID, metricKey, hostRow.Name, trueValueFloat64)
 					if err != nil {
-						logrus.Error(err)
+						logrus.WithFields(logrus.Fields{
+							"Method":    "TSMetric.CreateByHostRow",
+							"ClusterID": hostRow.ClusterID,
+							"MetricID":  metricID,
+							"MetricKey": metricKey,
+							"Hostname":  hostRow.Name,
+							"Value":     trueValueFloat64,
+						}).Error(err)
 					}
 
 					// Fetch 15 minutes aggregation values
@@ -99,19 +106,14 @@ func (ts *TSMetric) CreateByHostRow(tx *sqlx.Tx, hostRow *HostRow, metricsMap ma
 					} else {
 						// Store those 15 minutes aggregation values
 						for _, selectAggrRow := range selectAggrRows {
-							tx, err := ts.db.Beginx()
-							if err != nil {
-								logrus.Error(err)
-							}
-
 							err = tsAggr15m.Upsert(tx, hostRow.ClusterID, metricID, metricKey, selectAggrRow)
 							if err != nil {
-								logrus.Error(err)
-							}
-
-							err = tx.Commit()
-							if err != nil {
-								logrus.Error(err)
+								logrus.WithFields(logrus.Fields{
+									"Method":    "tsAggr15m.Upsert",
+									"ClusterID": hostRow.ClusterID,
+									"MetricID":  metricID,
+									"MetricKey": metricKey,
+								}).Error(err)
 							}
 						}
 					}
