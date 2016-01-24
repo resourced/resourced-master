@@ -33,6 +33,9 @@ DSNs = [
 # ReplicationPercentage == 100 means that every time series data is replicated to 100% of databases defined in DSNs.
 # ReplicationPercentage == 50 means that every time series data is replicated to 50% of databases defined in DSNs.
 # ReplicationPercentage == 0 is invalid, it will be converted to 100 instead.
+# Warning:
+#   Setting this value to lower than 100% may cause you to miss some alerts.
+#   If you only have a few databases, it is recommended to set this to 100.
 ReplicationPercentage = 100
 
 # DataRetention defines how long time series data are kept.
