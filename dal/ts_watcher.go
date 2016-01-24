@@ -92,7 +92,6 @@ func (ts *TSWatcher) Create(tx *sqlx.Tx, clusterID, watcherID, affectedHosts int
 	insertData["watcher_id"] = watcherID
 	insertData["affected_hosts"] = affectedHosts
 	insertData["data"] = data
-	insertData["created"] = time.Now()
 
 	_, err := ts.InsertIntoTable(tx, insertData)
 	return err

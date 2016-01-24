@@ -227,7 +227,7 @@ func (h *Host) CreateOrUpdate(tx *sqlx.Tx, accessTokenRow *AccessTokenRow, jsonD
 	}
 
 	if _, ok := data["updated"]; !ok {
-		data["updated"] = time.Now()
+		data["updated"] = time.Now().UTC()
 	}
 
 	// Perform UPDATE
