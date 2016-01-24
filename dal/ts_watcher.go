@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/Sirupsen/logrus"
 	"github.com/jmoiron/sqlx"
 	sqlx_types "github.com/jmoiron/sqlx/types"
 )
@@ -35,6 +36,14 @@ func (ts *TSWatcher) LastByClusterIDWatcherIDAndAffectedHosts(tx *sqlx.Tx, clust
 	query := fmt.Sprintf("SELECT * FROM %v WHERE cluster_id=$1 AND watcher_id=$2 AND affected_hosts=$3 ORDER BY cluster_id,watcher_id,created DESC LIMIT 1", ts.table)
 	err := ts.db.Get(row, query, clusterID, watcherID, affectedHosts)
 
+	logrus.WithFields(logrus.Fields{
+		"Method":        "TSWatcher.LastByClusterIDWatcherIDAndAffectedHosts",
+		"ClusterID":     clusterID,
+		"WatcherID":     watcherID,
+		"AffectedHosts": affectedHosts,
+		"Query":         query,
+	}).Info("Select Query")
+
 	return row, err
 }
 
@@ -50,13 +59,18 @@ func (ts *TSWatcher) AllViolationsByClusterIDWatcherIDAndInterval(tx *sqlx.Tx, c
 	}
 
 	rows := []*TSWatcherRow{}
-	query := fmt.Sprintf("SELECT * FROM %v WHERE cluster_id=$1 AND watcher_id=$2 AND created >= (NOW() at time zone 'utc' - INTERVAL '%v') AND created > $3 and affected_hosts >= $4 ORDER BY cluster_id,watcher_id,created DESC", ts.table, createdInterval)
-	err = ts.db.Select(&rows, query, clusterID, watcherID, lastGoodOne.Created, affectedHosts)
+	query := fmt.Sprintf("SELECT * FROM %v WHERE cluster_id=$1 AND watcher_id=$2 AND created > GREATEST($3, (NOW() at time zone 'utc' - INTERVAL '%v')) AND created <= (NOW() at time zone 'utc') AND affected_hosts >= $4 ORDER BY cluster_id,watcher_id,created DESC", ts.table, createdInterval)
+	err = ts.db.Select(&rows, query, clusterID, watcherID, lastGoodOne.Created.UTC(), affectedHosts)
 
-	if err != nil {
-		println("AllViolationsByClusterIDWatcherIDAndInterval")
-		println(err)
-	}
+	logrus.WithFields(logrus.Fields{
+		"Method":          "TSWatcher.AllViolationsByClusterIDWatcherIDAndInterval",
+		"ClusterID":       clusterID,
+		"WatcherID":       watcherID,
+		"AffectedHosts":   affectedHosts,
+		"LastGoodCreated": lastGoodOne.Created.UTC(),
+		"CreatedInterval": createdInterval,
+		"Query":           query,
+	}).Info("Select Query")
 
 	return rows, err
 }
