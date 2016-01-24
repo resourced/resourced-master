@@ -140,3 +140,37 @@ func (a *Graph) AllGraphs(tx *sqlx.Tx) ([]*GraphRow, error) {
 
 	return rows, err
 }
+
+// DeleteMetricFromGraphs deletes a particular metric from all rows by cluster_id.
+func (a *Graph) DeleteMetricFromGraphs(tx *sqlx.Tx, clusterID, metricID int64) error {
+	rows, err := a.AllByClusterID(tx, clusterID)
+	if err != nil {
+		return err
+	}
+
+	for _, row := range rows {
+		metrics := row.MetricsFromJSON()
+		newMetrics := make([]*MetricRow, 0)
+
+		for _, metric := range metrics {
+			if metric.ID != metricID {
+				newMetrics = append(newMetrics, metric)
+			}
+		}
+
+		newMetricsJSONBytes, err := json.Marshal(newMetrics)
+		if err != nil {
+			return err
+		}
+
+		data := make(map[string]interface{})
+		data["metrics"] = newMetricsJSONBytes
+
+		_, err = a.UpdateByID(tx, data, row.ID)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}

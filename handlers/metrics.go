@@ -180,6 +180,13 @@ func DeleteMetricID(w http.ResponseWriter, r *http.Request) {
 
 	vars := mux.Vars(r)
 
+	clusterIDString := vars["clusterid"]
+	clusterID, err := strconv.ParseInt(clusterIDString, 10, 64)
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
+
 	idString := vars["id"]
 	id, err := strconv.ParseInt(idString, 10, 64)
 	if err != nil {
@@ -188,6 +195,12 @@ func DeleteMetricID(w http.ResponseWriter, r *http.Request) {
 	}
 
 	_, err = dal.NewMetric(db).DeleteByID(nil, id)
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
+
+	err = dal.NewGraph(db).DeleteMetricFromGraphs(nil, clusterID, id)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
