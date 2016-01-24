@@ -5,7 +5,7 @@
     <div class="row">
         <div class="col-lg-12">
             <div class="page-header">
-                <button class="new-cluster-button btn btn-primary pull-right" type="button" data-toggle="modal" data-target="#new-cluster-modal">New Cluster</button>
+                <button class="new-cluster-button btn btn-primary pull-right" type="button" data-toggle="modal" data-target="#cluster-modal" style="width: 157px">New Cluster</button>
                 <h2>Clusters</h2>
             </div>
 
@@ -18,7 +18,14 @@
 
             {{ range $cluster := .Clusters }}
                 <div class="page-header">
-                    <button class="btn btn-sm btn-info pull-right" type="button" data-toggle="modal" data-target="#new-access-token-modal" data-cluster-id="{{ $cluster.ID }}">New Access Token</button>
+                    <div class="btn-group pull-right" role="group">
+                        <button class="new-cluster-button btn btn-sm btn-default" type="button" data-toggle="modal" data-target="#cluster-modal"
+                            data-cluster-id="{{ $cluster.ID }}" data-cluster-name="{{ $cluster.Name }}">
+                            Edit
+                        </button>
+                        <button class="btn btn-sm btn-info" type="button" data-toggle="modal" data-target="#new-access-token-modal" data-cluster-id="{{ $cluster.ID }}">New Access Token</button>
+                    </div>
+
                     <h3>{{ $cluster.Name }}</h3>
                 </div>
 
@@ -63,8 +70,8 @@
     </div>
 </div>
 
-<!-- New Cluster Modal -->
-<div class="modal fade" id="new-cluster-modal" tabindex="-1" role="dialog" aria-labelledby="new-cluster-label" aria-hidden="true">
+<!-- Cluster Modal -->
+<div class="modal fade" id="cluster-modal" tabindex="-1" role="dialog" aria-labelledby="new-cluster-label" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
@@ -73,6 +80,8 @@
             </div>
 
             <form method="post" action="/clusters">
+                <input type="hidden" name="_method" value="post">
+
                 <div class="modal-body">
                     <div class="form-group">
                         <label class="control-label" for="name">Name:</label>
@@ -82,7 +91,7 @@
 
                 <div class="modal-footer">
                     <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
-                    <button type="button" class="btn btn-primary" onclick="$(this).closest('form').submit()">Create</button>
+                    <button type="button" class="btn btn-primary" onclick="$(this).closest('form').submit()">Save</button>
                 </div>
             </form>
         </div>
@@ -126,6 +135,27 @@ $('#new-access-token-modal').on('show.bs.modal', function (event) {
     var clusterID = button.data('cluster-id');     // Extract info from data-* attributes
     var modal = $(this);
     modal.find('form').attr('action', '/clusters/' + clusterID + '/access-tokens');
+});
+
+$('#cluster-modal').on('show.bs.modal', function (event) {
+    var button = $(event.relatedTarget);
+    var clusterID = button.data('cluster-id');
+    var clusterName = button.data('cluster-name');
+    var modal = $(this);
+
+    if(clusterName) {
+        modal.find('input[name="Name"]').val(clusterName);
+    }
+
+    if(clusterID) {
+        modal.find('form').attr('action', '/clusters/' + clusterID);
+        modal.find('.btn-danger').show();
+        modal.find('.modal-title').text('Update Cluster');
+    } else {
+        modal.find('form').attr('action', '/clusters');
+        modal.find('.btn-danger').hide();
+        modal.find('.modal-title').text('New Cluster');
+    }
 });
 
 $(document).ready(function() {

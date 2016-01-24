@@ -1,11 +1,13 @@
 package handlers
 
 import (
+	"errors"
 	"html/template"
 	"net/http"
 	"strconv"
 
 	"github.com/gorilla/context"
+	"github.com/gorilla/mux"
 	"github.com/gorilla/sessions"
 	"github.com/jmoiron/sqlx"
 	"github.com/resourced/resourced-master/dal"
@@ -106,4 +108,77 @@ func PostClustersCurrent(w http.ResponseWriter, r *http.Request) {
 	}
 
 	http.Redirect(w, r, redirectPath, 301)
+}
+
+func PostPutDeleteClusterID(w http.ResponseWriter, r *http.Request) {
+	method := r.FormValue("_method")
+	if method == "" {
+		method = "put"
+	}
+
+	if method == "post" || method == "put" {
+		PutClusterID(w, r)
+	} else if method == "delete" {
+		DeleteClusterID(w, r)
+	}
+}
+
+func PutClusterID(w http.ResponseWriter, r *http.Request) {
+	db := context.Get(r, "db.Core").(*sqlx.DB)
+
+	vars := mux.Vars(r)
+
+	idString := vars["id"]
+	id, err := strconv.ParseInt(idString, 10, 64)
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
+
+	name := r.FormValue("Name")
+
+	data := make(map[string]interface{})
+	data["name"] = name
+
+	_, err = dal.NewCluster(db).UpdateByID(nil, data, id)
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
+
+	http.Redirect(w, r, "/clusters", 301)
+}
+
+func DeleteClusterID(w http.ResponseWriter, r *http.Request) {
+	db := context.Get(r, "db.Core").(*sqlx.DB)
+
+	vars := mux.Vars(r)
+
+	idString := vars["id"]
+	id, err := strconv.ParseInt(idString, 10, 64)
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
+
+	cluster := dal.NewCluster(db)
+
+	clustersByUser, err := cluster.AllClustersByUserID(nil, id)
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
+
+	if len(clustersByUser) <= 1 {
+		libhttp.HandleErrorJson(w, errors.New("You only have 1 cluster. Thus, Delete is disallowed."))
+		return
+	}
+
+	_, err = cluster.DeleteByID(nil, id)
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
+
+	http.Redirect(w, r, "/clusters", 301)
 }
