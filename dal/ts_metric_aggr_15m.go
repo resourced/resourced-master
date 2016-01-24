@@ -51,7 +51,7 @@ func (ts *TSMetricAggr15m) metricRowsForHighchart(tx *sqlx.Tx, host string, tsMe
 }
 
 // InsertOrUpdate a new record.
-func (ts *TSMetricAggr15m) InsertOrUpdate(tx *sqlx.Tx, clusterID, metricID int64, metricKey string, selectAggrRow *TSMetricSelectAggregateRow) error {
+func (ts *TSMetricAggr15m) InsertOrUpdate(tx *sqlx.Tx, clusterID, metricID int64, metricKey string, selectAggrRow *TSMetricSelectAggregateRow) (err error) {
 	// Check if metricKey is correct, if not don't do anything
 	if metricKey != selectAggrRow.Key {
 		return nil
@@ -60,7 +60,7 @@ func (ts *TSMetricAggr15m) InsertOrUpdate(tx *sqlx.Tx, clusterID, metricID int64
 		return errors.New("Aggregate row cannot be nil")
 	}
 
-	created := time.Unix(int64(selectAggrRow.CreatedUnix), 0)
+	created := time.Unix(int64(selectAggrRow.CreatedUnix), 0).UTC()
 
 	data := make(map[string]interface{})
 	data["cluster_id"] = clusterID
@@ -76,9 +76,17 @@ func (ts *TSMetricAggr15m) InsertOrUpdate(tx *sqlx.Tx, clusterID, metricID int64
 		data["host"] = selectAggrRow.Host
 	}
 
-	query := fmt.Sprintf("SELECT * from %v WHERE cluster_id=$1 AND created=$2 AND key=$3 LIMIT 1", ts.table)
 	aggrSelectRows := make([]*TSMetricAggr15mRow, 0)
-	err := ts.db.Select(&aggrSelectRows, query, clusterID, created, selectAggrRow.Key)
+	var query string
+
+	if selectAggrRow.Host != "" {
+		query = fmt.Sprintf("SELECT * from %v WHERE cluster_id=$1 AND created=$2 AND key=$3 AND host=$4 LIMIT 1", ts.table)
+		err = ts.db.Select(&aggrSelectRows, query, clusterID, created, selectAggrRow.Key, selectAggrRow.Host)
+
+	} else {
+		query = fmt.Sprintf("SELECT * from %v WHERE cluster_id=$1 AND created=$2 AND key=$3 LIMIT 1", ts.table)
+		err = ts.db.Select(&aggrSelectRows, query, clusterID, created, selectAggrRow.Key)
+	}
 
 	if err != nil {
 		logrus.WithFields(logrus.Fields{
