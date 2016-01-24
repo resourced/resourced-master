@@ -94,6 +94,9 @@
 </div>
 
 <script>
+// Refresh page every 5 minutes
+setInterval(window.location.reload, 5*60000);
+
 function renderChartPreview() {
     var metrics = $('.chart-keys').val();
     var lastMetricIDAndKey = metrics[metrics.length -1].split(/\-(.+)?/);
