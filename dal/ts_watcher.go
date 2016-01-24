@@ -3,7 +3,6 @@ package dal
 import (
 	"errors"
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/jmoiron/sqlx"
@@ -30,59 +29,36 @@ type TSWatcher struct {
 	Base
 }
 
-// LastGreenMarker returns a row where affected_hosts is 0.
-func (ts *TSWatcher) LastGreenMarker(tx *sqlx.Tx, clusterID, watcherID int64) (*TSWatcherRow, error) {
+// LastByClusterIDWatcherIDAndAffectedHosts returns a row by cluster_id, watcher_id and affected_hosts.
+func (ts *TSWatcher) LastByClusterIDWatcherIDAndAffectedHosts(tx *sqlx.Tx, clusterID, watcherID, affectedHosts int64) (*TSWatcherRow, error) {
 	row := &TSWatcherRow{}
-	query := fmt.Sprintf("SELECT * FROM %v WHERE cluster_id=$1 AND watcher_id=$2 AND affected_hosts=0 ORDER BY cluster_id,watcher_id,created DESC LIMIT 1", ts.table)
-	err := ts.db.Get(row, query, clusterID, watcherID)
+	query := fmt.Sprintf("SELECT * FROM %v WHERE cluster_id=$1 AND watcher_id=$2 AND affected_hosts=$3 ORDER BY cluster_id,watcher_id,created DESC LIMIT 1", ts.table)
+	err := ts.db.Get(row, query, clusterID, watcherID, affectedHosts)
 
 	return row, err
 }
 
-// CountViolationsSinceLastGreenMarker
-func (ts *TSWatcher) CountViolationsSinceLastGreenMarker(tx *sqlx.Tx, clusterID, watcherID int64) (int, error) {
-	lastGreenMarker, err := ts.LastGreenMarker(tx, clusterID, watcherID)
+// AllViolationsByClusterIDWatcherIDAndInterval returns all rows by cluster_id, watcher_id, affectedHosts and created interval.
+func (ts *TSWatcher) AllViolationsByClusterIDWatcherIDAndInterval(tx *sqlx.Tx, clusterID, watcherID, affectedHosts int64, createdInterval string) ([]*TSWatcherRow, error) {
+	nonAffectedHosts := affectedHosts - 1
+	if nonAffectedHosts <= 0 {
+		nonAffectedHosts = 1
+	}
+	lastGoodOne, err := ts.LastByClusterIDWatcherIDAndAffectedHosts(tx, clusterID, watcherID, nonAffectedHosts)
 	if err != nil {
-		if !strings.Contains(err.Error(), "no rows in result set") {
-			return -1, err
-		}
+		return nil, err
 	}
 
-	var count int
+	rows := []*TSWatcherRow{}
+	query := fmt.Sprintf("SELECT * FROM %v WHERE cluster_id=$1 AND watcher_id=$2 AND created >= (NOW() at time zone 'utc' - INTERVAL '%v') AND created > $3 and affected_hosts >= $4 ORDER BY cluster_id,watcher_id,created DESC", ts.table, createdInterval)
+	err = ts.db.Select(&rows, query, clusterID, watcherID, lastGoodOne.Created, affectedHosts)
 
-	if lastGreenMarker == nil {
-		query := fmt.Sprintf("SELECT count(*) FROM %v WHERE cluster_id=$1 AND watcher_id=$2 AND affected_hosts != 0", ts.table)
-
-		err = ts.db.Get(&count, query, clusterID, watcherID)
-		if err != nil {
-			if strings.Contains(err.Error(), "no rows in result set") {
-				return 0, nil
-			}
-			return -1, err
-		}
-
-	} else {
-		query := fmt.Sprintf("SELECT count(*) FROM %v WHERE cluster_id=$1 AND watcher_id=$2 AND affected_hosts != 0 AND created > $3", ts.table)
-
-		err = ts.db.Get(&count, query, clusterID, watcherID, lastGreenMarker.Created)
-		if err != nil {
-			if strings.Contains(err.Error(), "no rows in result set") {
-				return 0, nil
-			}
-			return -1, err
-		}
+	if err != nil {
+		println("AllViolationsByClusterIDWatcherIDAndInterval")
+		println(err)
 	}
 
-	return count, nil
-}
-
-// LastViolation returns the last row where affected_hosts is not 0.
-func (ts *TSWatcher) LastViolation(tx *sqlx.Tx, clusterID, watcherID int64) (*TSWatcherRow, error) {
-	row := &TSWatcherRow{}
-	query := fmt.Sprintf("SELECT * FROM %v WHERE cluster_id=$1 AND watcher_id=$2 AND affected_hosts != 0 ORDER BY cluster_id,watcher_id,created DESC LIMIT 1", ts.table)
-	err := ts.db.Get(row, query, clusterID, watcherID)
-
-	return row, err
+	return rows, err
 }
 
 // Create a new record.

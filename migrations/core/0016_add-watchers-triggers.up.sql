@@ -10,6 +10,7 @@ CREATE TABLE watchers_triggers (
     watcher_id bigint REFERENCES watchers (id),
     low_violations_count bigint NOT NULL DEFAULT 0,
     high_violations_count bigint NOT NULL DEFAULT 0,
+    created_interval TEXT NOT NULL DEFAULT '24 hour',
     actions JSONB
 );
 

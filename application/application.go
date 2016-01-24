@@ -267,27 +267,23 @@ func (app *Application) WatchOnce(clusterID int64, watcherRow *dal.WatcherRow) e
 func (app *Application) RunTrigger(clusterID int64, watcherRow *dal.WatcherRow) error {
 	tsWatcherDB := app.DBConfig.TSWatchers.PickRandom()
 
-	violationsCount, err := dal.NewTSWatcher(tsWatcherDB).CountViolationsSinceLastGreenMarker(nil, clusterID, watcherRow.ID)
-	if err != nil {
-		return err
-	}
-
-	// Don't bother doing anything else if there are no new violations.
-	if violationsCount <= 0 {
-		return nil
-	}
-
 	triggerRows, err := dal.NewWatcherTrigger(app.DBConfig.Core).AllByClusterIDAndWatcherID(nil, clusterID, watcherRow.ID)
 	if err != nil {
 		return err
 	}
 
-	lastViolation, err := dal.NewTSWatcher(tsWatcherDB).LastViolation(nil, clusterID, watcherRow.ID)
-	if err != nil {
-		return err
-	}
-
 	for _, triggerRow := range triggerRows {
+		tsWatchers, err := dal.NewTSWatcher(tsWatcherDB).AllViolationsByClusterIDWatcherIDAndInterval(nil, clusterID, watcherRow.ID, watcherRow.LowAffectedHosts, triggerRow.CreatedInterval)
+		if err != nil {
+			return err
+		}
+		if len(tsWatchers) == 0 {
+			continue
+		}
+
+		lastViolation := tsWatchers[0]
+		violationsCount := len(tsWatchers)
+
 		if int64(violationsCount) >= triggerRow.LowViolationsCount && int64(violationsCount) <= triggerRow.HighViolationsCount {
 			emailAuth := smtp.PlainAuth(
 				app.GeneralConfig.Watchers.Email.Identity,
@@ -415,7 +411,7 @@ func (app *Application) RunTriggerPagerDuty(triggerRow *dal.WatcherTriggerRow, l
 		return err
 	}
 
-	triggerUpdateParams := wt.CreateOrUpdateParameters(triggerRow.ClusterID, triggerRow.WatcherID, triggerRow.LowViolationsCount, triggerRow.HighViolationsCount, triggerUpdateActionJSON)
+	triggerUpdateParams := wt.CreateOrUpdateParameters(triggerRow.ClusterID, triggerRow.WatcherID, triggerRow.LowViolationsCount, triggerRow.HighViolationsCount, triggerRow.CreatedInterval, triggerUpdateActionJSON)
 
 	_, err = wt.UpdateFromTable(nil, triggerUpdateParams, fmt.Sprintf("id=%v", triggerRow.ID))
 	if err != nil {

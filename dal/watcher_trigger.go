@@ -24,6 +24,7 @@ type WatcherTriggerRow struct {
 	WatcherID           int64               `db:"watcher_id"`
 	LowViolationsCount  int64               `db:"low_violations_count"`
 	HighViolationsCount int64               `db:"high_violations_count"`
+	CreatedInterval     string              `db:"created_interval"`
 	Actions             sqlx_types.JSONText `db:"actions"`
 }
 
@@ -202,12 +203,13 @@ func (w *WatcherTrigger) ActionParamsByExistingTrigger(triggerRow *WatcherTrigge
 }
 
 // CreateOrUpdateParameters builds params for insert or update.
-func (w *WatcherTrigger) CreateOrUpdateParameters(clusterID, watcherID, lowViolationsCount, highViolationsCount int64, actionsJson []byte) map[string]interface{} {
+func (w *WatcherTrigger) CreateOrUpdateParameters(clusterID, watcherID, lowViolationsCount, highViolationsCount int64, createdInterval string, actionsJson []byte) map[string]interface{} {
 	data := make(map[string]interface{})
 	data["cluster_id"] = clusterID
 	data["watcher_id"] = watcherID
 	data["low_violations_count"] = lowViolationsCount
 	data["high_violations_count"] = highViolationsCount
+	data["created_interval"] = createdInterval
 	data["actions"] = actionsJson
 
 	return data

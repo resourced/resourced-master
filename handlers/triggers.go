@@ -47,6 +47,8 @@ func readTriggersFormData(r *http.Request) (map[string]interface{}, error) {
 		return nil, err
 	}
 
+	createdInterval := r.FormValue("CreatedInterval")
+
 	actionTransport := r.FormValue("ActionTransport")
 
 	actionEmail := r.FormValue("ActionEmail")
@@ -70,7 +72,7 @@ func readTriggersFormData(r *http.Request) (map[string]interface{}, error) {
 
 	db := context.Get(r, "db.Core").(*sqlx.DB)
 
-	return dal.NewWatcherTrigger(db).CreateOrUpdateParameters(currentCluster.ID, watcherID, lowViolationsCount, highViolationsCount, actionsJson), nil
+	return dal.NewWatcherTrigger(db).CreateOrUpdateParameters(currentCluster.ID, watcherID, lowViolationsCount, highViolationsCount, createdInterval, actionsJson), nil
 }
 
 func PostWatchersTriggers(w http.ResponseWriter, r *http.Request) {
