@@ -25,6 +25,7 @@ type WatcherRow struct {
 	LowAffectedHosts int64  `db:"low_affected_hosts"`
 	HostsLastUpdated string `db:"hosts_last_updated"`
 	CheckInterval    string `db:"check_interval"`
+	IsSilenced       bool   `db:"is_silenced"`
 }
 
 type Watcher struct {
