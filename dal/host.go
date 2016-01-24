@@ -115,7 +115,7 @@ func (h *Host) AllByClusterID(tx *sqlx.Tx, clusterID int64) ([]*HostRow, error) 
 // AllByClusterIDAndUpdatedInterval returns all rows.
 func (h *Host) AllByClusterIDAndUpdatedInterval(tx *sqlx.Tx, clusterID int64, updatedInterval string) ([]*HostRow, error) {
 	hosts := []*HostRow{}
-	query := fmt.Sprintf("SELECT * FROM %v WHERE cluster_id=$1 AND updated >= (NOW() - INTERVAL '%v')", h.table, updatedInterval)
+	query := fmt.Sprintf("SELECT * FROM %v WHERE cluster_id=$1 AND updated >= (NOW() at time zone 'utc' - INTERVAL '%v')", h.table, updatedInterval)
 	err := h.db.Select(&hosts, query, clusterID)
 
 	return hosts, err
@@ -143,7 +143,7 @@ func (h *Host) AllByClusterIDQueryAndUpdatedInterval(tx *sqlx.Tx, clusterID int6
 	}
 
 	hosts := []*HostRow{}
-	query := fmt.Sprintf("SELECT * FROM %v WHERE cluster_id=$1 AND updated >= (NOW() - INTERVAL '%v') AND %v", h.table, updatedInterval, pgQuery)
+	query := fmt.Sprintf("SELECT * FROM %v WHERE cluster_id=$1 AND updated >= (NOW() at time zone 'utc' - INTERVAL '%v') AND %v", h.table, updatedInterval, pgQuery)
 	err := h.db.Select(&hosts, query, clusterID)
 
 	return hosts, err

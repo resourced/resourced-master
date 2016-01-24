@@ -1,4 +1,0 @@
-DROP TABLE IF EXISTS tasks CASCADE;
-
-DROP INDEX IF EXISTS idx_tasks_cron;
-DROP INDEX IF EXISTS idx_tasks_query;

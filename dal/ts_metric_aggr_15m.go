@@ -82,7 +82,8 @@ func (ts *TSMetricAggr15m) InsertOrUpdate(tx *sqlx.Tx, clusterID, metricID int64
 
 	if err != nil {
 		logrus.WithFields(logrus.Fields{
-			"Method":    "TSMetricAggr15m.InsertOrUpdate",
+			"Method":    "TSMetricAggr15m.InsertOrUpdate.Select",
+			"Created":   created,
 			"ClusterID": clusterID,
 			"MetricID":  metricID,
 			"MetricKey": metricKey,
@@ -97,6 +98,7 @@ func (ts *TSMetricAggr15m) InsertOrUpdate(tx *sqlx.Tx, clusterID, metricID int64
 		if err != nil {
 			logrus.WithFields(logrus.Fields{
 				"Method":    "TSMetricAggr15m.InsertOrUpdate.Insert",
+				"Created":   created,
 				"ClusterID": clusterID,
 				"MetricID":  metricID,
 				"MetricKey": metricKey,
@@ -109,6 +111,7 @@ func (ts *TSMetricAggr15m) InsertOrUpdate(tx *sqlx.Tx, clusterID, metricID int64
 		if err != nil {
 			logrus.WithFields(logrus.Fields{
 				"Method":    "TSMetricAggr15m.InsertOrUpdate.Update",
+				"Created":   created,
 				"ClusterID": clusterID,
 				"MetricID":  metricID,
 				"MetricKey": metricKey,
@@ -123,6 +126,7 @@ func (ts *TSMetricAggr15m) InsertOrUpdate(tx *sqlx.Tx, clusterID, metricID int64
 		if err != nil {
 			logrus.WithFields(logrus.Fields{
 				"Method":    "TSMetricAggr15m.InsertOrUpdate.Update",
+				"Created":   created,
 				"ClusterID": clusterID,
 				"MetricID":  metricID,
 				"MetricKey": metricKey,
@@ -140,7 +144,7 @@ func (ts *TSMetricAggr15m) AllByMetricIDAndInterval(tx *sqlx.Tx, clusterID, metr
 	}
 
 	rows := []*TSMetricAggr15mRow{}
-	query := fmt.Sprintf("SELECT * FROM %v WHERE cluster_id=$1 AND metric_id=$2 AND created >= (NOW() - INTERVAL '%v') ORDER BY cluster_id,metric_id,created ASC", ts.table, interval)
+	query := fmt.Sprintf("SELECT * FROM %v WHERE cluster_id=$1 AND metric_id=$2 AND created >= (NOW() at time zone 'utc' - INTERVAL '%v') AND host <> '' ORDER BY cluster_id,metric_id,created ASC", ts.table, interval)
 	err := ts.db.Select(&rows, query, clusterID, metricID)
 
 	return rows, err

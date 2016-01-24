@@ -174,7 +174,7 @@ func (ts *TSMetric) AggregateEvery(tx *sqlx.Tx, clusterID int64, interval string
 	}
 
 	rows := []*TSMetricSelectAggregateRow{}
-	query := fmt.Sprintf("SELECT cluster_id, cast(CEILING(extract('epoch' from created)/900)*900 as bigint) AS created_unix, key, avg(value) as avg, max(value) as max, min(value) as min, sum(value) as sum FROM %v WHERE cluster_id=$1 AND created >= (NOW() - INTERVAL '%v') GROUP BY cluster_id, created_unix, key ORDER BY created_unix ASC", ts.table, interval)
+	query := fmt.Sprintf("SELECT cluster_id, cast(CEILING(extract('epoch' from created)/900)*900 as bigint) AS created_unix, key, avg(value) as avg, max(value) as max, min(value) as min, sum(value) as sum FROM %v WHERE cluster_id=$1 AND created >= (NOW() at time zone 'utc' - INTERVAL '%v') GROUP BY cluster_id, created_unix, key ORDER BY created_unix ASC", ts.table, interval)
 	err := ts.db.Select(&rows, query, clusterID)
 
 	return rows, err
@@ -186,7 +186,7 @@ func (ts *TSMetric) AggregateEveryPerHost(tx *sqlx.Tx, clusterID int64, interval
 	}
 
 	rows := []*TSMetricSelectAggregateRow{}
-	query := fmt.Sprintf("SELECT cluster_id, cast(CEILING(extract('epoch' from created)/900)*900 as bigint) AS created_unix, host, key, avg(value) as avg, max(value) as max, min(value) as min, sum(value) as sum FROM %v WHERE cluster_id=$1 AND created >= (NOW() - INTERVAL '%v') GROUP BY cluster_id, created_unix, host, key ORDER BY created_unix ASC", ts.table, interval)
+	query := fmt.Sprintf("SELECT cluster_id, cast(CEILING(extract('epoch' from created)/900)*900 as bigint) AS created_unix, host, key, avg(value) as avg, max(value) as max, min(value) as min, sum(value) as sum FROM %v WHERE cluster_id=$1 AND created >= (NOW() at time zone 'utc' - INTERVAL '%v') GROUP BY cluster_id, created_unix, host, key ORDER BY created_unix ASC", ts.table, interval)
 	err := ts.db.Select(&rows, query, clusterID)
 
 	return rows, err
@@ -198,7 +198,7 @@ func (ts *TSMetric) AllByMetricIDHostAndInterval(tx *sqlx.Tx, clusterID, metricI
 	}
 
 	rows := []*TSMetricRow{}
-	query := fmt.Sprintf("SELECT * FROM %v WHERE cluster_id=$1 AND metric_id=$2 AND host=$3 AND created >= (NOW() - INTERVAL '%v') ORDER BY cluster_id,metric_id,created ASC", ts.table, interval)
+	query := fmt.Sprintf("SELECT * FROM %v WHERE cluster_id=$1 AND metric_id=$2 AND host=$3 AND created >= (NOW() at time zone 'utc' - INTERVAL '%v') ORDER BY cluster_id,metric_id,created ASC", ts.table, interval)
 	err := ts.db.Select(&rows, query, clusterID, metricID, host)
 
 	return rows, err
@@ -219,7 +219,7 @@ func (ts *TSMetric) AllByMetricIDAndInterval(tx *sqlx.Tx, clusterID, metricID in
 	}
 
 	rows := []*TSMetricRow{}
-	query := fmt.Sprintf("SELECT * FROM %v WHERE cluster_id=$1 AND metric_id=$2 AND created >= (NOW() - INTERVAL '%v') ORDER BY cluster_id,metric_id,created ASC", ts.table, interval)
+	query := fmt.Sprintf("SELECT * FROM %v WHERE cluster_id=$1 AND metric_id=$2 AND created >= (NOW() at time zone 'utc' - INTERVAL '%v') ORDER BY cluster_id,metric_id,created ASC", ts.table, interval)
 	err := ts.db.Select(&rows, query, clusterID, metricID)
 
 	return rows, err
@@ -272,7 +272,7 @@ func (ts *TSMetric) DeleteByDayInterval(tx *sqlx.Tx, dayInterval int) error {
 		return err
 	}
 
-	query := fmt.Sprintf("DELETE FROM %v WHERE created < (NOW() - INTERVAL '%v day')", ts.table, dayInterval)
+	query := fmt.Sprintf("DELETE FROM %v WHERE created < (NOW() at time zone 'utc' - INTERVAL '%v day')", ts.table, dayInterval)
 
 	_, err = tx.Exec(query)
 

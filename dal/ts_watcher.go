@@ -112,7 +112,7 @@ func (ts *TSWatcher) DeleteByDayInterval(tx *sqlx.Tx, dayInterval int) error {
 		return err
 	}
 
-	query := fmt.Sprintf("DELETE FROM %v WHERE created < (NOW() - INTERVAL '%v day')", ts.table, dayInterval)
+	query := fmt.Sprintf("DELETE FROM %v WHERE created < (NOW() at time zone 'utc' - INTERVAL '%v day')", ts.table, dayInterval)
 
 	_, err = tx.Exec(query)
 
