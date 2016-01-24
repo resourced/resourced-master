@@ -5,7 +5,7 @@
     <div class="row">
         <div class="col-lg-12">
             <div class="page-header">
-                <button class="new-cluster-button btn btn-primary pull-right" type="button" data-toggle="modal" data-target="#cluster-modal" style="width: 157px">New Cluster</button>
+                <button class="new-cluster-button btn btn-primary pull-right" type="button" data-toggle="modal" data-target="#cluster-modal" style="width: 150px">New Cluster</button>
                 <h2>Clusters</h2>
             </div>
 
@@ -19,14 +19,17 @@
             {{ range $cluster := .Clusters }}
                 <div class="page-header">
                     <div class="btn-group pull-right" role="group">
-                        <button class="new-cluster-button btn btn-sm btn-default" type="button" data-toggle="modal" data-target="#cluster-modal"
-                            data-cluster-id="{{ $cluster.ID }}" data-cluster-name="{{ $cluster.Name }}">
+                        <button class="new-cluster-button btn btn-xs btn-default" type="button" data-toggle="modal" data-target="#cluster-modal"
+                            data-cluster-id="{{ $cluster.ID }}" data-cluster-name="{{ $cluster.Name }}" style="padding: 1px 8px">
                             Edit
                         </button>
-                        <button class="btn btn-sm btn-info" type="button" data-toggle="modal" data-target="#new-access-token-modal" data-cluster-id="{{ $cluster.ID }}">New Access Token</button>
+                        <button class="btn btn-xs btn-info" type="button" data-toggle="modal" data-target="#new-access-token-modal"
+                            data-cluster-id="{{ $cluster.ID }}" style="padding: 1px 8px">
+                            New Access Token
+                        </button>
                     </div>
 
-                    <h3>{{ $cluster.Name }}</h3>
+                    <h4>{{ $cluster.Name }}</h4>
                 </div>
 
                 <!-- Access Tokens -->
