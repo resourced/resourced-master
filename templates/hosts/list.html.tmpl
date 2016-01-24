@@ -142,6 +142,12 @@ $('#search-input').bind("input propertychange", function(e) {
                                 <td class="graph-column-btn">
                                     <div class="btn-group" role="group">
                                         {{ if (ne 0 (index $.MetricsMap (print $path "." $key))) }}
+                                        <form class="pull-left delete-metric-form" action="/clusters/{{ $host.ClusterID }}/metrics/{{ index $.MetricsMap (print $path "." $key) }}"
+                                            method="post">
+                                            <input type="hidden" name="_method" value="delete">
+                                            <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+                                        </form>
+
                                         <button class="btn btn-success btn-sm active" data-toggle="modal" data-target="#graph-modal"
                                             data-metric-id="{{ index $.MetricsMap (print $path "." $key) }}",
                                             data-metric-key="{{ print $path "." $key }}"
@@ -152,7 +158,7 @@ $('#search-input').bind("input propertychange", function(e) {
                                         {{ else }}
                                         <form action="/clusters/{{ $host.ClusterID }}/metrics" method="post">
                                             <input type="hidden" name="Key" value="{{ $path }}.{{ $key }}">
-                                            <button type="submit" class="btn btn-success btn-sm">Chart Metric?</button>
+                                            <button type="submit" class="btn btn-success btn-sm btn-do-chart-metric">Chart Metric?</button>
                                         </form>
                                         {{ end }}
                                     </div>
@@ -241,6 +247,13 @@ $(document).ready(function() {
             $(this).closest('.detail-header').siblings('.detail-body[data-path="' + path + '"]').hide();
         }
     });
+});
+
+$('.delete-metric-form .btn-danger').click(function() {
+    if(confirm('Are you sure you want to delete?')) {
+        $('.delete-metric-form input[name="_method"]').val('delete');
+        $(this).closest('form').submit();
+    }
 });
 
 $('.container.saved-queries .toggler-header').on('switchChange.bootstrapSwitch', function(event, state) {

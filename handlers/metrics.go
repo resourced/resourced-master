@@ -6,6 +6,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/jmoiron/sqlx"
 	"net/http"
+	"strconv"
 
 	"github.com/resourced/resourced-master/dal"
 	"github.com/resourced/resourced-master/libhttp"
@@ -15,7 +16,10 @@ import (
 func PostMetrics(w http.ResponseWriter, r *http.Request) {
 	db := context.Get(r, "db.Core").(*sqlx.DB)
 
-	clusterID, err := getIdFromPath(w, r)
+	vars := mux.Vars(r)
+
+	clusterIDString := vars["clusterid"]
+	clusterID, err := strconv.ParseInt(clusterIDString, 10, 64)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
@@ -149,4 +153,45 @@ func GetApiTSMetrics15Min(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Write(hcMetricsJSON)
+}
+
+// PostPutDeleteMetricID handles POST, PUT, and DELETE
+func PostPutDeleteMetricID(w http.ResponseWriter, r *http.Request) {
+	method := r.FormValue("_method")
+	if method == "" {
+		method = "put"
+	}
+
+	if method == "post" || method == "put" {
+		PutMetricID(w, r)
+	} else if method == "delete" {
+		DeleteMetricID(w, r)
+	}
+}
+
+// PutMetricID is not supported
+func PutMetricID(w http.ResponseWriter, r *http.Request) {
+	http.Redirect(w, r, "/", 301)
+}
+
+// DeleteMetricID deletes metrics by ID
+func DeleteMetricID(w http.ResponseWriter, r *http.Request) {
+	db := context.Get(r, "db.Core").(*sqlx.DB)
+
+	vars := mux.Vars(r)
+
+	idString := vars["id"]
+	id, err := strconv.ParseInt(idString, 10, 64)
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
+
+	_, err = dal.NewMetric(db).DeleteByID(nil, id)
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
+
+	http.Redirect(w, r, "/", 301)
 }

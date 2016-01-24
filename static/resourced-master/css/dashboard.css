@@ -108,8 +108,8 @@ select {
     width: 1px;
     padding: 0;
 }
-.hosts .graph-column-btn .btn {
-    width: 96px;
+.hosts .graph-column-btn .btn-do-chart-metric {
+    width: 91px;
 }
 
 #graph-modal .modal-body {
