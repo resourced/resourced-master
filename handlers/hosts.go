@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"net/http"
 
+	"github.com/Sirupsen/logrus"
 	"github.com/gorilla/context"
 	"github.com/gorilla/sessions"
 	"github.com/jmoiron/sqlx"
@@ -122,7 +123,7 @@ func PostApiHosts(w http.ResponseWriter, r *http.Request) {
 		go func() {
 			err := dal.NewTSMetric(db).CreateByHostRow(nil, hostRow, metricsMap)
 			if err != nil {
-				println(err.Error())
+				logrus.Error(err)
 			}
 		}()
 	}

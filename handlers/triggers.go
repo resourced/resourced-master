@@ -41,10 +41,19 @@ func readTriggersFormData(r *http.Request) (map[string]interface{}, error) {
 		return nil, err
 	}
 
+	var highViolationsCount int64
+
 	highViolationsCountString := r.FormValue("HighViolationsCount")
-	highViolationsCount, err := strconv.ParseInt(highViolationsCountString, 10, 64)
-	if err != nil {
-		return nil, err
+	if highViolationsCountString == "" {
+		// Set highViolationsCount arbitrarily high when highViolationsCount value is missing.
+		// Because it means that the user does not want to set max value.
+		highViolationsCount = 1000000
+
+	} else {
+		highViolationsCount, err = strconv.ParseInt(highViolationsCountString, 10, 64)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	createdInterval := r.FormValue("CreatedInterval")

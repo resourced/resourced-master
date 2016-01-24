@@ -17,6 +17,8 @@ import (
 func GetWatchers(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html")
 
+	db := context.Get(r, "db.Core").(*sqlx.DB)
+
 	cookieStore := context.Get(r, "cookieStore").(*sessions.CookieStore)
 
 	session, _ := cookieStore.Get(r, "resourcedmaster-session")
@@ -33,8 +35,6 @@ func GetWatchers(w http.ResponseWriter, r *http.Request) {
 	}
 
 	currentCluster := currentClusterInterface.(*dal.ClusterRow)
-
-	db := context.Get(r, "db.Core").(*sqlx.DB)
 
 	watchers, err := dal.NewWatcher(db).AllByClusterID(nil, currentCluster.ID)
 	if err != nil {

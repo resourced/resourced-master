@@ -50,9 +50,7 @@ func (ts *TSWatcher) LastByClusterIDWatcherIDAndAffectedHosts(tx *sqlx.Tx, clust
 // AllViolationsByClusterIDWatcherIDAndInterval returns all rows by cluster_id, watcher_id, affectedHosts and created interval.
 func (ts *TSWatcher) AllViolationsByClusterIDWatcherIDAndInterval(tx *sqlx.Tx, clusterID, watcherID, affectedHosts int64, createdInterval string) ([]*TSWatcherRow, error) {
 	nonAffectedHosts := affectedHosts - 1
-	if nonAffectedHosts <= 0 {
-		nonAffectedHosts = 1
-	}
+
 	lastGoodOne, err := ts.LastByClusterIDWatcherIDAndAffectedHosts(tx, clusterID, watcherID, nonAffectedHosts)
 	if err != nil {
 		return nil, err
@@ -68,7 +66,6 @@ func (ts *TSWatcher) AllViolationsByClusterIDWatcherIDAndInterval(tx *sqlx.Tx, c
 		"WatcherID":       watcherID,
 		"AffectedHosts":   affectedHosts,
 		"LastGoodCreated": lastGoodOne.Created.UTC(),
-		"CreatedInterval": createdInterval,
 		"Query":           query,
 	}).Info("Select Query")
 
