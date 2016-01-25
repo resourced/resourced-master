@@ -31,6 +31,14 @@
             <div>
                 <div class="pull-right">
                     <div class="btn-group" role="group">
+                        <form action="/watchers/{{ $watcher.ID }}/silence" method="post" style="display: inline-block; float: left">
+                        {{ if eq $watcher.IsSilenced true }}
+                            <button type="submit" class="btn btn-danger btn-xs active" style="vertical-align: top">Unmute</button>
+                        {{ else }}
+                            <button type="submit" class="btn btn-danger btn-xs" style="vertical-align: top">Mute!</button>
+                        {{ end }}
+                        </form>
+
                         <button class="btn btn-default btn-xs" data-toggle="modal" data-target="#watcher-modal"
                             data-id="{{ $watcher.ID }}"
                             data-name="{{ $watcher.Name }}"

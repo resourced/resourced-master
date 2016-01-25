@@ -97,6 +97,7 @@ func (app *Application) mux() *mux.Router {
 	router.Handle("/watchers", alice.New(MustLogin, SetClusters).ThenFunc(handlers.GetWatchers)).Methods("GET")
 	router.Handle("/watchers", alice.New(MustLogin, SetClusters).ThenFunc(handlers.PostWatchers)).Methods("POST")
 	router.Handle("/watchers/{id:[0-9]+}", alice.New(MustLogin, SetClusters).ThenFunc(handlers.PostPutDeleteWatcherID)).Methods("POST", "PUT", "DELETE")
+	router.Handle("/watchers/{id:[0-9]+}/silence", alice.New(MustLogin, SetClusters).ThenFunc(handlers.PostWatcherIDSilence)).Methods("POST")
 
 	router.Handle("/watchers/{watcherid:[0-9]+}/triggers", alice.New(MustLogin, SetClusters).ThenFunc(handlers.PostWatchersTriggers)).Methods("POST")
 	router.Handle("/watchers/{watcherid:[0-9]+}/triggers/{id:[0-9]+}", alice.New(MustLogin, SetClusters).ThenFunc(handlers.PostPutDeleteWatcherTriggerID)).Methods("POST", "PUT", "DELETE")
@@ -267,6 +268,11 @@ func (app *Application) WatchOnce(clusterID int64, watcherRow *dal.WatcherRow) e
 }
 
 func (app *Application) RunTrigger(clusterID int64, watcherRow *dal.WatcherRow) error {
+	// Don't do anything if watcher is silenced.
+	if watcherRow.IsSilenced {
+		return nil
+	}
+
 	tsWatcherDB := app.DBConfig.TSWatchers.PickRandom()
 
 	triggerRows, err := dal.NewWatcherTrigger(app.DBConfig.Core).AllByClusterIDAndWatcherID(nil, clusterID, watcherRow.ID)

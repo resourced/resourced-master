@@ -210,3 +210,32 @@ func DeleteWatcherID(w http.ResponseWriter, r *http.Request) {
 
 	http.Redirect(w, r, "/watchers", 301)
 }
+
+func PostWatcherIDSilence(w http.ResponseWriter, r *http.Request) {
+	db := context.Get(r, "db.Core").(*sqlx.DB)
+
+	id, err := getIdFromPath(w, r)
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
+
+	watcher := dal.NewWatcher(db)
+
+	watcherRow, err := watcher.GetByID(nil, id)
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
+
+	data := make(map[string]interface{})
+	data["is_silenced"] = !watcherRow.IsSilenced
+
+	_, err = watcher.UpdateByID(nil, data, id)
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
+
+	http.Redirect(w, r, "/watchers", 301)
+}
