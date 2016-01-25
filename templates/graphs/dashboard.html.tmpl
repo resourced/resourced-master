@@ -202,8 +202,6 @@ $(document).ready(function() {
     }).get();
 });
 
-$(document).on('change','.chart-keys', renderChartPreview);
-
 // Change the ordering of chart panels based on user clicks.
 $('.chart-keys option').click(function(event) {
     var $option = $(this);
@@ -229,6 +227,8 @@ $('.chart-keys option').click(function(event) {
     $.each(globalChartKeys, function(index, value) {
         $('<input type="hidden" name="MetricsWithOrder" value="' + value + '">').appendTo(form);
     });
+
+    renderChartPreview();
 });
 
 $('.graphs-select').change(function() {
