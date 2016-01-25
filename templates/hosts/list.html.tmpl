@@ -138,7 +138,7 @@ $('#search-input').bind("input propertychange", function(e) {
                             {{ range $key, $value := $data }}
                             <tr>
                                 <td>{{ $key }}</td>
-                                <td>{{ $value }}</td>
+                                <td class="host-value">{{ $value }}</td>
                                 <td class="graph-column-btn">
                                     <div class="btn-group" role="group">
                                         {{ if (ne 0 (index $.MetricsMap (print $path "." $key))) }}
@@ -245,6 +245,17 @@ $(document).ready(function() {
         } else if (state && state == 'false') {
             $(this).bootstrapSwitch('state', false, false);
             $(this).closest('.detail-header').siblings('.detail-body[data-path="' + path + '"]').hide();
+        }
+    });
+
+    $('.row.hosts .host-value').each(function() {
+        var elem = $(this);
+        var val = elem.text();
+
+        if(isNaN(val)) {
+            elem.siblings('.graph-column-btn').find('.btn-group').hide();
+        } else {
+            elem.text(Number(val));
         }
     });
 });
