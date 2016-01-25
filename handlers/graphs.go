@@ -225,7 +225,7 @@ func PutGraphsID(w http.ResponseWriter, r *http.Request) {
 		data["description"] = description
 	}
 
-	metrics := r.Form["Metrics"]
+	metrics := r.Form["MetricsWithOrder"]
 
 	if len(metrics) > 0 {
 		metricsJSONBytes, err := dal.NewGraph(db).BuildMetricsJSONForSave(nil, currentCluster.ID, metrics)

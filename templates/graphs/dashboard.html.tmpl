@@ -27,7 +27,7 @@
     <div class="row">
         {{ range $metric := $metricsContainer }}
         <div class="col-md-4">
-            <div class="panel panel-default">
+            <div class="panel panel-default panel-chart" data-id="{{ $metric.ID }}" data-key="{{ $metric.Key }}">
                 <div class="panel-heading" data-id="{{ $metric.ID }}" data-key="{{ $metric.Key }}">
                     <select class="form-control chart-created-interval pull-right" data-id="{{ $metric.ID }}" data-key="{{ $metric.Key }}" data-interval="15 minute">
                         <option value="5 minute">5 minutes ago</option>
@@ -97,8 +97,10 @@
 // Refresh page every 5 minutes
 setInterval(window.location.reload, 5*60000);
 
+globalChartKeys = [];
+
 function renderChartPreview() {
-    var metrics = $('.chart-keys').val();
+    var metrics = globalChartKeys;
     var lastMetricIDAndKey = metrics[metrics.length -1].split(/\-(.+)?/);
     var lastMetricID = lastMetricIDAndKey[0];
     var lastMetricKey = lastMetricIDAndKey[1];
@@ -193,9 +195,41 @@ $(window).resize(function() {
 
 $(document).ready(function() {
     renderAllChart();
+
+    // Gather the ordering of every chart panels on load.
+    globalChartKeys = $('.panel-chart').map(function() {
+        return $(this).data('id') + '-' + $(this).data('key');
+    }).get();
 });
 
 $(document).on('change','.chart-keys', renderChartPreview);
+
+// Change the ordering of chart panels based on user clicks.
+$('.chart-keys option').click(function(event) {
+    var $option = $(this);
+    var val = $option.val();
+
+    if(!event.ctrlKey && !event.altKey && !event.metaKey) {
+        globalChartKeys = [];
+    }
+
+    if($(this).is(':selected')) {
+        globalChartKeys.push(val);
+    } else {
+        var index = globalChartKeys.indexOf(val);
+        if(index > -1) {
+            globalChartKeys.splice(index, 1);
+        }
+    }
+
+    // Build form input
+    var form = $('#add-chart-modal form');
+    form.find('input[name="MetricsWithOrder"]').remove();
+
+    $.each(globalChartKeys, function(index, value) {
+        $('<input type="hidden" name="MetricsWithOrder" value="' + value + '">').appendTo(form);
+    });
+});
 
 $('.graphs-select').change(function() {
     window.location = '/graphs/' + $(this).val();
@@ -216,12 +250,9 @@ $('.chart-created-interval').change(function() {
     }
 });
 
-// Highlight charts already selected
+// Highlight charts that are already selected based on globalChartKeys.
 $('#add-chart-modal').on('shown.bs.modal', function() {
-    var modal = $(this);
-    var currentMetricKeysDOM = $('.graphs-metrics-container .panel-heading');
-
-    modal.find('.chart-keys option').each(function(index) {
+    $(this).find('.chart-keys option').each(function(index) {
         var chartKeyOption = $(this);
 
         $('.graphs-metrics-container .panel-heading').each(function(index) {
