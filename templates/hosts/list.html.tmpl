@@ -110,7 +110,7 @@ $('#search-input').bind("input propertychange", function(e) {
         <div class="col-xs-12 col-lg-12">
             <div>
                 <div class="pull-right">
-                    <small class="updated-timestamp">{{ $host.Updated }}</small>
+                    <small class="updated-timestamp time-unix-to-local">{{ $host.Updated.Unix }}</small>
                     <input type="checkbox" class="toggler toggler-header pull-right" data-size="mini" data-host-id="{{ $host.ID }}">
                 </div>
 

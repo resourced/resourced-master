@@ -134,6 +134,12 @@
                 $li.click();
             }
         });
+
+        // Convert everything inside .time-unix-to-local from unix to local time.
+        $('.time-unix-to-local').each(function() {
+            var unix = $(this).text();
+            $(this).text(new Date(unix * 1000).toString());
+        });
     });
 
     $(window).load(function() {
