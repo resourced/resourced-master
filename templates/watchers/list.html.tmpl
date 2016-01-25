@@ -329,9 +329,11 @@ $(document).ready(function() {
 
         if (state == 'true' || state == true) {
             $('.trigger-body[data-watcher-id="' + watcherID + '"]').show();
+            $button.text('Hide Triggers');
             $button.addClass('active');
         } else {
             $('.trigger-body[data-watcher-id="' + watcherID + '"]').hide();
+            $button.text('Show Triggers');
             $button.removeClass('active');
         }
     });
@@ -482,8 +484,10 @@ $('.btn-show-triggers').on('click', function(event) {
 
     if($triggerBody.is(':visible')) {
         $('.btn-show-triggers[data-watcher-id="' + watcherID + '"]').addClass('active');
+        $('.btn-show-triggers[data-watcher-id="' + watcherID + '"]').text('Hide Triggers');
     } else {
         $('.btn-show-triggers[data-watcher-id="' + watcherID + '"]').removeClass('active');
+        $('.btn-show-triggers[data-watcher-id="' + watcherID + '"]').text('Show Triggers');
     }
 
     $.cookie('.row.watchers .trigger-body[data-watcher-id="' + watcherID + '"]', $triggerBody.is(':visible'), {
