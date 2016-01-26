@@ -1,0 +1,487 @@
+{{define "second-navbar"}}
+{{ end }}
+
+{{define "content"}}
+<!-- Watchers -->
+<div class="container watchers">
+    <div class="row">
+        <div class="col-lg-12">
+            <div class="page-header" style="padding-bottom: 0">
+                <button class="btn btn-primary pull-right" data-toggle="modal" data-target="#watcher-modal">
+                    New Watcher
+                </button>
+
+                <ul class="nav nav-tabs">
+                    <li role="presentation"><a href="/watchers">Passive Watchers</a></li>
+                    <li role="presentation" class="active"><a href="/watchers/active">Active Watchers</a></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    {{ range $watcher := .Watchers }}
+    <div class="row watchers">
+        <div class="col-xs-12 col-lg-12">
+            <div>
+                <div class="pull-right">
+                    <div class="btn-group" role="group">
+                        <form action="/watchers/{{ $watcher.ID }}/silence" method="post" style="display: inline-block; float: left">
+                        {{ if eq $watcher.IsSilenced true }}
+                            <button type="submit" class="btn btn-danger btn-xs active" style="vertical-align: top">Unmute</button>
+                        {{ else }}
+                            <button type="submit" class="btn btn-danger btn-xs" style="vertical-align: top">Mute!</button>
+                        {{ end }}
+                        </form>
+
+                        <button class="btn btn-default btn-xs" data-toggle="modal" data-target="#watcher-modal"
+                            data-id="{{ $watcher.ID }}"
+                            data-name="{{ $watcher.Name }}"
+                            data-low-affected-hosts="{{ $watcher.LowAffectedHosts }}"
+                            data-hosts-last-updated="{{ $watcher.HostsLastUpdated }}"
+                            data-check-interval="{{ $watcher.CheckInterval }}">
+                            Details
+                        </button>
+
+                        <button class="btn btn-default btn-xs btn-show-triggers" data-watcher-id="{{ $watcher.ID }}">Show Triggers</button>
+
+                        <button class="btn btn-success btn-xs" data-toggle="modal" data-target="#trigger-modal"
+                            data-watcher-id="{{ $watcher.ID }}"
+                            data-watcher-check-interval="{{ $watcher.CheckInterval }}">
+                            New Trigger
+                        </button>
+                    </div>
+                </div>
+
+                <h3>{{ $watcher.Name }}</h3>
+            </div>
+
+            <span class="label label-primary">{{ $watcher.Command.String }}</span>
+            <span class="label label-primary">Min Affected Hosts: {{ $watcher.LowAffectedHosts }}</span>
+            <span class="label label-primary">Check Interval: {{ $watcher.CheckInterval }}</span>
+
+            <div class="triggers" style="margin-top: 3px">
+                <div class="trigger-body table-responsive table-condensed" data-watcher-id="{{ $watcher.ID }}" style="display: none">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Min Violations Reached</th>
+                                <th>Max Violations Reached</th>
+                                <th>Actions</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        {{ range $trigger := index $.TriggersByWatcher $watcher.ID }}
+                            <tr>
+                                <td>{{ $trigger.LowViolationsCount }}</td>
+                                <td>{{ $trigger.HighViolationsCount }}</td>
+
+                                {{ if eq $trigger.ActionTransport "nothing" }}
+                                <td>Do {{ $trigger.ActionTransport }}</td>
+                                {{ else }}
+                                <td>Send {{ $trigger.ActionTransport }} to {{ $trigger.ActionEmail }}{{ $trigger.ActionSMSPhone }}{{ $trigger.ActionPagerDutyServiceKey }}</td>
+                                {{ end }}
+
+                                <td>
+                                    <div class="btn-group pull-right" role="group">
+                                        <form action="/watchers/{{ $watcher.ID }}/triggers/{{ $trigger.ID }}" method="post" onsubmit="return confirm('Are you sure you want to delete?');" style="display: inline-block">
+                                            <input type="hidden" name="_method" value="delete">
+                                            <button type="submit" class="btn btn-danger btn-xs">Delete</button>
+                                        </form>
+
+                                        <button class="btn btn-success btn-xs pull-right" data-toggle="modal" data-target="#trigger-modal"
+                                            data-id="{{ $trigger.ID }}"
+                                            data-watcher-id="{{ $trigger.WatcherID }}"
+                                            data-watcher-check-interval="{{ $watcher.CheckInterval }}"
+                                            data-low-violations-count="{{ $trigger.LowViolationsCount }}"
+                                            data-high-violations-count="{{ $trigger.HighViolationsCount }}"
+                                            data-action-transport="{{ $trigger.ActionTransport }}"
+                                            data-action-email="{{ $trigger.ActionEmail }}"
+                                            data-action-sms-carrier="{{ $trigger.ActionSMSCarrier }}"
+                                            data-action-sms-phone="{{ $trigger.ActionSMSPhone }}"
+                                            data-action-pd-service-key="{{ $trigger.ActionPagerDutyServiceKey }}"
+                                            data-action-pd-service-description="{{ $trigger.ActionPagerDutyDescription }}">
+                                            Edit Trigger
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        {{ end }}
+                    </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+    </div>
+    {{ end }}
+</div>
+
+<!-- Watcher Modal -->
+<div class="modal fade" id="watcher-modal" tabindex="-1" role="dialog" aria-labelledby="watchers-details-label" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                <h4 class="modal-title" id="watchers-details-label">New/Update Active Watcher</h4>
+            </div>
+
+            <form method="post" action="/watchers">
+                <input type="hidden" name="_method" value="post">
+
+                <div class="modal-body">
+                    <div class="row form-group">
+                        <div class="col-sm-12">
+                            <label>Command</label>
+                            <select class="form-control" name="Command">
+                                <option value="ping">Ping</option>
+                                <option value="ssh">SSH</option>
+                                <option value="ssh">HTTP</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="row form-group ssh-details">
+                        <div class="col-sm-12">
+                            <label>SSH User</label>
+                            <input type="text" class="form-control" name="SSHUser">
+                        </div>
+                    </div>
+
+                    <div class="row form-group http-details">
+                        <div class="col-sm-9">
+                            <label>HTTP Headers</label>
+                            <input type="text" class="form-control" name="HTTP Headers" placeholder="key1:value1,key2:value2">
+                        </div>
+                        <div class="col-sm-3">
+                            <label>Expected HTTP Status Code</label>
+                            <input type="text" class="form-control" name="HTTP Status">
+                        </div>
+                    </div>
+
+                    <div class="row form-group">
+                        <div class="col-sm-3">
+                            <label>Min Affected Hosts</label>
+                            <input type="number" class="form-control" name="LowAffectedHosts" value="1">
+                        </div>
+
+                        <div class="col-sm-3">
+                            <label>Check Interval</label>
+                            <select class="form-control" name="CheckInterval">
+                                <option value="30s">30 seconds</option>
+                                <option value="60s">60 seconds</option>
+                                <option value="5m">5 minutes</option>
+                                <option value="10m">10 minutes</option>
+                                <option value="15m">15 minutes</option>
+                                <option value="30m">30 minutes</option>
+                                <option value="60m">60 minutes</option>
+                                <option value="2h">2 hours</option>
+                                <option value="3h">3 hours</option>
+                                <option value="6h">6 hours</option>
+                                <option value="12h">12 hours</option>
+                                <option value="24h">24 hours</option>
+                            </select>
+                        </div>
+
+                        <div class="col-sm-6">
+                            <label>Hosts Last Updated</label>
+                            <select class="form-control" name="HostsLastUpdated">
+                                <option value="5 minutes ago">5 minutes ago</option>
+                                <option value="10 minutes ago">10 minutes ago</option>
+                                <option value="15 minutes ago">15 minutes ago</option>
+                                <option value="30 minutes ago">30 minutes ago</option>
+                                <option value="60 minutes ago">60 minutes ago</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-danger pull-left" data-dismiss="modal">
+                        Delete
+                    </button>
+
+                    <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary">Save</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Trigger Modal -->
+<div class="modal fade" id="trigger-modal" tabindex="-1" role="dialog" aria-labelledby="triggers-details-label" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                <h4 class="modal-title" id="triggers-details-label">New Trigger</h4>
+            </div>
+
+            <form method="post" action="/watchers/triggers">
+                <input type="hidden" name="_method" value="post">
+
+                <div class="modal-body">
+                    <div class="row form-group">
+                        <div class="col-sm-12">
+                            <div class="input-group">
+                                <span class="input-group-addon" style="padding-left: 0">When violations occured between</span>
+
+                                <input type="number" class="form-control" name="LowViolationsCount" value="1">
+
+                                <span class="input-group-addon">and</span>
+
+                                <input type="number" class="form-control" name="HighViolationsCount">
+
+                                <span class="input-group-addon">the last</span>
+
+                                <select class="form-control" name="CreatedInterval">
+                                    <option value="15 minute">15 minutes</option>
+                                    <option value="30 minute">30 minutes</option>
+                                    <option value="60 minute">60 minutes</option>
+                                    <option value="2 hour">2 hours</option>
+                                    <option value="3 hour">3 hours</option>
+                                    <option value="6 hour">6 hours</option>
+                                    <option value="12 hour">12 hours</option>
+                                    <option value="24 hour">24 hours</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row form-group">
+                        <div class="col-sm-3 actions-selector-wrapper">
+                            <label>Actions</label>
+                            <select class="form-control" name="ActionTransport">
+                                <option value="nothing">Do Nothing</option>
+                                <option value="email">Send Email</option>
+                                <option value="sms">Send SMS</option>
+                                <option value="pagerduty">Send PagerDuty</option>
+                            </select>
+                        </div>
+
+                        <div class="col-sm-9 payload payload-email">
+                            <label>Email</label>
+                            <input type="email" class="form-control" name="ActionEmail" placeholder="bob@example.com" value="">
+                        </div>
+
+                        <div class="col-sm-3 payload payload-sms" style="display: none">
+                            <label>SMS Carrier</label>
+                            <select class="form-control" name="ActionSMSCarrier">
+                                <option value="alltel">Alltel</option>
+                                <option value="att">AT&T</option>
+                                <option value="sprint">Sprint</option>
+                                <option value="tmobile">T-Mobile</option>
+                                <option value="verizon">Verizon</option>
+                                <option value="virgin">Virgin Mobile</option>
+                            </select>
+                        </div>
+
+                        <div class="col-sm-6 payload payload-sms" style="display: none">
+                            <label>SMS Number</label>
+                            <input type="text" class="form-control" name="ActionSMSPhone" placeholder="10 digit numbers" value="">
+                        </div>
+
+                        <div class="col-sm-4 payload payload-pagerduty" style="display: none">
+                            <label>PD Service Key</label>
+                            <input type="text" class="form-control" name="ActionPagerDutyServiceKey" placeholder="" value="">
+                        </div>
+
+                        <div class="col-sm-5 payload payload-pagerduty" style="display: none">
+                            <label>PD Description</label>
+                            <input type="text" class="form-control" name="ActionPagerDutyDescription" placeholder="" value="">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-danger pull-left" data-dismiss="modal">
+                        Delete
+                    </button>
+
+                    <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary">Save</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+var changeActionTransport = function() {
+    var transportVal = $('select[name="ActionTransport"] option:selected').val();
+
+    if(transportVal == "nothing") {
+        $('.actions-selector-wrapper').removeClass('col-sm-3');
+        $('.actions-selector-wrapper').addClass('col-sm-12');
+    } else {
+        $('.actions-selector-wrapper').removeClass('col-sm-12');
+        $('.actions-selector-wrapper').addClass('col-sm-3');
+    }
+
+    $('.payload').hide();
+    $('.payload-' + transportVal).show();
+};
+
+$(document).ready(function() {
+    // Loop every single show triggers and enforce its state based on cookie value.
+    $('.btn-show-triggers').each(function() {
+        var $button = $(this);
+        var watcherID = $button.data('watcher-id');
+        var state = $.cookie('.row.watchers .trigger-body[data-watcher-id="' + watcherID + '"]');
+
+        if (state == 'true' || state == true) {
+            $('.trigger-body[data-watcher-id="' + watcherID + '"]').show();
+            $button.text('Hide Triggers');
+            $button.addClass('active');
+        } else {
+            $('.trigger-body[data-watcher-id="' + watcherID + '"]').hide();
+            $button.text('Show Triggers');
+            $button.removeClass('active');
+        }
+    });
+});
+
+$('select[name="ActionTransport"]').change(changeActionTransport);
+
+$('#watcher-modal form .btn-danger').click(function() {
+    $('#watcher-modal form input[name="_method"]').val('delete');
+    $(this).closest('form').submit();
+});
+
+$('#watcher-modal form .btn-primary').click(function() {
+    $('#watcher-modal form input[name="_method"]').val('put');
+    $(this).closest('form').submit();
+});
+
+$('#watcher-modal').on('show.bs.modal', function (event) {
+    var button = $(event.relatedTarget);   // Button that triggered the modal
+    var id = button.data('id');
+    var name = button.data('name');
+    var lowAffectedHosts = button.data('low-affected-hosts');
+    var hostsLastUpdated = button.data('hosts-last-updated');
+    var checkInterval = button.data('check-interval');
+
+    var modal = $(this);
+
+    modal.find('input[name="Name"]').val(name);
+
+    if(lowAffectedHosts) {
+        modal.find('input[name="LowAffectedHosts"]').val(lowAffectedHosts);
+    }
+    if(hostsLastUpdated) {
+        $('select[name="HostsLastUpdated"] option[value="' + hostsLastUpdated + '"]').attr('selected', 'selected');
+    }
+    if(checkInterval) {
+        modal.find('input[name="CheckInterval"]').val(checkInterval);
+    }
+
+    if(id) {
+        modal.find('form').attr('action', '/watchers/active/' + id);
+        modal.find('.btn-danger').show();
+        modal.find('.modal-title').text('Update Active Watcher');
+    } else {
+        modal.find('form').attr('action', '/watchers/active');
+        modal.find('.btn-danger').hide();
+        modal.find('.modal-title').text('New Active Watcher');
+    }
+});
+
+$('#trigger-modal form .btn-danger').click(function() {
+    $('#trigger-modal form input[name="_method"]').val('delete');
+    $(this).closest('form').submit();
+});
+
+$('#trigger-modal form .btn-primary').click(function() {
+    $('#trigger-modal form input[name="_method"]').val('put');
+    $(this).closest('form').submit();
+});
+
+$('#trigger-modal').on('show.bs.modal', function (event) {
+    var button = $(event.relatedTarget);   // Button that triggered the modal
+    var id = button.data('id');
+    var watcherID = button.data('watcher-id');
+    var watcherCheckInterval = button.data('watcher-check-interval');
+    var lowViolationsCount = button.data('low-violations-count');
+    var highViolationsCount = button.data('high-violations-count');
+    var actionTransport = button.data('action-transport');
+    var actionEmail = button.data('action-email');
+    var actionSMSCarrier = button.data('action-sms-carrier');
+    var actionSMSPhone = button.data('action-sms-phone');
+    var actionPagerDutyServiceKey = button.data('action-pd-service-key');
+    var actionPagerDutyServiceDescription = button.data('action-pd-service-description');
+
+    var modal = $(this);
+
+    // Wipe form first
+    modal.find('input[type="text"]').val('');
+    modal.find('input[type="number"]').val('');
+
+    modal.find('input[name="Name"]').val(name);
+
+    if(lowViolationsCount) {
+        modal.find('input[name="LowViolationsCount"]').val(lowViolationsCount);
+    } else {
+        modal.find('input[name="LowViolationsCount"]').val(1);
+    }
+    if(highViolationsCount) {
+        modal.find('input[name="HighViolationsCount"]').val(highViolationsCount);
+    }
+    if(actionTransport) {
+        $('select[name="ActionTransport"] option[value="' + actionTransport + '"]').attr('selected', 'selected');
+    }
+    if(actionEmail) {
+        modal.find('input[name="ActionEmail"]').val(actionEmail);
+    }
+    if(actionSMSCarrier) {
+        modal.find('input[name="ActionSMSCarrier"]').val(actionSMSCarrier);
+    }
+    if(actionSMSPhone) {
+        modal.find('input[name="ActionSMSPhone"]').val(actionSMSPhone);
+    }
+    if(actionPagerDutyServiceKey) {
+        modal.find('input[name="ActionPagerDutyServiceKey"]').val(actionPagerDutyServiceKey);
+    }
+    if(actionPagerDutyServiceDescription) {
+        modal.find('input[name="ActionPagerDutyDescription"]').val(actionPagerDutyServiceDescription);
+    }
+
+    if(id) {
+        modal.find('form').attr('action', '/watchers/' + watcherID + '/triggers/' + id);
+        modal.find('.btn-danger').show();
+        modal.find('.modal-title').text('Update Trigger (checked every ' + watcherCheckInterval + ')');
+    } else {
+        modal.find('form').attr('action', '/watchers/' + watcherID + '/triggers');
+        modal.find('.btn-danger').hide();
+        modal.find('.modal-title').text('New Trigger (checked every ' + watcherCheckInterval + ')');
+    }
+
+    // -----------------------------------------------
+
+    changeActionTransport();
+});
+
+$('#trigger-modal form .btn-primary').click(function() {
+    $(this).closest('form').submit();
+});
+
+$('.btn-show-triggers').on('click', function(event) {
+    var watcherID = $(this).data('watcher-id');
+    var $triggerBody = $('.trigger-body[data-watcher-id="' + watcherID + '"]');
+    $triggerBody.toggle();
+
+    if($triggerBody.is(':visible')) {
+        $('.btn-show-triggers[data-watcher-id="' + watcherID + '"]').addClass('active');
+        $('.btn-show-triggers[data-watcher-id="' + watcherID + '"]').text('Hide Triggers');
+    } else {
+        $('.btn-show-triggers[data-watcher-id="' + watcherID + '"]').removeClass('active');
+        $('.btn-show-triggers[data-watcher-id="' + watcherID + '"]').text('Show Triggers');
+    }
+
+    $.cookie('.row.watchers .trigger-body[data-watcher-id="' + watcherID + '"]', $triggerBody.is(':visible'), {
+        path: '/',
+        expires: 365
+    });
+});
+</script>
+{{end}}

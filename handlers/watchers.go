@@ -81,7 +81,7 @@ func GetWatchers(w http.ResponseWriter, r *http.Request) {
 		triggersByWatcher,
 	}
 
-	tmpl, err := template.ParseFiles("templates/dashboard.html.tmpl", "templates/watchers/list.html.tmpl")
+	tmpl, err := template.ParseFiles("templates/dashboard.html.tmpl", "templates/watchers/list-passive.html.tmpl")
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
@@ -90,7 +90,75 @@ func GetWatchers(w http.ResponseWriter, r *http.Request) {
 	tmpl.Execute(w, data)
 }
 
-func readFormData(r *http.Request) (map[string]interface{}, error) {
+func GetWatchersActive(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "text/html")
+
+	db := context.Get(r, "db.Core").(*sqlx.DB)
+
+	cookieStore := context.Get(r, "cookieStore").(*sessions.CookieStore)
+
+	session, _ := cookieStore.Get(r, "resourcedmaster-session")
+	currentUserRow, ok := session.Values["user"].(*dal.UserRow)
+	if !ok {
+		http.Redirect(w, r, "/logout", 301)
+		return
+	}
+
+	currentClusterInterface := session.Values["currentCluster"]
+	if currentClusterInterface == nil {
+		http.Redirect(w, r, "/", 301)
+		return
+	}
+
+	currentCluster := currentClusterInterface.(*dal.ClusterRow)
+
+	watchers, err := dal.NewWatcher(db).AllActiveByClusterID(nil, currentCluster.ID)
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
+
+	triggers, err := dal.NewWatcherTrigger(db).AllByClusterID(nil, currentCluster.ID)
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
+
+	triggersByWatcher := make(map[int64][]*dal.WatcherTriggerRow)
+	for _, trigger := range triggers {
+		if _, ok := triggersByWatcher[trigger.WatcherID]; !ok {
+			triggersByWatcher[trigger.WatcherID] = make([]*dal.WatcherTriggerRow, 0)
+		}
+
+		triggersByWatcher[trigger.WatcherID] = append(triggersByWatcher[trigger.WatcherID], trigger)
+	}
+
+	data := struct {
+		Addr               string
+		CurrentUser        *dal.UserRow
+		Clusters           []*dal.ClusterRow
+		CurrentClusterJson string
+		Watchers           []*dal.WatcherRow
+		TriggersByWatcher  map[int64][]*dal.WatcherTriggerRow
+	}{
+		context.Get(r, "addr").(string),
+		currentUserRow,
+		context.Get(r, "clusters").([]*dal.ClusterRow),
+		string(context.Get(r, "currentClusterJson").([]byte)),
+		watchers,
+		triggersByWatcher,
+	}
+
+	tmpl, err := template.ParseFiles("templates/dashboard.html.tmpl", "templates/watchers/list-active.html.tmpl")
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
+
+	tmpl.Execute(w, data)
+}
+
+func readWatcherPassiveFormData(r *http.Request) (map[string]interface{}, error) {
 	cookieStore := context.Get(r, "cookieStore").(*sessions.CookieStore)
 
 	session, _ := cookieStore.Get(r, "resourcedmaster-session")
@@ -133,7 +201,7 @@ func readFormData(r *http.Request) (map[string]interface{}, error) {
 func PostWatchers(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html")
 
-	createParams, err := readFormData(r)
+	createParams, err := readWatcherPassiveFormData(r)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
@@ -173,7 +241,7 @@ func PutWatcherID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	updateParams, err := readFormData(r)
+	updateParams, err := readWatcherPassiveFormData(r)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return

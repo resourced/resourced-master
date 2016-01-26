@@ -64,20 +64,6 @@ CREATE TABLE metadata (
 
 CREATE INDEX idx_metadata_key on metadata (key);
 
-CREATE TABLE watchers (
-    id BIGSERIAL PRIMARY KEY NOT NULL,
-    cluster_id bigint REFERENCES clusters (id),
-    saved_query_id bigint REFERENCES saved_queries (id),
-    saved_query TEXT NOT NULL,
-    name TEXT,
-    low_affected_hosts bigint NOT NULL DEFAULT 0,
-    hosts_last_updated TEXT,
-    check_interval TEXT,
-    is_silenced BOOLEAN NOT NULL DEFAULT FALSE
-);
-
-CREATE INDEX idx_watchers_name on watchers (name);
-
 CREATE TABLE daemons (
     id BIGSERIAL PRIMARY KEY NOT NULL,
     hostname TEXT NOT NULL,
@@ -86,6 +72,21 @@ CREATE TABLE daemons (
 
 CREATE INDEX idx_daemons_hostname on daemons (hostname);
 CREATE INDEX idx_daemons_updated on daemons (updated);
+
+CREATE TABLE watchers (
+    id BIGSERIAL PRIMARY KEY NOT NULL,
+    cluster_id bigint REFERENCES clusters (id),
+    saved_query_id bigint REFERENCES saved_queries (id) NULL,
+    saved_query TEXT,
+    command TEXT,
+    name TEXT,
+    low_affected_hosts bigint NOT NULL DEFAULT 0,
+    hosts_last_updated TEXT,
+    check_interval TEXT,
+    is_silenced BOOLEAN NOT NULL DEFAULT FALSE
+);
+
+CREATE INDEX idx_watchers_name on watchers (name);
 
 CREATE TABLE metrics (
     id BIGSERIAL PRIMARY KEY NOT NULL,

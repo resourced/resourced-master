@@ -17,15 +17,16 @@ func NewWatcher(db *sqlx.DB) *Watcher {
 }
 
 type WatcherRow struct {
-	ID               int64  `db:"id" json:"-"`
-	ClusterID        int64  `db:"cluster_id"`
-	SavedQueryID     int64  `db:"saved_query_id"`
-	SavedQuery       string `db:"saved_query"`
-	Name             string `db:"name"`
-	LowAffectedHosts int64  `db:"low_affected_hosts"`
-	HostsLastUpdated string `db:"hosts_last_updated"`
-	CheckInterval    string `db:"check_interval"`
-	IsSilenced       bool   `db:"is_silenced"`
+	ID               int64          `db:"id" json:"-"`
+	ClusterID        int64          `db:"cluster_id"`
+	SavedQueryID     sql.NullInt64  `db:"saved_query_id"`
+	SavedQuery       sql.NullString `db:"saved_query"`
+	Command          sql.NullString `db:"command"`
+	Name             string         `db:"name"`
+	LowAffectedHosts int64          `db:"low_affected_hosts"`
+	HostsLastUpdated string         `db:"hosts_last_updated"`
+	CheckInterval    string         `db:"check_interval"`
+	IsSilenced       bool           `db:"is_silenced"`
 }
 
 type Watcher struct {
@@ -76,6 +77,15 @@ func (w *Watcher) AllSplitToDaemons(tx *sqlx.Tx, daemons []string) (map[string][
 func (w *Watcher) AllByClusterID(tx *sqlx.Tx, clusterID int64) ([]*WatcherRow, error) {
 	rows := []*WatcherRow{}
 	query := fmt.Sprintf("SELECT * FROM %v WHERE cluster_id=$1 ORDER BY name ASC", w.table)
+	err := w.db.Select(&rows, query, clusterID)
+
+	return rows, err
+}
+
+// AllActiveByClusterID returns all rows by cluster_id and command != nil.
+func (w *Watcher) AllActiveByClusterID(tx *sqlx.Tx, clusterID int64) ([]*WatcherRow, error) {
+	rows := []*WatcherRow{}
+	query := fmt.Sprintf("SELECT * FROM %v WHERE cluster_id=$1 AND command <> '' ORDER BY name ASC", w.table)
 	err := w.db.Select(&rows, query, clusterID)
 
 	return rows, err

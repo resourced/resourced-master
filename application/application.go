@@ -99,6 +99,8 @@ func (app *Application) mux() *mux.Router {
 	router.Handle("/watchers/{id:[0-9]+}", alice.New(MustLogin, SetClusters).ThenFunc(handlers.PostPutDeleteWatcherID)).Methods("POST", "PUT", "DELETE")
 	router.Handle("/watchers/{id:[0-9]+}/silence", alice.New(MustLogin, SetClusters).ThenFunc(handlers.PostWatcherIDSilence)).Methods("POST")
 
+	router.Handle("/watchers/active", alice.New(MustLogin, SetClusters).ThenFunc(handlers.GetWatchersActive)).Methods("GET")
+
 	router.Handle("/watchers/{watcherid:[0-9]+}/triggers", alice.New(MustLogin, SetClusters).ThenFunc(handlers.PostWatchersTriggers)).Methods("POST")
 	router.Handle("/watchers/{watcherid:[0-9]+}/triggers/{id:[0-9]+}", alice.New(MustLogin, SetClusters).ThenFunc(handlers.PostPutDeleteWatcherTriggerID)).Methods("POST", "PUT", "DELETE")
 
@@ -226,7 +228,7 @@ func (app *Application) WatchAll() {
 func (app *Application) WatchOnce(clusterID int64, watcherRow *dal.WatcherRow) error {
 	lastUpdated := strings.Replace(watcherRow.HostsLastUpdated, " ago", "", 1)
 
-	affectedHosts, err := dal.NewHost(app.DBConfig.Core).AllByClusterIDQueryAndUpdatedInterval(nil, clusterID, watcherRow.SavedQuery, lastUpdated)
+	affectedHosts, err := dal.NewHost(app.DBConfig.Core).AllByClusterIDQueryAndUpdatedInterval(nil, clusterID, watcherRow.SavedQuery.String, lastUpdated)
 	if err != nil {
 		return err
 	}
