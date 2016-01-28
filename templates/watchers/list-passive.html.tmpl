@@ -45,7 +45,7 @@
                         <button class="btn btn-default btn-xs" data-toggle="modal" data-target="#watcher-modal"
                             data-id="{{ $watcher.ID }}"
                             data-name="{{ $watcher.Name }}"
-                            data-saved-query-id="{{ $watcher.SavedQueryID }}"
+                            data-saved-query="{{ $watcher.SavedQuery.String }}"
                             data-low-affected-hosts="{{ $watcher.LowAffectedHosts }}"
                             data-hosts-last-updated="{{ $watcher.HostsLastUpdated }}"
                             data-check-interval="{{ $watcher.CheckInterval }}">
@@ -150,12 +150,11 @@
 
                         <div class="col-sm-6">
                             <label>Saved Queries</label>
-                            <select name="SavedQueryID" class="form-control">
+                            <select name="SavedQuery" class="form-control">
                             {{ range $i, $savedQuery := .SavedQueries }}
-                                <option value="{{ $savedQuery.ID }}">{{ $savedQuery.Query }}</option>
+                                <option value="{{ $savedQuery.Query }}">{{ $savedQuery.Query }}</option>
                             {{ end }}
                             </select>
-                            <input type="hidden" class="form-control" name="SavedQuery" value="">
                         </div>
                     </div>
 
@@ -342,11 +341,6 @@ $(document).ready(function() {
     });
 });
 
-$('select[name="SavedQueryID"]').change(function() {
-    var text = $('select[name="SavedQueryID"] option:selected').text();
-    $('input[name="SavedQuery"]').val(text);
-});
-
 $('select[name="ActionTransport"]').change(changeActionTransport);
 
 $('#watcher-modal form .btn-danger').click(function() {
@@ -363,7 +357,7 @@ $('#watcher-modal').on('show.bs.modal', function (event) {
     var button = $(event.relatedTarget);   // Button that triggered the modal
     var id = button.data('id');
     var name = button.data('name');
-    var savedQueryID = button.data('saved-query-id');
+    var savedQuery = button.data('saved-query');
     var lowAffectedHosts = button.data('low-affected-hosts');
     var hostsLastUpdated = button.data('hosts-last-updated');
     var checkInterval = button.data('check-interval');
@@ -372,8 +366,8 @@ $('#watcher-modal').on('show.bs.modal', function (event) {
 
     modal.find('input[name="Name"]').val(name);
 
-    if(savedQueryID) {
-        $('select[name="SavedQueryID"] option[value="' + savedQueryID + '"]').attr('selected', 'selected');
+    if(savedQuery) {
+        $('select[name="SavedQuery"] option[value="' + savedQuery + '"]').attr('selected', 'selected');
     }
     if(lowAffectedHosts) {
         modal.find('input[name="LowAffectedHosts"]').val(lowAffectedHosts);
@@ -394,11 +388,6 @@ $('#watcher-modal').on('show.bs.modal', function (event) {
         modal.find('.btn-danger').hide();
         modal.find('.modal-title').text('New Watcher');
     }
-
-    // -----------------------------------------------
-
-    var text = $('select[name="SavedQueryID"] option:selected').text();
-    $('input[name="SavedQuery"]').val(text);
 });
 
 $('#trigger-modal form .btn-danger').click(function() {

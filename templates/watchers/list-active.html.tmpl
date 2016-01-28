@@ -55,7 +55,7 @@
                 <h3>{{ $watcher.Name }}</h3>
             </div>
 
-            <span class="label label-primary">{{ $watcher.Command.String }}</span>
+            <span class="label label-primary">{{ $watcher.Command }}</span>
             <span class="label label-primary">Min Affected Hosts: {{ $watcher.LowAffectedHosts }}</span>
             <span class="label label-primary">Check Interval: {{ $watcher.CheckInterval }}</span>
 
@@ -126,12 +126,17 @@
                 <h4 class="modal-title" id="watchers-details-label">New/Update Active Watcher</h4>
             </div>
 
-            <form method="post" action="/watchers">
+            <form method="post" action="/watchers/active">
                 <input type="hidden" name="_method" value="post">
 
                 <div class="modal-body">
                     <div class="row form-group">
-                        <div class="col-sm-12">
+                        <div class="col-sm-6">
+                            <label>Name</label>
+                            <input type="text" class="form-control" name="Name" value="">
+                        </div>
+
+                        <div class="col-sm-6">
                             <label>Command</label>
                             <select class="form-control" name="Command">
                                 <option value="ping">Ping</option>

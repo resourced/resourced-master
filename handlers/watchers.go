@@ -36,7 +36,7 @@ func GetWatchers(w http.ResponseWriter, r *http.Request) {
 
 	currentCluster := currentClusterInterface.(*dal.ClusterRow)
 
-	watchers, err := dal.NewWatcher(db).AllByClusterID(nil, currentCluster.ID)
+	watchers, err := dal.NewWatcher(db).AllPassiveByClusterID(nil, currentCluster.ID)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
@@ -158,7 +158,7 @@ func GetWatchersActive(w http.ResponseWriter, r *http.Request) {
 	tmpl.Execute(w, data)
 }
 
-func readWatcherPassiveFormData(r *http.Request) (map[string]interface{}, error) {
+func watcherPassiveFormData(r *http.Request) (map[string]interface{}, error) {
 	cookieStore := context.Get(r, "cookieStore").(*sessions.CookieStore)
 
 	session, _ := cookieStore.Get(r, "resourcedmaster-session")
@@ -168,12 +168,6 @@ func readWatcherPassiveFormData(r *http.Request) (map[string]interface{}, error)
 		return nil, errors.New("Current cluster is nil")
 	}
 	currentCluster := currentClusterInterface.(*dal.ClusterRow)
-
-	savedQueryIDString := r.FormValue("SavedQueryID")
-	savedQueryID, err := strconv.ParseInt(savedQueryIDString, 10, 64)
-	if err != nil {
-		return nil, err
-	}
 
 	savedQuery := r.FormValue("SavedQuery")
 
@@ -194,14 +188,70 @@ func readWatcherPassiveFormData(r *http.Request) (map[string]interface{}, error)
 	db := context.Get(r, "db.Core").(*sqlx.DB)
 
 	return dal.NewWatcher(db).CreateOrUpdateParameters(
-		currentCluster.ID, savedQueryID, savedQuery, name,
-		lowAffectedHosts, hostsLastUpdated, checkInterval), nil
+		currentCluster.ID, savedQuery, name,
+		lowAffectedHosts, hostsLastUpdated, checkInterval, nil), nil
+}
+
+func watcherActiveFormData(r *http.Request) (map[string]interface{}, error) {
+	cookieStore := context.Get(r, "cookieStore").(*sessions.CookieStore)
+
+	session, _ := cookieStore.Get(r, "resourcedmaster-session")
+
+	currentClusterInterface := session.Values["currentCluster"]
+	if currentClusterInterface == nil {
+		return nil, errors.New("Current cluster is nil")
+	}
+	currentCluster := currentClusterInterface.(*dal.ClusterRow)
+
+	data := make(map[string]interface{})
+	data["Command"] = r.FormValue("Command")
+	data["SSHUser"] = r.FormValue("SSHUser")
+
+	name := r.FormValue("Name")
+	if name == "" {
+		name = data["Command"].(string)
+	}
+
+	lowAffectedHostsString := r.FormValue("LowAffectedHosts")
+	lowAffectedHosts, err := strconv.ParseInt(lowAffectedHostsString, 10, 64)
+	if err != nil {
+		return nil, err
+	}
+
+	hostsLastUpdated := r.FormValue("HostsLastUpdated")
+	checkInterval := r.FormValue("CheckInterval")
+
+	db := context.Get(r, "db.Core").(*sqlx.DB)
+
+	return dal.NewWatcher(db).CreateOrUpdateParameters(
+		currentCluster.ID, "", name,
+		lowAffectedHosts, hostsLastUpdated, checkInterval, data), nil
+}
+
+func PostWatchersActive(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "text/html")
+
+	createParams, err := watcherActiveFormData(r)
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
+
+	db := context.Get(r, "db.Core").(*sqlx.DB)
+
+	_, err = dal.NewWatcher(db).Create(nil, createParams)
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
+
+	http.Redirect(w, r, "/watchers/active", 301)
 }
 
 func PostWatchers(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html")
 
-	createParams, err := readWatcherPassiveFormData(r)
+	createParams, err := watcherPassiveFormData(r)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
@@ -241,7 +291,7 @@ func PutWatcherID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	updateParams, err := readWatcherPassiveFormData(r)
+	updateParams, err := watcherPassiveFormData(r)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return

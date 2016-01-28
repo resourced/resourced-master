@@ -76,14 +76,13 @@ CREATE INDEX idx_daemons_updated on daemons (updated);
 CREATE TABLE watchers (
     id BIGSERIAL PRIMARY KEY NOT NULL,
     cluster_id bigint REFERENCES clusters (id),
-    saved_query_id bigint REFERENCES saved_queries (id) NULL,
     saved_query TEXT,
-    command TEXT,
     name TEXT,
     low_affected_hosts bigint NOT NULL DEFAULT 0,
     hosts_last_updated TEXT,
     check_interval TEXT,
-    is_silenced BOOLEAN NOT NULL DEFAULT FALSE
+    is_silenced BOOLEAN NOT NULL DEFAULT FALSE,
+    active_check JSONB DEFAULT '{}'
 );
 
 CREATE INDEX idx_watchers_name on watchers (name);

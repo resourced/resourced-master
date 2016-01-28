@@ -100,6 +100,7 @@ func (app *Application) mux() *mux.Router {
 	router.Handle("/watchers/{id:[0-9]+}/silence", alice.New(MustLogin, SetClusters).ThenFunc(handlers.PostWatcherIDSilence)).Methods("POST")
 
 	router.Handle("/watchers/active", alice.New(MustLogin, SetClusters).ThenFunc(handlers.GetWatchersActive)).Methods("GET")
+	router.Handle("/watchers/active", alice.New(MustLogin, SetClusters).ThenFunc(handlers.PostWatchersActive)).Methods("POST")
 
 	router.Handle("/watchers/{watcherid:[0-9]+}/triggers", alice.New(MustLogin, SetClusters).ThenFunc(handlers.PostWatchersTriggers)).Methods("POST")
 	router.Handle("/watchers/{watcherid:[0-9]+}/triggers/{id:[0-9]+}", alice.New(MustLogin, SetClusters).ThenFunc(handlers.PostPutDeleteWatcherTriggerID)).Methods("POST", "PUT", "DELETE")
