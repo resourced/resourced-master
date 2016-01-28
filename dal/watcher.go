@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	"github.com/jmoiron/sqlx"
 	sqlx_types "github.com/jmoiron/sqlx/types"
@@ -28,6 +29,14 @@ type WatcherRow struct {
 	CheckInterval    string              `db:"check_interval"`
 	IsSilenced       bool                `db:"is_silenced"`
 	ActiveCheck      sqlx_types.JSONText `db:"active_check"`
+}
+
+func (wr *WatcherRow) IsPassive() bool {
+	return wr.SavedQuery.String != ""
+}
+
+func (wr *WatcherRow) HostsLastUpdatedForPostgres() string {
+	return strings.Replace(wr.HostsLastUpdated, " ago", "", -1)
 }
 
 func (wr *WatcherRow) Command() string {

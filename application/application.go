@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/smtp"
 	"os"
+	"os/exec"
 	"strings"
 
 	"github.com/Sirupsen/logrus"
@@ -200,22 +201,35 @@ func (app *Application) WatchAll() {
 			case watcherRows := <-watcherRowsChan:
 				for _, watcherRow := range watcherRows {
 					go func() {
-						err := app.WatchOnce(watcherRow.ClusterID, watcherRow)
-						if err != nil {
-							logrus.WithFields(logrus.Fields{
-								"Method":    "Application.WatchOnce",
-								"ClusterID": watcherRow.ClusterID,
-								"WatcherID": watcherRow.ID,
-							}).Error(err)
-						}
+						if watcherRow.IsPassive() {
+							// Passive watching and triggering
+							err := app.PassiveWatchOnce(watcherRow.ClusterID, watcherRow)
+							if err != nil {
+								logrus.WithFields(logrus.Fields{
+									"Method":    "Application.PassiveWatchOnce",
+									"ClusterID": watcherRow.ClusterID,
+									"WatcherID": watcherRow.ID,
+								}).Error(err)
+							}
 
-						err = app.RunTrigger(watcherRow.ClusterID, watcherRow)
-						if err != nil {
-							logrus.WithFields(logrus.Fields{
-								"Method":    "Application.RunTrigger",
-								"ClusterID": watcherRow.ClusterID,
-								"WatcherID": watcherRow.ID,
-							}).Error(err)
+							err = app.RunTrigger(watcherRow.ClusterID, watcherRow)
+							if err != nil {
+								logrus.WithFields(logrus.Fields{
+									"Method":    "Application.RunTrigger",
+									"ClusterID": watcherRow.ClusterID,
+									"WatcherID": watcherRow.ID,
+								}).Error(err)
+							}
+						} else {
+							// Active watching and triggering
+							err := app.ActiveWatchOnce(watcherRow.ClusterID, watcherRow)
+							if err != nil {
+								logrus.WithFields(logrus.Fields{
+									"Method":    "Application.ActiveWatchOnce",
+									"ClusterID": watcherRow.ClusterID,
+									"WatcherID": watcherRow.ID,
+								}).Error(err)
+							}
 						}
 
 						libtime.SleepString(watcherRow.CheckInterval)
@@ -226,10 +240,8 @@ func (app *Application) WatchAll() {
 	}()
 }
 
-func (app *Application) WatchOnce(clusterID int64, watcherRow *dal.WatcherRow) error {
-	lastUpdated := strings.Replace(watcherRow.HostsLastUpdated, " ago", "", 1)
-
-	affectedHosts, err := dal.NewHost(app.DBConfig.Core).AllByClusterIDQueryAndUpdatedInterval(nil, clusterID, watcherRow.SavedQuery.String, lastUpdated)
+func (app *Application) PassiveWatchOnce(clusterID int64, watcherRow *dal.WatcherRow) error {
+	affectedHosts, err := dal.NewHost(app.DBConfig.Core).AllByClusterIDQueryAndUpdatedInterval(nil, clusterID, watcherRow.SavedQuery.String, watcherRow.HostsLastUpdatedForPostgres())
 	if err != nil {
 		return err
 	}
@@ -254,17 +266,131 @@ func (app *Application) WatchOnce(clusterID int64, watcherRow *dal.WatcherRow) e
 		dbs := app.DBConfig.TSWatchers.PickMultipleForWrites()
 		for _, db := range dbs {
 			go func() {
-				writeErr := dal.NewTSWatcher(db).Create(nil, clusterID, watcherRow.ID, numAffectedHosts, jsonData)
-				if writeErr != nil {
+				err := dal.NewTSWatcher(db).Create(nil, clusterID, watcherRow.ID, numAffectedHosts, jsonData)
+				if err != nil {
 					logrus.WithFields(logrus.Fields{
 						"Method":          "TSWatcher.Create",
 						"ClusterID":       clusterID,
 						"WatcherID":       watcherRow.ID,
 						"NumAffectedHost": numAffectedHosts,
-					}).Error(writeErr)
+					}).Error(err)
 				}
 			}()
 		}
+	}
+
+	return err
+}
+
+func (app *Application) ActiveWatchOnce(clusterID int64, watcherRow *dal.WatcherRow) error {
+	// Don't do anything if watcher is silenced.
+	if watcherRow.IsSilenced {
+		return nil
+	}
+
+	hosts, err := dal.NewHost(app.DBConfig.Core).AllByClusterIDAndUpdatedInterval(nil, clusterID, watcherRow.HostsLastUpdatedForPostgres())
+	if err != nil {
+		return err
+	}
+	if len(hosts) == 0 {
+		return nil
+	}
+
+	numAffectedHosts := 0
+	tsWatcherDataHosts := make([]string, 0)
+
+	if watcherRow.Command() == "ping" {
+		for _, host := range hosts {
+			output, err := exec.Command("ping", host.Name).Output()
+			if err != nil {
+				numAffectedHosts = numAffectedHosts + 1
+				tsWatcherDataHosts = append(tsWatcherDataHosts, host.Name)
+
+				logrus.WithFields(logrus.Fields{
+					"Method":          "ping " + host.Name,
+					"NumAffectedHost": numAffectedHosts,
+				}).Error(err)
+			}
+
+			println("I AM PINGING")
+			println(output)
+		}
+
+	} else if watcherRow.Command() == "ssh" {
+
+	} else if watcherRow.Command() == "http" {
+
+	}
+
+	if numAffectedHosts == 0 || int64(numAffectedHosts) >= watcherRow.LowAffectedHosts {
+		tsWatcherData := make(map[string]interface{})
+		tsWatcherData["hosts"] = tsWatcherDataHosts
+
+		jsonData, err := json.Marshal(tsWatcherData)
+		if err != nil {
+			return err
+		}
+
+		// Write to ts_watchers asynchronously
+		dbs := app.DBConfig.TSWatchers.PickMultipleForWrites()
+		for _, db := range dbs {
+			go func() {
+				err := dal.NewTSWatcher(db).Create(nil, clusterID, watcherRow.ID, int64(numAffectedHosts), jsonData)
+				if err != nil {
+					logrus.WithFields(logrus.Fields{
+						"Method":          "TSWatcher.Create",
+						"ClusterID":       clusterID,
+						"WatcherID":       watcherRow.ID,
+						"NumAffectedHost": numAffectedHosts,
+					}).Error(err)
+				}
+			}()
+		}
+	}
+
+	return err
+}
+
+func (app *Application) RunTriggerPagerDuty(triggerRow *dal.WatcherTriggerRow, lastViolation *dal.TSWatcherRow) (err error) {
+	// Create a new PD "trigger" event
+	event := pagerduty.NewTriggerEvent(triggerRow.ActionPagerDutyServiceKey(), triggerRow.ActionPagerDutyDescription())
+
+	// Add details to PD event
+	if lastViolation != nil {
+		err = lastViolation.Data.Unmarshal(&event.Details)
+		if err != nil {
+			return err
+		}
+	}
+
+	// Add Client to PD event
+	event.Client = fmt.Sprintf("ResourceD Master on: %v", app.Hostname)
+
+	// Submit PD event
+	pdResponse, _, err := pagerduty.Submit(event)
+	if err != nil {
+		return err
+	}
+	if pdResponse == nil {
+		return nil
+	}
+
+	// Update incident key into watchers_triggers row
+	wt := dal.NewWatcherTrigger(app.DBConfig.Core)
+
+	triggerUpdateActionParams := wt.ActionParamsByExistingTrigger(triggerRow)
+	triggerUpdateActionParams["PagerDutyIncidentKey"] = pdResponse.IncidentKey
+
+	triggerUpdateActionJSON, err := json.Marshal(triggerUpdateActionParams)
+	if err != nil {
+		return err
+	}
+
+	triggerUpdateParams := wt.CreateOrUpdateParameters(triggerRow.ClusterID, triggerRow.WatcherID, triggerRow.LowViolationsCount, triggerRow.HighViolationsCount, triggerRow.CreatedInterval, triggerUpdateActionJSON)
+
+	_, err = wt.UpdateFromTable(nil, triggerUpdateParams, fmt.Sprintf("id=%v", triggerRow.ID))
+	if err != nil {
+		return err
 	}
 
 	return err
@@ -385,49 +511,4 @@ func (app *Application) RunTrigger(clusterID int64, watcherRow *dal.WatcherRow) 
 	}
 
 	return nil
-}
-
-func (app *Application) RunTriggerPagerDuty(triggerRow *dal.WatcherTriggerRow, lastViolation *dal.TSWatcherRow) (err error) {
-	// Create a new PD "trigger" event
-	event := pagerduty.NewTriggerEvent(triggerRow.ActionPagerDutyServiceKey(), triggerRow.ActionPagerDutyDescription())
-
-	// Add details to PD event
-	if lastViolation != nil {
-		err = lastViolation.Data.Unmarshal(&event.Details)
-		if err != nil {
-			return err
-		}
-	}
-
-	// Add Client to PD event
-	event.Client = fmt.Sprintf("ResourceD Master on: %v", app.Hostname)
-
-	// Submit PD event
-	pdResponse, _, err := pagerduty.Submit(event)
-	if err != nil {
-		return err
-	}
-	if pdResponse == nil {
-		return nil
-	}
-
-	// Update incident key into watchers_triggers row
-	wt := dal.NewWatcherTrigger(app.DBConfig.Core)
-
-	triggerUpdateActionParams := wt.ActionParamsByExistingTrigger(triggerRow)
-	triggerUpdateActionParams["PagerDutyIncidentKey"] = pdResponse.IncidentKey
-
-	triggerUpdateActionJSON, err := json.Marshal(triggerUpdateActionParams)
-	if err != nil {
-		return err
-	}
-
-	triggerUpdateParams := wt.CreateOrUpdateParameters(triggerRow.ClusterID, triggerRow.WatcherID, triggerRow.LowViolationsCount, triggerRow.HighViolationsCount, triggerRow.CreatedInterval, triggerUpdateActionJSON)
-
-	_, err = wt.UpdateFromTable(nil, triggerUpdateParams, fmt.Sprintf("id=%v", triggerRow.ID))
-	if err != nil {
-		return err
-	}
-
-	return err
 }
