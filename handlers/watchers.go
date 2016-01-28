@@ -305,7 +305,7 @@ func PutWatcherID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	http.Redirect(w, r, "/watchers", 301)
+	http.Redirect(w, r, r.Referer(), 301)
 }
 
 func DeleteWatcherID(w http.ResponseWriter, r *http.Request) {
@@ -326,7 +326,7 @@ func DeleteWatcherID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	http.Redirect(w, r, "/watchers", 301)
+	http.Redirect(w, r, r.Referer(), 301)
 }
 
 func PostWatcherIDSilence(w http.ResponseWriter, r *http.Request) {
@@ -355,5 +355,5 @@ func PostWatcherIDSilence(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	http.Redirect(w, r, "/watchers", 301)
+	http.Redirect(w, r, r.Referer(), 301)
 }

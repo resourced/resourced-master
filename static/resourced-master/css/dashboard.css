@@ -159,6 +159,14 @@ select {
 .container.watchers .jumbotron h2 {
     font-size: 46px;
 }
+.container.watchers .page-header {
+    padding-bottom: 0;
+    margin-bottom: 0;
+}
+
+.row.watchers {
+    margin-top: 16px;
+}
 .row.watchers table th {
     cursor: pointer;
 }

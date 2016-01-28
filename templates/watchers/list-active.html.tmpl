@@ -6,7 +6,7 @@
 <div class="container watchers">
     <div class="row">
         <div class="col-lg-12">
-            <div class="page-header" style="padding-bottom: 0">
+            <div class="page-header">
                 <button class="btn btn-primary pull-right" data-toggle="modal" data-target="#watcher-modal">
                     New Watcher
                 </button>
@@ -141,19 +141,19 @@
                             <select class="form-control" name="Command">
                                 <option value="ping">Ping</option>
                                 <option value="ssh">SSH</option>
-                                <option value="ssh">HTTP</option>
+                                <option value="http">HTTP</option>
                             </select>
                         </div>
                     </div>
 
-                    <div class="row form-group ssh-details">
+                    <div class="row form-group ssh-details" style="display: none">
                         <div class="col-sm-12">
                             <label>SSH User</label>
                             <input type="text" class="form-control" name="SSHUser">
                         </div>
                     </div>
 
-                    <div class="row form-group http-details">
+                    <div class="row form-group http-details" style="display: none">
                         <div class="col-sm-9">
                             <label>HTTP Headers</label>
                             <input type="text" class="form-control" name="HTTP Headers" placeholder="key1:value1,key2:value2">
@@ -349,6 +349,13 @@ $(document).ready(function() {
 
 $('select[name="ActionTransport"]').change(changeActionTransport);
 
+$('select[name="Command"]').change(function(event) {
+    $('#watcher-modal .ssh-details').hide();
+    $('#watcher-modal .http-details').hide();
+    $('#watcher-modal .' + $(this).val() + '-details').show();
+});
+
+
 $('#watcher-modal form .btn-danger').click(function() {
     $('#watcher-modal form input[name="_method"]').val('delete');
     $(this).closest('form').submit();
@@ -382,7 +389,7 @@ $('#watcher-modal').on('show.bs.modal', function (event) {
     }
 
     if(id) {
-        modal.find('form').attr('action', '/watchers/active/' + id);
+        modal.find('form').attr('action', '/watchers/' + id);
         modal.find('.btn-danger').show();
         modal.find('.modal-title').text('Update Active Watcher');
     } else {
