@@ -200,7 +200,7 @@ func (app *Application) WatchAll() {
 			select {
 			case watcherRows := <-watcherRowsChan:
 				for _, watcherRow := range watcherRows {
-					go func() {
+					go func(watcherRow *dal.WatcherRow) {
 						if watcherRow.IsPassive() {
 							// Passive watching and triggering
 							err := app.PassiveWatchOnce(watcherRow.ClusterID, watcherRow)
@@ -233,7 +233,7 @@ func (app *Application) WatchAll() {
 						}
 
 						libtime.SleepString(watcherRow.CheckInterval)
-					}()
+					}(watcherRow)
 				}
 			}
 		}
@@ -301,7 +301,7 @@ func (app *Application) ActiveWatchOnce(clusterID int64, watcherRow *dal.Watcher
 
 	if watcherRow.Command() == "ping" {
 		for _, host := range hosts {
-			output, err := exec.Command("ping", host.Name).Output()
+			_, err := exec.Command("ping", "-c", "1", host.Name).Output()
 			if err != nil {
 				numAffectedHosts = numAffectedHosts + 1
 				tsWatcherDataHosts = append(tsWatcherDataHosts, host.Name)
@@ -311,9 +311,6 @@ func (app *Application) ActiveWatchOnce(clusterID int64, watcherRow *dal.Watcher
 					"NumAffectedHost": numAffectedHosts,
 				}).Error(err)
 			}
-
-			println("I AM PINGING")
-			println(output)
 		}
 
 	} else if watcherRow.Command() == "ssh" {
@@ -346,51 +343,6 @@ func (app *Application) ActiveWatchOnce(clusterID int64, watcherRow *dal.Watcher
 				}
 			}()
 		}
-	}
-
-	return err
-}
-
-func (app *Application) RunTriggerPagerDuty(triggerRow *dal.WatcherTriggerRow, lastViolation *dal.TSWatcherRow) (err error) {
-	// Create a new PD "trigger" event
-	event := pagerduty.NewTriggerEvent(triggerRow.ActionPagerDutyServiceKey(), triggerRow.ActionPagerDutyDescription())
-
-	// Add details to PD event
-	if lastViolation != nil {
-		err = lastViolation.Data.Unmarshal(&event.Details)
-		if err != nil {
-			return err
-		}
-	}
-
-	// Add Client to PD event
-	event.Client = fmt.Sprintf("ResourceD Master on: %v", app.Hostname)
-
-	// Submit PD event
-	pdResponse, _, err := pagerduty.Submit(event)
-	if err != nil {
-		return err
-	}
-	if pdResponse == nil {
-		return nil
-	}
-
-	// Update incident key into watchers_triggers row
-	wt := dal.NewWatcherTrigger(app.DBConfig.Core)
-
-	triggerUpdateActionParams := wt.ActionParamsByExistingTrigger(triggerRow)
-	triggerUpdateActionParams["PagerDutyIncidentKey"] = pdResponse.IncidentKey
-
-	triggerUpdateActionJSON, err := json.Marshal(triggerUpdateActionParams)
-	if err != nil {
-		return err
-	}
-
-	triggerUpdateParams := wt.CreateOrUpdateParameters(triggerRow.ClusterID, triggerRow.WatcherID, triggerRow.LowViolationsCount, triggerRow.HighViolationsCount, triggerRow.CreatedInterval, triggerUpdateActionJSON)
-
-	_, err = wt.UpdateFromTable(nil, triggerUpdateParams, fmt.Sprintf("id=%v", triggerRow.ID))
-	if err != nil {
-		return err
 	}
 
 	return err
@@ -511,4 +463,49 @@ func (app *Application) RunTrigger(clusterID int64, watcherRow *dal.WatcherRow) 
 	}
 
 	return nil
+}
+
+func (app *Application) RunTriggerPagerDuty(triggerRow *dal.WatcherTriggerRow, lastViolation *dal.TSWatcherRow) (err error) {
+	// Create a new PD "trigger" event
+	event := pagerduty.NewTriggerEvent(triggerRow.ActionPagerDutyServiceKey(), triggerRow.ActionPagerDutyDescription())
+
+	// Add details to PD event
+	if lastViolation != nil {
+		err = lastViolation.Data.Unmarshal(&event.Details)
+		if err != nil {
+			return err
+		}
+	}
+
+	// Add Client to PD event
+	event.Client = fmt.Sprintf("ResourceD Master on: %v", app.Hostname)
+
+	// Submit PD event
+	pdResponse, _, err := pagerduty.Submit(event)
+	if err != nil {
+		return err
+	}
+	if pdResponse == nil {
+		return nil
+	}
+
+	// Update incident key into watchers_triggers row
+	wt := dal.NewWatcherTrigger(app.DBConfig.Core)
+
+	triggerUpdateActionParams := wt.ActionParamsByExistingTrigger(triggerRow)
+	triggerUpdateActionParams["PagerDutyIncidentKey"] = pdResponse.IncidentKey
+
+	triggerUpdateActionJSON, err := json.Marshal(triggerUpdateActionParams)
+	if err != nil {
+		return err
+	}
+
+	triggerUpdateParams := wt.CreateOrUpdateParameters(triggerRow.ClusterID, triggerRow.WatcherID, triggerRow.LowViolationsCount, triggerRow.HighViolationsCount, triggerRow.CreatedInterval, triggerUpdateActionJSON)
+
+	_, err = wt.UpdateFromTable(nil, triggerUpdateParams, fmt.Sprintf("id=%v", triggerRow.ID))
+	if err != nil {
+		return err
+	}
+
+	return err
 }
