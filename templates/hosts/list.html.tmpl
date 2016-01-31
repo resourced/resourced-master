@@ -213,6 +213,11 @@ $('#search-input').bind("input propertychange", function(e) {
 $(document).ready(function() {
     $('.toggler').bootstrapSwitch();
 
+    // Hide Saved Queries container if there are no save queries.
+    if($('.row.saved-queries').length == 0) {
+        $('.container.saved-queries').hide();
+    }
+
     // Show all saved-queries if toggler is set to on.
     $('.container.saved-queries .toggler-header').each(function() {
         var state = $.cookie('.container.saved-queries .toggler-header');
