@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"encoding/base64"
 	"errors"
 	"html/template"
 	"net/http"
@@ -206,6 +207,19 @@ func watcherActiveFormData(r *http.Request) (map[string]interface{}, error) {
 	data := make(map[string]interface{})
 	data["Command"] = r.FormValue("Command")
 	data["SSHUser"] = r.FormValue("SSHUser")
+	data["SSHPort"] = r.FormValue("SSHPort")
+	data["HTTPHeaders"] = r.FormValue("HTTPHeaders")
+	data["HTTPUser"] = r.FormValue("HTTPUser")
+	data["HTTPPass"] = base64.StdEncoding.EncodeToString([]byte(r.FormValue("HTTPPass")))
+	data["HostsList"] = r.FormValue("HostsList")
+
+	if r.FormValue("HTTPCode") != "" {
+		httpCode, err := strconv.ParseInt(r.FormValue("HTTPCode"), 10, 64)
+		if err != nil {
+			return nil, err
+		}
+		data["HTTPCode"] = httpCode
+	}
 
 	name := r.FormValue("Name")
 	if name == "" {

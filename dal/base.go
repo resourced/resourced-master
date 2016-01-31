@@ -2,12 +2,14 @@ package dal
 
 import (
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
 
 	"github.com/Sirupsen/logrus"
 	"github.com/jmoiron/sqlx"
+	sqlx_types "github.com/jmoiron/sqlx/types"
 )
 
 type InsertResult struct {
@@ -21,6 +23,25 @@ func (ir *InsertResult) LastInsertId() (int64, error) {
 
 func (ir *InsertResult) RowsAffected() (int64, error) {
 	return ir.rowsAffected, nil
+}
+
+type BaseRow struct {
+}
+
+func (br *BaseRow) JSONAttrString(field sqlx_types.JSONText, attr string) string {
+	unmarshalled := make(map[string]interface{})
+
+	err := json.Unmarshal(field, &unmarshalled)
+	if err != nil {
+		return ""
+	}
+
+	attrInterface := unmarshalled[attr]
+	if attrInterface == nil {
+		return ""
+	}
+
+	return attrInterface.(string)
 }
 
 type Base struct {

@@ -2,6 +2,7 @@ package dal
 
 import (
 	"database/sql"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"strings"
@@ -20,6 +21,7 @@ func NewWatcher(db *sqlx.DB) *Watcher {
 }
 
 type WatcherRow struct {
+	BaseRow
 	ID               int64               `db:"id" json:"-"`
 	ClusterID        int64               `db:"cluster_id"`
 	SavedQuery       sql.NullString      `db:"saved_query"`
@@ -40,35 +42,54 @@ func (wr *WatcherRow) HostsLastUpdatedForPostgres() string {
 }
 
 func (wr *WatcherRow) Command() string {
-	activeCheck := make(map[string]interface{})
-
-	err := json.Unmarshal(wr.ActiveCheck, &activeCheck)
-	if err != nil {
-		return ""
-	}
-
-	commandInterface := activeCheck["Command"]
-	if commandInterface == nil {
-		return ""
-	}
-
-	return commandInterface.(string)
+	return wr.JSONAttrString(wr.ActiveCheck, "Command")
 }
 
 func (wr *WatcherRow) SSHUser() string {
-	activeCheck := make(map[string]interface{})
+	return wr.JSONAttrString(wr.ActiveCheck, "SSHUser")
+}
 
-	err := json.Unmarshal(wr.ActiveCheck, &activeCheck)
+func (wr *WatcherRow) SSHPort() string {
+	return wr.JSONAttrString(wr.ActiveCheck, "SSHPort")
+}
+
+func (wr *WatcherRow) HTTPHeadersString() string {
+	return wr.JSONAttrString(wr.ActiveCheck, "HTTPHeaders")
+}
+
+func (wr *WatcherRow) HTTPHeaders() map[string]string {
+	data := make(map[string]string)
+
+	asString := wr.HTTPHeadersString()
+	asList := strings.Split(asString, ",")
+
+	for _, kvString := range asList {
+		kvList := strings.Split(kvString, ":")
+		data[strings.TrimSpace(kvList[0])] = strings.TrimSpace(kvList[1])
+	}
+
+	return data
+}
+
+func (wr *WatcherRow) HTTPUser() string {
+	return wr.JSONAttrString(wr.ActiveCheck, "HTTPUser")
+}
+
+func (wr *WatcherRow) HTTPPass() string {
+	inBase64 := wr.JSONAttrString(wr.ActiveCheck, "HTTPPass")
+	decryptedBytes, err := base64.StdEncoding.DecodeString(inBase64)
 	if err != nil {
 		return ""
 	}
+	return string(decryptedBytes)
+}
 
-	sshUserInterface := activeCheck["SSHUser"]
-	if sshUserInterface == nil {
-		return ""
-	}
+func (wr *WatcherRow) HostsListString() string {
+	return wr.JSONAttrString(wr.ActiveCheck, "HostsList")
+}
 
-	return sshUserInterface.(string)
+func (wr *WatcherRow) HostsList() []string {
+	return strings.Split(wr.HostsListString(), "\n")
 }
 
 type Watcher struct {
