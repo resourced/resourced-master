@@ -131,72 +131,118 @@
 
                 <div class="modal-body">
                     <div class="row form-group">
-                        <div class="col-sm-6">
-                            <label>Name</label>
-                            <input type="text" class="form-control" name="Name" value="">
+                        <div class="col-sm-6 col-left">
+                            <div class="row form-group">
+                                <div class="col-sm-12">
+                                    <label>Name</label>
+                                    <input type="text" class="form-control" name="Name" value="">
+                                </div>
+                            </div>
+
+                            <div class="row form-group">
+                                <div class="col-sm-12">
+                                    <label>Command</label>
+                                    <select class="form-control" name="Command">
+                                        <option value="ping">Ping</option>
+                                        <option value="ssh">SSH</option>
+                                        <option value="http">HTTP</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="row form-group ssh-details" style="display: none">
+                                <div class="col-sm-12">
+                                    <label>SSH User</label>
+                                    <input type="text" class="form-control" name="SSHUser">
+                                </div>
+                            </div>
+
+                            <div class="row form-group ssh-details" style="display: none">
+                                <div class="col-sm-12">
+                                    <label>SSH Port</label>
+                                    <input type="number" class="form-control" name="SSHPort" value="22">
+                                </div>
+                            </div>
+
+                            <div class="row form-group ssh-details" style="display: none">
+                                <div class="col-sm-12">
+                                    <label>SSH Identity File</label>
+                                    <textarea class="form-control" name="SSHIdentityFile" row="10" placeholder="Paste the content of identity file here"></textarea>
+                                </div>
+                            </div>
+
+                            <div class="row form-group http-details" style="display: none">
+                                <div class="col-sm-12">
+                                    <label>HTTP Headers</label>
+                                    <input type="text" class="form-control" name="HTTPHeaders" placeholder="key1:value1,key2:value2">
+                                </div>
+                            </div>
+
+                            <div class="row form-group http-details" style="display: none">
+                                <div class="col-sm-4">
+                                    <label>Basic Auth User</label>
+                                    <input type="text" class="form-control" name="HTTPUser">
+                                </div>
+
+                                <div class="col-sm-4">
+                                    <label>Basic Auth Pass</label>
+                                    <input type="text" class="form-control" name="HTTPPass">
+                                </div>
+
+                                <div class="col-sm-4">
+                                    <label>Expected Status Code</label>
+                                    <input type="text" class="form-control" name="HTTPCode">
+                                </div>
+                            </div>
+
+                            <div class="row form-group">
+                                <div class="col-sm-4">
+                                    <label>Min Affected Hosts</label>
+                                    <input type="number" class="form-control" name="LowAffectedHosts" value="1">
+                                </div>
+
+                                <div class="col-sm-4">
+                                    <label>Check Interval</label>
+                                    <select class="form-control" name="CheckInterval">
+                                        <option value="30s">30 seconds</option>
+                                        <option value="60s">60 seconds</option>
+                                        <option value="5m">5 minutes</option>
+                                        <option value="10m">10 minutes</option>
+                                        <option value="15m">15 minutes</option>
+                                        <option value="30m">30 minutes</option>
+                                        <option value="60m">60 minutes</option>
+                                        <option value="2h">2 hours</option>
+                                        <option value="3h">3 hours</option>
+                                        <option value="6h">6 hours</option>
+                                        <option value="12h">12 hours</option>
+                                        <option value="24h">24 hours</option>
+                                    </select>
+                                </div>
+
+                                <div class="col-sm-4">
+                                    <label>Hosts Last Updated</label>
+                                    <select class="form-control" name="HostsLastUpdated">
+                                        <option value="5 minutes ago">5 minutes ago</option>
+                                        <option value="10 minutes ago">10 minutes ago</option>
+                                        <option value="15 minutes ago">15 minutes ago</option>
+                                        <option value="30 minutes ago">30 minutes ago</option>
+                                        <option value="60 minutes ago">60 minutes ago</option>
+                                    </select>
+                                </div>
+                            </div>
                         </div>
 
-                        <div class="col-sm-6">
-                            <label>Command</label>
-                            <select class="form-control" name="Command">
-                                <option value="ping">Ping</option>
-                                <option value="ssh">SSH</option>
-                                <option value="http">HTTP</option>
-                            </select>
-                        </div>
-                    </div>
+                        <div class="col-sm-6 col-right">
+                            <div class="row form-group">
+                                <div class="col-sm-12">
+                                    <div class="pull-right">
+                                        <input type="checkbox" class="external-hosts-list-toggler">
+                                    </div>
 
-                    <div class="row form-group ssh-details" style="display: none">
-                        <div class="col-sm-12">
-                            <label>SSH User</label>
-                            <input type="text" class="form-control" name="SSHUser">
-                        </div>
-                    </div>
-
-                    <div class="row form-group http-details" style="display: none">
-                        <div class="col-sm-9">
-                            <label>HTTP Headers</label>
-                            <input type="text" class="form-control" name="HTTP Headers" placeholder="key1:value1,key2:value2">
-                        </div>
-                        <div class="col-sm-3">
-                            <label>Expected HTTP Status Code</label>
-                            <input type="text" class="form-control" name="HTTP Status">
-                        </div>
-                    </div>
-
-                    <div class="row form-group">
-                        <div class="col-sm-3">
-                            <label>Min Affected Hosts</label>
-                            <input type="number" class="form-control" name="LowAffectedHosts" value="1">
-                        </div>
-
-                        <div class="col-sm-3">
-                            <label>Check Interval</label>
-                            <select class="form-control" name="CheckInterval">
-                                <option value="30s">30 seconds</option>
-                                <option value="60s">60 seconds</option>
-                                <option value="5m">5 minutes</option>
-                                <option value="10m">10 minutes</option>
-                                <option value="15m">15 minutes</option>
-                                <option value="30m">30 minutes</option>
-                                <option value="60m">60 minutes</option>
-                                <option value="2h">2 hours</option>
-                                <option value="3h">3 hours</option>
-                                <option value="6h">6 hours</option>
-                                <option value="12h">12 hours</option>
-                                <option value="24h">24 hours</option>
-                            </select>
-                        </div>
-
-                        <div class="col-sm-6">
-                            <label>Hosts Last Updated</label>
-                            <select class="form-control" name="HostsLastUpdated">
-                                <option value="5 minutes ago">5 minutes ago</option>
-                                <option value="10 minutes ago">10 minutes ago</option>
-                                <option value="15 minutes ago">15 minutes ago</option>
-                                <option value="30 minutes ago">30 minutes ago</option>
-                                <option value="60 minutes ago">60 minutes ago</option>
-                            </select>
+                                    <label>External Hosts List</label>
+                                    <textarea class="form-control" name="HostsList" placeholder="One host per line" disabled style="height: 100%"></textarea>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -313,7 +359,7 @@
 </div>
 
 <script>
-var changeActionTransport = function() {
+function changeActionTransport() {
     var transportVal = $('select[name="ActionTransport"] option:selected').val();
 
     if(transportVal == "nothing") {
@@ -326,7 +372,23 @@ var changeActionTransport = function() {
 
     $('.payload').hide();
     $('.payload-' + transportVal).show();
-};
+}
+
+function showOrHideCommandDetails() {
+    $('#watcher-modal .ssh-details').hide();
+    $('#watcher-modal .http-details').hide();
+    $('#watcher-modal .' + $('select[name="Command"]').val() + '-details').show();
+}
+
+function adjustColRightHeight() {
+    $('.col-right').height($('.col-left').height());
+    $('.col-right > .row.form-group > .col-sm-12').height($('.col-left').height() - 38);
+}
+
+function toggleHostsList() {
+    var isChecked = $('.external-hosts-list-toggler').is(':checked');
+    $('textarea[name="HostsList"]').prop('disabled', !isChecked);
+}
 
 $(document).ready(function() {
     // Loop every single show triggers and enforce its state based on cookie value.
@@ -345,16 +407,20 @@ $(document).ready(function() {
             $button.removeClass('active');
         }
     });
+
+    showOrHideCommandDetails();
+});
+
+$(document).on('change', '.external-hosts-list-toggler', function() {
+    toggleHostsList();
 });
 
 $('select[name="ActionTransport"]').change(changeActionTransport);
 
 $('select[name="Command"]').change(function(event) {
-    $('#watcher-modal .ssh-details').hide();
-    $('#watcher-modal .http-details').hide();
-    $('#watcher-modal .' + $(this).val() + '-details').show();
+    showOrHideCommandDetails();
+    adjustColRightHeight();
 });
-
 
 $('#watcher-modal form .btn-danger').click(function() {
     $('#watcher-modal form input[name="_method"]').val('delete');
@@ -397,6 +463,11 @@ $('#watcher-modal').on('show.bs.modal', function (event) {
         modal.find('.btn-danger').hide();
         modal.find('.modal-title').text('New Active Watcher');
     }
+});
+
+$('#watcher-modal').on('shown.bs.modal', function (event) {
+    toggleHostsList();
+    adjustColRightHeight();
 });
 
 $('#trigger-modal form .btn-danger').click(function() {
