@@ -44,6 +44,22 @@ func (br *BaseRow) JSONAttrString(field sqlx_types.JSONText, attr string) string
 	return attrInterface.(string)
 }
 
+func (br *BaseRow) JSONAttrFloat64(field sqlx_types.JSONText, attr string) float64 {
+	unmarshalled := make(map[string]interface{})
+
+	err := json.Unmarshal(field, &unmarshalled)
+	if err != nil {
+		return -1
+	}
+
+	attrInterface := unmarshalled[attr]
+	if attrInterface == nil {
+		return -1
+	}
+
+	return attrInterface.(float64)
+}
+
 type Base struct {
 	db    *sqlx.DB
 	table string

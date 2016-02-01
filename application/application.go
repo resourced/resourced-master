@@ -321,8 +321,6 @@ func (app *Application) ActiveWatchOnce(clusterID int64, watcherRow *dal.Watcher
 	for _, hostname := range hostnames {
 		if watcherRow.Command() == "ping" {
 			go func(hostname string) {
-				println("executing ping check for host: " + hostname)
-
 				_, err := exec.Command("ping", "-c", "1", hostname).Output()
 				if err != nil {
 					errCollectorMutex.Lock()
@@ -338,8 +336,6 @@ func (app *Application) ActiveWatchOnce(clusterID int64, watcherRow *dal.Watcher
 
 		} else if watcherRow.Command() == "ssh" {
 			go func(hostname string) {
-				println("executing ssh check for host: " + hostname)
-
 				sshOptions := []string{"-o BatchMode=yes", "-o ConnectTimeout=10"}
 
 				if watcherRow.SSHPort() != "" {
@@ -371,7 +367,46 @@ func (app *Application) ActiveWatchOnce(clusterID int64, watcherRow *dal.Watcher
 			}(hostname)
 
 		} else if watcherRow.Command() == "http" {
+			go func(hostname string) {
+				url := fmt.Sprintf("%v://%v:%s", watcherRow.HTTPScheme(), hostname, watcherRow.HTTPPort())
 
+				client := &http.Client{}
+				req, err := http.NewRequest(strings.ToUpper(watcherRow.HTTPMethod()), url, nil)
+				if err != nil {
+					logrus.WithFields(logrus.Fields{
+						"URL":    url,
+						"Method": "http.NewRequest",
+					}).Error(err)
+					return
+				}
+
+				if watcherRow.HTTPUser() != "" || watcherRow.HTTPPass() != "" {
+					req.SetBasicAuth(watcherRow.HTTPUser(), watcherRow.HTTPPass())
+				}
+
+				resp, err := client.Do(req)
+				if err != nil {
+					logrus.WithFields(logrus.Fields{
+						"URL":    url,
+						"Method": "http.Client{}.Do",
+					}).Error(err)
+					return
+				}
+
+				if err != nil || (resp != nil && resp.StatusCode != watcherRow.HTTPCode()) {
+					errCollectorMutex.Lock()
+					numAffectedHosts = numAffectedHosts + 1
+					tsWatcherDataHosts = append(tsWatcherDataHosts, hostname)
+					errCollectorMutex.Unlock()
+
+					logrus.WithFields(logrus.Fields{
+						"URL":                url,
+						"StatusCode":         resp.StatusCode,
+						"ExpectedStatusCode": watcherRow.HTTPCode(),
+						"Method":             "HTTP Client fetch",
+					}).Error(err)
+				}
+			}(hostname)
 		}
 	}
 

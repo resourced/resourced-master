@@ -75,6 +75,19 @@ func (wr *WatcherRow) HTTPMethod() string {
 	return wr.JSONAttrString(wr.ActiveCheck, "HTTPMethod")
 }
 
+func (wr *WatcherRow) HTTPScheme() string {
+	return wr.JSONAttrString(wr.ActiveCheck, "HTTPScheme")
+}
+
+func (wr *WatcherRow) HTTPPort() string {
+	return wr.JSONAttrString(wr.ActiveCheck, "HTTPPort")
+}
+
+func (wr *WatcherRow) HTTPCode() int {
+	code := wr.JSONAttrFloat64(wr.ActiveCheck, "HTTPCode")
+	return int(code)
+}
+
 func (wr *WatcherRow) HTTPUser() string {
 	return wr.JSONAttrString(wr.ActiveCheck, "HTTPUser")
 }
