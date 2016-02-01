@@ -89,6 +89,10 @@ func (wr *WatcherRow) HostsListString() string {
 }
 
 func (wr *WatcherRow) HostsList() []string {
+	if wr.HostsListString() == "" {
+		return make([]string, 0)
+	}
+
 	return strings.Split(wr.HostsListString(), "\n")
 }
 

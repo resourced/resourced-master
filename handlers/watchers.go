@@ -210,9 +210,11 @@ func watcherActiveFormData(r *http.Request) (map[string]interface{}, error) {
 	data["SSHPort"] = r.FormValue("SSHPort")
 	data["HTTPHeaders"] = r.FormValue("HTTPHeaders")
 	data["HTTPUser"] = r.FormValue("HTTPUser")
-	data["HTTPPass"] = base64.StdEncoding.EncodeToString([]byte(r.FormValue("HTTPPass")))
 	data["HostsList"] = r.FormValue("HostsList")
 
+	if r.FormValue("HTTPPass") != "" {
+		data["HTTPPass"] = base64.StdEncoding.EncodeToString([]byte(r.FormValue("HTTPPass")))
+	}
 	if r.FormValue("HTTPCode") != "" {
 		httpCode, err := strconv.ParseInt(r.FormValue("HTTPCode"), 10, 64)
 		if err != nil {
@@ -335,6 +337,46 @@ func DeleteWatcherID(w http.ResponseWriter, r *http.Request) {
 	db := context.Get(r, "db.Core").(*sqlx.DB)
 
 	_, err = dal.NewWatcher(db).DeleteByID(nil, id)
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
+
+	http.Redirect(w, r, r.Referer(), 301)
+}
+
+func PostPutDeleteWatcherActiveID(w http.ResponseWriter, r *http.Request) {
+	method := r.FormValue("_method")
+	if method == "" {
+		method = "put"
+	}
+
+	if method == "post" || method == "put" {
+		PutWatcherActiveID(w, r)
+	} else if method == "delete" {
+		DeleteWatcherID(w, r)
+	}
+}
+
+func PutWatcherActiveID(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+
+	idString := vars["id"]
+	id, err := strconv.ParseInt(idString, 10, 64)
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
+
+	updateParams, err := watcherActiveFormData(r)
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
+
+	db := context.Get(r, "db.Core").(*sqlx.DB)
+
+	_, err = dal.NewWatcher(db).UpdateByID(nil, updateParams, id)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return

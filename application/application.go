@@ -103,6 +103,7 @@ func (app *Application) mux() *mux.Router {
 
 	router.Handle("/watchers/active", alice.New(MustLogin, SetClusters).ThenFunc(handlers.GetWatchersActive)).Methods("GET")
 	router.Handle("/watchers/active", alice.New(MustLogin, SetClusters).ThenFunc(handlers.PostWatchersActive)).Methods("POST")
+	router.Handle("/watchers/active/{id:[0-9]+}", alice.New(MustLogin, SetClusters).ThenFunc(handlers.PostPutDeleteWatcherActiveID)).Methods("POST", "PUT", "DELETE")
 
 	router.Handle("/watchers/{watcherid:[0-9]+}/triggers", alice.New(MustLogin, SetClusters).ThenFunc(handlers.PostWatchersTriggers)).Methods("POST")
 	router.Handle("/watchers/{watcherid:[0-9]+}/triggers/{id:[0-9]+}", alice.New(MustLogin, SetClusters).ThenFunc(handlers.PostPutDeleteWatcherTriggerID)).Methods("POST", "PUT", "DELETE")
@@ -289,11 +290,26 @@ func (app *Application) ActiveWatchOnce(clusterID int64, watcherRow *dal.Watcher
 		return nil
 	}
 
-	hosts, err := dal.NewHost(app.DBConfig.Core).AllByClusterIDAndUpdatedInterval(nil, clusterID, watcherRow.HostsLastUpdatedForPostgres())
-	if err != nil {
-		return err
+	var hostnames []string
+
+	// Checking hosts based on external lists.
+	if len(watcherRow.HostsList()) > 0 {
+		hostnames = watcherRow.HostsList()
+	} else {
+		hosts, err := dal.NewHost(app.DBConfig.Core).AllByClusterIDAndUpdatedInterval(nil, clusterID, watcherRow.HostsLastUpdatedForPostgres())
+		if err != nil {
+			return err
+		}
+
+		hostnames = make([]string, len(hosts))
+
+		for i, host := range hosts {
+			hostnames[i] = host.Name
+		}
 	}
-	if len(hosts) == 0 {
+
+	// If there are no hostnames, then we are not checking anything
+	if len(hostnames) == 0 {
 		return nil
 	}
 
@@ -302,27 +318,61 @@ func (app *Application) ActiveWatchOnce(clusterID int64, watcherRow *dal.Watcher
 
 	var errCollectorMutex sync.Mutex
 
-	if watcherRow.Command() == "ping" {
-		for _, host := range hosts {
-			go func(host *dal.HostRow) {
-				_, err := exec.Command("ping", "-c", "1", host.Name).Output()
+	for _, hostname := range hostnames {
+		if watcherRow.Command() == "ping" {
+			go func(hostname string) {
+				println("executing ping check for host: " + hostname)
+
+				_, err := exec.Command("ping", "-c", "1", hostname).Output()
 				if err != nil {
 					errCollectorMutex.Lock()
 					numAffectedHosts = numAffectedHosts + 1
-					tsWatcherDataHosts = append(tsWatcherDataHosts, host.Name)
+					tsWatcherDataHosts = append(tsWatcherDataHosts, hostname)
 					errCollectorMutex.Unlock()
 
 					logrus.WithFields(logrus.Fields{
-						"Method": "ping " + host.Name,
+						"Method": "ping -c 1 " + hostname,
 					}).Error(err)
 				}
-			}(host)
+			}(hostname)
+
+		} else if watcherRow.Command() == "ssh" {
+			go func(hostname string) {
+				println("executing ssh check for host: " + hostname)
+
+				sshOptions := []string{"-o BatchMode=yes", "-o ConnectTimeout=10"}
+
+				if watcherRow.SSHPort() != "" {
+					sshOptions = append(sshOptions, []string{"-p", watcherRow.SSHPort()}...)
+				}
+
+				userAtHost := hostname
+
+				if watcherRow.SSHUser() != "" {
+					userAtHost = fmt.Sprintf("%v@%v", watcherRow.SSHUser(), hostname)
+				}
+
+				sshOptions = append(sshOptions, userAtHost)
+
+				outBytes, err := exec.Command("ssh", sshOptions...).CombinedOutput()
+				outString := string(outBytes)
+
+				// We only care about SSH connectivity
+				if err != nil && !strings.Contains(outString, "Permission denied") && !strings.Contains(outString, "Host key verification failed") {
+					errCollectorMutex.Lock()
+					numAffectedHosts = numAffectedHosts + 1
+					tsWatcherDataHosts = append(tsWatcherDataHosts, hostname)
+					errCollectorMutex.Unlock()
+
+					logrus.WithFields(logrus.Fields{
+						"Method": "ssh -o BatchMode=yes -o ConnectTimeout=10 " + userAtHost,
+					}).Error(err)
+				}
+			}(hostname)
+
+		} else if watcherRow.Command() == "http" {
+
 		}
-
-	} else if watcherRow.Command() == "ssh" {
-
-	} else if watcherRow.Command() == "http" {
-
 	}
 
 	if numAffectedHosts == 0 || int64(numAffectedHosts) >= watcherRow.LowAffectedHosts {
@@ -351,7 +401,7 @@ func (app *Application) ActiveWatchOnce(clusterID int64, watcherRow *dal.Watcher
 		}
 	}
 
-	return err
+	return nil
 }
 
 func (app *Application) RunTrigger(clusterID int64, watcherRow *dal.WatcherRow) error {

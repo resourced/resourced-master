@@ -101,7 +101,7 @@ func PostWatchersTriggers(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	http.Redirect(w, r, "/watchers", 301)
+	http.Redirect(w, r, r.Referer(), 301)
 }
 
 func PostPutDeleteWatcherTriggerID(w http.ResponseWriter, r *http.Request) {
@@ -140,7 +140,7 @@ func PutWatcherTriggerID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	http.Redirect(w, r, "/watchers", 301)
+	http.Redirect(w, r, r.Referer(), 301)
 }
 
 func DeleteWatcherTriggerID(w http.ResponseWriter, r *http.Request) {
@@ -160,5 +160,5 @@ func DeleteWatcherTriggerID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	http.Redirect(w, r, "/watchers", 301)
+	http.Redirect(w, r, r.Referer(), 301)
 }

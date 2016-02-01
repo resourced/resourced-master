@@ -36,6 +36,12 @@
                         <button class="btn btn-default btn-xs" data-toggle="modal" data-target="#watcher-modal"
                             data-id="{{ $watcher.ID }}"
                             data-name="{{ $watcher.Name }}"
+                            data-command="{{ $watcher.Command }}"
+                            data-ssh-user="{{ $watcher.SSHUser }}"
+                            data-ssh-port="{{ $watcher.SSHPort }}"
+                            data-http-headers="{{ $watcher.HTTPHeadersString }}"
+                            data-http-user="{{ $watcher.HTTPUser }}"
+                            data-hosts-list="{{ $watcher.HostsListString }}"
                             data-low-affected-hosts="{{ $watcher.LowAffectedHosts }}"
                             data-hosts-last-updated="{{ $watcher.HostsLastUpdated }}"
                             data-check-interval="{{ $watcher.CheckInterval }}">
@@ -367,10 +373,10 @@ function changeActionTransport() {
     $('.payload-' + transportVal).show();
 }
 
-function showOrHideCommandDetails() {
+function showOrHideCommandDetails(command) {
     $('#watcher-modal .ssh-details').hide();
     $('#watcher-modal .http-details').hide();
-    $('#watcher-modal .' + $('select[name="Command"]').val() + '-details').show();
+    $('#watcher-modal .' + command + '-details').show();
 }
 
 function adjustColRightHeight() {
@@ -401,7 +407,7 @@ $(document).ready(function() {
         }
     });
 
-    showOrHideCommandDetails();
+    showOrHideCommandDetails($('select[name="Command"]').val());
 });
 
 $(document).on('change', '.external-hosts-list-toggler', function() {
@@ -411,7 +417,7 @@ $(document).on('change', '.external-hosts-list-toggler', function() {
 $('select[name="ActionTransport"]').change(changeActionTransport);
 
 $('select[name="Command"]').change(function(event) {
-    showOrHideCommandDetails();
+    showOrHideCommandDetails($('select[name="Command"]').val());
     adjustColRightHeight();
 });
 
@@ -429,6 +435,12 @@ $('#watcher-modal').on('show.bs.modal', function (event) {
     var button = $(event.relatedTarget);   // Button that triggered the modal
     var id = button.data('id');
     var name = button.data('name');
+    var command = button.data('command');
+    var sshUser = button.data('ssh-user');
+    var sshPort = button.data('ssh-port');
+    var httpHeaders = button.data('http-headers');
+    var httpUser = button.data('http-user');
+    var hostsList = button.data('hosts-list');
     var lowAffectedHosts = button.data('low-affected-hosts');
     var hostsLastUpdated = button.data('hosts-last-updated');
     var checkInterval = button.data('check-interval');
@@ -436,6 +448,15 @@ $('#watcher-modal').on('show.bs.modal', function (event) {
     var modal = $(this);
 
     modal.find('input[name="Name"]').val(name);
+    modal.find('input[name="Command"]').val(command);
+    modal.find('input[name="SSHUser"]').val(sshUser);
+    modal.find('input[name="SSHPort"]').val(sshPort);
+    modal.find('input[name="HTTPHeaders"]').val(httpHeaders);
+    modal.find('input[name="HTTPUser"]').val(httpUser);
+    modal.find('input[name="HostsList"]').val(hostsList);
+
+    $('select[name="Command"] option[value="' + command + '"]').attr('selected', 'selected');
+    showOrHideCommandDetails(command);
 
     if(lowAffectedHosts) {
         modal.find('input[name="LowAffectedHosts"]').val(lowAffectedHosts);
@@ -448,7 +469,7 @@ $('#watcher-modal').on('show.bs.modal', function (event) {
     }
 
     if(id) {
-        modal.find('form').attr('action', '/watchers/' + id);
+        modal.find('form').attr('action', '/watchers/active/' + id);
         modal.find('.btn-danger').show();
         modal.find('.modal-title').text('Update Active Watcher');
     } else {
