@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"strings"
+	"sync"
 
 	"github.com/Sirupsen/logrus"
 	"github.com/carbocation/interpose"
@@ -299,18 +300,23 @@ func (app *Application) ActiveWatchOnce(clusterID int64, watcherRow *dal.Watcher
 	numAffectedHosts := 0
 	tsWatcherDataHosts := make([]string, 0)
 
+	var errCollectorMutex sync.Mutex
+
 	if watcherRow.Command() == "ping" {
 		for _, host := range hosts {
-			_, err := exec.Command("ping", "-c", "1", host.Name).Output()
-			if err != nil {
-				numAffectedHosts = numAffectedHosts + 1
-				tsWatcherDataHosts = append(tsWatcherDataHosts, host.Name)
+			go func(host *dal.HostRow) {
+				_, err := exec.Command("ping", "-c", "1", host.Name).Output()
+				if err != nil {
+					errCollectorMutex.Lock()
+					numAffectedHosts = numAffectedHosts + 1
+					tsWatcherDataHosts = append(tsWatcherDataHosts, host.Name)
+					errCollectorMutex.Unlock()
 
-				logrus.WithFields(logrus.Fields{
-					"Method":          "ping " + host.Name,
-					"NumAffectedHost": numAffectedHosts,
-				}).Error(err)
-			}
+					logrus.WithFields(logrus.Fields{
+						"Method": "ping " + host.Name,
+					}).Error(err)
+				}
+			}(host)
 		}
 
 	} else if watcherRow.Command() == "ssh" {
