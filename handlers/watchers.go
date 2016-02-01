@@ -209,6 +209,7 @@ func watcherActiveFormData(r *http.Request) (map[string]interface{}, error) {
 	data["SSHUser"] = r.FormValue("SSHUser")
 	data["SSHPort"] = r.FormValue("SSHPort")
 	data["HTTPHeaders"] = r.FormValue("HTTPHeaders")
+	data["HTTPMethod"] = r.FormValue("HTTPMethod")
 	data["HTTPUser"] = r.FormValue("HTTPUser")
 	data["HostsList"] = r.FormValue("HostsList")
 

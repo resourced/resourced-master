@@ -71,6 +71,10 @@ func (wr *WatcherRow) HTTPHeaders() map[string]string {
 	return data
 }
 
+func (wr *WatcherRow) HTTPMethod() string {
+	return wr.JSONAttrString(wr.ActiveCheck, "HTTPMethod")
+}
+
 func (wr *WatcherRow) HTTPUser() string {
 	return wr.JSONAttrString(wr.ActiveCheck, "HTTPUser")
 }

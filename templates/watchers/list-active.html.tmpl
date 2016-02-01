@@ -40,6 +40,7 @@
                             data-ssh-user="{{ $watcher.SSHUser }}"
                             data-ssh-port="{{ $watcher.SSHPort }}"
                             data-http-headers="{{ $watcher.HTTPHeadersString }}"
+                            data-http-method="{{ $watcher.HTTPMethod }}"
                             data-http-user="{{ $watcher.HTTPUser }}"
                             data-hosts-list="{{ $watcher.HostsListString }}"
                             data-low-affected-hosts="{{ $watcher.LowAffectedHosts }}"
@@ -137,7 +138,7 @@
 
                 <div class="modal-body">
                     <div class="row form-group">
-                        <div class="col-sm-6 col-left">
+                        <div class="col-sm-7 col-left">
                             <div class="row form-group">
                                 <div class="col-sm-12">
                                     <label>Name</label>
@@ -157,27 +158,41 @@
                             </div>
 
                             <div class="row form-group ssh-details" style="display: none">
-                                <div class="col-sm-12">
+                                <div class="col-sm-6">
                                     <label>SSH User</label>
                                     <input type="text" class="form-control" name="SSHUser">
                                 </div>
-                            </div>
 
-                            <div class="row form-group ssh-details" style="display: none">
-                                <div class="col-sm-12">
+                                <div class="col-sm-6">
                                     <label>SSH Port</label>
                                     <input type="number" class="form-control" name="SSHPort" value="22">
                                 </div>
                             </div>
 
                             <div class="row form-group http-details" style="display: none">
-                                <div class="col-sm-12">
+                                <div class="col-sm-3">
+                                    <label>HTTP Method</label>
+                                    <select class="form-control" name="HTTPMethod">
+                                        <option value="get">GET</option>
+                                        <option value="post">POST</option>
+                                        <option value="put">PUT</option>
+                                        <option value="delete">DELETE</option>
+                                        <option value="head">HEAD</option>
+                                    </select>
+                                </div>
+
+                                <div class="col-sm-9">
                                     <label>HTTP Headers</label>
                                     <input type="text" class="form-control" name="HTTPHeaders" placeholder="key1:value1,key2:value2">
                                 </div>
                             </div>
 
                             <div class="row form-group http-details" style="display: none">
+                                <div class="col-sm-4">
+                                    <label>Expected Status Code</label>
+                                    <input type="text" class="form-control" name="HTTPCode" value="200">
+                                </div>
+
                                 <div class="col-sm-4">
                                     <label>Basic Auth User</label>
                                     <input type="text" class="form-control" name="HTTPUser">
@@ -186,11 +201,6 @@
                                 <div class="col-sm-4">
                                     <label>Basic Auth Pass</label>
                                     <input type="text" class="form-control" name="HTTPPass">
-                                </div>
-
-                                <div class="col-sm-4">
-                                    <label>Expected Status Code</label>
-                                    <input type="text" class="form-control" name="HTTPCode">
                                 </div>
                             </div>
 
@@ -231,7 +241,7 @@
                             </div>
                         </div>
 
-                        <div class="col-sm-6 col-right">
+                        <div class="col-sm-5 col-right">
                             <div class="row form-group">
                                 <div class="col-sm-12">
                                     <div class="pull-right">
@@ -439,6 +449,7 @@ $('#watcher-modal').on('show.bs.modal', function (event) {
     var sshUser = button.data('ssh-user');
     var sshPort = button.data('ssh-port');
     var httpHeaders = button.data('http-headers');
+    var httpMethod = button.data('http-method');
     var httpUser = button.data('http-user');
     var hostsList = button.data('hosts-list');
     var lowAffectedHosts = button.data('low-affected-hosts');
@@ -454,6 +465,8 @@ $('#watcher-modal').on('show.bs.modal', function (event) {
     modal.find('input[name="HTTPHeaders"]').val(httpHeaders);
     modal.find('input[name="HTTPUser"]').val(httpUser);
     modal.find('input[name="HostsList"]').val(hostsList);
+
+    $('select[name="HTTPMethod"] option[value="' + httpMethod + '"]').attr('selected', 'selected');
 
     $('select[name="Command"] option[value="' + command + '"]').attr('selected', 'selected');
     showOrHideCommandDetails(command);
