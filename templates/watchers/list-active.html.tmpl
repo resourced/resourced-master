@@ -42,6 +42,7 @@
                             data-http-headers="{{ $watcher.HTTPHeadersString }}"
                             data-http-method="{{ $watcher.HTTPMethod }}"
                             data-http-port="{{ $watcher.HTTPPort }}"
+                            data-http-code="{{ $watcher.HTTPCode }}"
                             data-http-scheme="{{ $watcher.HTTPScheme }}"
                             data-http-user="{{ $watcher.HTTPUser }}"
                             data-hosts-list="{{ $watcher.HostsListString }}"
@@ -464,6 +465,7 @@ $('#watcher-modal').on('show.bs.modal', function (event) {
     var httpHeaders = button.data('http-headers');
     var httpMethod = button.data('http-method');
     var httpPort = button.data('http-port');
+    var httpCode = button.data('http-code');
     var httpScheme = button.data('http-scheme');
     var httpUser = button.data('http-user');
     var hostsList = button.data('hosts-list');
@@ -479,6 +481,7 @@ $('#watcher-modal').on('show.bs.modal', function (event) {
     modal.find('input[name="SSHPort"]').val(sshPort);
     modal.find('input[name="HTTPHeaders"]').val(httpHeaders);
     modal.find('input[name="HTTPPort"]').val(httpPort);
+    modal.find('input[name="HTTPCode"]').val(httpCode);
     modal.find('input[name="HTTPUser"]').val(httpUser);
     modal.find('input[name="HostsList"]').val(hostsList);
 
