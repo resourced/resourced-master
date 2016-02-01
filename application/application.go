@@ -374,8 +374,9 @@ func (app *Application) ActiveWatchOnce(clusterID int64, watcherRow *dal.Watcher
 				req, err := http.NewRequest(strings.ToUpper(watcherRow.HTTPMethod()), url, nil)
 				if err != nil {
 					logrus.WithFields(logrus.Fields{
-						"URL":    url,
-						"Method": "http.NewRequest",
+						"URL":        url,
+						"HTTPMethod": watcherRow.HTTPMethod(),
+						"Method":     "http.NewRequest",
 					}).Error(err)
 					return
 				}
@@ -387,8 +388,9 @@ func (app *Application) ActiveWatchOnce(clusterID int64, watcherRow *dal.Watcher
 				resp, err := client.Do(req)
 				if err != nil {
 					logrus.WithFields(logrus.Fields{
-						"URL":    url,
-						"Method": "http.Client{}.Do",
+						"URL":        url,
+						"HTTPMethod": watcherRow.HTTPMethod(),
+						"Method":     "http.Client{}.Do",
 					}).Error(err)
 					return
 				}
@@ -401,6 +403,7 @@ func (app *Application) ActiveWatchOnce(clusterID int64, watcherRow *dal.Watcher
 
 					logrus.WithFields(logrus.Fields{
 						"URL":                url,
+						"HTTPMethod":         watcherRow.HTTPMethod(),
 						"StatusCode":         resp.StatusCode,
 						"ExpectedStatusCode": watcherRow.HTTPCode(),
 						"Method":             "HTTP Client fetch",
