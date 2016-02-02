@@ -211,7 +211,9 @@ func watcherActiveFormData(r *http.Request) (map[string]interface{}, error) {
 	data["HTTPHeaders"] = r.FormValue("HTTPHeaders")
 	data["HTTPScheme"] = r.FormValue("HTTPScheme")
 	data["HTTPPort"] = r.FormValue("HTTPPort")
+	data["HTTPPath"] = r.FormValue("HTTPPath")
 	data["HTTPMethod"] = r.FormValue("HTTPMethod")
+	data["HTTPPostBody"] = r.FormValue("HTTPPostBody")
 	data["HTTPUser"] = r.FormValue("HTTPUser")
 	data["HostsList"] = r.FormValue("HostsList")
 

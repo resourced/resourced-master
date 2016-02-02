@@ -71,6 +71,10 @@ func (wr *WatcherRow) HTTPHeaders() map[string]string {
 	return data
 }
 
+func (wr *WatcherRow) HTTPPostBody() string {
+	return wr.JSONAttrString(wr.ActiveCheck, "HTTPPostBody")
+}
+
 func (wr *WatcherRow) HTTPMethod() string {
 	return wr.JSONAttrString(wr.ActiveCheck, "HTTPMethod")
 }
@@ -81,6 +85,10 @@ func (wr *WatcherRow) HTTPScheme() string {
 
 func (wr *WatcherRow) HTTPPort() string {
 	return wr.JSONAttrString(wr.ActiveCheck, "HTTPPort")
+}
+
+func (wr *WatcherRow) HTTPPath() string {
+	return wr.JSONAttrString(wr.ActiveCheck, "HTTPPath")
 }
 
 func (wr *WatcherRow) HTTPCode() int {

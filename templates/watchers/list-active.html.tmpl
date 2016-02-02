@@ -43,7 +43,9 @@
                             data-http-method="{{ $watcher.HTTPMethod }}"
                             data-http-port="{{ $watcher.HTTPPort }}"
                             data-http-code="{{ $watcher.HTTPCode }}"
+                            data-http-post-body="{{ $watcher.HTTPPostBody }}"
                             data-http-scheme="{{ $watcher.HTTPScheme }}"
+                            data-http-path="{{ $watcher.HTTPPath }}"
                             data-http-user="{{ $watcher.HTTPUser }}"
                             data-hosts-list="{{ $watcher.HostsListString }}"
                             data-low-affected-hosts="{{ $watcher.LowAffectedHosts }}"
@@ -175,8 +177,8 @@
                                     <label>HTTP Method</label>
                                     <select class="form-control" name="HTTPMethod">
                                         <option value="get">GET</option>
-                                        <option value="post">POST</option>
                                         <option value="head">HEAD</option>
+                                        <option value="post">POST</option>
                                     </select>
                                 </div>
 
@@ -196,8 +198,22 @@
 
                             <div class="row form-group http-details" style="display: none">
                                 <div class="col-sm-12">
-                                    <label>HTTP Headers</label>
+                                    <label>Path</label>
+                                    <input type="text" class="form-control" name="HTTPPath" value="/">
+                                </div>
+                            </div>
+
+                            <div class="row form-group http-details" style="display: none">
+                                <div class="col-sm-12">
+                                    <label>Headers</label>
                                     <input type="text" class="form-control" name="HTTPHeaders" placeholder="key1:value1,key2:value2">
+                                </div>
+                            </div>
+
+                            <div class="row form-group http-post-body-details" style="display: none">
+                                <div class="col-sm-12">
+                                    <label>POST Body</label>
+                                    <textarea class="form-control" name="HTTPPostBody"></textarea>
                                 </div>
                             </div>
 
@@ -403,6 +419,14 @@ function showOrHideCommandDetails(command) {
     $('#watcher-modal .' + command + '-details').show();
 }
 
+function showOrHidePostBody() {
+    if($('select[name="HTTPMethod"]').val() == "post") {
+        $('.http-post-body-details').show();
+    } else {
+        $('.http-post-body-details').hide();
+    }
+}
+
 function adjustColRightHeight() {
     $('.col-right').height($('.col-left').height());
     $('.col-right > .row.form-group > .col-sm-12').height($('.col-left').height() - 38);
@@ -432,6 +456,7 @@ $(document).ready(function() {
     });
 
     showOrHideCommandDetails($('select[name="Command"]').val());
+    showOrHidePostBody();
 });
 
 $(document).on('change', '.external-hosts-list-toggler', function() {
@@ -443,6 +468,10 @@ $('select[name="ActionTransport"]').change(changeActionTransport);
 $('select[name="Command"]').change(function(event) {
     showOrHideCommandDetails($('select[name="Command"]').val());
     adjustColRightHeight();
+});
+
+$('select[name="HTTPMethod"]').change(function(event) {
+    showOrHidePostBody();
 });
 
 $('#watcher-modal form .btn-danger').click(function() {
@@ -465,8 +494,10 @@ $('#watcher-modal').on('show.bs.modal', function (event) {
     var httpHeaders = button.data('http-headers');
     var httpMethod = button.data('http-method');
     var httpPort = button.data('http-port');
+    var httpPath = button.data('http-path');
     var httpCode = button.data('http-code');
     var httpScheme = button.data('http-scheme');
+    var httpPostBody = button.data('http-post-body');
     var httpUser = button.data('http-user');
     var hostsList = button.data('hosts-list');
     var lowAffectedHosts = button.data('low-affected-hosts');
@@ -481,9 +512,11 @@ $('#watcher-modal').on('show.bs.modal', function (event) {
     modal.find('input[name="SSHPort"]').val(sshPort);
     modal.find('input[name="HTTPHeaders"]').val(httpHeaders);
     modal.find('input[name="HTTPPort"]').val(httpPort);
+    modal.find('input[name="HTTPPath"]').val(httpPath);
     modal.find('input[name="HTTPCode"]').val(httpCode);
     modal.find('input[name="HTTPUser"]').val(httpUser);
     modal.find('input[name="HostsList"]').val(hostsList);
+    modal.find('textarea[name="HTTPPostBody"]').val(httpPostBody);
 
     $('select[name="HTTPScheme"] option[value="' + httpScheme + '"]').attr('selected', 'selected');
     $('select[name="HTTPMethod"] option[value="' + httpMethod + '"]').attr('selected', 'selected');

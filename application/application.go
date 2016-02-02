@@ -368,10 +368,28 @@ func (app *Application) ActiveWatchOnce(clusterID int64, watcherRow *dal.Watcher
 
 		} else if watcherRow.Command() == "http" {
 			go func(hostname string) {
+				var err error
+
 				url := fmt.Sprintf("%v://%v:%s", watcherRow.HTTPScheme(), hostname, watcherRow.HTTPPort())
 
 				client := &http.Client{}
-				req, err := http.NewRequest(strings.ToUpper(watcherRow.HTTPMethod()), url, nil)
+
+				var req *http.Request
+
+				if watcherRow.HTTPPostBody() != "" {
+					req, err = http.NewRequest(strings.ToUpper(watcherRow.HTTPMethod()), url, strings.NewReader(watcherRow.HTTPPostBody()))
+
+					// Detect if POST body is JSON and set content-type
+					if strings.HasPrefix(watcherRow.HTTPPostBody(), "{") || strings.HasPrefix(watcherRow.HTTPPostBody(), "[") {
+						req.Header.Set("Content-Type", "application/json")
+					} else {
+						req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+					}
+
+				} else {
+					req, err = http.NewRequest(strings.ToUpper(watcherRow.HTTPMethod()), url, nil)
+				}
+
 				if err != nil {
 					logrus.WithFields(logrus.Fields{
 						"URL":        url,

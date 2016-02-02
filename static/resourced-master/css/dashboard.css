@@ -166,6 +166,8 @@ select {
 
 .row.watchers {
     margin-top: 16px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid #4e5d6c;
 }
 .row.watchers table th {
     cursor: pointer;
