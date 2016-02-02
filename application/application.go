@@ -393,6 +393,8 @@ func (app *Application) ActiveWatchOnce(clusterID int64, watcherRow *dal.Watcher
 						"Method":     "http.Client{}.Do",
 					}).Error(err)
 					return
+				} else if resp != nil && resp.Body != nil {
+					resp.Body.Close()
 				}
 
 				if err != nil || (resp != nil && resp.StatusCode != watcherRow.HTTPCode()) {
