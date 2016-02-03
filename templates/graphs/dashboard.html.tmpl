@@ -95,7 +95,9 @@
 
 <script>
 // Refresh page every 5 minutes
-setInterval(window.location.reload, 5*60000);
+setInterval(function() {
+    window.location.reload();
+}, 5*60000);
 
 globalChartKeys = [];
 
