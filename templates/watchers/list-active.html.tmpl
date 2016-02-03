@@ -507,7 +507,6 @@ $('#watcher-modal').on('show.bs.modal', function (event) {
     var modal = $(this);
 
     modal.find('input[name="Name"]').val(name);
-    modal.find('input[name="Command"]').val(command);
     modal.find('input[name="SSHUser"]').val(sshUser);
     modal.find('input[name="SSHPort"]').val(sshPort);
     modal.find('input[name="HTTPHeaders"]').val(httpHeaders);
@@ -521,7 +520,6 @@ $('#watcher-modal').on('show.bs.modal', function (event) {
     $('select[name="HTTPScheme"] option[value="' + httpScheme + '"]').attr('selected', 'selected');
     $('select[name="HTTPMethod"] option[value="' + httpMethod + '"]').attr('selected', 'selected');
 
-    $('select[name="Command"] option[value="' + command + '"]').attr('selected', 'selected');
     showOrHideCommandDetails(command);
 
     if(lowAffectedHosts) {
@@ -547,6 +545,8 @@ $('#watcher-modal').on('show.bs.modal', function (event) {
 
 $('#watcher-modal').on('shown.bs.modal', function (event) {
     toggleHostsList();
+    showOrHideCommandDetails($('select[name="Command"]').val());
+    showOrHidePostBody();
     adjustColRightHeight();
 });
 
