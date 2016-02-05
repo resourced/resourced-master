@@ -65,7 +65,9 @@ func (wr *WatcherRow) HTTPHeaders() map[string]string {
 
 	for _, kvString := range asList {
 		kvList := strings.Split(kvString, ":")
-		data[strings.TrimSpace(kvList[0])] = strings.TrimSpace(kvList[1])
+		if len(kvList) >= 2 {
+			data[strings.TrimSpace(kvList[0])] = strings.TrimSpace(kvList[1])
+		}
 	}
 
 	return data

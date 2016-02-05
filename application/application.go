@@ -383,11 +383,15 @@ func (app *Application) ActiveWatchOnce(clusterID int64, watcherRow *dal.Watcher
 					if strings.HasPrefix(watcherRow.HTTPPostBody(), "{") || strings.HasPrefix(watcherRow.HTTPPostBody(), "[") {
 						req.Header.Set("Content-Type", "application/json")
 					} else {
-						req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+						req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 					}
 
 				} else {
 					req, err = http.NewRequest(strings.ToUpper(watcherRow.HTTPMethod()), url, nil)
+				}
+
+				for headerKey, headerVal := range watcherRow.HTTPHeaders() {
+					req.Header.Add(headerKey, headerVal)
 				}
 
 				if err != nil {
