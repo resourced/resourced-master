@@ -126,6 +126,10 @@ func (wr *WatcherRow) HostsList() []string {
 	return strings.Split(wr.HostsListString(), "\n")
 }
 
+func (wr *WatcherRow) PerformActiveCheckPing(hostname string) (outBytes []byte, err error) {
+	return exec.Command("ping", "-c", "1", hostname).CombinedOutput()
+}
+
 func (wr *WatcherRow) PerformActiveCheckSSH(hostname string) (outBytes []byte, err error) {
 	sshOptions := []string{"-o BatchMode=yes", "-o ConnectTimeout=10"}
 

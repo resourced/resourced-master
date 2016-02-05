@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"net/smtp"
 	"os"
-	"os/exec"
 	"strings"
 	"sync"
 
@@ -321,7 +320,7 @@ func (app *Application) ActiveWatchOnce(clusterID int64, watcherRow *dal.Watcher
 	for _, hostname := range hostnames {
 		if watcherRow.Command() == "ping" {
 			go func(hostname string) {
-				_, err := exec.Command("ping", "-c", "1", hostname).Output()
+				outBytes, err := watcherRow.PerformActiveCheckPing(hostname)
 				if err != nil {
 					errCollectorMutex.Lock()
 					numAffectedHosts = numAffectedHosts + 1
@@ -329,7 +328,9 @@ func (app *Application) ActiveWatchOnce(clusterID int64, watcherRow *dal.Watcher
 					errCollectorMutex.Unlock()
 
 					logrus.WithFields(logrus.Fields{
-						"Method": "ping -c 1 " + hostname,
+						"Method":   "watcherRow.PerformActiveCheckPing",
+						"Hostname": hostname,
+						"Output":   string(outBytes),
 					}).Error(err)
 				}
 			}(hostname)
@@ -347,8 +348,9 @@ func (app *Application) ActiveWatchOnce(clusterID int64, watcherRow *dal.Watcher
 					errCollectorMutex.Unlock()
 
 					logrus.WithFields(logrus.Fields{
-						"Method": "watcherRow.PerformActiveCheckSSH",
-						"Output": outString,
+						"Method":   "watcherRow.PerformActiveCheckSSH",
+						"Hostname": hostname,
+						"Output":   outString,
 					}).Error(err)
 				}
 			}(hostname)
