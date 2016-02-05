@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"os/exec"
 	"strings"
 
 	"github.com/Sirupsen/logrus"
@@ -123,6 +124,24 @@ func (wr *WatcherRow) HostsList() []string {
 	}
 
 	return strings.Split(wr.HostsListString(), "\n")
+}
+
+func (wr *WatcherRow) PerformActiveCheckSSH(hostname string) (outBytes []byte, err error) {
+	sshOptions := []string{"-o BatchMode=yes", "-o ConnectTimeout=10"}
+
+	if wr.SSHPort() != "" {
+		sshOptions = append(sshOptions, []string{"-p", wr.SSHPort()}...)
+	}
+
+	userAtHost := hostname
+
+	if wr.SSHUser() != "" {
+		userAtHost = fmt.Sprintf("%v@%v", wr.SSHUser(), hostname)
+	}
+
+	sshOptions = append(sshOptions, userAtHost)
+
+	return exec.Command("ssh", sshOptions...).CombinedOutput()
 }
 
 func (wr *WatcherRow) PerformActiveCheckHTTP(hostname string) (resp *http.Response, err error) {

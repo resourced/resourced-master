@@ -336,21 +336,7 @@ func (app *Application) ActiveWatchOnce(clusterID int64, watcherRow *dal.Watcher
 
 		} else if watcherRow.Command() == "ssh" {
 			go func(hostname string) {
-				sshOptions := []string{"-o BatchMode=yes", "-o ConnectTimeout=10"}
-
-				if watcherRow.SSHPort() != "" {
-					sshOptions = append(sshOptions, []string{"-p", watcherRow.SSHPort()}...)
-				}
-
-				userAtHost := hostname
-
-				if watcherRow.SSHUser() != "" {
-					userAtHost = fmt.Sprintf("%v@%v", watcherRow.SSHUser(), hostname)
-				}
-
-				sshOptions = append(sshOptions, userAtHost)
-
-				outBytes, err := exec.Command("ssh", sshOptions...).CombinedOutput()
+				outBytes, err := watcherRow.PerformActiveCheckSSH(hostname)
 				outString := string(outBytes)
 
 				// We only care about SSH connectivity
@@ -361,7 +347,8 @@ func (app *Application) ActiveWatchOnce(clusterID int64, watcherRow *dal.Watcher
 					errCollectorMutex.Unlock()
 
 					logrus.WithFields(logrus.Fields{
-						"Method": "ssh -o BatchMode=yes -o ConnectTimeout=10 " + userAtHost,
+						"Method": "watcherRow.PerformActiveCheckSSH",
+						"Output": outString,
 					}).Error(err)
 				}
 			}(hostname)
