@@ -309,3 +309,24 @@ func (w *Watcher) Create(tx *sqlx.Tx, data map[string]interface{}) (*WatcherRow,
 
 	return w.rowFromSqlResult(tx, sqlResult)
 }
+
+// HostsToPerformActiveChecks fetches list of hostnames to perform active checks on
+func (w *Watcher) HostsToPerformActiveChecks(clusterID int64, watcherRow *WatcherRow) (hostnames []string) {
+	// Checking hosts based on external lists.
+	if len(watcherRow.HostsList()) > 0 {
+		hostnames = watcherRow.HostsList()
+	} else {
+		hosts, err := NewHost(w.db).AllByClusterIDAndUpdatedInterval(nil, clusterID, watcherRow.HostsLastUpdatedForPostgres())
+		if err != nil {
+			return make([]string, 0)
+		}
+
+		hostnames = make([]string, len(hosts))
+
+		for i, host := range hosts {
+			hostnames[i] = host.Name
+		}
+	}
+
+	return hostnames
+}

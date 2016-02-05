@@ -289,23 +289,7 @@ func (app *Application) ActiveWatchOnce(clusterID int64, watcherRow *dal.Watcher
 		return nil
 	}
 
-	var hostnames []string
-
-	// Checking hosts based on external lists.
-	if len(watcherRow.HostsList()) > 0 {
-		hostnames = watcherRow.HostsList()
-	} else {
-		hosts, err := dal.NewHost(app.DBConfig.Core).AllByClusterIDAndUpdatedInterval(nil, clusterID, watcherRow.HostsLastUpdatedForPostgres())
-		if err != nil {
-			return err
-		}
-
-		hostnames = make([]string, len(hosts))
-
-		for i, host := range hosts {
-			hostnames[i] = host.Name
-		}
-	}
+	hostnames := dal.NewWatcher(app.DBConfig.Core).HostsToPerformActiveChecks(clusterID, watcherRow)
 
 	// If there are no hostnames, then we are not checking anything
 	if len(hostnames) == 0 {
