@@ -5,8 +5,10 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"strings"
 
+	"github.com/Sirupsen/logrus"
 	"github.com/jmoiron/sqlx"
 	sqlx_types "github.com/jmoiron/sqlx/types"
 )
@@ -123,6 +125,60 @@ func (wr *WatcherRow) HostsList() []string {
 	return strings.Split(wr.HostsListString(), "\n")
 }
 
+func (wr *WatcherRow) PerformActiveCheckHTTP(hostname string) (resp *http.Response, err error) {
+	url := fmt.Sprintf("%v://%v:%s", wr.HTTPScheme(), hostname, wr.HTTPPort())
+
+	client := &http.Client{}
+
+	var req *http.Request
+
+	if wr.HTTPPostBody() != "" {
+		req, err = http.NewRequest(strings.ToUpper(wr.HTTPMethod()), url, strings.NewReader(wr.HTTPPostBody()))
+
+		// Detect if POST body is JSON and set content-type
+		if strings.HasPrefix(wr.HTTPPostBody(), "{") || strings.HasPrefix(wr.HTTPPostBody(), "[") {
+			req.Header.Set("Content-Type", "application/json")
+		} else {
+			req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+		}
+
+	} else {
+		req, err = http.NewRequest(strings.ToUpper(wr.HTTPMethod()), url, nil)
+	}
+
+	if err != nil {
+		logrus.WithFields(logrus.Fields{
+			"Method":     "http.NewRequest",
+			"URL":        url,
+			"HTTPMethod": wr.HTTPMethod(),
+		}).Error(err)
+		return nil, err
+	}
+
+	for headerKey, headerVal := range wr.HTTPHeaders() {
+		req.Header.Add(headerKey, headerVal)
+	}
+
+	if wr.HTTPUser() != "" || wr.HTTPPass() != "" {
+		req.SetBasicAuth(wr.HTTPUser(), wr.HTTPPass())
+	}
+
+	resp, err = client.Do(req)
+	if err != nil {
+		logrus.WithFields(logrus.Fields{
+			"Method":     "http.Client{}.Do",
+			"URL":        url,
+			"HTTPMethod": wr.HTTPMethod(),
+		}).Error(err)
+		return nil, err
+
+	} else if resp != nil && resp.Body != nil {
+		resp.Body.Close()
+	}
+
+	return resp, err
+}
+
 type Watcher struct {
 	Base
 }
@@ -138,7 +194,7 @@ func (w *Watcher) All(tx *sqlx.Tx) ([]*WatcherRow, error) {
 
 // AllSplitToDaemons returns all watchers rows divided into daemons equally.
 func (w *Watcher) AllSplitToDaemons(tx *sqlx.Tx, daemons []string) (map[string][]*WatcherRow, error) {
-	watcherRows, err := w.All(tx)
+	wrs, err := w.All(tx)
 	if err != nil {
 		return nil, err
 	}
@@ -149,8 +205,8 @@ func (w *Watcher) AllSplitToDaemons(tx *sqlx.Tx, daemons []string) (map[string][
 	}
 
 	bucketsPointer := 0
-	for _, watcherRow := range watcherRows {
-		buckets[bucketsPointer] = append(buckets[bucketsPointer], watcherRow)
+	for _, wr := range wrs {
+		buckets[bucketsPointer] = append(buckets[bucketsPointer], wr)
 		bucketsPointer = bucketsPointer + 1
 
 		if bucketsPointer >= len(buckets) {
@@ -196,11 +252,11 @@ func (w *Watcher) rowFromSqlResult(tx *sqlx.Tx, sqlResult sql.Result) (*WatcherR
 
 // GetByID returns one record by id.
 func (w *Watcher) GetByID(tx *sqlx.Tx, id int64) (*WatcherRow, error) {
-	watcherRow := &WatcherRow{}
+	wr := &WatcherRow{}
 	query := fmt.Sprintf("SELECT * FROM %v WHERE id=$1", w.table)
-	err := w.db.Get(watcherRow, query, id)
+	err := w.db.Get(wr, query, id)
 
-	return watcherRow, err
+	return wr, err
 }
 
 // CreateOrUpdateParameters builds params for insert or update.

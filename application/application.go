@@ -368,56 +368,7 @@ func (app *Application) ActiveWatchOnce(clusterID int64, watcherRow *dal.Watcher
 
 		} else if watcherRow.Command() == "http" {
 			go func(hostname string) {
-				var err error
-
-				url := fmt.Sprintf("%v://%v:%s", watcherRow.HTTPScheme(), hostname, watcherRow.HTTPPort())
-
-				client := &http.Client{}
-
-				var req *http.Request
-
-				if watcherRow.HTTPPostBody() != "" {
-					req, err = http.NewRequest(strings.ToUpper(watcherRow.HTTPMethod()), url, strings.NewReader(watcherRow.HTTPPostBody()))
-
-					// Detect if POST body is JSON and set content-type
-					if strings.HasPrefix(watcherRow.HTTPPostBody(), "{") || strings.HasPrefix(watcherRow.HTTPPostBody(), "[") {
-						req.Header.Set("Content-Type", "application/json")
-					} else {
-						req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-					}
-
-				} else {
-					req, err = http.NewRequest(strings.ToUpper(watcherRow.HTTPMethod()), url, nil)
-				}
-
-				for headerKey, headerVal := range watcherRow.HTTPHeaders() {
-					req.Header.Add(headerKey, headerVal)
-				}
-
-				if err != nil {
-					logrus.WithFields(logrus.Fields{
-						"URL":        url,
-						"HTTPMethod": watcherRow.HTTPMethod(),
-						"Method":     "http.NewRequest",
-					}).Error(err)
-					return
-				}
-
-				if watcherRow.HTTPUser() != "" || watcherRow.HTTPPass() != "" {
-					req.SetBasicAuth(watcherRow.HTTPUser(), watcherRow.HTTPPass())
-				}
-
-				resp, err := client.Do(req)
-				if err != nil {
-					logrus.WithFields(logrus.Fields{
-						"URL":        url,
-						"HTTPMethod": watcherRow.HTTPMethod(),
-						"Method":     "http.Client{}.Do",
-					}).Error(err)
-					return
-				} else if resp != nil && resp.Body != nil {
-					resp.Body.Close()
-				}
+				resp, err := watcherRow.PerformActiveCheckHTTP(hostname)
 
 				if err != nil || (resp != nil && resp.StatusCode != watcherRow.HTTPCode()) {
 					errCollectorMutex.Lock()
@@ -426,11 +377,11 @@ func (app *Application) ActiveWatchOnce(clusterID int64, watcherRow *dal.Watcher
 					errCollectorMutex.Unlock()
 
 					logrus.WithFields(logrus.Fields{
-						"URL":                url,
+						"Method":             "watcherRow.PerformActiveCheckHTTP",
+						"URL":                resp.Request.URL.String(),
 						"HTTPMethod":         watcherRow.HTTPMethod(),
 						"StatusCode":         resp.StatusCode,
 						"ExpectedStatusCode": watcherRow.HTTPCode(),
-						"Method":             "HTTP Client fetch",
 					}).Error(err)
 				}
 			}(hostname)
