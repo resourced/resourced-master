@@ -32,7 +32,6 @@ Highcharts.theme = {
             fontFamily: "'Lato', sans-serif"
         },
         plotBorderColor: '#606063',
-        margin: 0,
         type: 'spline',
         animation: Highcharts.svg, // don't animate in old IE
         height: ResourcedMaster.highcharts.defaultHeight
@@ -61,8 +60,7 @@ Highcharts.theme = {
         title: {
             style: {
                 color: '#A0A0A3'
-            },
-            text: 'Date'
+            }
         },
         type: 'datetime',
         dateTimeLabelFormats: { // don't display the dummy year
@@ -84,7 +82,8 @@ Highcharts.theme = {
         title: {
             style: {
                 color: '#A0A0A3'
-            }
+            },
+            text: ''
         }
     },
     tooltip: {
