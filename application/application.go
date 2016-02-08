@@ -130,14 +130,17 @@ func (app *Application) mux() *mux.Router {
 	router.Handle("/api/hosts", alice.New(MustLoginApi).ThenFunc(handlers.GetApiHosts)).Methods("GET")
 	router.Handle("/api/hosts", alice.New(MustLoginApi).ThenFunc(handlers.PostApiHosts)).Methods("POST")
 
+	router.Handle("/api/metrics/{id}/hosts/{host}", alice.New(MustLoginApi).ThenFunc(handlers.GetApiTSMetricsByHost)).Methods("GET")
+	router.Handle("/api/metrics/{id}", alice.New(MustLoginApi).ThenFunc(handlers.GetApiTSMetrics)).Methods("GET")
+	router.Handle("/api/metrics/{id}/15min", alice.New(MustLoginApi).ThenFunc(handlers.GetApiTSMetrics15Min)).Methods("GET")
+
+	router.Handle(`/api/events`, alice.New(MustLoginApi).ThenFunc(handlers.PostApiEvents)).Methods("POST")
+	router.Handle(`/api/events/{id}`, alice.New(MustLoginApi).ThenFunc(handlers.DeleteApiEventsID)).Methods("DELETE")
+
 	router.Handle("/api/metadata", alice.New(MustLoginApi).ThenFunc(handlers.GetApiMetadata)).Methods("GET")
 	router.Handle(`/api/metadata/{key}`, alice.New(MustLoginApi).ThenFunc(handlers.PostApiMetadataKey)).Methods("POST")
 	router.Handle(`/api/metadata/{key}`, alice.New(MustLoginApi).ThenFunc(handlers.DeleteApiMetadataKey)).Methods("DELETE")
 	router.Handle(`/api/metadata/{key}`, alice.New(MustLoginApi).ThenFunc(handlers.GetApiMetadataKey)).Methods("GET")
-
-	router.Handle("/api/metrics/{id}/hosts/{host}", alice.New(MustLoginApi).ThenFunc(handlers.GetApiTSMetricsByHost)).Methods("GET")
-	router.Handle("/api/metrics/{id}", alice.New(MustLoginApi).ThenFunc(handlers.GetApiTSMetrics)).Methods("GET")
-	router.Handle("/api/metrics/{id}/15min", alice.New(MustLoginApi).ThenFunc(handlers.GetApiTSMetrics15Min)).Methods("GET")
 
 	// Path of static files must be last!
 	router.PathPrefix("/").Handler(http.FileServer(http.Dir("static")))

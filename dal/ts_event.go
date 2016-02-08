@@ -1,6 +1,7 @@
 package dal
 
 import (
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"time"
@@ -43,7 +44,7 @@ func (ts *TSEvent) GetByID(tx *sqlx.Tx, id int64) (*TSEventRow, error) {
 	return row, err
 }
 
-func (ts *TSEvent) CreateFromJSON(tx *sqlx.Tx, clusterID int64, jsonData []byte) (*TSEventRow, error) {
+func (ts *TSEvent) CreateFromJSON(tx *sqlx.Tx, id, clusterID int64, jsonData []byte) (*TSEventRow, error) {
 	payload := &TSEventCreatePayload{}
 
 	err := json.Unmarshal(jsonData, payload)
@@ -51,11 +52,11 @@ func (ts *TSEvent) CreateFromJSON(tx *sqlx.Tx, clusterID int64, jsonData []byte)
 		return nil, err
 	}
 
-	return ts.Create(tx, clusterID, payload.From, payload.To, payload.Description)
+	return ts.Create(tx, id, clusterID, payload.From, payload.To, payload.Description)
 }
 
 // Create a new record.
-func (ts *TSEvent) Create(tx *sqlx.Tx, clusterID, fromUnix, toUnix int64, description string) (*TSEventRow, error) {
+func (ts *TSEvent) Create(tx *sqlx.Tx, id, clusterID, fromUnix, toUnix int64, description string) (*TSEventRow, error) {
 	var from time.Time
 	var to time.Time
 
@@ -71,8 +72,6 @@ func (ts *TSEvent) Create(tx *sqlx.Tx, clusterID, fromUnix, toUnix int64, descri
 		to = time.Unix(fromUnix, 0)
 	}
 
-	id := ts.NewExplicitID()
-
 	insertData := make(map[string]interface{})
 	insertData["id"] = id
 	insertData["cluster_id"] = clusterID
@@ -86,4 +85,10 @@ func (ts *TSEvent) Create(tx *sqlx.Tx, clusterID, fromUnix, toUnix int64, descri
 	}
 
 	return ts.GetByID(tx, id)
+}
+
+// DeleteByID deletes record by id.
+func (ts *TSEvent) DeleteByID(tx *sqlx.Tx, id int64) (sql.Result, error) {
+	query := fmt.Sprintf("DELETE FROM %v WHERE id=$1", ts.table)
+	return ts.db.Exec(query, id)
 }
