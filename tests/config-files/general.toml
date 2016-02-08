@@ -4,10 +4,7 @@ Addr = ":55655"
 # Valid LogLevel are: debug, info, warning, error, fatal, panic
 LogLevel = "info"
 
-# List of all instances hostnames
-Hosts = []
-
-# DSN to PostgreSQL
+# DSN to core PostgreSQL database
 DSN = "postgres://localhost:5432/resourced-master?sslmode=disable"
 
 RequestTimeout = "1s"

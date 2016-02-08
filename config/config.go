@@ -28,7 +28,6 @@ func NewGeneralConfig(configDir string) (GeneralConfig, error) {
 type GeneralConfig struct {
 	Addr           string
 	LogLevel       string
-	Hosts          []string
 	DSN            string
 	CookieSecret   string
 	RequestTimeout string
