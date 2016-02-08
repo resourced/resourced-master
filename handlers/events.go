@@ -13,6 +13,33 @@ import (
 	"github.com/resourced/resourced-master/multidb"
 )
 
+func GetApiEvents(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	accessTokenRow := context.Get(r, "accessTokenRow").(*dal.AccessTokenRow)
+
+	createdInterval := r.URL.Query().Get("CreatedInterval")
+	if createdInterval == "" {
+		createdInterval = "1 hour"
+	}
+
+	tsEventsDB := context.Get(r, "multidb.TSEvents").(*multidb.MultiDB).PickRandom()
+
+	rows, err := dal.NewTSEvent(tsEventsDB).AllByClusterIDAndUpdatedInterval(nil, accessTokenRow.ClusterID, createdInterval)
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
+
+	rowsJSONBytes, err := json.Marshal(rows)
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
+
+	w.Write(rowsJSONBytes)
+}
+
 func PostApiEvents(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 

@@ -35,6 +35,15 @@ type TSEvent struct {
 	Base
 }
 
+// AllByClusterIDAndUpdatedInterval returns all rows.
+func (ts *TSEvent) AllByClusterIDAndUpdatedInterval(tx *sqlx.Tx, clusterID int64, createdInterval string) ([]*TSEventRow, error) {
+	rows := []*TSEventRow{}
+	query := fmt.Sprintf("SELECT * FROM %v WHERE cluster_id=$1 AND created_from >= (NOW() at time zone 'utc' - INTERVAL '%v')", ts.table, createdInterval)
+	err := ts.db.Select(&rows, query, clusterID)
+
+	return rows, err
+}
+
 // GetByID returns record by id.
 func (ts *TSEvent) GetByID(tx *sqlx.Tx, id int64) (*TSEventRow, error) {
 	row := &TSEventRow{}
