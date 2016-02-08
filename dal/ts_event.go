@@ -1,6 +1,7 @@
 package dal
 
 import (
+	"encoding/json"
 	"fmt"
 	"time"
 
@@ -13,6 +14,12 @@ func NewTSEvent(db *sqlx.DB) *TSEvent {
 	ts.table = "ts_events"
 
 	return ts
+}
+
+type TSEventCreatePayload struct {
+	From        int64  `json:"from"`
+	To          int64  `json:"to"`
+	Description string `json:"description"`
 }
 
 type TSEventRow struct {
@@ -34,6 +41,17 @@ func (ts *TSEvent) GetByID(tx *sqlx.Tx, id int64) (*TSEventRow, error) {
 	err := ts.db.Get(row, query, id)
 
 	return row, err
+}
+
+func (ts *TSEvent) CreateFromJSON(tx *sqlx.Tx, clusterID int64, jsonData []byte) (*TSEventRow, error) {
+	payload := &TSEventCreatePayload{}
+
+	err := json.Unmarshal(jsonData, payload)
+	if err != nil {
+		return nil, err
+	}
+
+	return ts.Create(tx, clusterID, payload.From, payload.To, payload.Description)
 }
 
 // Create a new record.

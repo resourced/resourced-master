@@ -1,1 +1,1 @@
-core/0020_add-ts-events.down.sql
+DROP TABLE IF EXISTS ts_events CASCADE;

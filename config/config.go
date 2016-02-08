@@ -63,6 +63,12 @@ type GeneralConfig struct {
 		ReplicationPercentage int
 		DataRetention         int
 	}
+
+	Events struct {
+		DSNs                  []string
+		ReplicationPercentage int
+		DataRetention         int
+	}
 }
 
 // NewDBConfig is the constructor for DBConfig.
@@ -96,6 +102,12 @@ func NewDBConfig(generalConfig GeneralConfig) (*DBConfig, error) {
 	}
 	conf.TSMetrics = tsMetricMultiDB
 
+	tsEventMultiDB, err := multidb.New(generalConfig.Events.DSNs, generalConfig.Events.ReplicationPercentage)
+	if err != nil {
+		return nil, err
+	}
+	conf.TSEvents = tsEventMultiDB
+
 	return conf, nil
 }
 
@@ -104,4 +116,5 @@ type DBConfig struct {
 	CoreDSN    string
 	TSWatchers *multidb.MultiDB
 	TSMetrics  *multidb.MultiDB
+	TSEvents   *multidb.MultiDB
 }
