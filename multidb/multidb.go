@@ -54,11 +54,13 @@ func (mdb *MultiDB) NumOfConnectionsByReplicationPercentage() int {
 }
 
 func (mdb *MultiDB) PickMultipleForWrites() []*sqlx.DB {
-	dbs := make([]*sqlx.DB, mdb.NumOfConnectionsByReplicationPercentage())
+	maxDbs := mdb.NumOfConnectionsByReplicationPercentage()
+	dbs := make([]*sqlx.DB, len(mdb.DBs))
+	permutation := rand.Perm(len(mdb.DBs))
 
-	for i := 0; i < len(dbs); i++ {
-		dbs[i] = mdb.PickRandom()
+	for i, v := range permutation {
+		dbs[v] = mdb.DBs[i]
 	}
 
-	return dbs
+	return dbs[0:maxDbs]
 }
