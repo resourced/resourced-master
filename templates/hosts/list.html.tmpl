@@ -321,12 +321,12 @@ $('#graph-modal').on('shown.bs.modal', function() {
 
 $('#graph-modal').on('show.bs.modal', function (event) {
     var button = $(event.relatedTarget);   // Button that triggered the modal
-    var metricId = button.data('metric-id');
+    var metricID = button.data('metric-id');
     var metricKey = button.data('metric-key');
     var host = button.data('host');
 
     var modal = $(this);
-    modal.data('metric-id', metricId);
+    modal.data('metric-id', metricID);
     modal.data('metric-key', metricKey);
     modal.data('host', host);
 
@@ -343,7 +343,7 @@ $('#graph-modal').on('show.bs.modal', function (event) {
     containerDOM.css('visibility', 'hidden');
 
     $.ajax({
-        url: "/api/metrics/" + metricId + "/hosts/" + host + "?CreatedInterval=" + createdInterval,
+        url: "/api/metrics/" + metricID + "/hosts/" + host + "?CreatedInterval=" + createdInterval,
         beforeSend: function(xhr) {
             xhr.setRequestHeader("Authorization", "Basic " + window.btoa("{{ $.AccessToken.Token }}:"));
         },
@@ -360,7 +360,7 @@ $('#graph-modal').on('show.bs.modal', function (event) {
 
 $('.chart-created-interval').on('change', function(event) {
     var modal = $('#graph-modal');
-    var metricId = modal.data('metric-id');
+    var metricID = modal.data('metric-id');
     var metricKey = modal.data('metric-key');
     var host = modal.data('host');
     var containerDOM = modal.find('.graph-modal-container');
@@ -368,19 +368,11 @@ $('.chart-created-interval').on('change', function(event) {
 
     modal.data('created-interval', createdInterval);
 
-    $.ajax({
-        url: "/api/metrics/" + metricId + "/hosts/" + host + "?CreatedInterval=" + createdInterval,
-        beforeSend: function(xhr) {
-            xhr.setRequestHeader("Authorization", "Basic " + window.btoa("{{ $.AccessToken.Token }}:"));
-        },
-        success: function(result) {
-            containerDOM.highcharts({
-                title: {
-                    text: metricKey
-                },
-                series: [result]
-            });
-        }
+    ResourcedMaster.metrics.renderOneChart('{{ $.AccessToken.Token }}', metricID, {
+        'host': host,
+        'createdInterval': createdInterval,
+        'containerDOM': containerDOM,
+        'title': metricKey
     });
 });
 </script>

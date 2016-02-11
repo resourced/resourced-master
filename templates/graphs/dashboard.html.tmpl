@@ -107,82 +107,26 @@ function renderChartPreview() {
     var lastMetricID = lastMetricIDAndKey[0];
     var lastMetricKey = lastMetricIDAndKey[1];
     var createdInterval = '15 minute'; // Don't fetch too many things since this is just a preview.
+    var containerDOM = $('#add-chart-modal').find('.add-chart-modal-container');
 
-    var modal = $('#add-chart-modal');
-    var containerDOM = modal.find('.add-chart-modal-container');
-
-
-    $.ajax({
-        url: "/api/metrics/" + lastMetricID + "?CreatedInterval=" + createdInterval,
-        beforeSend: function(xhr) {
-            xhr.setRequestHeader("Authorization", "Basic " + window.btoa("{{ $.AccessToken.Token }}:"));
-        },
-        success: function(result) {
-            containerDOM.highcharts({
-                chart: {
-                    height: ResourcedMaster.highcharts.defaultHeight + 6
-                },
-                title: {
-                    text: lastMetricKey
-                },
-                series: result
-            });
-        }
-    });
-}
-
-function renderOneChart(metricID, metricKey, createdInterval, containerDOM) {
-    $.ajax({
-        url: "/api/metrics/" + metricID + "?CreatedInterval=" + createdInterval,
-        beforeSend: function(xhr) {
-            xhr.setRequestHeader("Authorization", "Basic " + window.btoa("{{ $.AccessToken.Token }}:"));
-        },
-        success: function(result) {
-            containerDOM.highcharts({
-                chart: {
-                    width: containerDOM.width(),
-                    height: ResourcedMaster.highcharts.defaultHeight
-                },
-                title: {
-                    text: ''
-                },
-                series: result
-            });
-        }
-    });
-}
-function renderOneChartAggr(metricID, metricKey, shortAggrInterval, createdInterval, containerDOM) {
-    $.ajax({
-        url: "/api/metrics/" + metricID + "/" + shortAggrInterval + "?CreatedInterval=" + createdInterval,
-        beforeSend: function(xhr) {
-            xhr.setRequestHeader("Authorization", "Basic " + window.btoa("{{ $.AccessToken.Token }}:"));
-        },
-        success: function(result) {
-            containerDOM.highcharts({
-                chart: {
-                    width: containerDOM.width(),
-                    height: ResourcedMaster.highcharts.defaultHeight
-                },
-                title: {
-                    text: ''
-                },
-                series: result
-            });
-        }
+    ResourcedMaster.metrics.renderOneChart('{{ $.AccessToken.Token }}', lastMetricID, {
+        'createdInterval': createdInterval,
+        'containerDOM': containerDOM,
+        'height': ResourcedMaster.highcharts.defaultHeight + 6,
+        'title': lastMetricKey
     });
 }
 
 function renderAllChart() {
     $('.graphs-metrics-container .panel-heading').each(function() {
         var metricID = $(this).data('id');
-        var metricKey = $(this).data('key');
         var createdInterval = $(this).find('select').data('interval');
         var containerDOM = $(this).siblings('.panel-body');
 
         if(createdInterval.indexOf('day') > -1 || createdInterval.indexOf('6 hour') > -1 || createdInterval.indexOf('12 hour') > -1 || createdInterval.indexOf('24 hour') > -1) {
-            renderOneChartAggr(metricID, metricKey, '15min', createdInterval, containerDOM);
+            ResourcedMaster.metrics.renderOneChartAggr('{{ $.AccessToken.Token }}', metricID, {'shortAggrInterval': '15min', 'createdInterval': createdInterval, 'containerDOM': containerDOM});
         } else {
-            renderOneChart(metricID, metricKey, createdInterval, containerDOM);
+            ResourcedMaster.metrics.renderOneChart('{{ $.AccessToken.Token }}', metricID, {'createdInterval': createdInterval, 'containerDOM': containerDOM});
         }
     });
 }
@@ -239,16 +183,15 @@ $('.graphs-select').change(function() {
 
 $('.chart-created-interval').change(function() {
     var metricID = $(this).data('id');
-    var metricKey = $(this).data('key');
     var createdInterval = $(this).val();
     var containerDOM = $(this).closest('.panel-heading').siblings('.panel-body');
 
     $(this).data('interval', createdInterval);
 
     if(createdInterval.indexOf('day') > -1 || createdInterval.indexOf('6 hour') > -1 || createdInterval.indexOf('12 hour') > -1 || createdInterval.indexOf('24 hour') > -1) {
-        renderOneChartAggr(metricID, metricKey, '15min', createdInterval, containerDOM);
+        ResourcedMaster.metrics.renderOneChartAggr('{{ $.AccessToken.Token }}', metricID, {'shortAggrInterval': '15min', 'createdInterval': createdInterval, 'containerDOM': containerDOM});
     } else {
-        renderOneChart(metricID, metricKey, createdInterval, containerDOM);
+        ResourcedMaster.metrics.renderOneChart('{{ $.AccessToken.Token }}', metricID, {'createdInterval': createdInterval, 'containerDOM': containerDOM});
     }
 });
 
