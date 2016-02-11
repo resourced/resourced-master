@@ -35,10 +35,10 @@ type TSEvent struct {
 	Base
 }
 
-// AllByClusterIDAndUpdatedInterval returns all rows.
-func (ts *TSEvent) AllByClusterIDAndUpdatedInterval(tx *sqlx.Tx, clusterID int64, createdInterval string) ([]*TSEventRow, error) {
+// AllLinesByClusterIDAndCreatedFromInterval returns all rows without time stretch between created_from and created_to.
+func (ts *TSEvent) AllLinesByClusterIDAndCreatedFromInterval(tx *sqlx.Tx, clusterID int64, createdInterval string) ([]*TSEventRow, error) {
 	rows := []*TSEventRow{}
-	query := fmt.Sprintf("SELECT * FROM %v WHERE cluster_id=$1 AND created_from >= (NOW() at time zone 'utc' - INTERVAL '%v')", ts.table, createdInterval)
+	query := fmt.Sprintf("SELECT * FROM %v WHERE cluster_id=$1 AND created_from = created_to AND created_from >= (NOW() at time zone 'utc' - INTERVAL '%v')", ts.table, createdInterval)
 	err := ts.db.Select(&rows, query, clusterID)
 
 	return rows, err
