@@ -25,7 +25,7 @@ func GetApiEventsLine(w http.ResponseWriter, r *http.Request) {
 
 	tsEventsDB := context.Get(r, "multidb.TSEvents").(*multidb.MultiDB).PickRandom()
 
-	rows, err := dal.NewTSEvent(tsEventsDB).AllLinesByClusterIDAndCreatedFromInterval(nil, accessTokenRow.ClusterID, createdInterval)
+	rows, err := dal.NewTSEvent(tsEventsDB).AllLinesByClusterIDAndCreatedFromIntervalForHighchart(nil, accessTokenRow.ClusterID, createdInterval)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return

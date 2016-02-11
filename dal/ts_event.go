@@ -17,6 +17,13 @@ func NewTSEvent(db *sqlx.DB) *TSEvent {
 	return ts
 }
 
+type TSEventHighchartLinePayload struct {
+	ID          int64  `json:"ID"`
+	CreatedFrom int64  `json:"CreatedFrom"`
+	CreatedTo   int64  `json:"CreatedTo"`
+	Description string `json:"Description"`
+}
+
 type TSEventCreatePayload struct {
 	From        int64  `json:"from"`
 	To          int64  `json:"to"`
@@ -36,12 +43,27 @@ type TSEvent struct {
 }
 
 // AllLinesByClusterIDAndCreatedFromInterval returns all rows without time stretch between created_from and created_to.
-func (ts *TSEvent) AllLinesByClusterIDAndCreatedFromInterval(tx *sqlx.Tx, clusterID int64, createdInterval string) ([]*TSEventRow, error) {
+func (ts *TSEvent) AllLinesByClusterIDAndCreatedFromIntervalForHighchart(tx *sqlx.Tx, clusterID int64, createdInterval string) ([]TSEventHighchartLinePayload, error) {
 	rows := []*TSEventRow{}
 	query := fmt.Sprintf("SELECT * FROM %v WHERE cluster_id=$1 AND created_from = created_to AND created_from >= (NOW() at time zone 'utc' - INTERVAL '%v')", ts.table, createdInterval)
 	err := ts.db.Select(&rows, query, clusterID)
+	if err != nil {
+		return nil, err
+	}
 
-	return rows, err
+	hcRows := make([]TSEventHighchartLinePayload, len(rows))
+
+	for i, row := range rows {
+		hcRow := TSEventHighchartLinePayload{}
+		hcRow.ID = row.ID
+		hcRow.CreatedFrom = row.CreatedFrom.UnixNano() / 1000000
+		hcRow.CreatedTo = row.CreatedTo.UnixNano() / 1000000
+		hcRow.Description = row.Description
+
+		hcRows[i] = hcRow
+	}
+
+	return hcRows, err
 }
 
 // GetByID returns record by id.

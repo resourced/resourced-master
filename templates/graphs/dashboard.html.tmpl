@@ -122,11 +122,18 @@ function renderAllChart() {
         var metricID = $(this).data('id');
         var createdInterval = $(this).find('select').data('interval');
         var containerDOM = $(this).siblings('.panel-body');
+        var accessToken = '{{ $.AccessToken.Token }}';
 
         if(createdInterval.indexOf('day') > -1 || createdInterval.indexOf('6 hour') > -1 || createdInterval.indexOf('12 hour') > -1 || createdInterval.indexOf('24 hour') > -1) {
-            ResourcedMaster.metrics.renderOneChartAggr('{{ $.AccessToken.Token }}', metricID, {'shortAggrInterval': '15min', 'createdInterval': createdInterval, 'containerDOM': containerDOM});
+            ResourcedMaster.metrics.renderOneChartAggr(accessToken, metricID, {'shortAggrInterval': '15min', 'createdInterval': createdInterval, 'containerDOM': containerDOM});
         } else {
-            ResourcedMaster.metrics.renderOneChart('{{ $.AccessToken.Token }}', metricID, {'createdInterval': createdInterval, 'containerDOM': containerDOM});
+            ResourcedMaster.metrics.renderOneChart(accessToken, metricID, {
+                'createdInterval': createdInterval,
+                'containerDOM': containerDOM,
+                'onLoad': function(event) {
+                    ResourcedMaster.metrics.renderEventLinesOneChart(accessToken, {'createdInterval': createdInterval, 'containerDOM': containerDOM});
+                }
+            });
         }
     });
 }

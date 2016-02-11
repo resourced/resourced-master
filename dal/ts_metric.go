@@ -17,7 +17,7 @@ func NewTSMetric(db *sqlx.DB) *TSMetric {
 	return ts
 }
 
-type HighchartPayload struct {
+type TSMetricHighchartPayload struct {
 	Name string          `json:"name"`
 	Data [][]interface{} `json:"data"`
 }
@@ -46,8 +46,8 @@ type TSMetric struct {
 	Base
 }
 
-func (ts *TSMetric) metricRowsForHighchart(tx *sqlx.Tx, host string, tsMetricRows []*TSMetricRow) (*HighchartPayload, error) {
-	hcPayload := &HighchartPayload{}
+func (ts *TSMetric) metricRowsForHighchart(tx *sqlx.Tx, host string, tsMetricRows []*TSMetricRow) (*TSMetricHighchartPayload, error) {
+	hcPayload := &TSMetricHighchartPayload{}
 	hcPayload.Name = host
 	hcPayload.Data = make([][]interface{}, len(tsMetricRows))
 
@@ -204,7 +204,7 @@ func (ts *TSMetric) AllByMetricIDHostAndInterval(tx *sqlx.Tx, clusterID, metricI
 	return rows, err
 }
 
-func (ts *TSMetric) AllByMetricIDHostAndIntervalForHighchart(tx *sqlx.Tx, clusterID, metricID int64, host string, interval string) (*HighchartPayload, error) {
+func (ts *TSMetric) AllByMetricIDHostAndIntervalForHighchart(tx *sqlx.Tx, clusterID, metricID int64, host string, interval string) (*TSMetricHighchartPayload, error) {
 	tsMetricRows, err := ts.AllByMetricIDHostAndInterval(tx, clusterID, metricID, host, interval)
 	if err != nil {
 		return nil, err
@@ -225,7 +225,7 @@ func (ts *TSMetric) AllByMetricIDAndInterval(tx *sqlx.Tx, clusterID, metricID in
 	return rows, err
 }
 
-func (ts *TSMetric) AllByMetricIDAndIntervalForHighchart(tx *sqlx.Tx, clusterID, metricID int64, interval string) ([]*HighchartPayload, error) {
+func (ts *TSMetric) AllByMetricIDAndIntervalForHighchart(tx *sqlx.Tx, clusterID, metricID int64, interval string) ([]*TSMetricHighchartPayload, error) {
 	tsMetricRows, err := ts.AllByMetricIDAndInterval(tx, clusterID, metricID, interval)
 	if err != nil {
 		return nil, err
@@ -245,7 +245,7 @@ func (ts *TSMetric) AllByMetricIDAndIntervalForHighchart(tx *sqlx.Tx, clusterID,
 	}
 
 	// Then generate multiple Highchart payloads per all these hosts.
-	highChartPayloads := make([]*HighchartPayload, 0)
+	highChartPayloads := make([]*TSMetricHighchartPayload, 0)
 
 	for host, tsMetricRows := range mapHostsAndMetrics {
 		highChartPayload, err := ts.metricRowsForHighchart(tx, host, tsMetricRows)

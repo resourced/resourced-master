@@ -6,8 +6,8 @@ ResourcedMaster.globals.currentCluster = {};
 
 ResourcedMaster.metrics = {};
 ResourcedMaster.metrics.get = function(accessToken, metricID, options) {
-    var path = '/api/metrics/' + metricID
-    var getParams = ''
+    var path = '/api/metrics/' + metricID;
+    var getParams = '';
 
     if('host' in options) {
         path = path + '/hosts/' + options.host;
@@ -22,7 +22,7 @@ ResourcedMaster.metrics.get = function(accessToken, metricID, options) {
     $.ajax({
         url: path + '?' + getParams,
         beforeSend: function(xhr) {
-            xhr.setRequestHeader("Authorization", "Basic " + window.btoa(accessToken + ":"));
+            xhr.setRequestHeader("Authorization", "Basic " + window.btoa(accessToken + ':'));
         },
         success: options.successCallback || null
     });
@@ -36,7 +36,10 @@ ResourcedMaster.metrics.renderOneChart = function(accessToken, metricID, options
         options.containerDOM.highcharts({
             chart: {
                 width: options.containerDOM.width(),
-                height: options.height || ResourcedMaster.highcharts.defaultHeight
+                height: options.height || ResourcedMaster.highcharts.defaultHeight,
+                events: {
+                    load: options.onLoad
+                }
             },
             title: {
                 text: options.title || ''
@@ -56,7 +59,10 @@ ResourcedMaster.metrics.renderOneChartAggr = function(accessToken, metricID, opt
         options.containerDOM.highcharts({
             chart: {
                 width: options.containerDOM.width(),
-                height: ResourcedMaster.highcharts.defaultHeight
+                height: options.height || ResourcedMaster.highcharts.defaultHeight,
+                events: {
+                    load: options.onLoad
+                }
             },
             title: {
                 text: ''
@@ -66,8 +72,40 @@ ResourcedMaster.metrics.renderOneChartAggr = function(accessToken, metricID, opt
     };
 
     ResourcedMaster.metrics.get(accessToken, metricID, options);
-}
+};
+ResourcedMaster.metrics.getEventLines = function(accessToken, options) {
+    var path = '/api/events/line';
+    var getParams = ''
 
+    if('createdInterval' in options) {
+        getParams = getParams + 'CreatedInterval=' + options.createdInterval;
+    }
+
+    $.ajax({
+        url: path + '?' + getParams,
+        beforeSend: function(xhr) {
+            xhr.setRequestHeader("Authorization", "Basic " + window.btoa(accessToken + ':'));
+        },
+        success: options.successCallback || null
+    });
+};
+ResourcedMaster.metrics.renderEventLinesOneChart = function(accessToken, options) {
+    options.successCallback = function(result) {
+        if (result.constructor != Array) {
+            result = [result];
+        }
+
+        for (i = 0; i < result.length; i++) {
+            options.containerDOM.highcharts().xAxis[0].addPlotLine({
+                value: result[i].CreatedFrom,
+                color: 'red',
+                id: result[i].ID
+            });
+        }
+    };
+
+    ResourcedMaster.metrics.getEventLines(accessToken, options);
+};
 
 ResourcedMaster.highcharts = {};
 ResourcedMaster.highcharts.defaultHeight = 300;

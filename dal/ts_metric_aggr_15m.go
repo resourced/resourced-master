@@ -34,8 +34,8 @@ type TSMetricAggr15m struct {
 	Base
 }
 
-func (ts *TSMetricAggr15m) metricRowsForHighchart(tx *sqlx.Tx, host string, tsMetricAggrRows []*TSMetricAggr15mRow) (*HighchartPayload, error) {
-	hcPayload := &HighchartPayload{}
+func (ts *TSMetricAggr15m) metricRowsForHighchart(tx *sqlx.Tx, host string, tsMetricAggrRows []*TSMetricAggr15mRow) (*TSMetricHighchartPayload, error) {
+	hcPayload := &TSMetricHighchartPayload{}
 	hcPayload.Name = host
 	hcPayload.Data = make([][]interface{}, len(tsMetricAggrRows))
 
@@ -158,7 +158,7 @@ func (ts *TSMetricAggr15m) AllByMetricIDAndInterval(tx *sqlx.Tx, clusterID, metr
 	return rows, err
 }
 
-func (ts *TSMetricAggr15m) AllByMetricIDAndIntervalForHighchart(tx *sqlx.Tx, clusterID, metricID int64, interval string) ([]*HighchartPayload, error) {
+func (ts *TSMetricAggr15m) AllByMetricIDAndIntervalForHighchart(tx *sqlx.Tx, clusterID, metricID int64, interval string) ([]*TSMetricHighchartPayload, error) {
 	tsMetricRows, err := ts.AllByMetricIDAndInterval(tx, clusterID, metricID, interval)
 	if err != nil {
 		return nil, err
@@ -178,7 +178,7 @@ func (ts *TSMetricAggr15m) AllByMetricIDAndIntervalForHighchart(tx *sqlx.Tx, clu
 	}
 
 	// Then generate multiple Highchart payloads per all these hosts.
-	highChartPayloads := make([]*HighchartPayload, 0)
+	highChartPayloads := make([]*TSMetricHighchartPayload, 0)
 
 	for host, tsMetricRows := range mapHostsAndMetrics {
 		highChartPayload, err := ts.metricRowsForHighchart(tx, host, tsMetricRows)
