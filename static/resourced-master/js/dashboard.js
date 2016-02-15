@@ -75,7 +75,7 @@ ResourcedMaster.metrics.renderOneChartAggr = function(accessToken, metricID, opt
 };
 ResourcedMaster.metrics.getEventLines = function(accessToken, options) {
     var path = '/api/events/line';
-    var getParams = ''
+    var getParams = '';
 
     if('createdInterval' in options) {
         getParams = getParams + 'CreatedInterval=' + options.createdInterval;
@@ -95,12 +95,23 @@ ResourcedMaster.metrics.renderEventLinesOneChart = function(accessToken, options
             result = [result];
         }
 
+        var xAxis = options.containerDOM.highcharts().xAxis[0];
+
         for (i = 0; i < result.length; i++) {
-            options.containerDOM.highcharts().xAxis[0].addPlotLine({
+            var plotLine = {
+                color: '#fff',
+                width: 1,
                 value: result[i].CreatedFrom,
-                color: 'red',
-                id: result[i].ID
-            });
+                id: result[i].ID,
+                dashStyle: 'longdashdot',
+                label: {
+                    text: result[i].Description,
+                    style: {
+                        color: '#fff'
+                    }
+                }
+            };
+            xAxis.addPlotBand(plotLine);
         }
     };
 
