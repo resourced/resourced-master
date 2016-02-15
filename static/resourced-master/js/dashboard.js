@@ -73,8 +73,8 @@ ResourcedMaster.metrics.renderOneChartAggr = function(accessToken, metricID, opt
 
     ResourcedMaster.metrics.get(accessToken, metricID, options);
 };
-ResourcedMaster.metrics.getEventLines = function(accessToken, options) {
-    var path = '/api/events/line';
+ResourcedMaster.metrics.getEvents = function(accessToken, eventType, options) {
+    var path = '/api/events/' + eventType;
     var getParams = '';
 
     if('createdInterval' in options) {
@@ -89,7 +89,7 @@ ResourcedMaster.metrics.getEventLines = function(accessToken, options) {
         success: options.successCallback || null
     });
 };
-ResourcedMaster.metrics.renderEventLinesOneChart = function(accessToken, options) {
+ResourcedMaster.metrics.renderEventsOneChart = function(accessToken, eventType, options) {
     options.successCallback = function(result) {
         if (result.constructor != Array) {
             result = [result];
@@ -98,24 +98,47 @@ ResourcedMaster.metrics.renderEventLinesOneChart = function(accessToken, options
         var xAxis = options.containerDOM.highcharts().xAxis[0];
 
         for (i = 0; i < result.length; i++) {
-            var plotLine = {
-                color: '#fff',
-                width: 1,
-                value: result[i].CreatedFrom,
-                id: result[i].ID,
-                dashStyle: 'longdashdot',
-                label: {
-                    text: result[i].Description,
-                    style: {
-                        color: '#fff'
+            var eventLineColor = randomColor({hue: 'green', luminosity: 'light', count: 1})[0];
+            var eventBandColor = randomColor({hue: 'yellow', luminosity: 'light', count: 1})[0];
+            var eventBandTextColor = randomColor({hue: 'green', luminosity: 'dark', count: 1})[0];
+
+            if(eventType == 'line') {
+                var plotEventSettings = {
+                    color: eventLineColor,
+                    width: 1,
+                    value: result[i].CreatedFrom,
+                    id: result[i].ID,
+                    dashStyle: 'longdashdot',
+                    label: {
+                        text: result[i].Description,
+                        style: {
+                            color: eventLineColor
+                        }
                     }
-                }
-            };
-            xAxis.addPlotBand(plotLine);
+                };
+                xAxis.addPlotLine(plotEventSettings);
+            }
+            else if(eventType == 'band') {
+                var plotEventSettings = {
+                    color: eventBandColor,
+                    from: result[i].CreatedFrom,
+                    to: result[i].CreatedTo,
+                    id: result[i].ID,
+                    dashStyle: 'longdashdot',
+                    label: {
+                        text: result[i].Description,
+                        style: {
+                            color: eventBandTextColor,
+                            fontWeight: 'bold'
+                        }
+                    }
+                };
+                xAxis.addPlotBand(plotEventSettings);
+            }
         }
     };
 
-    ResourcedMaster.metrics.getEventLines(accessToken, options);
+    ResourcedMaster.metrics.getEvents(accessToken, eventType, options);
 };
 
 ResourcedMaster.highcharts = {};

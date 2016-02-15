@@ -137,6 +137,7 @@ func (app *Application) mux() *mux.Router {
 	router.Handle(`/api/events`, alice.New(MustLoginApi).ThenFunc(handlers.PostApiEvents)).Methods("POST")
 	router.Handle(`/api/events/{id}`, alice.New(MustLoginApi).ThenFunc(handlers.DeleteApiEventsID)).Methods("DELETE")
 	router.Handle(`/api/events/line`, alice.New(MustLoginApi).ThenFunc(handlers.GetApiEventsLine)).Methods("GET")
+	router.Handle(`/api/events/band`, alice.New(MustLoginApi).ThenFunc(handlers.GetApiEventsBand)).Methods("GET")
 
 	router.Handle("/api/metadata", alice.New(MustLoginApi).ThenFunc(handlers.GetApiMetadata)).Methods("GET")
 	router.Handle(`/api/metadata/{key}`, alice.New(MustLoginApi).ThenFunc(handlers.PostApiMetadataKey)).Methods("POST")
