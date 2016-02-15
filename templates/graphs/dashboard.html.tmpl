@@ -131,7 +131,8 @@ function renderAllChart() {
                 'createdInterval': createdInterval,
                 'containerDOM': containerDOM,
                 'onLoad': function(event) {
-                    ResourcedMaster.metrics.renderEventLinesOneChart(accessToken, {'createdInterval': createdInterval, 'containerDOM': containerDOM});
+                    ResourcedMaster.metrics.renderEventsOneChart(accessToken, 'line', {'createdInterval': createdInterval, 'containerDOM': containerDOM});
+                    ResourcedMaster.metrics.renderEventsOneChart(accessToken, 'band', {'createdInterval': createdInterval, 'containerDOM': containerDOM});
                 }
             });
         }

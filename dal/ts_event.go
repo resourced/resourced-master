@@ -66,6 +66,30 @@ func (ts *TSEvent) AllLinesByClusterIDAndCreatedFromIntervalForHighchart(tx *sql
 	return hcRows, err
 }
 
+// AllBandsByClusterIDAndCreatedFromInterval returns all rows without time stretch between created_from and created_to.
+func (ts *TSEvent) AllBandsByClusterIDAndCreatedFromIntervalForHighchart(tx *sqlx.Tx, clusterID int64, createdInterval string) ([]TSEventHighchartLinePayload, error) {
+	rows := []*TSEventRow{}
+	query := fmt.Sprintf("SELECT * FROM %v WHERE cluster_id=$1 AND created_from < created_to AND created_from >= (NOW() at time zone 'utc' - INTERVAL '%v')", ts.table, createdInterval)
+	err := ts.db.Select(&rows, query, clusterID)
+	if err != nil {
+		return nil, err
+	}
+
+	hcRows := make([]TSEventHighchartLinePayload, len(rows))
+
+	for i, row := range rows {
+		hcRow := TSEventHighchartLinePayload{}
+		hcRow.ID = row.ID
+		hcRow.CreatedFrom = row.CreatedFrom.UnixNano() / 1000000
+		hcRow.CreatedTo = row.CreatedTo.UnixNano() / 1000000
+		hcRow.Description = row.Description
+
+		hcRows[i] = hcRow
+	}
+
+	return hcRows, err
+}
+
 // GetByID returns record by id.
 func (ts *TSEvent) GetByID(tx *sqlx.Tx, id int64) (*TSEventRow, error) {
 	row := &TSEventRow{}
@@ -94,13 +118,13 @@ func (ts *TSEvent) Create(tx *sqlx.Tx, id, clusterID, fromUnix, toUnix int64, de
 	if fromUnix <= 0 {
 		from = time.Now().UTC()
 	} else {
-		from = time.Unix(fromUnix, 0)
+		from = time.Unix(fromUnix, 0).UTC()
 	}
 
 	if toUnix <= 0 {
 		to = from
 	} else {
-		to = time.Unix(fromUnix, 0)
+		to = time.Unix(toUnix, 0).UTC()
 	}
 
 	insertData := make(map[string]interface{})
