@@ -79,6 +79,9 @@ func NewDBConfig(generalConfig GeneralConfig) (*DBConfig, error) {
 	if generalConfig.Metrics.ReplicationPercentage <= 0 {
 		generalConfig.Metrics.ReplicationPercentage = 100
 	}
+	if generalConfig.Events.ReplicationPercentage <= 0 {
+		generalConfig.Events.ReplicationPercentage = 100
+	}
 
 	conf := &DBConfig{}
 
