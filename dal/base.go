@@ -404,3 +404,38 @@ func (b *Base) DeleteByID(tx *sqlx.Tx, id int64) (sql.Result, error) {
 
 	return result, err
 }
+
+func (b *Base) DeleteByClusterIDAndID(tx *sqlx.Tx, clusterID, id int64) (sql.Result, error) {
+	var result sql.Result
+
+	if b.table == "" {
+		return nil, errors.New("Table must not be empty.")
+	}
+
+	tx, wrapInSingleTransaction, err := b.newTransactionIfNeeded(tx)
+	if tx == nil {
+		return nil, errors.New("Transaction struct must not be empty.")
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	query := fmt.Sprintf("DELETE FROM %v WHERE id=$1 AND cluster_id=$2", b.table)
+
+	logrus.WithFields(logrus.Fields{
+		"Method": "Base.DeleteByClusterIDAndID",
+		"Query":  query,
+	}).Info("Delete Query")
+
+	result, err = tx.Exec(query, clusterID, id)
+
+	if wrapInSingleTransaction == true {
+		err = tx.Commit()
+	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	return result, err
+}

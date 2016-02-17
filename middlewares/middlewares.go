@@ -93,6 +93,7 @@ func SetClusters(next http.Handler) http.Handler {
 		currentClusterInterface := session.Values["currentCluster"]
 		if currentClusterInterface != nil {
 			currentClusterRow := currentClusterInterface.(*dal.ClusterRow)
+			context.Set(r, "currentCluster", currentClusterRow)
 
 			currentClusterJson, err := json.Marshal(currentClusterRow)
 			if err != nil {
@@ -120,6 +121,8 @@ func MustLogin(next http.Handler) http.Handler {
 			http.Redirect(w, r, "/login", 301)
 			return
 		}
+
+		context.Set(r, "currentUser", userRowInterface.(*dal.UserRow))
 
 		next.ServeHTTP(w, r)
 	})

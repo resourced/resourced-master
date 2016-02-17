@@ -187,14 +187,13 @@ func DeleteMetricID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	idString := vars["id"]
-	id, err := strconv.ParseInt(idString, 10, 64)
+	id, err := getIdFromPath(w, r)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
 	}
 
-	_, err = dal.NewMetric(db).DeleteByID(nil, id)
+	_, err = dal.NewMetric(db).DeleteByClusterIDAndID(nil, clusterID, id)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return

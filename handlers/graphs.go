@@ -4,11 +4,8 @@ import (
 	"fmt"
 	"html/template"
 	"net/http"
-	"strconv"
 
 	"github.com/gorilla/context"
-	"github.com/gorilla/mux"
-	"github.com/gorilla/sessions"
 	"github.com/jmoiron/sqlx"
 	"github.com/resourced/resourced-master/dal"
 	"github.com/resourced/resourced-master/libhttp"
@@ -17,22 +14,9 @@ import (
 func GetGraphs(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html")
 
-	cookieStore := context.Get(r, "cookieStore").(*sessions.CookieStore)
-	session, _ := cookieStore.Get(r, "resourcedmaster-session")
+	currentUser := context.Get(r, "currentUser").(*dal.UserRow)
 
-	currentUserRow, ok := session.Values["user"].(*dal.UserRow)
-	if !ok {
-		http.Redirect(w, r, "/logout", 301)
-		return
-	}
-
-	currentClusterInterface := session.Values["currentCluster"]
-	if currentClusterInterface == nil {
-		http.Redirect(w, r, "/", 301)
-		return
-	}
-
-	currentCluster := currentClusterInterface.(*dal.ClusterRow)
+	currentCluster := context.Get(r, "currentCluster").(*dal.ClusterRow)
 
 	db := context.Get(r, "db.Core").(*sqlx.DB)
 
@@ -50,7 +34,7 @@ func GetGraphs(w http.ResponseWriter, r *http.Request) {
 		Graphs             []*dal.GraphRow
 	}{
 		context.Get(r, "addr").(string),
-		currentUserRow,
+		currentUser,
 		context.Get(r, "clusters").([]*dal.ClusterRow),
 		string(context.Get(r, "currentClusterJson").([]byte)),
 		graphs,
@@ -68,16 +52,7 @@ func GetGraphs(w http.ResponseWriter, r *http.Request) {
 func PostGraphs(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html")
 
-	cookieStore := context.Get(r, "cookieStore").(*sessions.CookieStore)
-	session, _ := cookieStore.Get(r, "resourcedmaster-session")
-
-	currentClusterInterface := session.Values["currentCluster"]
-	if currentClusterInterface == nil {
-		http.Redirect(w, r, "/", 301)
-		return
-	}
-
-	currentCluster := currentClusterInterface.(*dal.ClusterRow)
+	currentCluster := context.Get(r, "currentCluster").(*dal.ClusterRow)
 
 	name := r.FormValue("Name")
 	description := r.FormValue("Description")
@@ -109,35 +84,22 @@ func GetGraphsID(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html")
 
 	db := context.Get(r, "db.Core").(*sqlx.DB)
-	cookieStore := context.Get(r, "cookieStore").(*sessions.CookieStore)
-	session, _ := cookieStore.Get(r, "resourcedmaster-session")
 
-	idString := mux.Vars(r)["id"]
-	id, err := strconv.ParseInt(idString, 10, 64)
+	currentUser := context.Get(r, "currentUser").(*dal.UserRow)
+
+	currentCluster := context.Get(r, "currentCluster").(*dal.ClusterRow)
+
+	id, err := getIdFromPath(w, r)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
 	}
 
-	currentUserRow, ok := session.Values["user"].(*dal.UserRow)
-	if !ok {
-		http.Redirect(w, r, "/logout", 301)
-		return
-	}
-
-	accessTokenRow, err := dal.NewAccessToken(db).GetByUserID(nil, currentUserRow.ID)
+	accessToken, err := dal.NewAccessToken(db).GetByUserID(nil, currentUser.ID)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
 	}
-
-	currentClusterInterface := session.Values["currentCluster"]
-	if currentClusterInterface == nil {
-		http.Redirect(w, r, "/", 301)
-		return
-	}
-
-	currentCluster := currentClusterInterface.(*dal.ClusterRow)
 
 	graphs, err := dal.NewGraph(db).AllByClusterID(nil, currentCluster.ID)
 	if err != nil {
@@ -168,8 +130,8 @@ func GetGraphsID(w http.ResponseWriter, r *http.Request) {
 		Metrics            []*dal.MetricRow
 	}{
 		context.Get(r, "addr").(string),
-		currentUserRow,
-		accessTokenRow,
+		currentUser,
+		accessToken,
 		context.Get(r, "clusters").([]*dal.ClusterRow),
 		string(context.Get(r, "currentClusterJson").([]byte)),
 		currentGraph,
@@ -187,14 +149,11 @@ func GetGraphsID(w http.ResponseWriter, r *http.Request) {
 }
 
 func PutGraphsID(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-
 	db := context.Get(r, "db.Core").(*sqlx.DB)
-	cookieStore := context.Get(r, "cookieStore").(*sessions.CookieStore)
-	session, _ := cookieStore.Get(r, "resourcedmaster-session")
 
-	idString := vars["id"]
-	id, err := strconv.ParseInt(idString, 10, 64)
+	currentCluster := context.Get(r, "currentCluster").(*dal.ClusterRow)
+
+	id, err := getIdFromPath(w, r)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
@@ -205,14 +164,6 @@ func PutGraphsID(w http.ResponseWriter, r *http.Request) {
 		libhttp.HandleErrorJson(w, err)
 		return
 	}
-
-	currentClusterInterface := session.Values["currentCluster"]
-	if currentClusterInterface == nil {
-		http.Redirect(w, r, "/", 301)
-		return
-	}
-
-	currentCluster := currentClusterInterface.(*dal.ClusterRow)
 
 	name := r.FormValue("Name")
 	description := r.FormValue("Description")
@@ -242,22 +193,21 @@ func PutGraphsID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	http.Redirect(w, r, fmt.Sprintf("/graphs/%v", idString), 301)
+	http.Redirect(w, r, fmt.Sprintf("/graphs/%v", id), 301)
 }
 
 func DeleteGraphsID(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-
 	db := context.Get(r, "db.Core").(*sqlx.DB)
 
-	idString := vars["id"]
-	id, err := strconv.ParseInt(idString, 10, 64)
+	accessTokenRow := context.Get(r, "accessTokenRow").(*dal.AccessTokenRow)
+
+	id, err := getIdFromPath(w, r)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
 	}
 
-	_, err = dal.NewGraph(db).DeleteByID(nil, id)
+	_, err = dal.NewGraph(db).DeleteByClusterIDAndID(nil, accessTokenRow.ClusterID, id)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return

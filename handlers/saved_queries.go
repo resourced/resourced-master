@@ -2,25 +2,21 @@ package handlers
 
 import (
 	"errors"
-	"github.com/gorilla/context"
-	"github.com/gorilla/sessions"
-	"github.com/jmoiron/sqlx"
-	rm_dal "github.com/resourced/resourced-master/dal"
-	"github.com/resourced/resourced-master/libhttp"
 	"net/http"
 	"strings"
+
+	"github.com/gorilla/context"
+	"github.com/jmoiron/sqlx"
+	"github.com/resourced/resourced-master/dal"
+	"github.com/resourced/resourced-master/libhttp"
 )
 
 func PostSavedQueries(w http.ResponseWriter, r *http.Request) {
 	db := context.Get(r, "db.Core").(*sqlx.DB)
 
-	cookieStore := context.Get(r, "cookieStore").(*sessions.CookieStore)
+	currentUser := context.Get(r, "currentUser").(*dal.UserRow)
 
-	session, _ := cookieStore.Get(r, "resourcedmaster-session")
-
-	currentUser := session.Values["user"].(*rm_dal.UserRow)
-
-	accessTokenRow, err := rm_dal.NewAccessToken(db).GetByUserID(nil, currentUser.ID)
+	accessTokenRow, err := dal.NewAccessToken(db).GetByUserID(nil, currentUser.ID)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
@@ -28,7 +24,7 @@ func PostSavedQueries(w http.ResponseWriter, r *http.Request) {
 
 	savedQuery := r.FormValue("SavedQuery")
 
-	_, err = rm_dal.NewSavedQuery(db).CreateOrUpdate(nil, accessTokenRow, savedQuery)
+	_, err = dal.NewSavedQuery(db).CreateOrUpdate(nil, accessTokenRow, savedQuery)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
@@ -63,13 +59,11 @@ func DeleteSavedQueriesID(w http.ResponseWriter, r *http.Request) {
 
 	db := context.Get(r, "db.Core").(*sqlx.DB)
 
-	cookieStore := context.Get(r, "cookieStore").(*sessions.CookieStore)
+	currentUser := context.Get(r, "currentUser").(*dal.UserRow)
 
-	session, _ := cookieStore.Get(r, "resourcedmaster-session")
+	currentCluster := context.Get(r, "currentCluster").(*dal.ClusterRow)
 
-	currentUser := session.Values["user"].(*rm_dal.UserRow)
-
-	sq := rm_dal.NewSavedQuery(db)
+	sq := dal.NewSavedQuery(db)
 
 	savedQueryRow, err := sq.GetByID(nil, savedQueryID)
 
@@ -79,7 +73,7 @@ func DeleteSavedQueriesID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err = sq.DeleteByID(nil, savedQueryID)
+	_, err = sq.DeleteByClusterIDAndID(nil, currentCluster.ID, savedQueryID)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return

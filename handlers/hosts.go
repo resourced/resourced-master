@@ -8,7 +8,6 @@ import (
 
 	"github.com/Sirupsen/logrus"
 	"github.com/gorilla/context"
-	"github.com/gorilla/sessions"
 	"github.com/jmoiron/sqlx"
 	"github.com/resourced/resourced-master/dal"
 	"github.com/resourced/resourced-master/libhttp"
@@ -18,22 +17,9 @@ import (
 func GetHosts(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html")
 
-	cookieStore := context.Get(r, "cookieStore").(*sessions.CookieStore)
+	currentUser := context.Get(r, "currentUser").(*dal.UserRow)
 
-	session, _ := cookieStore.Get(r, "resourcedmaster-session")
-	currentUserRow, ok := session.Values["user"].(*dal.UserRow)
-	if !ok {
-		http.Redirect(w, r, "/logout", 301)
-		return
-	}
-
-	currentClusterInterface := session.Values["currentCluster"]
-	if currentClusterInterface == nil {
-		http.Redirect(w, r, "/", 301)
-		return
-	}
-
-	currentCluster := currentClusterInterface.(*dal.ClusterRow)
+	currentCluster := context.Get(r, "currentCluster").(*dal.ClusterRow)
 
 	db := context.Get(r, "db.Core").(*sqlx.DB)
 
@@ -51,7 +37,7 @@ func GetHosts(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	accessTokenRow, err := dal.NewAccessToken(db).GetByUserID(nil, currentUserRow.ID)
+	accessTokenRow, err := dal.NewAccessToken(db).GetByUserID(nil, currentUser.ID)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
@@ -74,7 +60,7 @@ func GetHosts(w http.ResponseWriter, r *http.Request) {
 		MetricsMap         map[string]int64
 	}{
 		context.Get(r, "addr").(string),
-		currentUserRow,
+		currentUser,
 		accessTokenRow,
 		context.Get(r, "clusters").([]*dal.ClusterRow),
 		string(context.Get(r, "currentClusterJson").([]byte)),
@@ -146,7 +132,7 @@ func GetApiHosts(w http.ResponseWriter, r *http.Request) {
 
 	query := r.URL.Query().Get("q")
 
-	hosts, err := dal.NewHost(db).AllByClusterIDAndQuery(nil, accessTokenRow.ID, query)
+	hosts, err := dal.NewHost(db).AllByClusterIDAndQuery(nil, accessTokenRow.ClusterID, query)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return

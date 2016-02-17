@@ -1,7 +1,6 @@
 package dal
 
 import (
-	"database/sql"
 	"encoding/json"
 	"fmt"
 	"time"
@@ -140,10 +139,4 @@ func (ts *TSEvent) Create(tx *sqlx.Tx, id, clusterID, fromUnix, toUnix int64, de
 	}
 
 	return ts.GetByID(tx, id)
-}
-
-// DeleteByID deletes record by id.
-func (ts *TSEvent) DeleteByID(tx *sqlx.Tx, id int64) (sql.Result, error) {
-	query := fmt.Sprintf("DELETE FROM %v WHERE id=$1", ts.table)
-	return ts.db.Exec(query, id)
 }

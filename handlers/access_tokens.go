@@ -4,7 +4,6 @@ import (
 	"net/http"
 
 	"github.com/gorilla/context"
-	"github.com/gorilla/sessions"
 	"github.com/jmoiron/sqlx"
 	"github.com/resourced/resourced-master/dal"
 	"github.com/resourced/resourced-master/libhttp"
@@ -13,11 +12,7 @@ import (
 func PostAccessTokens(w http.ResponseWriter, r *http.Request) {
 	db := context.Get(r, "db.Core").(*sqlx.DB)
 
-	cookieStore := context.Get(r, "cookieStore").(*sessions.CookieStore)
-
-	session, _ := cookieStore.Get(r, "resourcedmaster-session")
-
-	currentUser := session.Values["user"].(*dal.UserRow)
+	currentUser := context.Get(r, "currentUser").(*dal.UserRow)
 
 	clusterID, err := getIdFromPath(w, r)
 	if err != nil {

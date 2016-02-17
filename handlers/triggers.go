@@ -8,22 +8,13 @@ import (
 
 	"github.com/gorilla/context"
 	"github.com/gorilla/mux"
-	"github.com/gorilla/sessions"
 	"github.com/jmoiron/sqlx"
 	"github.com/resourced/resourced-master/dal"
 	"github.com/resourced/resourced-master/libhttp"
 )
 
 func readTriggersFormData(r *http.Request) (map[string]interface{}, error) {
-	cookieStore := context.Get(r, "cookieStore").(*sessions.CookieStore)
-
-	session, _ := cookieStore.Get(r, "resourcedmaster-session")
-
-	currentClusterInterface := session.Values["currentCluster"]
-	if currentClusterInterface == nil {
-		return nil, errors.New("Current cluster is nil")
-	}
-	currentCluster := currentClusterInterface.(*dal.ClusterRow)
+	currentCluster := context.Get(r, "currentCluster").(*dal.ClusterRow)
 
 	watcherIDString := mux.Vars(r)["watcherid"]
 	if watcherIDString == "" {
@@ -118,9 +109,7 @@ func PostPutDeleteWatcherTriggerID(w http.ResponseWriter, r *http.Request) {
 }
 
 func PutWatcherTriggerID(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-
-	id, err := strconv.ParseInt(vars["id"], 10, 64)
+	id, err := getIdFromPath(w, r)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
@@ -144,9 +133,7 @@ func PutWatcherTriggerID(w http.ResponseWriter, r *http.Request) {
 }
 
 func DeleteWatcherTriggerID(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-
-	id, err := strconv.ParseInt(vars["id"], 10, 64)
+	id, err := getIdFromPath(w, r)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
@@ -154,7 +141,9 @@ func DeleteWatcherTriggerID(w http.ResponseWriter, r *http.Request) {
 
 	db := context.Get(r, "db.Core").(*sqlx.DB)
 
-	_, err = dal.NewWatcherTrigger(db).DeleteByID(nil, id)
+	currentCluster := context.Get(r, "currentCluster").(*dal.ClusterRow)
+
+	_, err = dal.NewWatcherTrigger(db).DeleteByClusterIDAndID(nil, currentCluster.ID, id)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return

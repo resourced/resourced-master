@@ -8,7 +8,6 @@ import (
 
 	"github.com/gorilla/context"
 	"github.com/gorilla/mux"
-	"github.com/gorilla/sessions"
 	"github.com/jmoiron/sqlx"
 	"github.com/resourced/resourced-master/dal"
 	"github.com/resourced/resourced-master/libhttp"
@@ -17,22 +16,9 @@ import (
 func GetMetadata(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html")
 
-	cookieStore := context.Get(r, "cookieStore").(*sessions.CookieStore)
+	currentUser := context.Get(r, "currentUser").(*dal.UserRow)
 
-	session, _ := cookieStore.Get(r, "resourcedmaster-session")
-	currentUserRow, ok := session.Values["user"].(*dal.UserRow)
-	if !ok {
-		http.Redirect(w, r, "/logout", 301)
-		return
-	}
-
-	currentClusterInterface := session.Values["currentCluster"]
-	if currentClusterInterface == nil {
-		http.Redirect(w, r, "/", 301)
-		return
-	}
-
-	currentCluster := currentClusterInterface.(*dal.ClusterRow)
+	currentCluster := context.Get(r, "currentCluster").(*dal.ClusterRow)
 
 	db := context.Get(r, "db.Core").(*sqlx.DB)
 
@@ -48,7 +34,7 @@ func GetMetadata(w http.ResponseWriter, r *http.Request) {
 		CurrentClusterJson string
 		MetadataRows       []*dal.MetadataRow
 	}{
-		currentUserRow,
+		currentUser,
 		context.Get(r, "clusters").([]*dal.ClusterRow),
 		string(context.Get(r, "currentClusterJson").([]byte)),
 		metadataRows,
@@ -66,16 +52,7 @@ func GetMetadata(w http.ResponseWriter, r *http.Request) {
 func PostMetadata(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html")
 
-	cookieStore := context.Get(r, "cookieStore").(*sessions.CookieStore)
-
-	session, _ := cookieStore.Get(r, "resourcedmaster-session")
-
-	currentClusterInterface := session.Values["currentCluster"]
-	if currentClusterInterface == nil {
-		http.Redirect(w, r, "/", 301)
-		return
-	}
-	currentCluster := currentClusterInterface.(*dal.ClusterRow)
+	currentCluster := context.Get(r, "currentCluster").(*dal.ClusterRow)
 
 	key := r.FormValue("Key")
 	data := r.FormValue("Data")
@@ -107,16 +84,7 @@ func PostDeleteMetadataKey(w http.ResponseWriter, r *http.Request) {
 func DeleteMetadataKey(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html")
 
-	cookieStore := context.Get(r, "cookieStore").(*sessions.CookieStore)
-
-	session, _ := cookieStore.Get(r, "resourcedmaster-session")
-
-	currentClusterInterface := session.Values["currentCluster"]
-	if currentClusterInterface == nil {
-		http.Redirect(w, r, "/", 301)
-		return
-	}
-	currentCluster := currentClusterInterface.(*dal.ClusterRow)
+	currentCluster := context.Get(r, "currentCluster").(*dal.ClusterRow)
 
 	db := context.Get(r, "db.Core").(*sqlx.DB)
 

@@ -106,6 +106,8 @@ func PostApiEvents(w http.ResponseWriter, r *http.Request) {
 func DeleteApiEventsID(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
+	accessTokenRow := context.Get(r, "accessTokenRow").(*dal.AccessTokenRow)
+
 	id, err := getIdFromPath(w, r)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
@@ -115,7 +117,7 @@ func DeleteApiEventsID(w http.ResponseWriter, r *http.Request) {
 	// Asynchronously write time series data to ts_metrics
 	dbs := context.Get(r, "multidb.TSEvents").(*multidb.MultiDB).PickMultipleForWrites()
 	for _, db := range dbs {
-		_, err = dal.NewTSEvent(db).DeleteByID(nil, id)
+		_, err = dal.NewTSEvent(db).DeleteByClusterIDAndID(nil, accessTokenRow.ClusterID, id)
 		if err != nil {
 			libhttp.HandleErrorJson(w, err)
 			return

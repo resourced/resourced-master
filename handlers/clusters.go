@@ -19,7 +19,7 @@ func GetClusters(w http.ResponseWriter, r *http.Request) {
 
 	db := context.Get(r, "db.Core").(*sqlx.DB)
 
-	currentUser := getCurrentUser(w, r)
+	currentUser := context.Get(r, "currentUser").(*dal.UserRow)
 
 	clusters := context.Get(r, "clusters").([]*dal.ClusterRow)
 
@@ -59,11 +59,7 @@ func GetClusters(w http.ResponseWriter, r *http.Request) {
 func PostClusters(w http.ResponseWriter, r *http.Request) {
 	db := context.Get(r, "db.Core").(*sqlx.DB)
 
-	cookieStore := context.Get(r, "cookieStore").(*sessions.CookieStore)
-
-	session, _ := cookieStore.Get(r, "resourcedmaster-session")
-
-	currentUser := session.Values["user"].(*dal.UserRow)
+	currentUser := context.Get(r, "currentUser").(*dal.UserRow)
 
 	_, err := dal.NewCluster(db).Create(nil, currentUser.ID, r.FormValue("Name"))
 	if err != nil {

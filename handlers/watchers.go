@@ -2,14 +2,11 @@ package handlers
 
 import (
 	"encoding/base64"
-	"errors"
 	"html/template"
 	"net/http"
 	"strconv"
 
 	"github.com/gorilla/context"
-	"github.com/gorilla/mux"
-	"github.com/gorilla/sessions"
 	"github.com/jmoiron/sqlx"
 	"github.com/resourced/resourced-master/dal"
 	"github.com/resourced/resourced-master/libhttp"
@@ -20,22 +17,9 @@ func GetWatchers(w http.ResponseWriter, r *http.Request) {
 
 	db := context.Get(r, "db.Core").(*sqlx.DB)
 
-	cookieStore := context.Get(r, "cookieStore").(*sessions.CookieStore)
+	currentUser := context.Get(r, "currentUser").(*dal.UserRow)
 
-	session, _ := cookieStore.Get(r, "resourcedmaster-session")
-	currentUserRow, ok := session.Values["user"].(*dal.UserRow)
-	if !ok {
-		http.Redirect(w, r, "/logout", 301)
-		return
-	}
-
-	currentClusterInterface := session.Values["currentCluster"]
-	if currentClusterInterface == nil {
-		http.Redirect(w, r, "/", 301)
-		return
-	}
-
-	currentCluster := currentClusterInterface.(*dal.ClusterRow)
+	currentCluster := context.Get(r, "currentCluster").(*dal.ClusterRow)
 
 	watchers, err := dal.NewWatcher(db).AllPassiveByClusterID(nil, currentCluster.ID)
 	if err != nil {
@@ -74,7 +58,7 @@ func GetWatchers(w http.ResponseWriter, r *http.Request) {
 		TriggersByWatcher  map[int64][]*dal.WatcherTriggerRow
 	}{
 		context.Get(r, "addr").(string),
-		currentUserRow,
+		currentUser,
 		context.Get(r, "clusters").([]*dal.ClusterRow),
 		string(context.Get(r, "currentClusterJson").([]byte)),
 		watchers,
@@ -96,22 +80,9 @@ func GetWatchersActive(w http.ResponseWriter, r *http.Request) {
 
 	db := context.Get(r, "db.Core").(*sqlx.DB)
 
-	cookieStore := context.Get(r, "cookieStore").(*sessions.CookieStore)
+	currentUser := context.Get(r, "currentUser").(*dal.UserRow)
 
-	session, _ := cookieStore.Get(r, "resourcedmaster-session")
-	currentUserRow, ok := session.Values["user"].(*dal.UserRow)
-	if !ok {
-		http.Redirect(w, r, "/logout", 301)
-		return
-	}
-
-	currentClusterInterface := session.Values["currentCluster"]
-	if currentClusterInterface == nil {
-		http.Redirect(w, r, "/", 301)
-		return
-	}
-
-	currentCluster := currentClusterInterface.(*dal.ClusterRow)
+	currentCluster := context.Get(r, "currentCluster").(*dal.ClusterRow)
 
 	watchers, err := dal.NewWatcher(db).AllActiveByClusterID(nil, currentCluster.ID)
 	if err != nil {
@@ -143,7 +114,7 @@ func GetWatchersActive(w http.ResponseWriter, r *http.Request) {
 		TriggersByWatcher  map[int64][]*dal.WatcherTriggerRow
 	}{
 		context.Get(r, "addr").(string),
-		currentUserRow,
+		currentUser,
 		context.Get(r, "clusters").([]*dal.ClusterRow),
 		string(context.Get(r, "currentClusterJson").([]byte)),
 		watchers,
@@ -160,15 +131,7 @@ func GetWatchersActive(w http.ResponseWriter, r *http.Request) {
 }
 
 func watcherPassiveFormData(r *http.Request) (map[string]interface{}, error) {
-	cookieStore := context.Get(r, "cookieStore").(*sessions.CookieStore)
-
-	session, _ := cookieStore.Get(r, "resourcedmaster-session")
-
-	currentClusterInterface := session.Values["currentCluster"]
-	if currentClusterInterface == nil {
-		return nil, errors.New("Current cluster is nil")
-	}
-	currentCluster := currentClusterInterface.(*dal.ClusterRow)
+	currentCluster := context.Get(r, "currentCluster").(*dal.ClusterRow)
 
 	savedQuery := r.FormValue("SavedQuery")
 
@@ -194,15 +157,7 @@ func watcherPassiveFormData(r *http.Request) (map[string]interface{}, error) {
 }
 
 func watcherActiveFormData(r *http.Request) (map[string]interface{}, error) {
-	cookieStore := context.Get(r, "cookieStore").(*sessions.CookieStore)
-
-	session, _ := cookieStore.Get(r, "resourcedmaster-session")
-
-	currentClusterInterface := session.Values["currentCluster"]
-	if currentClusterInterface == nil {
-		return nil, errors.New("Current cluster is nil")
-	}
-	currentCluster := currentClusterInterface.(*dal.ClusterRow)
+	currentCluster := context.Get(r, "currentCluster").(*dal.ClusterRow)
 
 	data := make(map[string]interface{})
 	data["Command"] = r.FormValue("Command")
@@ -303,10 +258,7 @@ func PostPutDeleteWatcherID(w http.ResponseWriter, r *http.Request) {
 }
 
 func PutWatcherID(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-
-	idString := vars["id"]
-	id, err := strconv.ParseInt(idString, 10, 64)
+	id, err := getIdFromPath(w, r)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
@@ -330,10 +282,7 @@ func PutWatcherID(w http.ResponseWriter, r *http.Request) {
 }
 
 func DeleteWatcherID(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-
-	idString := vars["id"]
-	id, err := strconv.ParseInt(idString, 10, 64)
+	id, err := getIdFromPath(w, r)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
@@ -341,7 +290,9 @@ func DeleteWatcherID(w http.ResponseWriter, r *http.Request) {
 
 	db := context.Get(r, "db.Core").(*sqlx.DB)
 
-	_, err = dal.NewWatcher(db).DeleteByID(nil, id)
+	currentCluster := context.Get(r, "currentCluster").(*dal.ClusterRow)
+
+	_, err = dal.NewWatcher(db).DeleteByClusterIDAndID(nil, currentCluster.ID, id)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
@@ -364,10 +315,7 @@ func PostPutDeleteWatcherActiveID(w http.ResponseWriter, r *http.Request) {
 }
 
 func PutWatcherActiveID(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-
-	idString := vars["id"]
-	id, err := strconv.ParseInt(idString, 10, 64)
+	id, err := getIdFromPath(w, r)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
