@@ -75,17 +75,10 @@ func PostClustersCurrent(w http.ResponseWriter, r *http.Request) {
 
 	session, _ := cookieStore.Get(r, "resourcedmaster-session")
 
-	redirectPath := "/"
-
-	recentRequestPathInterface := session.Values["recentRequestPath"]
-	if recentRequestPathInterface != nil {
-		redirectPath = recentRequestPathInterface.(string)
-	}
-
 	clusterIDString := r.FormValue("ClusterID")
 	clusterID, err := strconv.ParseInt(clusterIDString, 10, 64)
 	if err != nil {
-		http.Redirect(w, r, redirectPath, 301)
+		http.Redirect(w, r, r.Referer(), 301)
 		return
 	}
 
@@ -103,7 +96,7 @@ func PostClustersCurrent(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	http.Redirect(w, r, redirectPath, 301)
+	http.Redirect(w, r, r.Referer(), 301)
 }
 
 func PostPutDeleteClusterID(w http.ResponseWriter, r *http.Request) {
