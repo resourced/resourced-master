@@ -427,7 +427,7 @@ func (b *Base) DeleteByClusterIDAndID(tx *sqlx.Tx, clusterID, id int64) (sql.Res
 		"Query":  query,
 	}).Info("Delete Query")
 
-	result, err = tx.Exec(query, clusterID, id)
+	result, err = tx.Exec(query, id, clusterID)
 
 	if wrapInSingleTransaction == true {
 		err = tx.Commit()
