@@ -475,6 +475,10 @@ $('select[name="HTTPMethod"]').change(function(event) {
 });
 
 $('#watcher-modal form .btn-danger').click(function() {
+    if(!confirm('Are you sure? Press OK to delete.')) {
+        return false;
+    }
+
     $('#watcher-modal form input[name="_method"]').val('delete');
     $(this).closest('form').submit();
 });
@@ -551,6 +555,9 @@ $('#watcher-modal').on('shown.bs.modal', function (event) {
 });
 
 $('#trigger-modal form .btn-danger').click(function() {
+    if(!confirm('Are you sure? Press OK to delete.')) {
+        return false;
+    }
     $('#trigger-modal form input[name="_method"]').val('delete');
     $(this).closest('form').submit();
 });

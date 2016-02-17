@@ -110,6 +110,9 @@ $(document).ready(function() {
 });
 
 $('#graphs-modal form .btn-danger').click(function() {
+    if(!confirm('Are you sure? Press OK to delete.')) {
+        return false;
+    }
     $('#graphs-modal form input[name="_method"]').val('delete');
     $(this).closest('form').submit();
 });

@@ -141,6 +141,14 @@
             var unix = $(this).text();
             $(this).text(new Date(unix * 1000).toString());
         });
+
+        // Confirm every delete button
+        $('.btn-danger').click(function() {
+            if(!confirm('Are you sure? Press OK to continue.')) {
+                return false;
+            }
+            $(this).closest('form').submit();
+        });
     });
 
     $(window).load(function() {

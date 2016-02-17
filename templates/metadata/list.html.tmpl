@@ -204,6 +204,10 @@ $('#metadata-details-modal').on('show.bs.modal', function (event) {
 });
 
 $('#metadata-details-modal .btn-danger').click(function() {
+    if(!confirm('Are you sure? Press OK to delete.')) {
+        return false;
+    }
+
     var $button = $(this);
     var key = $button.data('key');
 

@@ -82,7 +82,7 @@ $('#search-input').bind("input propertychange", function(e) {
                        JSON
                     </a>
 
-                    <form action="/saved-queries/{{ $savedQuery.ID }}" method="post" onsubmit="return confirm('Are you sure you want to delete?');">
+                    <form action="/saved-queries/{{ $savedQuery.ID }}" method="post">
                         <input type="hidden" name="_method" value="delete">
                         <button type="submit" class="btn btn-danger">Delete</button>
                     </form>
@@ -266,10 +266,11 @@ $(document).ready(function() {
 });
 
 $('.delete-metric-form .btn-danger').click(function() {
-    if(confirm('Are you sure you want to delete?')) {
-        $('.delete-metric-form input[name="_method"]').val('delete');
-        $(this).closest('form').submit();
+    if(!confirm('Are you sure? Press OK to delete.')) {
+        return false;
     }
+    $('.delete-metric-form input[name="_method"]').val('delete');
+    $(this).closest('form').submit();
 });
 
 $('.container.saved-queries .toggler-header').on('switchChange.bootstrapSwitch', function(event, state) {

@@ -88,8 +88,8 @@ func (app *Application) mux() *mux.Router {
 
 	router.Handle("/", alice.New(MustLogin, SetClusters).ThenFunc(handlers.GetHosts)).Methods("GET")
 
-	router.Handle("/saved-queries", alice.New(MustLogin).ThenFunc(handlers.PostSavedQueries)).Methods("POST")
-	router.Handle("/saved-queries/{id:[0-9]+}", alice.New(MustLogin).ThenFunc(handlers.PostPutDeleteSavedQueriesID)).Methods("POST", "PUT", "DELETE")
+	router.Handle("/saved-queries", alice.New(MustLogin, SetClusters).ThenFunc(handlers.PostSavedQueries)).Methods("POST")
+	router.Handle("/saved-queries/{id:[0-9]+}", alice.New(MustLogin, SetClusters).ThenFunc(handlers.PostPutDeleteSavedQueriesID)).Methods("POST", "PUT", "DELETE")
 
 	router.Handle("/graphs", alice.New(MustLogin, SetClusters).ThenFunc(handlers.GetGraphs)).Methods("GET")
 	router.Handle("/graphs", alice.New(MustLogin, SetClusters).ThenFunc(handlers.PostGraphs)).Methods("POST")
