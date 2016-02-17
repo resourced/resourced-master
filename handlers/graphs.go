@@ -95,29 +95,51 @@ func GetGraphsID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	accessToken, err := dal.NewAccessToken(db).GetByUserID(nil, currentUser.ID)
-	if err != nil {
-		libhttp.HandleErrorJson(w, err)
-		return
-	}
+	accessTokenChan := make(chan *dal.AccessTokenRow)
+	graphsChan := make(chan []*dal.GraphRow)
+	currentGraphChan := make(chan *dal.GraphRow)
+	metricsChan := make(chan []*dal.MetricRow)
+	errChan := make(chan error)
 
-	graphs, err := dal.NewGraph(db).AllByClusterID(nil, currentCluster.ID)
-	if err != nil {
-		libhttp.HandleErrorJson(w, err)
-		return
-	}
+	go func(currentUser *dal.UserRow) {
+		accessToken, err := dal.NewAccessToken(db).GetByUserID(nil, currentUser.ID)
+		accessTokenChan <- accessToken
+		errChan <- err
+	}(currentUser)
 
-	currentGraph, err := dal.NewGraph(db).GetById(nil, id)
-	if err != nil {
-		libhttp.HandleErrorJson(w, err)
-		return
-	}
+	go func(currentCluster *dal.ClusterRow, id int64) {
+		graphs, err := dal.NewGraph(db).AllByClusterID(nil, currentCluster.ID)
 
-	metrics, err := dal.NewMetric(db).AllByClusterID(nil, currentCluster.ID)
-	if err != nil {
-		libhttp.HandleErrorJson(w, err)
-		return
-	}
+		if err == nil {
+			for _, graph := range graphs {
+				if graph.ID == id {
+					currentGraphChan <- graph
+					break
+				}
+			}
+		}
+
+		graphsChan <- graphs
+		errChan <- err
+	}(currentCluster, id)
+
+	go func(currentCluster *dal.ClusterRow) {
+		metrics, err := dal.NewMetric(db).AllByClusterID(nil, currentCluster.ID)
+		metricsChan <- metrics
+		errChan <- err
+	}(currentCluster)
+
+	defer close(accessTokenChan)
+	defer close(graphsChan)
+	defer close(currentGraphChan)
+	defer close(metricsChan)
+	// defer close(errChan)
+
+	// err = <-errChan
+	// if err != nil {
+	// 	libhttp.HandleErrorJson(w, err)
+	// 	return
+	// }
 
 	data := struct {
 		Addr               string
@@ -131,12 +153,12 @@ func GetGraphsID(w http.ResponseWriter, r *http.Request) {
 	}{
 		context.Get(r, "addr").(string),
 		currentUser,
-		accessToken,
+		<-accessTokenChan,
 		context.Get(r, "clusters").([]*dal.ClusterRow),
 		string(context.Get(r, "currentClusterJson").([]byte)),
-		currentGraph,
-		graphs,
-		metrics,
+		<-currentGraphChan,
+		<-graphsChan,
+		<-metricsChan,
 	}
 
 	tmpl, err := template.ParseFiles("templates/dashboard.html.tmpl", "templates/graphs/dashboard.html.tmpl")
