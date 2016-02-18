@@ -34,6 +34,11 @@ type ResourcedPayload struct {
 	UnixNano float64
 }
 
+type HostRowsWithError struct {
+	Hosts []*HostRow
+	Error error
+}
+
 type HostRow struct {
 	ID            int64               `db:"id" json:"-"`
 	AccessTokenID int64               `db:"access_token_id" json:"-"`

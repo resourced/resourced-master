@@ -18,6 +18,11 @@ func NewWatcherTrigger(db *sqlx.DB) *WatcherTrigger {
 	return wt
 }
 
+type WatcherTriggerRowsWithError struct {
+	Triggers []*WatcherTriggerRow
+	Error    error
+}
+
 type WatcherTriggerRow struct {
 	ID                  int64               `db:"id" json:"-"`
 	ClusterID           int64               `db:"cluster_id"`

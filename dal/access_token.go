@@ -16,6 +16,11 @@ func NewAccessToken(db *sqlx.DB) *AccessToken {
 	return token
 }
 
+type AccessTokenRowWithError struct {
+	AccessToken *AccessTokenRow
+	Error       error
+}
+
 type AccessTokenRow struct {
 	ID        int64  `db:"id"`
 	UserID    int64  `db:"user_id"`

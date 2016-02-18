@@ -16,6 +16,16 @@ func NewMetric(db *sqlx.DB) *Metric {
 	return m
 }
 
+type MetricRowsWithError struct {
+	Metrics []*MetricRow
+	Error   error
+}
+
+type MetricsMapWithError struct {
+	MetricsMap map[string]int64
+	Error      error
+}
+
 type MetricRow struct {
 	ID        int64  `db:"id"`
 	ClusterID int64  `db:"cluster_id"`

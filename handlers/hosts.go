@@ -25,27 +25,72 @@ func GetHosts(w http.ResponseWriter, r *http.Request) {
 
 	query := r.URL.Query().Get("q")
 
-	hosts, err := dal.NewHost(db).AllByClusterIDAndQuery(nil, currentCluster.ID, query)
-	if err != nil && err.Error() != "sql: no rows in result set" {
-		libhttp.HandleErrorJson(w, err)
+	// -----------------------------------
+	// Create channels to receive SQL rows
+	// -----------------------------------
+	hostsChan := make(chan *dal.HostRowsWithError)
+	defer close(hostsChan)
+
+	savedQueriesChan := make(chan *dal.SavedQueryRowsWithError)
+	defer close(savedQueriesChan)
+
+	accessTokenChan := make(chan *dal.AccessTokenRowWithError)
+	defer close(accessTokenChan)
+
+	metricsMapChan := make(chan *dal.MetricsMapWithError)
+	defer close(metricsMapChan)
+
+	// --------------------------
+	// Fetch SQL rows in parallel
+	// --------------------------
+	go func(currentCluster *dal.ClusterRow, query string) {
+		hostsWithError := &dal.HostRowsWithError{}
+		hostsWithError.Hosts, hostsWithError.Error = dal.NewHost(db).AllByClusterIDAndQuery(nil, currentCluster.ID, query)
+		hostsChan <- hostsWithError
+	}(currentCluster, query)
+
+	go func(currentCluster *dal.ClusterRow) {
+		savedQueriesWithError := &dal.SavedQueryRowsWithError{}
+		savedQueriesWithError.SavedQueries, savedQueriesWithError.Error = dal.NewSavedQuery(db).AllByClusterID(nil, currentCluster.ID)
+		savedQueriesChan <- savedQueriesWithError
+	}(currentCluster)
+
+	go func(currentUser *dal.UserRow) {
+		accessTokenWithError := &dal.AccessTokenRowWithError{}
+		accessTokenWithError.AccessToken, accessTokenWithError.Error = dal.NewAccessToken(db).GetByUserID(nil, currentUser.ID)
+		accessTokenChan <- accessTokenWithError
+	}(currentUser)
+
+	go func(currentCluster *dal.ClusterRow) {
+		metricsMapWithError := &dal.MetricsMapWithError{}
+		metricsMapWithError.MetricsMap, metricsMapWithError.Error = dal.NewMetric(db).AllByClusterIDAsMap(nil, currentCluster.ID)
+		metricsMapChan <- metricsMapWithError
+	}(currentCluster)
+
+	// -----------------------------------
+	// Wait for channels to return results
+	// -----------------------------------
+	hostsWithError := <-hostsChan
+	if hostsWithError.Error != nil && hostsWithError.Error.Error() != "sql: no rows in result set" {
+		libhttp.HandleErrorJson(w, hostsWithError.Error)
 		return
 	}
 
-	savedQueries, err := dal.NewSavedQuery(db).AllByClusterID(nil, currentCluster.ID)
-	if err != nil && err.Error() != "sql: no rows in result set" {
-		libhttp.HandleErrorJson(w, err)
+	savedQueriesWithError := <-savedQueriesChan
+	if savedQueriesWithError.Error != nil && savedQueriesWithError.Error.Error() != "sql: no rows in result set" {
+		libhttp.HandleErrorJson(w, savedQueriesWithError.Error)
 		return
 	}
 
-	accessTokenRow, err := dal.NewAccessToken(db).GetByUserID(nil, currentUser.ID)
-	if err != nil {
-		libhttp.HandleErrorJson(w, err)
+	accessTokenWithError := <-accessTokenChan
+	if accessTokenWithError.Error != nil {
+		libhttp.HandleErrorJson(w, accessTokenWithError.Error)
 		return
 	}
 
-	metricsMap, err := dal.NewMetric(db).AllByClusterIDAsMap(nil, currentCluster.ID)
-	if err != nil {
-		libhttp.HandleErrorJson(w, err)
+	metricsMapWithError := <-metricsMapChan
+	if metricsMapWithError.Error != nil {
+		libhttp.HandleErrorJson(w, metricsMapWithError.Error)
 		return
 	}
 
@@ -61,12 +106,12 @@ func GetHosts(w http.ResponseWriter, r *http.Request) {
 	}{
 		context.Get(r, "addr").(string),
 		currentUser,
-		accessTokenRow,
+		accessTokenWithError.AccessToken,
 		context.Get(r, "clusters").([]*dal.ClusterRow),
 		string(context.Get(r, "currentClusterJson").([]byte)),
-		hosts,
-		savedQueries,
-		metricsMap,
+		hostsWithError.Hosts,
+		savedQueriesWithError.SavedQueries,
+		metricsMapWithError.MetricsMap,
 	}
 
 	tmpl, err := template.ParseFiles("templates/dashboard.html.tmpl", "templates/hosts/list.html.tmpl")

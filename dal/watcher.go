@@ -23,6 +23,11 @@ func NewWatcher(db *sqlx.DB) *Watcher {
 	return watcher
 }
 
+type WatcherRowsWithError struct {
+	Watchers []*WatcherRow
+	Error    error
+}
+
 type WatcherRow struct {
 	BaseRow
 	ID               int64               `db:"id" json:"-"`

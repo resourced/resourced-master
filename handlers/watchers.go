@@ -21,26 +21,62 @@ func GetWatchers(w http.ResponseWriter, r *http.Request) {
 
 	currentCluster := context.Get(r, "currentCluster").(*dal.ClusterRow)
 
-	watchers, err := dal.NewWatcher(db).AllPassiveByClusterID(nil, currentCluster.ID)
-	if err != nil {
-		libhttp.HandleErrorJson(w, err)
+	// -----------------------------------
+	// Create channels to receive SQL rows
+	// -----------------------------------
+	watchersChan := make(chan *dal.WatcherRowsWithError)
+	defer close(watchersChan)
+
+	savedQueriesChan := make(chan *dal.SavedQueryRowsWithError)
+	defer close(savedQueriesChan)
+
+	triggersChan := make(chan *dal.WatcherTriggerRowsWithError)
+	defer close(triggersChan)
+
+	// --------------------------
+	// Fetch SQL rows in parallel
+	// --------------------------
+	go func(currentCluster *dal.ClusterRow) {
+		watchersWithError := &dal.WatcherRowsWithError{}
+		watchersWithError.Watchers, watchersWithError.Error = dal.NewWatcher(db).AllPassiveByClusterID(nil, currentCluster.ID)
+		watchersChan <- watchersWithError
+	}(currentCluster)
+
+	go func(currentCluster *dal.ClusterRow) {
+		savedQueriesWithError := &dal.SavedQueryRowsWithError{}
+		savedQueriesWithError.SavedQueries, savedQueriesWithError.Error = dal.NewSavedQuery(db).AllByClusterID(nil, currentCluster.ID)
+		savedQueriesChan <- savedQueriesWithError
+	}(currentCluster)
+
+	go func(currentCluster *dal.ClusterRow) {
+		triggersWithError := &dal.WatcherTriggerRowsWithError{}
+		triggersWithError.Triggers, triggersWithError.Error = dal.NewWatcherTrigger(db).AllByClusterID(nil, currentCluster.ID)
+		triggersChan <- triggersWithError
+	}(currentCluster)
+
+	// -----------------------------------
+	// Wait for channels to return results
+	// -----------------------------------
+	watchersWithError := <-watchersChan
+	if watchersWithError.Error != nil && watchersWithError.Error.Error() != "sql: no rows in result set" {
+		libhttp.HandleErrorJson(w, watchersWithError.Error)
 		return
 	}
 
-	savedQueries, err := dal.NewSavedQuery(db).AllByClusterID(nil, currentCluster.ID)
-	if err != nil {
-		libhttp.HandleErrorJson(w, err)
+	savedQueriesWithError := <-savedQueriesChan
+	if savedQueriesWithError.Error != nil && savedQueriesWithError.Error.Error() != "sql: no rows in result set" {
+		libhttp.HandleErrorJson(w, savedQueriesWithError.Error)
 		return
 	}
 
-	triggers, err := dal.NewWatcherTrigger(db).AllByClusterID(nil, currentCluster.ID)
-	if err != nil {
-		libhttp.HandleErrorJson(w, err)
+	triggersWithError := <-triggersChan
+	if triggersWithError.Error != nil && triggersWithError.Error.Error() != "sql: no rows in result set" {
+		libhttp.HandleErrorJson(w, triggersWithError.Error)
 		return
 	}
 
 	triggersByWatcher := make(map[int64][]*dal.WatcherTriggerRow)
-	for _, trigger := range triggers {
+	for _, trigger := range triggersWithError.Triggers {
 		if _, ok := triggersByWatcher[trigger.WatcherID]; !ok {
 			triggersByWatcher[trigger.WatcherID] = make([]*dal.WatcherTriggerRow, 0)
 		}
@@ -61,8 +97,8 @@ func GetWatchers(w http.ResponseWriter, r *http.Request) {
 		currentUser,
 		context.Get(r, "clusters").([]*dal.ClusterRow),
 		string(context.Get(r, "currentClusterJson").([]byte)),
-		watchers,
-		savedQueries,
+		watchersWithError.Watchers,
+		savedQueriesWithError.SavedQueries,
 		triggersByWatcher,
 	}
 
@@ -84,20 +120,47 @@ func GetWatchersActive(w http.ResponseWriter, r *http.Request) {
 
 	currentCluster := context.Get(r, "currentCluster").(*dal.ClusterRow)
 
-	watchers, err := dal.NewWatcher(db).AllActiveByClusterID(nil, currentCluster.ID)
-	if err != nil {
-		libhttp.HandleErrorJson(w, err)
+	// -----------------------------------
+	// Create channels to receive SQL rows
+	// -----------------------------------
+	watchersChan := make(chan *dal.WatcherRowsWithError)
+	defer close(watchersChan)
+
+	triggersChan := make(chan *dal.WatcherTriggerRowsWithError)
+	defer close(triggersChan)
+
+	// --------------------------
+	// Fetch SQL rows in parallel
+	// --------------------------
+	go func(currentCluster *dal.ClusterRow) {
+		watchersWithError := &dal.WatcherRowsWithError{}
+		watchersWithError.Watchers, watchersWithError.Error = dal.NewWatcher(db).AllActiveByClusterID(nil, currentCluster.ID)
+		watchersChan <- watchersWithError
+	}(currentCluster)
+
+	go func(currentCluster *dal.ClusterRow) {
+		triggersWithError := &dal.WatcherTriggerRowsWithError{}
+		triggersWithError.Triggers, triggersWithError.Error = dal.NewWatcherTrigger(db).AllByClusterID(nil, currentCluster.ID)
+		triggersChan <- triggersWithError
+	}(currentCluster)
+
+	// -----------------------------------
+	// Wait for channels to return results
+	// -----------------------------------
+	watchersWithError := <-watchersChan
+	if watchersWithError.Error != nil && watchersWithError.Error.Error() != "sql: no rows in result set" {
+		libhttp.HandleErrorJson(w, watchersWithError.Error)
 		return
 	}
 
-	triggers, err := dal.NewWatcherTrigger(db).AllByClusterID(nil, currentCluster.ID)
-	if err != nil {
-		libhttp.HandleErrorJson(w, err)
+	triggersWithError := <-triggersChan
+	if triggersWithError.Error != nil && triggersWithError.Error.Error() != "sql: no rows in result set" {
+		libhttp.HandleErrorJson(w, triggersWithError.Error)
 		return
 	}
 
 	triggersByWatcher := make(map[int64][]*dal.WatcherTriggerRow)
-	for _, trigger := range triggers {
+	for _, trigger := range triggersWithError.Triggers {
 		if _, ok := triggersByWatcher[trigger.WatcherID]; !ok {
 			triggersByWatcher[trigger.WatcherID] = make([]*dal.WatcherTriggerRow, 0)
 		}
@@ -117,7 +180,7 @@ func GetWatchersActive(w http.ResponseWriter, r *http.Request) {
 		currentUser,
 		context.Get(r, "clusters").([]*dal.ClusterRow),
 		string(context.Get(r, "currentClusterJson").([]byte)),
-		watchers,
+		watchersWithError.Watchers,
 		triggersByWatcher,
 	}
 

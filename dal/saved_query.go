@@ -15,6 +15,11 @@ func NewSavedQuery(db *sqlx.DB) *SavedQuery {
 	return savedQuery
 }
 
+type SavedQueryRowsWithError struct {
+	SavedQueries []*SavedQueryRow
+	Error        error
+}
+
 type SavedQueryRow struct {
 	ID        int64  `db:"id"`
 	UserID    int64  `db:"user_id"`

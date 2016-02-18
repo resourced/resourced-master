@@ -95,51 +95,67 @@ func GetGraphsID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	accessTokenChan := make(chan *dal.AccessTokenRow)
-	graphsChan := make(chan []*dal.GraphRow)
-	currentGraphChan := make(chan *dal.GraphRow)
-	metricsChan := make(chan []*dal.MetricRow)
-	errChan := make(chan error)
+	// -----------------------------------
+	// Create channels to receive SQL rows
+	// -----------------------------------
+	accessTokenChan := make(chan *dal.AccessTokenRowWithError)
+	defer close(accessTokenChan)
 
+	metricsChan := make(chan *dal.MetricRowsWithError)
+	defer close(metricsChan)
+
+	graphsChan := make(chan *dal.GraphRowsWithError)
+	defer close(graphsChan)
+
+	// --------------------------
+	// Fetch SQL rows in parallel
+	// --------------------------
 	go func(currentUser *dal.UserRow) {
-		accessToken, err := dal.NewAccessToken(db).GetByUserID(nil, currentUser.ID)
-		accessTokenChan <- accessToken
-		errChan <- err
+		accessTokenWithError := &dal.AccessTokenRowWithError{}
+		accessTokenWithError.AccessToken, accessTokenWithError.Error = dal.NewAccessToken(db).GetByUserID(nil, currentUser.ID)
+		accessTokenChan <- accessTokenWithError
 	}(currentUser)
 
 	go func(currentCluster *dal.ClusterRow, id int64) {
-		graphs, err := dal.NewGraph(db).AllByClusterID(nil, currentCluster.ID)
-
-		if err == nil {
-			for _, graph := range graphs {
-				if graph.ID == id {
-					currentGraphChan <- graph
-					break
-				}
-			}
-		}
-
-		graphsChan <- graphs
-		errChan <- err
+		graphsWithError := &dal.GraphRowsWithError{}
+		graphsWithError.Graphs, graphsWithError.Error = dal.NewGraph(db).AllByClusterID(nil, currentCluster.ID)
+		graphsChan <- graphsWithError
 	}(currentCluster, id)
 
 	go func(currentCluster *dal.ClusterRow) {
-		metrics, err := dal.NewMetric(db).AllByClusterID(nil, currentCluster.ID)
-		metricsChan <- metrics
-		errChan <- err
+		metricsWithError := &dal.MetricRowsWithError{}
+		metricsWithError.Metrics, metricsWithError.Error = dal.NewMetric(db).AllByClusterID(nil, currentCluster.ID)
+		metricsChan <- metricsWithError
 	}(currentCluster)
 
-	defer close(accessTokenChan)
-	defer close(graphsChan)
-	defer close(currentGraphChan)
-	defer close(metricsChan)
-	// defer close(errChan)
+	// -----------------------------------
+	// Wait for channels to return results
+	// -----------------------------------
+	accessTokenWithError := <-accessTokenChan
+	if accessTokenWithError.Error != nil {
+		libhttp.HandleErrorJson(w, accessTokenWithError.Error)
+		return
+	}
 
-	// err = <-errChan
-	// if err != nil {
-	// 	libhttp.HandleErrorJson(w, err)
-	// 	return
-	// }
+	metricsWithError := <-metricsChan
+	if metricsWithError.Error != nil {
+		libhttp.HandleErrorJson(w, metricsWithError.Error)
+		return
+	}
+
+	var currentGraph *dal.GraphRow
+	graphsWithError := <-graphsChan
+	if graphsWithError.Error == nil {
+		for _, graph := range graphsWithError.Graphs {
+			if graph.ID == id {
+				currentGraph = graph
+				break
+			}
+		}
+	} else {
+		libhttp.HandleErrorJson(w, graphsWithError.Error)
+		return
+	}
 
 	data := struct {
 		Addr               string
@@ -153,12 +169,12 @@ func GetGraphsID(w http.ResponseWriter, r *http.Request) {
 	}{
 		context.Get(r, "addr").(string),
 		currentUser,
-		<-accessTokenChan,
+		accessTokenWithError.AccessToken,
 		context.Get(r, "clusters").([]*dal.ClusterRow),
 		string(context.Get(r, "currentClusterJson").([]byte)),
-		<-currentGraphChan,
-		<-graphsChan,
-		<-metricsChan,
+		currentGraph,
+		graphsWithError.Graphs,
+		metricsWithError.Metrics,
 	}
 
 	tmpl, err := template.ParseFiles("templates/dashboard.html.tmpl", "templates/graphs/dashboard.html.tmpl")

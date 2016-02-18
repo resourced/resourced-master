@@ -20,6 +20,11 @@ func NewGraph(db *sqlx.DB) *Graph {
 	return g
 }
 
+type GraphRowsWithError struct {
+	Graphs []*GraphRow
+	Error  error
+}
+
 type GraphRow struct {
 	ID          int64               `db:"id"`
 	ClusterID   int64               `db:"cluster_id"`
