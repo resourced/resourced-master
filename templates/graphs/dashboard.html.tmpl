@@ -3,16 +3,16 @@
 <nav class="navbar navbar-default">
     <div class="container graphs">
         <div class="row">
-            <div class="col-lg-10" style="padding-right: 0">
-                <select class="form-control graphs-select">
+            <div class="col-xs-10 col-sm-10 col-md-10 col-lg-10" style="padding-right: 0">
+                <select class="form-control selectpicker graphs-select" data-style="btn-white" data-width="100%" data-size="10">
                 {{ range $graph := .Graphs }}
                     <option value="{{ $graph.ID }}" {{if eq $graph.ID $.CurrentGraph.ID }}selected="selected"{{ end }}>{{ $graph.Name }}</option>
                 {{ end }}
                 </select>
             </div>
 
-            <div class="col-lg-2" style="padding-left: 0">
-                <button class="btn btn-primary btn-block" data-toggle="modal" data-target="#add-chart-modal" data-graph-id="{{ $.CurrentGraph.ID }}">
+            <div class="col-xs-2 col-sm-2 col-md-2 col-lg-2" style="padding-left: 0">
+                <button class="btn btn-primary" data-toggle="modal" data-target="#add-chart-modal" data-graph-id="{{ $.CurrentGraph.ID }}">
                     Add Charts
                 </button>
             </div>
