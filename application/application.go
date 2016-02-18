@@ -352,7 +352,6 @@ func (app *Application) ActiveWatchOnce(clusterID int64, watcherRow *dal.Watcher
 
 					logrus.WithFields(logrus.Fields{
 						"Method":             "watcherRow.PerformActiveCheckHTTP",
-						"URL":                resp.Request.URL.String(),
 						"HTTPMethod":         watcherRow.HTTPMethod(),
 						"StatusCode":         resp.StatusCode,
 						"ExpectedStatusCode": watcherRow.HTTPCode(),
