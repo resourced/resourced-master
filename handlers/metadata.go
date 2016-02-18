@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"encoding/json"
-	"html/template"
 	"io/ioutil"
 	"net/http"
 
@@ -12,93 +11,6 @@ import (
 	"github.com/resourced/resourced-master/dal"
 	"github.com/resourced/resourced-master/libhttp"
 )
-
-func GetMetadata(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "text/html")
-
-	currentUser := context.Get(r, "currentUser").(*dal.UserRow)
-
-	currentCluster := context.Get(r, "currentCluster").(*dal.ClusterRow)
-
-	db := context.Get(r, "db.Core").(*sqlx.DB)
-
-	metadataRows, err := dal.NewMetadata(db).AllByClusterID(nil, currentCluster.ID)
-	if err != nil {
-		libhttp.HandleErrorJson(w, err)
-		return
-	}
-
-	data := struct {
-		CurrentUser        *dal.UserRow
-		Clusters           []*dal.ClusterRow
-		CurrentClusterJson string
-		MetadataRows       []*dal.MetadataRow
-	}{
-		currentUser,
-		context.Get(r, "clusters").([]*dal.ClusterRow),
-		string(context.Get(r, "currentClusterJson").([]byte)),
-		metadataRows,
-	}
-
-	tmpl, err := template.ParseFiles("templates/dashboard.html.tmpl", "templates/metadata/list.html.tmpl")
-	if err != nil {
-		libhttp.HandleErrorJson(w, err)
-		return
-	}
-
-	tmpl.Execute(w, data)
-}
-
-func PostMetadata(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "text/html")
-
-	currentCluster := context.Get(r, "currentCluster").(*dal.ClusterRow)
-
-	key := r.FormValue("Key")
-	data := r.FormValue("Data")
-
-	db := context.Get(r, "db.Core").(*sqlx.DB)
-
-	_, err := dal.NewMetadata(db).CreateOrUpdate(nil, currentCluster.ID, key, []byte(data))
-	if err != nil {
-		libhttp.HandleErrorJson(w, err)
-		return
-	}
-
-	http.Redirect(w, r, "/metadata", 301)
-}
-
-func PostDeleteMetadataKey(w http.ResponseWriter, r *http.Request) {
-	method := r.FormValue("_method")
-	if method == "" {
-		method = "delete"
-	}
-
-	if method == "post" || method == "delete" {
-		DeleteMetadataKey(w, r)
-	} else {
-		http.Redirect(w, r, "/metadata", 301)
-	}
-}
-
-func DeleteMetadataKey(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "text/html")
-
-	currentCluster := context.Get(r, "currentCluster").(*dal.ClusterRow)
-
-	db := context.Get(r, "db.Core").(*sqlx.DB)
-
-	vars := mux.Vars(r)
-	key := vars["key"]
-
-	_, err := dal.NewMetadata(db).DeleteByClusterIDAndKey(nil, currentCluster.ID, key)
-	if err != nil {
-		libhttp.HandleErrorJson(w, err)
-		return
-	}
-
-	http.Redirect(w, r, "/metadata", 301)
-}
 
 func GetApiMetadata(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
