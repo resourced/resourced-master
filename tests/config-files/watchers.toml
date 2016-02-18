@@ -1,0 +1,27 @@
+[Watchers]
+ListFetchInterval = "60s"
+DSNs = [
+    "postgres://localhost:5432/resourced-master-ts-watchers-1?sslmode=disable",
+    "postgres://localhost:5432/resourced-master-ts-watchers-2?sslmode=disable"
+]
+
+# DataRetention defines how long time series data are kept.
+# The unit is defined in days.
+DataRetention = 1
+
+[Watchers.Email]
+From = "alert@example.com"
+SubjectPrefix = "[ERROR]"
+Host = "smtp.gmail.com"
+Port = 587
+Username = ""
+Password = ""
+Identity = ""
+
+[Watchers.SMSEmailGateway]
+att = "txt.att.net"
+alltel = "message.alltel.com"
+sprint = "messaging.sprintpcs.com"
+tmobile = "tmomail.com"
+verizon = "vtext.com"
+virgin = "vmobl.com"

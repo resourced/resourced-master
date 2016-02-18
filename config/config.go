@@ -1,7 +1,9 @@
 package config
 
 import (
+	"io/ioutil"
 	"path"
+	"strings"
 
 	"github.com/BurntSushi/toml"
 	"github.com/jmoiron/sqlx"
@@ -10,12 +12,38 @@ import (
 )
 
 // NewGeneralConfig is the constructor for GeneralConfig.
-func NewGeneralConfig(configDir string) (GeneralConfig, error) {
+func NewGeneralConfig(configDir string) (config GeneralConfig, err error) {
 	configDir = libstring.ExpandTildeAndEnv(configDir)
-	fullpath := path.Join(configDir, "general.toml")
 
-	var config GeneralConfig
-	_, err := toml.DecodeFile(fullpath, &config)
+	files, err := ioutil.ReadDir(configDir)
+	if err != nil {
+		return config, err
+	}
+
+	contentSlice := make([]string, len(files))
+	var generalTomlIndex int
+
+	for i, f := range files {
+		if strings.HasSuffix(f.Name(), ".toml") {
+			newContent, err := ioutil.ReadFile(path.Join(configDir, f.Name()))
+			if err != nil {
+				return config, err
+			}
+
+			contentSlice[i] = string(newContent)
+
+			if f.Name() == "general.toml" {
+				generalTomlIndex = i
+			}
+		}
+	}
+
+	// general.toml must always be first.
+	firstContent := contentSlice[0]
+	contentSlice[0] = contentSlice[generalTomlIndex]
+	contentSlice[generalTomlIndex] = firstContent
+
+	_, err = toml.Decode(strings.Join(contentSlice, "\n"), &config)
 
 	if config.LogLevel == "" {
 		config.LogLevel = "info"

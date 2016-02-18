@@ -1,0 +1,9 @@
+[Events]
+DSNs = [
+    "postgres://localhost:5432/resourced-master-ts-events-1?sslmode=disable",
+    "postgres://localhost:5432/resourced-master-ts-events-2?sslmode=disable"
+]
+
+# DataRetention defines how long time series data are kept.
+# The unit is defined in days.
+DataRetention = 7
