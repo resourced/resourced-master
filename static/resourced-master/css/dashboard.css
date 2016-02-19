@@ -10,63 +10,6 @@ body {
 select {
     padding: 1px 0;
 }
-.btn-white {
-    color: #333;
-    background-color: #fff;
-    border-color: #ccc;
-}
-.btn-white:focus,
-.btn-white.focus {
-    color: #333;
-    background-color: #e6e6e6;
-    border-color: #8c8c8c;
-}
-.btn-white:hover {
-    color: #333;
-    background-color: #e6e6e6;
-    border-color: #adadad;
-}
-.btn-white:active,
-.btn-white.active,
-.open > .dropdown-toggle.btn-white {
-    color: #333;
-    background-color: #e6e6e6;
-    border-color: #adadad;
-}
-.btn-white:active:hover,
-.btn-white.active:hover,
-.open > .dropdown-toggle.btn-white:hover,
-.btn-white:active:focus,
-.btn-white.active:focus,
-.open > .dropdown-toggle.btn-white:focus,
-.btn-white:active.focus,
-.btn-white.active.focus,
-.open > .dropdown-toggle.btn-white.focus {
-    color: #333;
-    background-color: #d4d4d4;
-    border-color: #8c8c8c;
-}
-.btn-white:active,
-.btn-white.active,
-.open > .dropdown-toggle.btn-white {
-    background-image: none;
-}
-.btn-white.disabled:hover,
-.btn-white[disabled]:hover,
-fieldset[disabled] .btn-white:hover,
-.btn-white.disabled:focus,
-.btn-white[disabled]:focus,
-fieldset[disabled] .btn-white:focus,
-.btn-white.disabled.focus,
-.btn-white[disabled].focus,
-fieldset[disabled] .btn-white.focus {
-    background-color: #fff;
-    border-color: #ccc;
-}
-.btn-white .badge {
-    color: #fff;
-    background-color: #333;
-}
 
 .bootstrap-switch {
     border: none;
