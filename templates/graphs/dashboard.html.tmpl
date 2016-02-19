@@ -4,7 +4,7 @@
     <div class="container graphs">
         <div class="row">
             <div class="col-xs-10 col-sm-10 col-md-10 col-lg-10" style="padding-right: 0">
-                <select class="form-control selectpicker graphs-select" data-style="btn-white" data-width="100%" data-size="10">
+                <select class="form-control graphs-select" data-width="100%" data-size="10">
                 {{ range $graph := .Graphs }}
                     <option value="{{ $graph.ID }}" {{if eq $graph.ID $.CurrentGraph.ID }}selected="selected"{{ end }}>{{ $graph.Name }}</option>
                 {{ end }}
