@@ -50,15 +50,17 @@
                                     <td>{{ $accessToken.Token }}</td>
                                     <td>
                                         <form method="post" action="/access-tokens/{{ $accessToken.ID }}/level">
-                                        <select name="Level" onchange="$(this).closest('form').submit();">
-                                            <option value="read" {{if eq $accessToken.Level "read"}} selected {{end}}>Read</option>
-                                            <option value="write" {{if eq $accessToken.Level "write"}} selected {{end}}>Write</option>
-                                            <option value="execute" {{if eq $accessToken.Level "execute"}} selected {{end}}>Execute</option>
-                                        </select>
+                                            <input type="hidden" name="gorilla.csrf.Token" value="{{ $.CSRFToken }}">
+                                            <select name="Level" onchange="$(this).closest('form').submit();">
+                                                <option value="read" {{if eq $accessToken.Level "read"}} selected {{end}}>Read</option>
+                                                <option value="write" {{if eq $accessToken.Level "write"}} selected {{end}}>Write</option>
+                                                <option value="execute" {{if eq $accessToken.Level "execute"}} selected {{end}}>Execute</option>
+                                            </select>
                                         </form>
                                     </td>
                                     <td>
                                         <form method="post" action="/access-tokens/{{ $accessToken.ID }}/enabled">
+                                            <input type="hidden" name="gorilla.csrf.Token" value="{{ $.CSRFToken }}">
                                             <input type="checkbox" name="Enabled" onclick="$(this).closest('form').submit();" {{ if $accessToken.Enabled }} checked {{end}}>
                                         </form>
                                     </td>
@@ -83,6 +85,7 @@
             </div>
 
             <form method="post" action="/clusters">
+                <input type="hidden" name="gorilla.csrf.Token" value="{{ $.CSRFToken }}">
                 <input type="hidden" name="_method" value="post">
 
                 <div class="modal-body">
@@ -111,6 +114,7 @@
             </div>
 
             <form method="post">
+                <input type="hidden" name="gorilla.csrf.Token" value="{{ $.CSRFToken }}">
                 <div class="modal-body">
                     <div class="form-group">
                         <label class="control-label" for="level">Access Level:</label>

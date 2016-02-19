@@ -48,7 +48,6 @@ func New(configDir string) (*Application, error) {
 	app.GeneralConfig = generalConfig
 	app.DBConfig = dbConfig
 	app.cookieStore = sessions.NewCookieStore([]byte(app.GeneralConfig.CookieSecret))
-	app.csrfProtect = csrf.Protect([]byte(app.GeneralConfig.CookieSecret))
 
 	return app, err
 }
@@ -59,7 +58,6 @@ type Application struct {
 	GeneralConfig config.GeneralConfig
 	DBConfig      *config.DBConfig
 	cookieStore   *sessions.CookieStore
-	csrfProtect   func(http.Handler) http.Handler
 }
 
 func (app *Application) MiddlewareStruct() (*interpose.Middleware, error) {
@@ -78,6 +76,12 @@ func (app *Application) mux() *mux.Router {
 	MustLoginApi := middlewares.MustLoginApi
 	SetClusters := middlewares.SetClusters
 
+	CSRFOptions := csrf.Secure(false)
+	if app.GeneralConfig.HTTPS.CertFile != "" {
+		CSRFOptions = csrf.Secure(true)
+	}
+	CSRF := csrf.Protect([]byte(app.GeneralConfig.CookieSecret), CSRFOptions)
+
 	router := mux.NewRouter()
 
 	router.HandleFunc("/signup", handlers.GetSignup).Methods("GET")
@@ -86,42 +90,41 @@ func (app *Application) mux() *mux.Router {
 	router.HandleFunc("/login", handlers.PostLogin).Methods("POST")
 	router.HandleFunc("/logout", handlers.GetLogout).Methods("GET")
 
-	router.Handle("/", alice.New(MustLogin, SetClusters).ThenFunc(handlers.GetHosts)).Methods("GET")
+	router.Handle("/", alice.New(CSRF, MustLogin, SetClusters).ThenFunc(handlers.GetHosts)).Methods("GET")
 
-	router.Handle("/saved-queries", alice.New(MustLogin, SetClusters).ThenFunc(handlers.PostSavedQueries)).Methods("POST")
-	router.Handle("/saved-queries/{id:[0-9]+}", alice.New(MustLogin, SetClusters).ThenFunc(handlers.PostPutDeleteSavedQueriesID)).Methods("POST", "PUT", "DELETE")
+	router.Handle("/saved-queries", alice.New(CSRF, MustLogin, SetClusters).ThenFunc(handlers.PostSavedQueries)).Methods("POST")
+	router.Handle("/saved-queries/{id:[0-9]+}", alice.New(CSRF, MustLogin, SetClusters).ThenFunc(handlers.PostPutDeleteSavedQueriesID)).Methods("POST", "PUT", "DELETE")
 
-	router.Handle("/graphs", alice.New(MustLogin, SetClusters).ThenFunc(handlers.GetGraphs)).Methods("GET")
-	router.Handle("/graphs", alice.New(MustLogin, SetClusters).ThenFunc(handlers.PostGraphs)).Methods("POST")
-	router.Handle("/graphs/{id:[0-9]+}", alice.New(MustLogin, SetClusters).ThenFunc(handlers.GetPostPutDeleteGraphsID)).Methods("GET", "POST", "PUT", "DELETE")
+	router.Handle("/graphs", alice.New(CSRF, MustLogin, SetClusters).ThenFunc(handlers.GetGraphs)).Methods("GET")
+	router.Handle("/graphs", alice.New(CSRF, MustLogin, SetClusters).ThenFunc(handlers.PostGraphs)).Methods("POST")
+	router.Handle("/graphs/{id:[0-9]+}", alice.New(CSRF, MustLogin, SetClusters).ThenFunc(handlers.GetPostPutDeleteGraphsID)).Methods("GET", "POST", "PUT", "DELETE")
 
-	router.Handle("/watchers", alice.New(MustLogin, SetClusters).ThenFunc(handlers.GetWatchers)).Methods("GET")
-	router.Handle("/watchers", alice.New(MustLogin, SetClusters).ThenFunc(handlers.PostWatchers)).Methods("POST")
-	router.Handle("/watchers/{id:[0-9]+}", alice.New(MustLogin, SetClusters).ThenFunc(handlers.PostPutDeleteWatcherID)).Methods("POST", "PUT", "DELETE")
-	router.Handle("/watchers/{id:[0-9]+}/silence", alice.New(MustLogin, SetClusters).ThenFunc(handlers.PostWatcherIDSilence)).Methods("POST")
+	router.Handle("/watchers", alice.New(CSRF, MustLogin, SetClusters).ThenFunc(handlers.GetWatchers)).Methods("GET")
+	router.Handle("/watchers", alice.New(CSRF, MustLogin, SetClusters).ThenFunc(handlers.PostWatchers)).Methods("POST")
+	router.Handle("/watchers/{id:[0-9]+}", alice.New(CSRF, MustLogin, SetClusters).ThenFunc(handlers.PostPutDeleteWatcherID)).Methods("POST", "PUT", "DELETE")
+	router.Handle("/watchers/{id:[0-9]+}/silence", alice.New(CSRF, MustLogin, SetClusters).ThenFunc(handlers.PostWatcherIDSilence)).Methods("POST")
 
-	router.Handle("/watchers/active", alice.New(MustLogin, SetClusters).ThenFunc(handlers.GetWatchersActive)).Methods("GET")
-	router.Handle("/watchers/active", alice.New(MustLogin, SetClusters).ThenFunc(handlers.PostWatchersActive)).Methods("POST")
-	router.Handle("/watchers/active/{id:[0-9]+}", alice.New(MustLogin, SetClusters).ThenFunc(handlers.PostPutDeleteWatcherActiveID)).Methods("POST", "PUT", "DELETE")
+	router.Handle("/watchers/active", alice.New(CSRF, MustLogin, SetClusters).ThenFunc(handlers.GetWatchersActive)).Methods("GET")
+	router.Handle("/watchers/active", alice.New(CSRF, MustLogin, SetClusters).ThenFunc(handlers.PostWatchersActive)).Methods("POST")
+	router.Handle("/watchers/active/{id:[0-9]+}", alice.New(CSRF, MustLogin, SetClusters).ThenFunc(handlers.PostPutDeleteWatcherActiveID)).Methods("POST", "PUT", "DELETE")
 
-	router.Handle("/watchers/{watcherid:[0-9]+}/triggers", alice.New(MustLogin, SetClusters).ThenFunc(handlers.PostWatchersTriggers)).Methods("POST")
-	router.Handle("/watchers/{watcherid:[0-9]+}/triggers/{id:[0-9]+}", alice.New(MustLogin, SetClusters).ThenFunc(handlers.PostPutDeleteWatcherTriggerID)).Methods("POST", "PUT", "DELETE")
+	router.Handle("/watchers/{watcherid:[0-9]+}/triggers", alice.New(CSRF, MustLogin, SetClusters).ThenFunc(handlers.PostWatchersTriggers)).Methods("POST")
+	router.Handle("/watchers/{watcherid:[0-9]+}/triggers/{id:[0-9]+}", alice.New(CSRF, MustLogin, SetClusters).ThenFunc(handlers.PostPutDeleteWatcherTriggerID)).Methods("POST", "PUT", "DELETE")
 
-	router.Handle("/users/{id:[0-9]+}", alice.New(MustLogin).ThenFunc(handlers.PostPutDeleteUsersID)).Methods("POST", "PUT", "DELETE")
+	router.Handle("/users/{id:[0-9]+}", alice.New(CSRF, MustLogin).ThenFunc(handlers.PostPutDeleteUsersID)).Methods("POST", "PUT", "DELETE")
 
-	router.Handle("/clusters", alice.New(MustLogin, SetClusters).ThenFunc(handlers.GetClusters)).Methods("GET")
-	router.Handle("/clusters", alice.New(MustLogin).ThenFunc(handlers.PostClusters)).Methods("POST")
-	router.Handle("/clusters/{id:[0-9]+}", alice.New(MustLogin, SetClusters).ThenFunc(handlers.PostPutDeleteClusterID)).Methods("POST", "PUT", "DELETE")
+	router.Handle("/clusters", alice.New(CSRF, MustLogin, SetClusters).ThenFunc(handlers.GetClusters)).Methods("GET")
+	router.Handle("/clusters", alice.New(CSRF, MustLogin).ThenFunc(handlers.PostClusters)).Methods("POST")
+	router.Handle("/clusters/{id:[0-9]+}", alice.New(CSRF, MustLogin, SetClusters).ThenFunc(handlers.PostPutDeleteClusterID)).Methods("POST", "PUT", "DELETE")
 
-	router.Handle("/clusters/current", alice.New(MustLogin, SetClusters).ThenFunc(handlers.PostClustersCurrent)).Methods("POST")
+	router.Handle("/clusters/current", alice.New(CSRF, MustLogin, SetClusters).ThenFunc(handlers.PostClustersCurrent)).Methods("POST")
+	router.Handle("/clusters/{id:[0-9]+}/access-tokens", alice.New(CSRF, MustLogin).ThenFunc(handlers.PostAccessTokens)).Methods("POST")
 
-	router.Handle("/clusters/{id:[0-9]+}/access-tokens", alice.New(MustLogin).ThenFunc(handlers.PostAccessTokens)).Methods("POST")
+	router.Handle("/clusters/{clusterid:[0-9]+}/metrics", alice.New(CSRF, MustLogin).ThenFunc(handlers.PostMetrics)).Methods("POST")
+	router.Handle("/clusters/{clusterid:[0-9]+}/metrics/{id:[0-9]+}", alice.New(CSRF, MustLogin).ThenFunc(handlers.PostPutDeleteMetricID)).Methods("POST", "PUT", "DELETE")
 
-	router.Handle("/clusters/{clusterid:[0-9]+}/metrics", alice.New(MustLogin).ThenFunc(handlers.PostMetrics)).Methods("POST")
-	router.Handle("/clusters/{clusterid:[0-9]+}/metrics/{id:[0-9]+}", alice.New(MustLogin).ThenFunc(handlers.PostPutDeleteMetricID)).Methods("POST", "PUT", "DELETE")
-
-	router.Handle("/access-tokens/{id:[0-9]+}/level", alice.New(MustLogin).ThenFunc(handlers.PostAccessTokensLevel)).Methods("POST")
-	router.Handle("/access-tokens/{id:[0-9]+}/enabled", alice.New(MustLogin).ThenFunc(handlers.PostAccessTokensEnabled)).Methods("POST")
+	router.Handle("/access-tokens/{id:[0-9]+}/level", alice.New(CSRF, MustLogin).ThenFunc(handlers.PostAccessTokensLevel)).Methods("POST")
+	router.Handle("/access-tokens/{id:[0-9]+}/enabled", alice.New(CSRF, MustLogin).ThenFunc(handlers.PostAccessTokensEnabled)).Methods("POST")
 
 	router.Handle("/api/hosts", alice.New(MustLoginApi).ThenFunc(handlers.GetApiHosts)).Methods("GET")
 	router.Handle("/api/hosts", alice.New(MustLoginApi).ThenFunc(handlers.PostApiHosts)).Methods("POST")

@@ -7,6 +7,7 @@ import (
 	"strconv"
 
 	"github.com/gorilla/context"
+	"github.com/gorilla/csrf"
 	"github.com/gorilla/mux"
 	"github.com/gorilla/sessions"
 	"github.com/jmoiron/sqlx"
@@ -36,11 +37,13 @@ func GetClusters(w http.ResponseWriter, r *http.Request) {
 	}
 
 	data := struct {
+		CSRFToken          string
 		CurrentUser        *dal.UserRow
 		Clusters           []*dal.ClusterRow
 		CurrentClusterJson string
 		AccessTokens       map[int64][]*dal.AccessTokenRow
 	}{
+		csrf.Token(r),
 		currentUser,
 		clusters,
 		string(context.Get(r, "currentClusterJson").([]byte)),

@@ -66,6 +66,7 @@
             </div>
 
             <form action="/graphs/{{ $.CurrentGraph.ID }}" method="post">
+                <input type="hidden" name="gorilla.csrf.Token" value="{{ $.CSRFToken }}">
                 <input type="hidden" name="_method" value="put">
 
                 <div class="modal-body">

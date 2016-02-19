@@ -8,6 +8,7 @@ import (
 
 	"github.com/Sirupsen/logrus"
 	"github.com/gorilla/context"
+	"github.com/gorilla/csrf"
 	"github.com/jmoiron/sqlx"
 	"github.com/resourced/resourced-master/dal"
 	"github.com/resourced/resourced-master/libhttp"
@@ -95,6 +96,7 @@ func GetHosts(w http.ResponseWriter, r *http.Request) {
 	}
 
 	data := struct {
+		CSRFToken          string
 		Addr               string
 		CurrentUser        *dal.UserRow
 		AccessToken        *dal.AccessTokenRow
@@ -104,6 +106,7 @@ func GetHosts(w http.ResponseWriter, r *http.Request) {
 		SavedQueries       []*dal.SavedQueryRow
 		MetricsMap         map[string]int64
 	}{
+		csrf.Token(r),
 		context.Get(r, "addr").(string),
 		currentUser,
 		accessTokenWithError.AccessToken,

@@ -3,12 +3,14 @@
     <div class="container">
         <div class="form-group form-group-search-and-save">
             <form class="navbar-form navbar-left search-form" role="search" action="/">
+                <input type="hidden" name="gorilla.csrf.Token" value="{{ $.CSRFToken }}">
                 <div class="input-group">
                     <input id="search-input" name="q" type="text" class="form-control" placeholder="Press enter to search">
                 </div>
             </form>
 
             <form class="navbar-form navbar-left saved-queries-form" action="/saved-queries" method="post">
+                <input type="hidden" name="gorilla.csrf.Token" value="{{ $.CSRFToken }}">
                 <input id="saved-queries-input" name="SavedQuery" type="hidden">
 
                 <div class="input-group">
@@ -83,6 +85,7 @@ $('#search-input').bind("input propertychange", function(e) {
                     </a>
 
                     <form action="/saved-queries/{{ $savedQuery.ID }}" method="post">
+                        <input type="hidden" name="gorilla.csrf.Token" value="{{ $.CSRFToken }}">
                         <input type="hidden" name="_method" value="delete">
                         <button type="submit" class="btn btn-danger">Delete</button>
                     </form>
@@ -144,6 +147,7 @@ $('#search-input').bind("input propertychange", function(e) {
                                         {{ if (ne 0 (index $.MetricsMap (print $path "." $key))) }}
                                         <form class="pull-left delete-metric-form" action="/clusters/{{ $host.ClusterID }}/metrics/{{ index $.MetricsMap (print $path "." $key) }}"
                                             method="post">
+                                            <input type="hidden" name="gorilla.csrf.Token" value="{{ $.CSRFToken }}">
                                             <input type="hidden" name="_method" value="delete">
                                             <button type="submit" class="btn btn-danger btn-sm">Delete</button>
                                         </form>
@@ -157,6 +161,7 @@ $('#search-input').bind("input propertychange", function(e) {
 
                                         {{ else }}
                                         <form action="/clusters/{{ $host.ClusterID }}/metrics" method="post">
+                                            <input type="hidden" name="gorilla.csrf.Token" value="{{ $.CSRFToken }}">
                                             <input type="hidden" name="Key" value="{{ $path }}.{{ $key }}">
                                             <button type="submit" class="btn btn-success btn-sm btn-do-chart-metric">Chart Metric?</button>
                                         </form>

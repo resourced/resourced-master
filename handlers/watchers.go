@@ -7,6 +7,7 @@ import (
 	"strconv"
 
 	"github.com/gorilla/context"
+	"github.com/gorilla/csrf"
 	"github.com/jmoiron/sqlx"
 	"github.com/resourced/resourced-master/dal"
 	"github.com/resourced/resourced-master/libhttp"
@@ -85,6 +86,7 @@ func GetWatchers(w http.ResponseWriter, r *http.Request) {
 	}
 
 	data := struct {
+		CSRFToken          string
 		Addr               string
 		CurrentUser        *dal.UserRow
 		Clusters           []*dal.ClusterRow
@@ -93,6 +95,7 @@ func GetWatchers(w http.ResponseWriter, r *http.Request) {
 		SavedQueries       []*dal.SavedQueryRow
 		TriggersByWatcher  map[int64][]*dal.WatcherTriggerRow
 	}{
+		csrf.Token(r),
 		context.Get(r, "addr").(string),
 		currentUser,
 		context.Get(r, "clusters").([]*dal.ClusterRow),
@@ -169,6 +172,7 @@ func GetWatchersActive(w http.ResponseWriter, r *http.Request) {
 	}
 
 	data := struct {
+		CSRFToken          string
 		Addr               string
 		CurrentUser        *dal.UserRow
 		Clusters           []*dal.ClusterRow
@@ -176,6 +180,7 @@ func GetWatchersActive(w http.ResponseWriter, r *http.Request) {
 		Watchers           []*dal.WatcherRow
 		TriggersByWatcher  map[int64][]*dal.WatcherTriggerRow
 	}{
+		csrf.Token(r),
 		context.Get(r, "addr").(string),
 		currentUser,
 		context.Get(r, "clusters").([]*dal.ClusterRow),

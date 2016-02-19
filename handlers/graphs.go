@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/gorilla/context"
+	"github.com/gorilla/csrf"
 	"github.com/jmoiron/sqlx"
 	"github.com/resourced/resourced-master/dal"
 	"github.com/resourced/resourced-master/libhttp"
@@ -27,12 +28,14 @@ func GetGraphs(w http.ResponseWriter, r *http.Request) {
 	}
 
 	data := struct {
+		CSRFToken          string
 		Addr               string
 		CurrentUser        *dal.UserRow
 		Clusters           []*dal.ClusterRow
 		CurrentClusterJson string
 		Graphs             []*dal.GraphRow
 	}{
+		csrf.Token(r),
 		context.Get(r, "addr").(string),
 		currentUser,
 		context.Get(r, "clusters").([]*dal.ClusterRow),
@@ -158,6 +161,7 @@ func GetGraphsID(w http.ResponseWriter, r *http.Request) {
 	}
 
 	data := struct {
+		CSRFToken          string
 		Addr               string
 		CurrentUser        *dal.UserRow
 		AccessToken        *dal.AccessTokenRow
@@ -167,6 +171,7 @@ func GetGraphsID(w http.ResponseWriter, r *http.Request) {
 		Graphs             []*dal.GraphRow
 		Metrics            []*dal.MetricRow
 	}{
+		csrf.Token(r),
 		context.Get(r, "addr").(string),
 		currentUser,
 		accessTokenWithError.AccessToken,
@@ -237,7 +242,7 @@ func PutGraphsID(w http.ResponseWriter, r *http.Request) {
 func DeleteGraphsID(w http.ResponseWriter, r *http.Request) {
 	db := context.Get(r, "db.Core").(*sqlx.DB)
 
-	accessTokenRow := context.Get(r, "accessTokenRow").(*dal.AccessTokenRow)
+	currentCluster := context.Get(r, "currentCluster").(*dal.ClusterRow)
 
 	id, err := getIdFromPath(w, r)
 	if err != nil {
@@ -245,7 +250,7 @@ func DeleteGraphsID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err = dal.NewGraph(db).DeleteByClusterIDAndID(nil, accessTokenRow.ClusterID, id)
+	_, err = dal.NewGraph(db).DeleteByClusterIDAndID(nil, currentCluster.ID, id)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return

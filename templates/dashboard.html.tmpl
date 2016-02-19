@@ -23,6 +23,7 @@
         <script src="/resourced-master/js/dashboard.js"></script>
 
         <script>
+        ResourcedMaster.globals.CSRFToken = '{{ $.CSRFToken }}';
         ResourcedMaster.globals.currentCluster = JSON.parse('{{ .CurrentClusterJson }}');
         </script>
     </head>
@@ -96,6 +97,7 @@
                 </div>
 
                 <form method="post" action="/users/{{ .CurrentUser.ID }}">
+                    <input type="hidden" name="gorilla.csrf.Token" value="{{ $.CSRFToken }}">
                     <div class="modal-body">
                         <input type="hidden" name="_method" value="put">
 
@@ -173,7 +175,7 @@
         var clusterID = $li.data('cluster-id');
         var clusterName = $li.find('.name').text();
 
-        $.post('/clusters/current', { ClusterID: clusterID } )
+        $.post('/clusters/current',{ 'ClusterID': clusterID, 'gorilla.csrf.Token': ResourcedMaster.globals.CSRFToken })
         .done(function() {
             ResourcedMaster.globals.currentCluster.ID = clusterID;
             ResourcedMaster.globals.currentCluster.Name = clusterName;
