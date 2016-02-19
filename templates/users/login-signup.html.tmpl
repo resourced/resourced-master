@@ -1,78 +1,95 @@
 <!DOCTYPE html>
 <html>
-  <head>
-    <title>ResourceD Master</title>
+    <head>
+        <title>ResourceD Master</title>
 
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge" />
 
-    <link rel="stylesheet" href="/bootstrap/themes/superhero/bootstrap.min.css">
+        <link rel="stylesheet" href="/bootstrap/themes/superhero/bootstrap.min.css">
 
-    <style>
-    .form-signup-login {
-      max-width: 330px;
-      padding: 15px;
-      margin: 0 auto;
-    }
-    .form-signup-login .form-signup-login-heading {
-      margin-bottom: 10px;
-    }
-    .form-signup-login .form-control {
-      position: relative;
-      font-size: 16px;
-      height: auto;
-      padding: 10px;
-      -webkit-box-sizing: border-box;
-      -moz-box-sizing: border-box;
-      box-sizing: border-box;
-    }
-    .form-signup-login .form-control:focus {
-      z-index: 2;
-    }
-    .form-signup-login input[type="text"] {
-      margin-bottom: -1px;
-      border-bottom-left-radius: 0;
-      border-bottom-right-radius: 0;
-    }
-    .form-login input[type="password"], .form-signup .password-again {
-      margin-bottom: 10px;
-      border-top-left-radius: 0;
-      border-top-right-radius: 0;
-    }
-    .form-signup .password {
-      border-radius: 0;
-      margin-bottom: -1px;
-    }
-    .account-wall {
-      margin-top: 20px;
-      padding: 30px 0px;
-    }
-    .account-wall > h1, .account-wall > h2, .account-wall > h3, .account-wall > h4 {
-      margin-top: 0;
-      display: block;
-    }
-    .account-wall > h1 {
-      font-size: 24px;
-      margin-bottom: 8px;
-    }
-    .account-wall > h4 {
-      font-size: 14px;
-    }
-    .other-form {
-      display: block;
-      margin-top: 10px;
-    }
-    </style>
-  </head>
+        <style>
+        .form-signup-login {
+            max-width: 330px;
+            padding: 15px;
+            margin: 0 auto;
+        }
+        .form-signup-login .form-signup-login-heading {
+            margin-bottom: 10px;
+        }
+        .form-signup-login .form-control {
+            position: relative;
+            font-size: 16px;
+            height: auto;
+            padding: 10px;
+            -webkit-box-sizing: border-box;
+            -moz-box-sizing: border-box;
+            box-sizing: border-box;
+        }
+        .form-signup-login .form-control:focus {
+            z-index: 2;
+        }
+        .form-signup-login input[type="text"] {
+            margin-bottom: -1px;
+            border-bottom-left-radius: 0;
+            border-bottom-right-radius: 0;
+        }
+        .form-login input[type="password"], .form-signup .password-again {
+            margin-bottom: 10px;
+            border-top-left-radius: 0;
+            border-top-right-radius: 0;
+        }
+        .form-signup .password {
+            border-radius: 0;
+            margin-bottom: -1px;
+        }
+        .account-wall {
+            margin-top: 20px;
+            padding: 30px 0px;
+        }
+        .account-wall > h1, .account-wall > h2, .account-wall > h3, .account-wall > h4 {
+            margin-top: 0;
+            display: block;
+        }
+        .account-wall > h1 {
+            font-size: 24px;
+            margin-bottom: 8px;
+        }
+        .account-wall > h4 {
+            font-size: 14px;
+        }
+        .other-form {
+            display: block;
+            margin-top: 10px;
+        }
+        </style>
 
-  <body>
-    <div class="container">
-      <div class="row">
-        <div class="col-sm-12 col-md-4 col-md-offset-4">
-          {{template "content"}}
+        <script src="/jquery/jquery-2.2.0.min.js"></script>
+        <script src="/mailcheck/mailcheck.min.js"></script>
+    </head>
+
+    <body>
+        <div class="container">
+            <div class="row">
+                <div class="col-sm-12 col-md-4 col-md-offset-4">
+                {{template "content"}}
+                </div>
+            </div>
         </div>
-      </div>
-    </div>
-  </body>
+
+        <script>
+        $('input[name="Email"]').on('blur', function() {
+            var mailInput = $(this);
+
+            mailInput.mailcheck({
+                domains: ['gmail.com', 'yahoo.com', 'hotmail.com', 'msn.com', 'live.com', 'aol.com'],
+                topLevelDomains: ["com", "net", "org"],
+                suggested: function(element, suggestion) {
+                    mailInput.val(suggestion.full);
+                }
+            });
+        });
+        </script>
+    </body>
 </html>
