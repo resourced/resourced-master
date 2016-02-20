@@ -4,6 +4,12 @@ ResourcedMaster.globals = {};
 
 ResourcedMaster.globals.currentCluster = {};
 
+ResourcedMaster.users = {};
+ResourcedMaster.users.logout = function() {
+    $.removeCookie('resourcedmaster-session', { path: '/' });
+    window.location = '/login';
+};
+
 ResourcedMaster.metrics = {};
 ResourcedMaster.metrics.get = function(accessToken, metricID, options) {
     var path = '/api/metrics/' + metricID;

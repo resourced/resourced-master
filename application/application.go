@@ -88,7 +88,6 @@ func (app *Application) mux() *mux.Router {
 	router.HandleFunc("/signup", handlers.PostSignup).Methods("POST")
 	router.HandleFunc("/login", handlers.GetLogin).Methods("GET")
 	router.HandleFunc("/login", handlers.PostLogin).Methods("POST")
-	router.HandleFunc("/logout", handlers.GetLogout).Methods("GET")
 
 	router.Handle("/", alice.New(CSRF, MustLogin, SetClusters).ThenFunc(handlers.GetHosts)).Methods("GET")
 
