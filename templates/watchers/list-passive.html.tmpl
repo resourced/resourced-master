@@ -347,14 +347,6 @@ $(document).ready(function() {
 
 $('select[name="ActionTransport"]').change(changeActionTransport);
 
-$('#watcher-modal form .btn-danger').click(function() {
-    if(!confirm('Are you sure? Press OK to delete.')) {
-        return false;
-    }
-    $('#watcher-modal form input[name="_method"]').val('delete');
-    $(this).closest('form').submit();
-});
-
 $('#watcher-modal form .btn-primary').click(function() {
     $('#watcher-modal form input[name="_method"]').val('put');
     $(this).closest('form').submit();
@@ -395,14 +387,6 @@ $('#watcher-modal').on('show.bs.modal', function (event) {
         modal.find('.btn-danger').hide();
         modal.find('.modal-title').text('New Watcher');
     }
-});
-
-$('#trigger-modal form .btn-danger').click(function() {
-    if(!confirm('Are you sure? Press OK to delete.')) {
-        return false;
-    }
-    $('#trigger-modal form input[name="_method"]').val('delete');
-    $(this).closest('form').submit();
 });
 
 $('#trigger-modal form .btn-primary').click(function() {

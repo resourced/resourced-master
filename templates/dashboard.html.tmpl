@@ -150,7 +150,10 @@
             if(!confirm('Are you sure? Press OK to continue.')) {
                 return false;
             }
+
+            $(this).closest('form').find('input[name="_method"]').val('delete');
             $(this).closest('form').submit();
+            return false;
         });
     });
 

@@ -270,14 +270,6 @@ $(document).ready(function() {
     });
 });
 
-$('.delete-metric-form .btn-danger').click(function() {
-    if(!confirm('Are you sure? Press OK to delete.')) {
-        return false;
-    }
-    $('.delete-metric-form input[name="_method"]').val('delete');
-    $(this).closest('form').submit();
-});
-
 $('.container.saved-queries .toggler-header').on('switchChange.bootstrapSwitch', function(event, state) {
     if(state) {
         $(this).closest('.container.saved-queries').find('.row.saved-queries').show();
