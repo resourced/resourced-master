@@ -14,7 +14,7 @@ func PostAccessTokens(w http.ResponseWriter, r *http.Request) {
 
 	currentUser := context.Get(r, "currentUser").(*dal.UserRow)
 
-	clusterID, err := getIdFromPath(w, r)
+	clusterID, err := getInt64SlugFromPath(w, r, "id")
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
@@ -34,7 +34,7 @@ func PostAccessTokens(w http.ResponseWriter, r *http.Request) {
 func PostAccessTokensLevel(w http.ResponseWriter, r *http.Request) {
 	db := context.Get(r, "db.Core").(*sqlx.DB)
 
-	tokenID, err := getIdFromPath(w, r)
+	tokenID, err := getInt64SlugFromPath(w, r, "id")
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
@@ -57,7 +57,7 @@ func PostAccessTokensLevel(w http.ResponseWriter, r *http.Request) {
 func PostAccessTokensEnabled(w http.ResponseWriter, r *http.Request) {
 	db := context.Get(r, "db.Core").(*sqlx.DB)
 
-	tokenID, err := getIdFromPath(w, r)
+	tokenID, err := getInt64SlugFromPath(w, r, "id")
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return

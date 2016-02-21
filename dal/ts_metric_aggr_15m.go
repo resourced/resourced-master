@@ -146,6 +146,14 @@ func (ts *TSMetricAggr15m) InsertOrUpdate(tx *sqlx.Tx, clusterID, metricID int64
 	return err
 }
 
+func (ts *TSMetricAggr15m) AllByMetricIDAndRange(tx *sqlx.Tx, clusterID, metricID, from, to int64) ([]*TSMetricAggr15mRow, error) {
+	rows := []*TSMetricAggr15mRow{}
+	query := fmt.Sprintf("SELECT * FROM %v WHERE cluster_id=$1 AND metric_id=$2 AND created >= to_timestamp($3) at time zone 'utc' AND created <= to_timestamp($4) at time zone 'utc' AND host <> '' ORDER BY cluster_id,metric_id,created ASC", ts.table)
+	err := ts.db.Select(&rows, query, clusterID, metricID, from, to)
+
+	return rows, err
+}
+
 func (ts *TSMetricAggr15m) AllByMetricIDAndInterval(tx *sqlx.Tx, clusterID, metricID int64, interval string) ([]*TSMetricAggr15mRow, error) {
 	if interval == "" {
 		interval = "1 hour"
@@ -156,6 +164,39 @@ func (ts *TSMetricAggr15m) AllByMetricIDAndInterval(tx *sqlx.Tx, clusterID, metr
 	err := ts.db.Select(&rows, query, clusterID, metricID)
 
 	return rows, err
+}
+
+func (ts *TSMetricAggr15m) AllByMetricIDAndRangeForHighchart(tx *sqlx.Tx, clusterID, metricID, from, to int64) ([]*TSMetricHighchartPayload, error) {
+	tsMetricRows, err := ts.AllByMetricIDAndRange(tx, clusterID, metricID, from, to)
+	if err != nil {
+		return nil, err
+	}
+
+	// Group all TSMetricAggr15mRows per host
+	mapHostsAndMetrics := make(map[string][]*TSMetricAggr15mRow)
+
+	for _, tsMetricRow := range tsMetricRows {
+		host := tsMetricRow.Host.String
+
+		if _, ok := mapHostsAndMetrics[host]; !ok {
+			mapHostsAndMetrics[host] = make([]*TSMetricAggr15mRow, 0)
+		}
+
+		mapHostsAndMetrics[host] = append(mapHostsAndMetrics[host], tsMetricRow)
+	}
+
+	// Then generate multiple Highchart payloads per all these hosts.
+	highChartPayloads := make([]*TSMetricHighchartPayload, 0)
+
+	for host, tsMetricRows := range mapHostsAndMetrics {
+		highChartPayload, err := ts.metricRowsForHighchart(tx, host, tsMetricRows)
+		if err != nil {
+			return nil, err
+		}
+		highChartPayloads = append(highChartPayloads, highChartPayload)
+	}
+
+	return highChartPayloads, nil
 }
 
 func (ts *TSMetricAggr15m) AllByMetricIDAndIntervalForHighchart(tx *sqlx.Tx, clusterID, metricID int64, interval string) ([]*TSMetricHighchartPayload, error) {

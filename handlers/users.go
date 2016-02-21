@@ -129,7 +129,7 @@ func PostPutDeleteUsersID(w http.ResponseWriter, r *http.Request) {
 }
 
 func PutUsersID(w http.ResponseWriter, r *http.Request) {
-	userId, err := getIdFromPath(w, r)
+	userId, err := getInt64SlugFromPath(w, r, "id")
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return

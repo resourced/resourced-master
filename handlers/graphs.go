@@ -92,7 +92,7 @@ func GetGraphsID(w http.ResponseWriter, r *http.Request) {
 
 	currentCluster := context.Get(r, "currentCluster").(*dal.ClusterRow)
 
-	id, err := getIdFromPath(w, r)
+	id, err := getInt64SlugFromPath(w, r, "id")
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
@@ -196,7 +196,7 @@ func PutGraphsID(w http.ResponseWriter, r *http.Request) {
 
 	currentCluster := context.Get(r, "currentCluster").(*dal.ClusterRow)
 
-	id, err := getIdFromPath(w, r)
+	id, err := getInt64SlugFromPath(w, r, "id")
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
@@ -244,7 +244,7 @@ func DeleteGraphsID(w http.ResponseWriter, r *http.Request) {
 
 	currentCluster := context.Get(r, "currentCluster").(*dal.ClusterRow)
 
-	id, err := getIdFromPath(w, r)
+	id, err := getInt64SlugFromPath(w, r, "id")
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return

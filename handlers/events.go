@@ -108,7 +108,7 @@ func DeleteApiEventsID(w http.ResponseWriter, r *http.Request) {
 
 	accessTokenRow := context.Get(r, "accessTokenRow").(*dal.AccessTokenRow)
 
-	id, err := getIdFromPath(w, r)
+	id, err := getInt64SlugFromPath(w, r, "id")
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return

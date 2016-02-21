@@ -326,7 +326,7 @@ func PostPutDeleteWatcherID(w http.ResponseWriter, r *http.Request) {
 }
 
 func PutWatcherID(w http.ResponseWriter, r *http.Request) {
-	id, err := getIdFromPath(w, r)
+	id, err := getInt64SlugFromPath(w, r, "id")
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
@@ -350,7 +350,7 @@ func PutWatcherID(w http.ResponseWriter, r *http.Request) {
 }
 
 func DeleteWatcherID(w http.ResponseWriter, r *http.Request) {
-	id, err := getIdFromPath(w, r)
+	id, err := getInt64SlugFromPath(w, r, "id")
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
@@ -383,7 +383,7 @@ func PostPutDeleteWatcherActiveID(w http.ResponseWriter, r *http.Request) {
 }
 
 func PutWatcherActiveID(w http.ResponseWriter, r *http.Request) {
-	id, err := getIdFromPath(w, r)
+	id, err := getInt64SlugFromPath(w, r, "id")
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
@@ -409,7 +409,7 @@ func PutWatcherActiveID(w http.ResponseWriter, r *http.Request) {
 func PostWatcherIDSilence(w http.ResponseWriter, r *http.Request) {
 	db := context.Get(r, "db.Core").(*sqlx.DB)
 
-	id, err := getIdFromPath(w, r)
+	id, err := getInt64SlugFromPath(w, r, "id")
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return

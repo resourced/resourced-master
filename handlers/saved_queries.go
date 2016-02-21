@@ -51,7 +51,7 @@ func PutSavedQueriesID(w http.ResponseWriter, r *http.Request) {
 }
 
 func DeleteSavedQueriesID(w http.ResponseWriter, r *http.Request) {
-	savedQueryID, err := getIdFromPath(w, r)
+	savedQueryID, err := getInt64SlugFromPath(w, r, "id")
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
