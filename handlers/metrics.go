@@ -67,7 +67,7 @@ func GetApiTSMetricsByHost(w http.ResponseWriter, r *http.Request) {
 	if toString == "" {
 		toString = qParams.Get("to")
 	}
-	to, err := strconv.ParseInt(fromString, 10, 64)
+	to, err := strconv.ParseInt(toString, 10, 64)
 	if err != nil {
 		to = -1
 	}
@@ -133,7 +133,7 @@ func GetApiTSMetrics(w http.ResponseWriter, r *http.Request) {
 	if toString == "" {
 		toString = qParams.Get("to")
 	}
-	to, err := strconv.ParseInt(fromString, 10, 64)
+	to, err := strconv.ParseInt(toString, 10, 64)
 	if err != nil {
 		to = -1
 	}
@@ -203,7 +203,7 @@ func GetApiTSMetrics15Min(w http.ResponseWriter, r *http.Request) {
 	if toString == "" {
 		toString = qParams.Get("to")
 	}
-	to, err := strconv.ParseInt(fromString, 10, 64)
+	to, err := strconv.ParseInt(toString, 10, 64)
 	if err != nil {
 		to = -1
 	}
