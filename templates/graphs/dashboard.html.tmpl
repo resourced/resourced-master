@@ -29,6 +29,8 @@
         <div class="col-md-4">
             <div class="panel panel-default panel-chart" data-id="{{ $metric.ID }}" data-key="{{ $metric.Key }}">
                 <div class="panel-heading" data-id="{{ $metric.ID }}" data-key="{{ $metric.Key }}">
+                    <input class="form-control chart-created-interval pull-right daterange" type="text" data-id="{{ $metric.ID }}" data-key="{{ $metric.Key }}" data-interval="15 minute" />
+
                     <select class="form-control chart-created-interval pull-right" data-id="{{ $metric.ID }}" data-key="{{ $metric.Key }}" data-interval="15 minute">
                         <option value="5 minute">5 minutes ago</option>
                         <option value="10 minute">10 minutes ago</option>
@@ -100,25 +102,25 @@ setInterval(function() {
     window.location.reload();
 }, 5*60000);
 
-globalChartKeys = [];
+ResourcedMaster.globals.ChartKeys = [];
+ResourcedMaster.globals.AccessToken = '{{ $.AccessToken.Token }}';
 
 function renderChartPreview() {
-    var metrics = globalChartKeys;
+    var metrics = ResourcedMaster.globals.ChartKeys;
     var lastMetricIDAndKey = metrics[metrics.length -1].split(/\-(.+)?/);
     var lastMetricID = lastMetricIDAndKey[0];
     var lastMetricKey = lastMetricIDAndKey[1];
     var createdInterval = '15 minute'; // Don't fetch too many things since this is just a preview.
     var containerDOM = $('#add-chart-modal').find('.add-chart-modal-container');
-    var accessToken = '{{ $.AccessToken.Token }}';
 
-    ResourcedMaster.metrics.renderOneChart(accessToken, lastMetricID, {
+    ResourcedMaster.metrics.renderOneChart(ResourcedMaster.globals.AccessToken, lastMetricID, {
         'createdInterval': createdInterval,
         'containerDOM': containerDOM,
         'height': ResourcedMaster.highcharts.defaultHeight + 6,
         'title': lastMetricKey,
         'onLoad': function(event) {
-            ResourcedMaster.metrics.renderEventsOneChart(accessToken, 'line', {'createdInterval': createdInterval, 'containerDOM': containerDOM});
-            ResourcedMaster.metrics.renderEventsOneChart(accessToken, 'band', {'createdInterval': createdInterval, 'containerDOM': containerDOM});
+            ResourcedMaster.metrics.renderEventsOneChart(ResourcedMaster.globals.AccessToken, 'line', {'createdInterval': createdInterval, 'containerDOM': containerDOM});
+            ResourcedMaster.metrics.renderEventsOneChart(ResourcedMaster.globals.AccessToken, 'band', {'createdInterval': createdInterval, 'containerDOM': containerDOM});
         }
     });
 }
@@ -128,27 +130,51 @@ function renderAllChart() {
         var metricID = $(this).data('id');
         var createdInterval = $(this).find('select').data('interval');
         var containerDOM = $(this).siblings('.panel-body');
-        var accessToken = '{{ $.AccessToken.Token }}';
 
         if(createdInterval.indexOf('day') > -1 || createdInterval.indexOf('6 hour') > -1 || createdInterval.indexOf('12 hour') > -1 || createdInterval.indexOf('24 hour') > -1) {
-            ResourcedMaster.metrics.renderOneChartAggr(accessToken, metricID, {
+            ResourcedMaster.metrics.renderOneChartAggr(ResourcedMaster.globals.AccessToken, metricID, {
                 'shortAggrInterval': '15min',
                 'createdInterval': createdInterval,
                 'containerDOM': containerDOM,
                 'onLoad': function(event) {
-                    ResourcedMaster.metrics.renderEventsOneChart(accessToken, 'line', {'createdInterval': createdInterval, 'containerDOM': containerDOM});
-                    ResourcedMaster.metrics.renderEventsOneChart(accessToken, 'band', {'createdInterval': createdInterval, 'containerDOM': containerDOM});
+                    ResourcedMaster.metrics.renderEventsOneChart(ResourcedMaster.globals.AccessToken, 'line', {'createdInterval': createdInterval, 'containerDOM': containerDOM});
+                    ResourcedMaster.metrics.renderEventsOneChart(ResourcedMaster.globals.AccessToken, 'band', {'createdInterval': createdInterval, 'containerDOM': containerDOM});
                 }
             });
         } else {
-            ResourcedMaster.metrics.renderOneChart(accessToken, metricID, {
+            ResourcedMaster.metrics.renderOneChart(ResourcedMaster.globals.AccessToken, metricID, {
                 'createdInterval': createdInterval,
                 'containerDOM': containerDOM,
                 'onLoad': function(event) {
-                    ResourcedMaster.metrics.renderEventsOneChart(accessToken, 'line', {'createdInterval': createdInterval, 'containerDOM': containerDOM});
-                    ResourcedMaster.metrics.renderEventsOneChart(accessToken, 'band', {'createdInterval': createdInterval, 'containerDOM': containerDOM});
+                    ResourcedMaster.metrics.renderEventsOneChart(ResourcedMaster.globals.AccessToken, 'line', {'createdInterval': createdInterval, 'containerDOM': containerDOM});
+                    ResourcedMaster.metrics.renderEventsOneChart(ResourcedMaster.globals.AccessToken, 'band', {'createdInterval': createdInterval, 'containerDOM': containerDOM});
                 }
             });
+        }
+    });
+}
+
+function renderChartRange(daterangepicker, from, to) {
+    daterangepicker.closest('.panel-heading').each(function() {
+        var metricID = $(this).data('id');
+        var containerDOM = $(this).siblings('.panel-body');
+
+        if((to - from) >= 21600) {
+            ResourcedMaster.metrics.renderOneChartAggr(ResourcedMaster.globals.AccessToken, metricID, {
+                'shortAggrInterval': '15min',
+                'from': from,
+                'to': to,
+                'containerDOM': containerDOM
+            });
+
+        } else {
+            ResourcedMaster.metrics.renderOneChart(ResourcedMaster.globals.AccessToken, metricID, {
+                'createdInterval': createdInterval,
+                'from': from,
+                'to': to,
+                'containerDOM': containerDOM
+            });
+
         }
     });
 }
@@ -162,10 +188,41 @@ $(window).resize(function() {
 });
 
 $(document).ready(function() {
-    renderAllChart();
+    var daterangepicker = $('input.daterange');
+
+    $('input.daterange').each(function() {
+        var daterangepicker = $(this);
+
+        daterangepicker.daterangepicker({
+            "timePicker": true,
+            "timePickerSeconds": true,
+            "autoApply": true,
+            "ranges": {
+                '5 minutes': [moment().subtract(5, 'minutes'), moment()],
+                '10 minutes': [moment().subtract(10, 'minutes'), moment()],
+                '15 minutes': [moment().subtract(15, 'minutes'), moment()],
+                '30 minutes': [moment().subtract(30, 'minutes'), moment()],
+                '60 minutes': [moment().subtract(60, 'minutes'), moment()],
+                '2 hours': [moment().subtract(2, 'hours'), moment()],
+                '3 hours': [moment().subtract(3, 'hours'), moment()],
+                '6 hours': [moment().subtract(6, 'hours'), moment()],
+                '12 hours': [moment().subtract(12, 'hours'), moment()],
+                '24 hours': [moment().subtract(24, 'hours'), moment()],
+                '2 days': [moment().subtract(2, 'days'), moment()],
+                '3 days': [moment().subtract(3, 'days'), moment()],
+                '7 days': [moment().subtract(7, 'days'), moment()]
+            },
+            "defaultDate": moment(),
+            "startDate": moment().subtract(15, 'minutes'),
+            "endDate": moment(),
+            "opens": "left"
+        }, function(start, end, label) {
+            renderChartRange(daterangepicker, start, end);
+        });
+    });
 
     // Gather the ordering of every chart panels on load.
-    globalChartKeys = $('.panel-chart').map(function() {
+    ResourcedMaster.globals.ChartKeys = $('.panel-chart').map(function() {
         return $(this).data('id') + '-' + $(this).data('key');
     }).get();
 });
@@ -176,15 +233,15 @@ $('.chart-keys option').click(function(event) {
     var val = $option.val();
 
     if(!event.ctrlKey && !event.altKey && !event.metaKey) {
-        globalChartKeys = [];
+        ResourcedMaster.globals.ChartKeys = [];
     }
 
     if($(this).is(':selected')) {
-        globalChartKeys.push(val);
+        ResourcedMaster.globals.ChartKeys.push(val);
     } else {
-        var index = globalChartKeys.indexOf(val);
+        var index = ResourcedMaster.globals.ChartKeys.indexOf(val);
         if(index > -1) {
-            globalChartKeys.splice(index, 1);
+            ResourcedMaster.globals.ChartKeys.splice(index, 1);
         }
     }
 
@@ -192,7 +249,7 @@ $('.chart-keys option').click(function(event) {
     var form = $('#add-chart-modal form');
     form.find('input[name="MetricsWithOrder"]').remove();
 
-    $.each(globalChartKeys, function(index, value) {
+    $.each(ResourcedMaster.globals.ChartKeys, function(index, value) {
         $('<input type="hidden" name="MetricsWithOrder" value="' + value + '">').appendTo(form);
     });
 
@@ -207,33 +264,32 @@ $('.chart-created-interval').change(function() {
     var metricID = $(this).data('id');
     var createdInterval = $(this).val();
     var containerDOM = $(this).closest('.panel-heading').siblings('.panel-body');
-    var accessToken = '{{ $.AccessToken.Token }}';
 
     $(this).data('interval', createdInterval);
 
     if(createdInterval.indexOf('day') > -1 || createdInterval.indexOf('6 hour') > -1 || createdInterval.indexOf('12 hour') > -1 || createdInterval.indexOf('24 hour') > -1) {
-        ResourcedMaster.metrics.renderOneChartAggr(accessToken, metricID, {
+        ResourcedMaster.metrics.renderOneChartAggr(ResourcedMaster.globals.AccessToken, metricID, {
             'shortAggrInterval': '15min',
             'createdInterval': createdInterval,
             'containerDOM': containerDOM,
             'onLoad': function(event) {
-                ResourcedMaster.metrics.renderEventsOneChart(accessToken, 'line', {'createdInterval': createdInterval, 'containerDOM': containerDOM});
-                ResourcedMaster.metrics.renderEventsOneChart(accessToken, 'band', {'createdInterval': createdInterval, 'containerDOM': containerDOM});
+                ResourcedMaster.metrics.renderEventsOneChart(ResourcedMaster.globals.AccessToken, 'line', {'createdInterval': createdInterval, 'containerDOM': containerDOM});
+                ResourcedMaster.metrics.renderEventsOneChart(ResourcedMaster.globals.AccessToken, 'band', {'createdInterval': createdInterval, 'containerDOM': containerDOM});
             }
         });
     } else {
-        ResourcedMaster.metrics.renderOneChart(accessToken, metricID, {
+        ResourcedMaster.metrics.renderOneChart(ResourcedMaster.globals.AccessToken, metricID, {
             'createdInterval': createdInterval,
             'containerDOM': containerDOM,
             'onLoad': function(event) {
-                ResourcedMaster.metrics.renderEventsOneChart(accessToken, 'line', {'createdInterval': createdInterval, 'containerDOM': containerDOM});
-                ResourcedMaster.metrics.renderEventsOneChart(accessToken, 'band', {'createdInterval': createdInterval, 'containerDOM': containerDOM});
+                ResourcedMaster.metrics.renderEventsOneChart(ResourcedMaster.globals.AccessToken, 'line', {'createdInterval': createdInterval, 'containerDOM': containerDOM});
+                ResourcedMaster.metrics.renderEventsOneChart(ResourcedMaster.globals.AccessToken, 'band', {'createdInterval': createdInterval, 'containerDOM': containerDOM});
             }
         });
     }
 });
 
-// Highlight charts that are already selected based on globalChartKeys.
+// Highlight charts that are already selected based on ResourcedMaster.globals.ChartKeys.
 $('#add-chart-modal').on('shown.bs.modal', function() {
     $(this).find('.chart-keys option').each(function(index) {
         var chartKeyOption = $(this);

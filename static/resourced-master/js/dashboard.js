@@ -24,6 +24,12 @@ ResourcedMaster.metrics.get = function(accessToken, metricID, options) {
     if('createdInterval' in options) {
         getParams = getParams + 'CreatedInterval=' + options.createdInterval;
     }
+    if('from' in options) {
+        getParams = getParams + 'From=' + options.from;
+    }
+    if('to' in options) {
+        getParams = getParams + 'To=' + options.to;
+    }
 
     $.ajax({
         url: path + '?' + getParams,
