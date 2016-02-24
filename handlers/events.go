@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"strconv"
 
 	"github.com/gorilla/context"
 	"github.com/jmoiron/sqlx"
@@ -18,17 +19,48 @@ func GetApiEventsLine(w http.ResponseWriter, r *http.Request) {
 
 	accessTokenRow := context.Get(r, "accessTokenRow").(*dal.AccessTokenRow)
 
-	createdInterval := r.URL.Query().Get("CreatedInterval")
+	qParams := r.URL.Query()
+
+	createdInterval := qParams.Get("CreatedInterval")
 	if createdInterval == "" {
 		createdInterval = "1 hour"
 	}
 
+	fromString := qParams.Get("From")
+	if fromString == "" {
+		fromString = qParams.Get("from")
+	}
+	from, err := strconv.ParseInt(fromString, 10, 64)
+	if err != nil {
+		from = -1
+	}
+
+	toString := qParams.Get("To")
+	if toString == "" {
+		toString = qParams.Get("to")
+	}
+	to, err := strconv.ParseInt(toString, 10, 64)
+	if err != nil {
+		to = -1
+	}
+
 	tsEventsDB := context.Get(r, "multidb.TSEvents").(*multidb.MultiDB).PickRandom()
 
-	rows, err := dal.NewTSEvent(tsEventsDB).AllLinesByClusterIDAndCreatedFromIntervalForHighchart(nil, accessTokenRow.ClusterID, createdInterval)
-	if err != nil {
-		libhttp.HandleErrorJson(w, err)
-		return
+	var rows []dal.TSEventHighchartLinePayload
+
+	if from > 0 && to > 0 {
+		rows, err = dal.NewTSEvent(tsEventsDB).AllLinesByClusterIDAndCreatedFromRangeForHighchart(nil, accessTokenRow.ClusterID, from, to)
+		if err != nil {
+			libhttp.HandleErrorJson(w, err)
+			return
+		}
+
+	} else {
+		rows, err = dal.NewTSEvent(tsEventsDB).AllLinesByClusterIDAndCreatedFromIntervalForHighchart(nil, accessTokenRow.ClusterID, createdInterval)
+		if err != nil {
+			libhttp.HandleErrorJson(w, err)
+			return
+		}
 	}
 
 	rowsJSONBytes, err := json.Marshal(rows)
@@ -45,17 +77,49 @@ func GetApiEventsBand(w http.ResponseWriter, r *http.Request) {
 
 	accessTokenRow := context.Get(r, "accessTokenRow").(*dal.AccessTokenRow)
 
-	createdInterval := r.URL.Query().Get("CreatedInterval")
+	qParams := r.URL.Query()
+
+	createdInterval := qParams.Get("CreatedInterval")
 	if createdInterval == "" {
 		createdInterval = "1 hour"
 	}
 
+	fromString := qParams.Get("From")
+	if fromString == "" {
+		fromString = qParams.Get("from")
+	}
+	from, err := strconv.ParseInt(fromString, 10, 64)
+	if err != nil {
+		from = -1
+	}
+
+	toString := qParams.Get("To")
+	if toString == "" {
+		toString = qParams.Get("to")
+	}
+	to, err := strconv.ParseInt(toString, 10, 64)
+	if err != nil {
+		to = -1
+	}
+
 	tsEventsDB := context.Get(r, "multidb.TSEvents").(*multidb.MultiDB).PickRandom()
 
-	rows, err := dal.NewTSEvent(tsEventsDB).AllBandsByClusterIDAndCreatedFromIntervalForHighchart(nil, accessTokenRow.ClusterID, createdInterval)
-	if err != nil {
-		libhttp.HandleErrorJson(w, err)
-		return
+	var rows []dal.TSEventHighchartLinePayload
+
+	if from > 0 && to > 0 {
+		rows, err = dal.NewTSEvent(tsEventsDB).AllBandsByClusterIDAndCreatedFromRangeForHighchart(nil, accessTokenRow.ClusterID, from, to)
+		if err != nil {
+			libhttp.HandleErrorJson(w, err)
+			return
+		}
+
+	} else {
+		rows, err = dal.NewTSEvent(tsEventsDB).AllBandsByClusterIDAndCreatedFromIntervalForHighchart(nil, accessTokenRow.ClusterID, createdInterval)
+		if err != nil {
+			libhttp.HandleErrorJson(w, err)
+			return
+		}
+
 	}
 
 	rowsJSONBytes, err := json.Marshal(rows)
