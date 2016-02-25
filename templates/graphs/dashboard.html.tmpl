@@ -29,9 +29,7 @@
         <div class="col-md-4">
             <div class="panel panel-default panel-chart" data-id="{{ $metric.ID }}" data-key="{{ $metric.Key }}">
                 <div class="panel-heading" data-id="{{ $metric.ID }}" data-key="{{ $metric.Key }}">
-                    <input class="form-control chart-created-interval pull-right daterange" type="text" data-id="{{ $metric.ID }}" data-key="{{ $metric.Key }}" data-interval="15 minute" />
-
-                    {{ $metric.Key }}
+                    <input class="form-control daterange" type="text" data-id="{{ $metric.ID }}" data-key="{{ $metric.Key }}" data-interval="15 minute" />
                 </div>
 
                 <div class="panel-body"></div>
@@ -149,32 +147,27 @@ function renderChartPreview() {
 
 function renderAllChart() {
     $('.graphs-metrics-container .panel-heading').each(function() {
-        var metricID = $(this).data('id');
-        var createdInterval = $(this).find('select').data('interval');
-        var containerDOM = $(this).siblings('.panel-body');
+        var drpElem = $(this).find('.daterange');
+        var drp = drpElem.data('daterangepicker');
 
-        var renderOptions = {
-            'createdInterval': createdInterval,
-            'containerDOM': containerDOM
-        };
-        if(createdInterval.indexOf('day') > -1 || createdInterval.indexOf('6 hour') > -1 || createdInterval.indexOf('12 hour') > -1 || createdInterval.indexOf('24 hour') > -1) {
-            renderOptions.shortAggrInterval = '15min';
-        }
+        var from = drp.startDate.unix();
+        var to = drp.endDate.unix();
 
-        ResourcedMaster.metrics.renderOneChart(ResourcedMaster.globals.AccessToken, metricID, renderOptions);
+        renderChartRange(drpElem, from, to);
     });
 }
 
 function renderChartRange(daterangepicker, from, to) {
     daterangepicker.closest('.panel-heading').each(function() {
         var metricID = $(this).data('id');
+        var metricKey = $(this).data('key');
         var containerDOM = $(this).siblings('.panel-body');
 
         var renderOptions = {
-            'createdInterval': createdInterval,
             'from': from,
             'to': to,
-            'containerDOM': containerDOM
+            'containerDOM': containerDOM,
+            'title': metricKey
         };
         if((to - from) >= 21600) {
             renderOptions.shortAggrInterval = '15min';
@@ -203,15 +196,10 @@ $(window).resize(function() {
 
 $(document).ready(function() {
     getEvents(function(a1, a2) {
-        console.log(ResourcedMaster.globals.TSEventLines);
-        console.log(ResourcedMaster.globals.TSEventLineColors);
-
-        var daterangepicker = $('input.daterange');
-
         $('input.daterange').each(function() {
-            var daterangepicker = $(this);
+            var drpElem = $(this);
 
-            daterangepicker.daterangepicker({
+            drpElem.daterangepicker({
                 "timePicker": true,
                 "timePickerSeconds": true,
                 "autoApply": true,
@@ -235,9 +223,11 @@ $(document).ready(function() {
                 "endDate": moment(),
                 "opens": "left"
             }, function(start, end, label) {
-                renderChartRange(daterangepicker, start, end);
+                renderChartRange(drpElem, start, end);
             });
         });
+
+        renderAllChart();
     });
 
     // Gather the ordering of every chart panels on load.

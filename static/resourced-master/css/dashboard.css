@@ -22,6 +22,10 @@ select {
     color: #fff;
 }
 
+.daterange {
+    padding: 0px 8px;
+}
+
 .form-group-search-and-save, .form-group-new-task {
     width: 100%;
 }
@@ -134,26 +138,6 @@ select {
 }
 .watchers .btn-xs {
     padding: 1px 8px;
-}
-
-.metadata-row-highlight {
-    background-color: #4e5d6c;
-}
-.metadata-column-key {
-    width: 240px;
-}
-.metadata-column-save-btn {
-    width: 70px;
-}
-.metadata-column-details-btn {
-    width: 84px;
-}
-.metadata-column-delete-btn {
-    width: 80px;
-}
-.metadata-font {
-    font-size: 13px;
-    padding: 0 10px;
 }
 
 .container.watchers .jumbotron h2 {
