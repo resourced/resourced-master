@@ -29,7 +29,7 @@
         <div class="col-md-4">
             <div class="panel panel-default panel-chart" data-id="{{ $metric.ID }}" data-key="{{ $metric.Key }}">
                 <div class="panel-heading" data-id="{{ $metric.ID }}" data-key="{{ $metric.Key }}">
-                    <input class="form-control daterange" type="text" data-id="{{ $metric.ID }}" data-key="{{ $metric.Key }}" data-interval="15 minute" />
+                    <input class="form-control daterange" type="text" data-id="{{ $metric.ID }}" data-key="{{ $metric.Key }}" />
                 </div>
 
                 <div class="panel-body"></div>
@@ -86,39 +86,6 @@ setInterval(function() {
 
 ResourcedMaster.globals.ChartKeys = [];
 ResourcedMaster.globals.AccessToken = '{{ $.AccessToken.Token }}';
-ResourcedMaster.globals.TSEventLines = [];
-ResourcedMaster.globals.TSEventBands = [];
-ResourcedMaster.globals.TSEventLineColors = [];
-ResourcedMaster.globals.TSEventBandColors = [];
-ResourcedMaster.globals.TSEventBandTextColors = [];
-
-function getEvents(doneCallback) {
-    $.when(
-        ResourcedMaster.metrics.getEvents(ResourcedMaster.globals.AccessToken, 'line', {
-            'createdInterval': '1 day',
-            'successCallback': function(result) {
-                ResourcedMaster.globals.TSEventLines = result;
-            }
-        }),
-        ResourcedMaster.metrics.getEvents(ResourcedMaster.globals.AccessToken, 'band', {
-            'createdInterval': '1 day',
-            'successCallback': function(result) {
-                ResourcedMaster.globals.TSEventLines = result;
-            }
-        })
-    ).done(function(a1, a2) {
-        // a1 and a2 are arguments resolved for the page1 and page2 ajax requests, respectively.
-        // Each argument is an array with the following structure: [ data, statusText, jqXHR ]
-        ResourcedMaster.globals.TSEventLines = a1[0];
-        ResourcedMaster.globals.TSEventBands = a2[0];
-
-        ResourcedMaster.globals.TSEventLineColors = randomColor({hue: 'green', luminosity: 'light', count: ResourcedMaster.globals.TSEventLines.length});
-        ResourcedMaster.globals.TSEventBandColors = randomColor({hue: 'yellow', luminosity: 'light', count: ResourcedMaster.globals.TSEventBands.length});
-        ResourcedMaster.globals.TSEventBandTextColors = randomColor({hue: 'green', luminosity: 'dark', count: ResourcedMaster.globals.TSEventBands.length});
-
-        doneCallback(a1, a2);
-    });
-}
 
 function renderChartPreview() {
     var metrics = ResourcedMaster.globals.ChartKeys;
@@ -145,44 +112,43 @@ function renderChartPreview() {
     );
 }
 
+function renderChartRange(daterangepicker, from, to) {
+    var elem = daterangepicker.closest('.panel-heading');
+    var metricID = elem.data('id');
+    var metricKey = elem.data('key');
+    var containerDOM = elem.siblings('.panel-body');
+
+    var renderOptions = {
+        'from': from,
+        'to': to,
+        'containerDOM': containerDOM,
+        'title': metricKey
+    };
+
+    if((to - from) >= 21600) {
+        renderOptions.shortAggrInterval = '15min';
+    }
+
+    ResourcedMaster.metrics.renderOneChart(
+        ResourcedMaster.globals.AccessToken,
+        metricID,
+        ResourcedMaster.globals.TSEventLines,
+        ResourcedMaster.globals.TSEventLineColors,
+        ResourcedMaster.globals.TSEventBands,
+        ResourcedMaster.globals.TSEventBandColors,
+        ResourcedMaster.globals.TSEventBandTextColors,
+        renderOptions
+    );
+}
+
 function renderAllChart() {
     $('.graphs-metrics-container .panel-heading').each(function() {
         var drpElem = $(this).find('.daterange');
         var drp = drpElem.data('daterangepicker');
-
         var from = drp.startDate.unix();
         var to = drp.endDate.unix();
 
         renderChartRange(drpElem, from, to);
-    });
-}
-
-function renderChartRange(daterangepicker, from, to) {
-    daterangepicker.closest('.panel-heading').each(function() {
-        var metricID = $(this).data('id');
-        var metricKey = $(this).data('key');
-        var containerDOM = $(this).siblings('.panel-body');
-
-        var renderOptions = {
-            'from': from,
-            'to': to,
-            'containerDOM': containerDOM,
-            'title': metricKey
-        };
-        if((to - from) >= 21600) {
-            renderOptions.shortAggrInterval = '15min';
-        }
-
-        ResourcedMaster.metrics.renderOneChart(
-            ResourcedMaster.globals.AccessToken,
-            metricID,
-            ResourcedMaster.globals.TSEventLines,
-            ResourcedMaster.globals.TSEventLineColors,
-            ResourcedMaster.globals.TSEventBands,
-            ResourcedMaster.globals.TSEventBandColors,
-            ResourcedMaster.globals.TSEventBandTextColors,
-            renderOptions
-        );
     });
 }
 
@@ -195,35 +161,20 @@ $(window).resize(function() {
 });
 
 $(document).ready(function() {
-    getEvents(function(a1, a2) {
-        $('input.daterange').each(function() {
+    ResourcedMaster.metrics.get1dayEvents(function(a1, a2) {
+        $('input.daterange').each(function(index) {
             var drpElem = $(this);
 
-            drpElem.daterangepicker({
-                "timePicker": true,
-                "timePickerSeconds": true,
-                "autoApply": true,
-                "ranges": {
-                    '5 minutes': [moment().subtract(5, 'minutes'), moment()],
-                    '10 minutes': [moment().subtract(10, 'minutes'), moment()],
-                    '15 minutes': [moment().subtract(15, 'minutes'), moment()],
-                    '30 minutes': [moment().subtract(30, 'minutes'), moment()],
-                    '60 minutes': [moment().subtract(60, 'minutes'), moment()],
-                    '2 hours': [moment().subtract(2, 'hours'), moment()],
-                    '3 hours': [moment().subtract(3, 'hours'), moment()],
-                    '6 hours': [moment().subtract(6, 'hours'), moment()],
-                    '12 hours': [moment().subtract(12, 'hours'), moment()],
-                    '24 hours': [moment().subtract(24, 'hours'), moment()],
-                    '2 days': [moment().subtract(2, 'days'), moment()],
-                    '3 days': [moment().subtract(3, 'days'), moment()],
-                    '7 days': [moment().subtract(7, 'days'), moment()]
-                },
-                "defaultDate": moment(),
-                "startDate": moment().subtract(15, 'minutes'),
-                "endDate": moment(),
-                "opens": "left"
-            }, function(start, end, label) {
-                renderChartRange(drpElem, start, end);
+            var settings = jQuery.extend(true, {}, ResourcedMaster.daterange.defaultSettings);
+
+            if(index % 3 == 0) {
+                settings.opens = 'right';
+            }
+
+            drpElem.daterangepicker(settings, function(start, end, label) {
+                var from = start.unix();
+                var to = end.unix();
+                renderChartRange(drpElem, from, to);
             });
         });
 

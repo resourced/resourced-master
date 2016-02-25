@@ -146,6 +146,26 @@ func (ts *TSMetricAggr15m) InsertOrUpdate(tx *sqlx.Tx, clusterID, metricID int64
 	return err
 }
 
+func (ts *TSMetricAggr15m) AllByMetricIDHostAndRange(tx *sqlx.Tx, clusterID, metricID int64, host string, from, to int64) ([]*TSMetricAggr15mRow, error) {
+	rows := []*TSMetricAggr15mRow{}
+	query := fmt.Sprintf("SELECT * FROM %v WHERE cluster_id=$1 AND metric_id=$2 AND host=$3 AND created >= to_timestamp($4) at time zone 'utc' AND created <= to_timestamp($5) at time zone 'utc' AND host <> '' ORDER BY cluster_id,metric_id,created ASC", ts.table)
+	err := ts.db.Select(&rows, query, clusterID, metricID, host, from, to)
+
+	return rows, err
+}
+
+func (ts *TSMetricAggr15m) AllByMetricIDHostAndInterval(tx *sqlx.Tx, clusterID, metricID int64, host, interval string) ([]*TSMetricAggr15mRow, error) {
+	if interval == "" {
+		interval = "1 hour"
+	}
+
+	rows := []*TSMetricAggr15mRow{}
+	query := fmt.Sprintf("SELECT * FROM %v WHERE cluster_id=$1 AND metric_id=$2 AND host=$3 AND created >= (NOW() at time zone 'utc' - INTERVAL '%v') AND host <> '' ORDER BY cluster_id,metric_id,created ASC", ts.table, interval)
+	err := ts.db.Select(&rows, query, clusterID, metricID, host)
+
+	return rows, err
+}
+
 func (ts *TSMetricAggr15m) AllByMetricIDAndRange(tx *sqlx.Tx, clusterID, metricID, from, to int64) ([]*TSMetricAggr15mRow, error) {
 	rows := []*TSMetricAggr15mRow{}
 	query := fmt.Sprintf("SELECT * FROM %v WHERE cluster_id=$1 AND metric_id=$2 AND created >= to_timestamp($3) at time zone 'utc' AND created <= to_timestamp($4) at time zone 'utc' AND host <> '' ORDER BY cluster_id,metric_id,created ASC", ts.table)
@@ -166,12 +186,7 @@ func (ts *TSMetricAggr15m) AllByMetricIDAndInterval(tx *sqlx.Tx, clusterID, metr
 	return rows, err
 }
 
-func (ts *TSMetricAggr15m) AllByMetricIDAndRangeForHighchart(tx *sqlx.Tx, clusterID, metricID, from, to int64) ([]*TSMetricHighchartPayload, error) {
-	tsMetricRows, err := ts.AllByMetricIDAndRange(tx, clusterID, metricID, from, to)
-	if err != nil {
-		return nil, err
-	}
-
+func (ts *TSMetricAggr15m) TransformForHighchart(tx *sqlx.Tx, tsMetricRows []*TSMetricAggr15mRow) ([]*TSMetricHighchartPayload, error) {
 	// Group all TSMetricAggr15mRows per host
 	mapHostsAndMetrics := make(map[string][]*TSMetricAggr15mRow)
 
@@ -199,35 +214,38 @@ func (ts *TSMetricAggr15m) AllByMetricIDAndRangeForHighchart(tx *sqlx.Tx, cluste
 	return highChartPayloads, nil
 }
 
+func (ts *TSMetricAggr15m) AllByMetricIDHostAndRangeForHighchart(tx *sqlx.Tx, clusterID, metricID int64, host string, from, to int64) ([]*TSMetricHighchartPayload, error) {
+	tsMetricRows, err := ts.AllByMetricIDHostAndRange(tx, clusterID, metricID, host, from, to)
+	if err != nil {
+		return nil, err
+	}
+
+	return ts.TransformForHighchart(tx, tsMetricRows)
+}
+
+func (ts *TSMetricAggr15m) AllByMetricIDHostAndIntervalForHighchart(tx *sqlx.Tx, clusterID, metricID int64, host, interval string) ([]*TSMetricHighchartPayload, error) {
+	tsMetricRows, err := ts.AllByMetricIDHostAndInterval(tx, clusterID, metricID, host, interval)
+	if err != nil {
+		return nil, err
+	}
+
+	return ts.TransformForHighchart(tx, tsMetricRows)
+}
+
+func (ts *TSMetricAggr15m) AllByMetricIDAndRangeForHighchart(tx *sqlx.Tx, clusterID, metricID, from, to int64) ([]*TSMetricHighchartPayload, error) {
+	tsMetricRows, err := ts.AllByMetricIDAndRange(tx, clusterID, metricID, from, to)
+	if err != nil {
+		return nil, err
+	}
+
+	return ts.TransformForHighchart(tx, tsMetricRows)
+}
+
 func (ts *TSMetricAggr15m) AllByMetricIDAndIntervalForHighchart(tx *sqlx.Tx, clusterID, metricID int64, interval string) ([]*TSMetricHighchartPayload, error) {
 	tsMetricRows, err := ts.AllByMetricIDAndInterval(tx, clusterID, metricID, interval)
 	if err != nil {
 		return nil, err
 	}
 
-	// Group all TSMetricAggr15mRows per host
-	mapHostsAndMetrics := make(map[string][]*TSMetricAggr15mRow)
-
-	for _, tsMetricRow := range tsMetricRows {
-		host := tsMetricRow.Host.String
-
-		if _, ok := mapHostsAndMetrics[host]; !ok {
-			mapHostsAndMetrics[host] = make([]*TSMetricAggr15mRow, 0)
-		}
-
-		mapHostsAndMetrics[host] = append(mapHostsAndMetrics[host], tsMetricRow)
-	}
-
-	// Then generate multiple Highchart payloads per all these hosts.
-	highChartPayloads := make([]*TSMetricHighchartPayload, 0)
-
-	for host, tsMetricRows := range mapHostsAndMetrics {
-		highChartPayload, err := ts.metricRowsForHighchart(tx, host, tsMetricRows)
-		if err != nil {
-			return nil, err
-		}
-		highChartPayloads = append(highChartPayloads, highChartPayload)
-	}
-
-	return highChartPayloads, nil
+	return ts.TransformForHighchart(tx, tsMetricRows)
 }

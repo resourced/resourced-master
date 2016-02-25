@@ -108,6 +108,78 @@ func GetApiTSMetricsByHost(w http.ResponseWriter, r *http.Request) {
 	w.Write(hcMetricsJSON)
 }
 
+func GetApiTSMetricsByHost15Min(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	db := context.Get(r, "db.Core").(*sqlx.DB)
+
+	id, err := getInt64SlugFromPath(w, r, "id")
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
+
+	qParams := r.URL.Query()
+
+	createdInterval := qParams.Get("CreatedInterval")
+	if createdInterval == "" {
+		createdInterval = "1 hour"
+	}
+
+	fromString := qParams.Get("From")
+	if fromString == "" {
+		fromString = qParams.Get("from")
+	}
+	from, err := strconv.ParseInt(fromString, 10, 64)
+	if err != nil {
+		from = -1
+	}
+
+	toString := qParams.Get("To")
+	if toString == "" {
+		toString = qParams.Get("to")
+	}
+	to, err := strconv.ParseInt(toString, 10, 64)
+	if err != nil {
+		to = -1
+	}
+
+	host := mux.Vars(r)["host"]
+
+	metricRow, err := dal.NewMetric(db).GetById(nil, id)
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
+
+	tsMetricsDB := context.Get(r, "multidb.TSMetrics").(*multidb.MultiDB).PickRandom()
+
+	var hcMetrics []*dal.TSMetricHighchartPayload
+
+	if from > 0 && to > 0 {
+		hcMetrics, err = dal.NewTSMetricAggr15m(tsMetricsDB).AllByMetricIDHostAndRangeForHighchart(nil, metricRow.ClusterID, id, host, from, to)
+		if err != nil {
+			libhttp.HandleErrorJson(w, err)
+			return
+		}
+
+	} else {
+		hcMetrics, err = dal.NewTSMetricAggr15m(tsMetricsDB).AllByMetricIDHostAndIntervalForHighchart(nil, metricRow.ClusterID, id, host, createdInterval)
+		if err != nil {
+			libhttp.HandleErrorJson(w, err)
+			return
+		}
+	}
+
+	hcMetricsJSON, err := json.Marshal(hcMetrics)
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
+
+	w.Write(hcMetricsJSON)
+}
+
 func GetApiTSMetrics(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 

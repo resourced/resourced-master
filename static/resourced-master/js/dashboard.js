@@ -1,14 +1,48 @@
 var ResourcedMaster = ResourcedMaster || {};
 
 ResourcedMaster.globals = {};
-
 ResourcedMaster.globals.currentCluster = {};
+ResourcedMaster.globals.TSEventLines = [];
+ResourcedMaster.globals.TSEventBands = [];
+ResourcedMaster.globals.TSEventLineColors = [];
+ResourcedMaster.globals.TSEventBandColors = [];
+ResourcedMaster.globals.TSEventBandTextColors = [];
 
 ResourcedMaster.users = {};
 ResourcedMaster.users.logout = function() {
     $.removeCookie('resourcedmaster-session', { path: '/' });
     window.location = '/login';
 };
+
+ResourcedMaster.daterange = {};
+ResourcedMaster.daterange.defaultSettings = {
+    'timePicker': true,
+    'timePickerSeconds': true,
+    'autoApply': true,
+    'ranges': {
+        '5 minutes': [moment().subtract(5, 'minutes'), moment()],
+        '10 minutes': [moment().subtract(10, 'minutes'), moment()],
+        '15 minutes': [moment().subtract(15, 'minutes'), moment()],
+        '30 minutes': [moment().subtract(30, 'minutes'), moment()],
+        '60 minutes': [moment().subtract(60, 'minutes'), moment()],
+        '2 hours': [moment().subtract(2, 'hours'), moment()],
+        '3 hours': [moment().subtract(3, 'hours'), moment()],
+        '6 hours': [moment().subtract(6, 'hours'), moment()],
+        '12 hours': [moment().subtract(12, 'hours'), moment()],
+        '24 hours': [moment().subtract(24, 'hours'), moment()],
+        '2 days': [moment().subtract(2, 'days'), moment()],
+        '3 days': [moment().subtract(3, 'days'), moment()],
+        '7 days': [moment().subtract(7, 'days'), moment()]
+    },
+    'defaultDate': moment(),
+    'startDate': moment().subtract(15, 'minutes'),
+    'endDate': moment(),
+    'locale': {
+        'format': 'YYYY/MM/DD hh:mm:ss A'
+    },
+    'opens': "left"
+};
+
 
 ResourcedMaster.metrics = {};
 ResourcedMaster.metrics.get = function(accessToken, metricID, options) {
@@ -97,6 +131,9 @@ ResourcedMaster.metrics.renderOneChart = function(accessToken, metricID, eventLi
             }
         };
         if(options.onLoad) {
+            if(!hcOptions.chart.events) {
+                hcOptions.chart.events = {};
+            }
             hcOptions.chart.events.load = options.onLoad;
         }
 
@@ -127,6 +164,37 @@ ResourcedMaster.metrics.getEvents = function(accessToken, eventType, options) {
         success: options.successCallback || null
     });
 };
+
+ResourcedMaster.metrics.get1dayEvents = function(doneCallback) {
+    $.when(
+        ResourcedMaster.metrics.getEvents(ResourcedMaster.globals.AccessToken, 'line', {
+            'createdInterval': '1 day',
+            'successCallback': function(result) {
+                ResourcedMaster.globals.TSEventLines = result;
+            }
+        }),
+        ResourcedMaster.metrics.getEvents(ResourcedMaster.globals.AccessToken, 'band', {
+            'createdInterval': '1 day',
+            'successCallback': function(result) {
+                ResourcedMaster.globals.TSEventLines = result;
+            }
+        })
+    ).done(function(a1, a2) {
+        // a1 and a2 are arguments resolved for the page1 and page2 ajax requests, respectively.
+        // Each argument is an array with the following structure: [ data, statusText, jqXHR ]
+        ResourcedMaster.globals.TSEventLines = a1[0];
+        ResourcedMaster.globals.TSEventBands = a2[0];
+
+        ResourcedMaster.globals.TSEventLineColors = randomColor({hue: 'green', luminosity: 'light', count: ResourcedMaster.globals.TSEventLines.length});
+        ResourcedMaster.globals.TSEventBandColors = randomColor({hue: 'yellow', luminosity: 'light', count: ResourcedMaster.globals.TSEventBands.length});
+        ResourcedMaster.globals.TSEventBandTextColors = randomColor({hue: 'green', luminosity: 'dark', count: ResourcedMaster.globals.TSEventBands.length});
+
+        if(doneCallback) {
+            doneCallback(a1, a2);
+        }
+    });
+};
+
 
 ResourcedMaster.highcharts = {};
 ResourcedMaster.highcharts.defaultHeight = 300;

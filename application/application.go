@@ -128,12 +128,14 @@ func (app *Application) mux() *mux.Router {
 	router.Handle("/api/hosts", alice.New(MustLoginApi).ThenFunc(handlers.GetApiHosts)).Methods("GET")
 	router.Handle("/api/hosts", alice.New(MustLoginApi).ThenFunc(handlers.PostApiHosts)).Methods("POST")
 
-	router.Handle("/api/metrics/{id}/hosts/{host}", alice.New(MustLoginApi).ThenFunc(handlers.GetApiTSMetricsByHost)).Methods("GET")
-	router.Handle("/api/metrics/{id}", alice.New(MustLoginApi).ThenFunc(handlers.GetApiTSMetrics)).Methods("GET")
-	router.Handle("/api/metrics/{id}/15min", alice.New(MustLoginApi).ThenFunc(handlers.GetApiTSMetrics15Min)).Methods("GET")
+	router.Handle("/api/metrics/{id:[0-9]+}/hosts/{host}", alice.New(MustLoginApi).ThenFunc(handlers.GetApiTSMetricsByHost)).Methods("GET")
+	router.Handle("/api/metrics/{id:[0-9]+}/hosts/{host}/15min", alice.New(MustLoginApi).ThenFunc(handlers.GetApiTSMetricsByHost15Min)).Methods("GET")
+
+	router.Handle("/api/metrics/{id:[0-9]+}", alice.New(MustLoginApi).ThenFunc(handlers.GetApiTSMetrics)).Methods("GET")
+	router.Handle("/api/metrics/{id:[0-9]+}/15min", alice.New(MustLoginApi).ThenFunc(handlers.GetApiTSMetrics15Min)).Methods("GET")
 
 	router.Handle(`/api/events`, alice.New(MustLoginApi).ThenFunc(handlers.PostApiEvents)).Methods("POST")
-	router.Handle(`/api/events/{id}`, alice.New(MustLoginApi).ThenFunc(handlers.DeleteApiEventsID)).Methods("DELETE")
+	router.Handle(`/api/events/{id:[0-9]+}`, alice.New(MustLoginApi).ThenFunc(handlers.DeleteApiEventsID)).Methods("DELETE")
 	router.Handle(`/api/events/line`, alice.New(MustLoginApi).ThenFunc(handlers.GetApiEventsLine)).Methods("GET")
 	router.Handle(`/api/events/band`, alice.New(MustLoginApi).ThenFunc(handlers.GetApiEventsBand)).Methods("GET")
 

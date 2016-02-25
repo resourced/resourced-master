@@ -186,21 +186,7 @@ $('#search-input').bind("input propertychange", function(e) {
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
-                <select class="form-control chart-created-interval" name="CreatedInterval">
-                    <option value="5 minute">5 minutes ago</option>
-                    <option value="10 minute">10 minutes ago</option>
-                    <option value="15 minute">15 minutes ago</option>
-                    <option value="30 minute">30 minutes ago</option>
-                    <option value="60 minute">60 minutes ago</option>
-                    <option value="2 hour">2 hours ago</option>
-                    <option value="3 hour">3 hours ago</option>
-                    <option value="6 hour">6 hours ago</option>
-                    <option value="12 hour">12 hours ago</option>
-                    <option value="24 hour">24 hours ago</option>
-                    <option value="2 day">2 days ago</option>
-                    <option value="3 day">3 days ago</option>
-                    <option value="7 day">7 days ago</option>
-                </select>
+                <input class="form-control daterange" type="text" />
             </div>
 
             <div class="modal-body">
@@ -215,7 +201,11 @@ $('#search-input').bind("input propertychange", function(e) {
 </div>
 
 <script>
+ResourcedMaster.globals.AccessToken = '{{ $.AccessToken.Token }}';
+
 $(document).ready(function() {
+    ResourcedMaster.metrics.get1dayEvents();
+
     $('.toggler').bootstrapSwitch();
 
     // Hide Saved Queries container if there are no save queries.
@@ -309,12 +299,38 @@ $('.row.hosts .toggler-body').on('switchChange.bootstrapSwitch', function(event,
     });
 });
 
-$('#graph-modal').on('shown.bs.modal', function() {
-    var modal = $(this);
-    modal.find('.graph-modal-container').css('visibility', 'initial');
+$('#graph-modal').on('shown.bs.modal', function (event) {
+    var button = $(event.relatedTarget);   // Button that triggered the modal
+    var metricID = button.data('metric-id');
+    var metricKey = button.data('metric-key');
+    var host = button.data('host');
 
-    var containerDOM = modal.find('.graph-modal-container');
-    containerDOM.highcharts().reflow();
+    var from = ResourcedMaster.daterange.defaultSettings.startDate.unix();
+    var to = ResourcedMaster.daterange.defaultSettings.endDate.unix();
+
+    var renderOptions = {
+        'from': from,
+        'to': to,
+        'host': host,
+        'containerDOM': $('#graph-modal .graph-modal-container'),
+        'title': metricKey
+    };
+
+    if((to - from) >= 21600) {
+        renderOptions.shortAggrInterval = '15min';
+    }
+
+    ResourcedMaster.metrics.renderOneChart(
+        ResourcedMaster.globals.AccessToken,
+        metricID,
+        ResourcedMaster.globals.TSEventLines,
+        ResourcedMaster.globals.TSEventLineColors,
+        ResourcedMaster.globals.TSEventBands,
+        ResourcedMaster.globals.TSEventBandColors,
+        ResourcedMaster.globals.TSEventBandTextColors,
+        renderOptions
+    );
+
 });
 
 $('#graph-modal').on('show.bs.modal', function (event) {
@@ -328,49 +344,36 @@ $('#graph-modal').on('show.bs.modal', function (event) {
     modal.data('metric-key', metricKey);
     modal.data('host', host);
 
-    // Fetch created interval from various places
-    var createdInterval = modal.data('created-interval');
-    if(!createdInterval) {
-        createdInterval = $('.chart-created-interval').val();
-    }
-    if(!createdInterval) {
-        createdInterval = '1 hour'
-    }
-
     var containerDOM = modal.find('.graph-modal-container');
-    containerDOM.css('visibility', 'hidden');
 
-    $.ajax({
-        url: "/api/metrics/" + metricID + "/hosts/" + host + "?CreatedInterval=" + createdInterval,
-        beforeSend: function(xhr) {
-            xhr.setRequestHeader("Authorization", "Basic " + window.btoa("{{ $.AccessToken.Token }}:"));
-        },
-        success: function(result) {
-            containerDOM.highcharts({
-                title: {
-                    text: metricKey
-                },
-                series: [result]
-            });
+    var drpElem = modal.find('.daterange');
+
+    drpElem.daterangepicker(ResourcedMaster.daterange.defaultSettings, function(start, end, label) {
+        var from = start.unix();
+        var to = end.unix();
+
+        var renderOptions = {
+            'from': from,
+            'to': to,
+            'host': host,
+            'containerDOM': containerDOM,
+            'title': metricKey
+        };
+
+        if((to - from) >= 21600) {
+            renderOptions.shortAggrInterval = '15min';
         }
-    });
-});
 
-$('.chart-created-interval').on('change', function(event) {
-    var modal = $('#graph-modal');
-    var metricID = modal.data('metric-id');
-    var metricKey = modal.data('metric-key');
-    var host = modal.data('host');
-    var containerDOM = modal.find('.graph-modal-container');
-    var createdInterval = $(this).val();
-
-    modal.data('created-interval', createdInterval);
-
-    ResourcedMaster.metrics.renderOneChart('{{ $.AccessToken.Token }}', metricID, {
-        'host': host,
-        'createdInterval': createdInterval,
-        'containerDOM': containerDOM,
-        'title': metricKey
+        ResourcedMaster.metrics.renderOneChart(
+            ResourcedMaster.globals.AccessToken,
+            metricID,
+            ResourcedMaster.globals.TSEventLines,
+            ResourcedMaster.globals.TSEventLineColors,
+            ResourcedMaster.globals.TSEventBands,
+            ResourcedMaster.globals.TSEventBandColors,
+            ResourcedMaster.globals.TSEventBandTextColors,
+            renderOptions
+        );
     });
 });
 </script>
