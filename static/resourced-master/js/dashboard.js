@@ -62,7 +62,7 @@ ResourcedMaster.metrics.get = function(accessToken, metricID, options) {
         getParams = getParams + 'From=' + options.from;
     }
     if('to' in options) {
-        getParams = getParams + 'To=' + options.to;
+        getParams = getParams + '&To=' + options.to;
     }
 
     return $.ajax({
