@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -21,11 +22,6 @@ func GetApiEventsLine(w http.ResponseWriter, r *http.Request) {
 
 	qParams := r.URL.Query()
 
-	createdInterval := qParams.Get("CreatedInterval")
-	if createdInterval == "" {
-		createdInterval = "1 hour"
-	}
-
 	fromString := qParams.Get("From")
 	if fromString == "" {
 		fromString = qParams.Get("from")
@@ -44,23 +40,17 @@ func GetApiEventsLine(w http.ResponseWriter, r *http.Request) {
 		to = -1
 	}
 
+	if from < 0 || to < 0 {
+		libhttp.HandleErrorJson(w, errors.New("From or To parameters are missing"))
+		return
+	}
+
 	tsEventsDB := context.Get(r, "multidb.TSEvents").(*multidb.MultiDB).PickRandom()
 
-	var rows []dal.TSEventHighchartLinePayload
-
-	if from > 0 && to > 0 {
-		rows, err = dal.NewTSEvent(tsEventsDB).AllLinesByClusterIDAndCreatedFromRangeForHighchart(nil, accessTokenRow.ClusterID, from, to)
-		if err != nil {
-			libhttp.HandleErrorJson(w, err)
-			return
-		}
-
-	} else {
-		rows, err = dal.NewTSEvent(tsEventsDB).AllLinesByClusterIDAndCreatedFromIntervalForHighchart(nil, accessTokenRow.ClusterID, createdInterval)
-		if err != nil {
-			libhttp.HandleErrorJson(w, err)
-			return
-		}
+	rows, err := dal.NewTSEvent(tsEventsDB).AllLinesByClusterIDAndCreatedFromRangeForHighchart(nil, accessTokenRow.ClusterID, from, to)
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
 	}
 
 	rowsJSONBytes, err := json.Marshal(rows)
@@ -79,11 +69,6 @@ func GetApiEventsBand(w http.ResponseWriter, r *http.Request) {
 
 	qParams := r.URL.Query()
 
-	createdInterval := qParams.Get("CreatedInterval")
-	if createdInterval == "" {
-		createdInterval = "1 hour"
-	}
-
 	fromString := qParams.Get("From")
 	if fromString == "" {
 		fromString = qParams.Get("from")
@@ -102,24 +87,17 @@ func GetApiEventsBand(w http.ResponseWriter, r *http.Request) {
 		to = -1
 	}
 
+	if from < 0 || to < 0 {
+		libhttp.HandleErrorJson(w, errors.New("From or To parameters are missing"))
+		return
+	}
+
 	tsEventsDB := context.Get(r, "multidb.TSEvents").(*multidb.MultiDB).PickRandom()
 
-	var rows []dal.TSEventHighchartLinePayload
-
-	if from > 0 && to > 0 {
-		rows, err = dal.NewTSEvent(tsEventsDB).AllBandsByClusterIDAndCreatedFromRangeForHighchart(nil, accessTokenRow.ClusterID, from, to)
-		if err != nil {
-			libhttp.HandleErrorJson(w, err)
-			return
-		}
-
-	} else {
-		rows, err = dal.NewTSEvent(tsEventsDB).AllBandsByClusterIDAndCreatedFromIntervalForHighchart(nil, accessTokenRow.ClusterID, createdInterval)
-		if err != nil {
-			libhttp.HandleErrorJson(w, err)
-			return
-		}
-
+	rows, err := dal.NewTSEvent(tsEventsDB).AllBandsByClusterIDAndCreatedFromRangeForHighchart(nil, accessTokenRow.ClusterID, from, to)
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
 	}
 
 	rowsJSONBytes, err := json.Marshal(rows)

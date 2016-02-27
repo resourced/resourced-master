@@ -44,32 +44,8 @@ type TSEvent struct {
 // AllLinesByClusterIDAndCreatedFromRangeForHighchart returns all rows given created_from range.
 func (ts *TSEvent) AllLinesByClusterIDAndCreatedFromRangeForHighchart(tx *sqlx.Tx, clusterID, from, to int64) ([]TSEventHighchartLinePayload, error) {
 	rows := []*TSEventRow{}
-	query := fmt.Sprintf("SELECT * FROM %v WHERE cluster_id=$1 AND created_from = created_to AND created >= to_timestamp($2) at time zone 'utc' AND created <= to_timestamp($3)", ts.table)
+	query := fmt.Sprintf("SELECT * FROM %v WHERE cluster_id=$1 AND created_from = created_to AND created_from >= to_timestamp($2) at time zone 'utc' AND created_from <= to_timestamp($3)", ts.table)
 	err := ts.db.Select(&rows, query, clusterID, from, to)
-	if err != nil {
-		return nil, err
-	}
-
-	hcRows := make([]TSEventHighchartLinePayload, len(rows))
-
-	for i, row := range rows {
-		hcRow := TSEventHighchartLinePayload{}
-		hcRow.ID = row.ID
-		hcRow.CreatedFrom = row.CreatedFrom.UnixNano() / 1000000
-		hcRow.CreatedTo = row.CreatedTo.UnixNano() / 1000000
-		hcRow.Description = row.Description
-
-		hcRows[i] = hcRow
-	}
-
-	return hcRows, err
-}
-
-// AllLinesByClusterIDAndCreatedFromIntervalForHighchart returns all rows given created_from interval.
-func (ts *TSEvent) AllLinesByClusterIDAndCreatedFromIntervalForHighchart(tx *sqlx.Tx, clusterID int64, createdInterval string) ([]TSEventHighchartLinePayload, error) {
-	rows := []*TSEventRow{}
-	query := fmt.Sprintf("SELECT * FROM %v WHERE cluster_id=$1 AND created_from = created_to AND created_from >= (NOW() at time zone 'utc' - INTERVAL '%v')", ts.table, createdInterval)
-	err := ts.db.Select(&rows, query, clusterID)
 	if err != nil {
 		return nil, err
 	}
@@ -92,32 +68,8 @@ func (ts *TSEvent) AllLinesByClusterIDAndCreatedFromIntervalForHighchart(tx *sql
 // AllBandsByClusterIDAndCreatedFromRangeForHighchart returns all rows with time stretch between created_from and created_to.
 func (ts *TSEvent) AllBandsByClusterIDAndCreatedFromRangeForHighchart(tx *sqlx.Tx, clusterID, from, to int64) ([]TSEventHighchartLinePayload, error) {
 	rows := []*TSEventRow{}
-	query := fmt.Sprintf("SELECT * FROM %v WHERE cluster_id=$1 AND created_from < created_to AND created >= to_timestamp($2) at time zone 'utc' AND created <= to_timestamp($3)", ts.table)
+	query := fmt.Sprintf("SELECT * FROM %v WHERE cluster_id=$1 AND created_from < created_to AND created_from >= to_timestamp($2) at time zone 'utc' AND created_from <= to_timestamp($3)", ts.table)
 	err := ts.db.Select(&rows, query, clusterID, from, to)
-	if err != nil {
-		return nil, err
-	}
-
-	hcRows := make([]TSEventHighchartLinePayload, len(rows))
-
-	for i, row := range rows {
-		hcRow := TSEventHighchartLinePayload{}
-		hcRow.ID = row.ID
-		hcRow.CreatedFrom = row.CreatedFrom.UnixNano() / 1000000
-		hcRow.CreatedTo = row.CreatedTo.UnixNano() / 1000000
-		hcRow.Description = row.Description
-
-		hcRows[i] = hcRow
-	}
-
-	return hcRows, err
-}
-
-// AllBandsByClusterIDAndCreatedFromInterval returns all rows without time stretch between created_from and created_to.
-func (ts *TSEvent) AllBandsByClusterIDAndCreatedFromIntervalForHighchart(tx *sqlx.Tx, clusterID int64, createdInterval string) ([]TSEventHighchartLinePayload, error) {
-	rows := []*TSEventRow{}
-	query := fmt.Sprintf("SELECT * FROM %v WHERE cluster_id=$1 AND created_from < created_to AND created_from >= (NOW() at time zone 'utc' - INTERVAL '%v')", ts.table, createdInterval)
-	err := ts.db.Select(&rows, query, clusterID)
 	if err != nil {
 		return nil, err
 	}

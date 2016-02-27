@@ -55,9 +55,6 @@ ResourcedMaster.metrics.get = function(accessToken, metricID, options) {
     if('shortAggrInterval' in options) {
         path = path + '/' + options.shortAggrInterval;
     }
-    if('createdInterval' in options) {
-        getParams = getParams + 'CreatedInterval=' + options.createdInterval;
-    }
     if('from' in options) {
         getParams = getParams + 'From=' + options.from;
     }
@@ -146,14 +143,11 @@ ResourcedMaster.metrics.getEvents = function(accessToken, eventType, options) {
     var path = '/api/events/' + eventType;
     var getParams = '';
 
-    if('createdInterval' in options) {
-        getParams = getParams + 'CreatedInterval=' + options.createdInterval;
-    }
     if('from' in options) {
         getParams = getParams + 'From=' + options.from;
     }
     if('to' in options) {
-        getParams = getParams + 'To=' + options.to;
+        getParams = getParams + '&To=' + options.to;
     }
 
     return $.ajax({
@@ -168,13 +162,15 @@ ResourcedMaster.metrics.getEvents = function(accessToken, eventType, options) {
 ResourcedMaster.metrics.get1dayEvents = function(doneCallback) {
     $.when(
         ResourcedMaster.metrics.getEvents(ResourcedMaster.globals.AccessToken, 'line', {
-            'createdInterval': '1 day',
+            'from': moment().subtract(1, 'days'),
+            'to': moment(),
             'successCallback': function(result) {
                 ResourcedMaster.globals.TSEventLines = result;
             }
         }),
         ResourcedMaster.metrics.getEvents(ResourcedMaster.globals.AccessToken, 'band', {
-            'createdInterval': '1 day',
+            'from': moment().subtract(1, 'days'),
+            'to': moment(),
             'successCallback': function(result) {
                 ResourcedMaster.globals.TSEventLines = result;
             }

@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"errors"
 	"github.com/gorilla/context"
 	"github.com/gorilla/mux"
 	"github.com/jmoiron/sqlx"
@@ -49,11 +50,6 @@ func GetApiTSMetricsByHost(w http.ResponseWriter, r *http.Request) {
 
 	qParams := r.URL.Query()
 
-	createdInterval := qParams.Get("CreatedInterval")
-	if createdInterval == "" {
-		createdInterval = "1 hour"
-	}
-
 	fromString := qParams.Get("From")
 	if fromString == "" {
 		fromString = qParams.Get("from")
@@ -72,6 +68,11 @@ func GetApiTSMetricsByHost(w http.ResponseWriter, r *http.Request) {
 		to = -1
 	}
 
+	if from < 0 || to < 0 {
+		libhttp.HandleErrorJson(w, errors.New("From or To parameters are missing"))
+		return
+	}
+
 	host := mux.Vars(r)["host"]
 
 	metricRow, err := dal.NewMetric(db).GetById(nil, id)
@@ -82,21 +83,10 @@ func GetApiTSMetricsByHost(w http.ResponseWriter, r *http.Request) {
 
 	tsMetricsDB := context.Get(r, "multidb.TSMetrics").(*multidb.MultiDB).PickRandom()
 
-	var hcMetrics *dal.TSMetricHighchartPayload
-
-	if from > 0 && to > 0 {
-		hcMetrics, err = dal.NewTSMetric(tsMetricsDB).AllByMetricIDHostAndRangeForHighchart(nil, metricRow.ClusterID, id, host, from, to)
-		if err != nil {
-			libhttp.HandleErrorJson(w, err)
-			return
-		}
-
-	} else {
-		hcMetrics, err = dal.NewTSMetric(tsMetricsDB).AllByMetricIDHostAndIntervalForHighchart(nil, metricRow.ClusterID, id, host, createdInterval)
-		if err != nil {
-			libhttp.HandleErrorJson(w, err)
-			return
-		}
+	hcMetrics, err := dal.NewTSMetric(tsMetricsDB).AllByMetricIDHostAndRangeForHighchart(nil, metricRow.ClusterID, id, host, from, to)
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
 	}
 
 	hcMetricsJSON, err := json.Marshal(hcMetrics)
@@ -121,11 +111,6 @@ func GetApiTSMetricsByHost15Min(w http.ResponseWriter, r *http.Request) {
 
 	qParams := r.URL.Query()
 
-	createdInterval := qParams.Get("CreatedInterval")
-	if createdInterval == "" {
-		createdInterval = "1 hour"
-	}
-
 	fromString := qParams.Get("From")
 	if fromString == "" {
 		fromString = qParams.Get("from")
@@ -144,6 +129,11 @@ func GetApiTSMetricsByHost15Min(w http.ResponseWriter, r *http.Request) {
 		to = -1
 	}
 
+	if from < 0 || to < 0 {
+		libhttp.HandleErrorJson(w, errors.New("From or To parameters are missing"))
+		return
+	}
+
 	host := mux.Vars(r)["host"]
 
 	metricRow, err := dal.NewMetric(db).GetById(nil, id)
@@ -154,21 +144,10 @@ func GetApiTSMetricsByHost15Min(w http.ResponseWriter, r *http.Request) {
 
 	tsMetricsDB := context.Get(r, "multidb.TSMetrics").(*multidb.MultiDB).PickRandom()
 
-	var hcMetrics []*dal.TSMetricHighchartPayload
-
-	if from > 0 && to > 0 {
-		hcMetrics, err = dal.NewTSMetricAggr15m(tsMetricsDB).AllByMetricIDHostAndRangeForHighchart(nil, metricRow.ClusterID, id, host, from, to)
-		if err != nil {
-			libhttp.HandleErrorJson(w, err)
-			return
-		}
-
-	} else {
-		hcMetrics, err = dal.NewTSMetricAggr15m(tsMetricsDB).AllByMetricIDHostAndIntervalForHighchart(nil, metricRow.ClusterID, id, host, createdInterval)
-		if err != nil {
-			libhttp.HandleErrorJson(w, err)
-			return
-		}
+	hcMetrics, err := dal.NewTSMetricAggr15m(tsMetricsDB).AllByMetricIDHostAndRangeForHighchart(nil, metricRow.ClusterID, id, host, from, to)
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
 	}
 
 	hcMetricsJSON, err := json.Marshal(hcMetrics)
@@ -187,11 +166,6 @@ func GetApiTSMetrics(w http.ResponseWriter, r *http.Request) {
 
 	qParams := r.URL.Query()
 
-	createdInterval := qParams.Get("CreatedInterval")
-	if createdInterval == "" {
-		createdInterval = "1 hour"
-	}
-
 	fromString := qParams.Get("From")
 	if fromString == "" {
 		fromString = qParams.Get("from")
@@ -210,6 +184,11 @@ func GetApiTSMetrics(w http.ResponseWriter, r *http.Request) {
 		to = -1
 	}
 
+	if from < 0 || to < 0 {
+		libhttp.HandleErrorJson(w, errors.New("From or To parameters are missing"))
+		return
+	}
+
 	id, err := getInt64SlugFromPath(w, r, "id")
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
@@ -224,21 +203,10 @@ func GetApiTSMetrics(w http.ResponseWriter, r *http.Request) {
 
 	tsMetricsDB := context.Get(r, "multidb.TSMetrics").(*multidb.MultiDB).PickRandom()
 
-	var hcMetrics []*dal.TSMetricHighchartPayload
-
-	if from > 0 && to > 0 {
-		hcMetrics, err = dal.NewTSMetric(tsMetricsDB).AllByMetricIDAndRangeForHighchart(nil, metricRow.ClusterID, id, from, to)
-		if err != nil {
-			libhttp.HandleErrorJson(w, err)
-			return
-		}
-
-	} else {
-		hcMetrics, err = dal.NewTSMetric(tsMetricsDB).AllByMetricIDAndIntervalForHighchart(nil, metricRow.ClusterID, id, createdInterval)
-		if err != nil {
-			libhttp.HandleErrorJson(w, err)
-			return
-		}
+	hcMetrics, err := dal.NewTSMetric(tsMetricsDB).AllByMetricIDAndRangeForHighchart(nil, metricRow.ClusterID, id, from, to)
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
 	}
 
 	hcMetricsJSON, err := json.Marshal(hcMetrics)
@@ -257,11 +225,6 @@ func GetApiTSMetrics15Min(w http.ResponseWriter, r *http.Request) {
 
 	qParams := r.URL.Query()
 
-	createdInterval := qParams.Get("CreatedInterval")
-	if createdInterval == "" {
-		createdInterval = "1 hour"
-	}
-
 	fromString := qParams.Get("From")
 	if fromString == "" {
 		fromString = qParams.Get("from")
@@ -280,6 +243,11 @@ func GetApiTSMetrics15Min(w http.ResponseWriter, r *http.Request) {
 		to = -1
 	}
 
+	if from < 0 || to < 0 {
+		libhttp.HandleErrorJson(w, errors.New("From or To parameters are missing"))
+		return
+	}
+
 	id, err := getInt64SlugFromPath(w, r, "id")
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
@@ -294,21 +262,10 @@ func GetApiTSMetrics15Min(w http.ResponseWriter, r *http.Request) {
 
 	tsMetricsDB := context.Get(r, "multidb.TSMetrics").(*multidb.MultiDB).PickRandom()
 
-	var hcMetrics []*dal.TSMetricHighchartPayload
-
-	if from > 0 && to > 0 {
-		hcMetrics, err = dal.NewTSMetricAggr15m(tsMetricsDB).AllByMetricIDAndRangeForHighchart(nil, metricRow.ClusterID, id, from, to)
-		if err != nil {
-			libhttp.HandleErrorJson(w, err)
-			return
-		}
-
-	} else {
-		hcMetrics, err = dal.NewTSMetricAggr15m(tsMetricsDB).AllByMetricIDAndIntervalForHighchart(nil, metricRow.ClusterID, id, createdInterval)
-		if err != nil {
-			libhttp.HandleErrorJson(w, err)
-			return
-		}
+	hcMetrics, err := dal.NewTSMetricAggr15m(tsMetricsDB).AllByMetricIDAndRangeForHighchart(nil, metricRow.ClusterID, id, from, to)
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
 	}
 
 	hcMetricsJSON, err := json.Marshal(hcMetrics)

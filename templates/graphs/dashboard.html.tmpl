@@ -92,7 +92,6 @@ function renderChartPreview() {
     var lastMetricIDAndKey = metrics[metrics.length -1].split(/\-(.+)?/);
     var lastMetricID = lastMetricIDAndKey[0];
     var lastMetricKey = lastMetricIDAndKey[1];
-    var createdInterval = '15 minute'; // Don't fetch too many things since this is just a preview.
     var containerDOM = $('#add-chart-modal').find('.add-chart-modal-container');
 
     ResourcedMaster.metrics.renderOneChart(
@@ -104,7 +103,8 @@ function renderChartPreview() {
         ResourcedMaster.globals.TSEventBandColors,
         ResourcedMaster.globals.TSEventBandTextColors,
         {
-            'createdInterval': createdInterval,
+            'from': moment().subtract(15, 'minutes'),
+            'to': moment(),
             'containerDOM': containerDOM,
             'height': ResourcedMaster.highcharts.defaultHeight + 6,
             'title': lastMetricKey
