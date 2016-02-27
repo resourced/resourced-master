@@ -99,7 +99,11 @@ func PostClustersCurrent(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	http.Redirect(w, r, r.Referer(), 301)
+	if r.Header.Get("X-Requested-With") == "XMLHttpRequest" {
+		w.Write([]byte(""))
+	} else {
+		http.Redirect(w, r, r.Referer(), 301)
+	}
 }
 
 func PostPutDeleteClusterID(w http.ResponseWriter, r *http.Request) {
