@@ -331,17 +331,18 @@ $(document).ready(function() {
     $('.btn-show-triggers').each(function() {
         var $button = $(this);
         var watcherID = $button.data('watcher-id');
-        var state = $.cookie('.row.watchers .trigger-body[data-watcher-id="' + watcherID + '"]');
 
-        if (state == 'true' || state == true) {
-            $('.trigger-body[data-watcher-id="' + watcherID + '"]').show();
-            $button.text('Hide Triggers');
-            $button.addClass('active');
-        } else {
-            $('.trigger-body[data-watcher-id="' + watcherID + '"]').hide();
-            $button.text('Show Triggers');
-            $button.removeClass('active');
-        }
+        ResourcedMaster.UIStore.get('.row.watchers .trigger-body[data-watcher-id="' + watcherID + '"]').then(function(doc) {
+            if (doc.state) {
+                $('.trigger-body[data-watcher-id="' + watcherID + '"]').show();
+                $button.text('Hide Triggers');
+                $button.addClass('active');
+            } else {
+                $('.trigger-body[data-watcher-id="' + watcherID + '"]').hide();
+                $button.text('Show Triggers');
+                $button.removeClass('active');
+            }
+        });
     });
 });
 
@@ -475,9 +476,9 @@ $('.btn-show-triggers').on('click', function(event) {
         $('.btn-show-triggers[data-watcher-id="' + watcherID + '"]').text('Show Triggers');
     }
 
-    $.cookie('.row.watchers .trigger-body[data-watcher-id="' + watcherID + '"]', $triggerBody.is(':visible'), {
-        path: '/',
-        expires: 365
+    ResourcedMaster.UIStore.put({
+        _id: '.row.watchers .trigger-body[data-watcher-id="' + watcherID + '"]',
+        state: $triggerBody.is(':visible')
     });
 });
 </script>

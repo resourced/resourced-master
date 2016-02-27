@@ -8,6 +8,8 @@ ResourcedMaster.globals.TSEventLineColors = [];
 ResourcedMaster.globals.TSEventBandColors = [];
 ResourcedMaster.globals.TSEventBandTextColors = [];
 
+ResourcedMaster.UIStore = new PouchDB('resourcedmaster-ui', {revs_limit: 1});
+
 ResourcedMaster.users = {};
 ResourcedMaster.users.logout = function() {
     $.removeCookie('resourcedmaster-session', { path: '/' });

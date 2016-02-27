@@ -215,37 +215,43 @@ $(document).ready(function() {
 
     // Show all saved-queries if toggler is set to on.
     $('.container.saved-queries .toggler-header').each(function() {
-        var state = $.cookie('.container.saved-queries .toggler-header');
+        var elem = $(this);
 
-        if (state && state == 'true') {
-            $(this).bootstrapSwitch('state', true, true);
-            $(this).closest('.container.saved-queries').find('.row.saved-queries').show();
-        }
+        ResourcedMaster.UIStore.get('.container.saved-queries .toggler-header').then(function(doc) {
+            if (doc && doc.state) {
+                elem.bootstrapSwitch('state', true, true);
+                elem.closest('.container.saved-queries').find('.row.saved-queries').show();
+            }
+        });
     });
 
     // Show row details if toggler is set to on.
     $('.row.hosts .toggler-header').each(function() {
-        var hostID = $(this).data('host-id');
-        var state = $.cookie('.row.hosts .toggler-header[data-host-id="' + hostID + '"]');
+        var elem = $(this);
+        var hostID = elem.data('host-id');
 
-        if (state && state == 'true') {
-            $(this).bootstrapSwitch('state', true, true);
-            $(this).closest('.hosts').find('.details').show();
-        }
+        ResourcedMaster.UIStore.get('.row.hosts .toggler-header[data-host-id="' + hostID + '"]').then(function(doc) {
+            if (doc && doc.state) {
+                elem.bootstrapSwitch('state', true, true);
+                elem.closest('.hosts').find('.details').show();
+            }
+        });
     });
 
     // Show row/path details if toggler is set to on.
     $('.row.hosts .toggler-body').each(function() {
-        var path = $(this).data('path');
-        var state = $.cookie('.row.hosts .toggler-body[data-path="' + path + '"]');
+        var elem = $(this);
+        var path = elem.data('path');
 
-        if (state && state == 'true') {
-            $(this).bootstrapSwitch('state', true, true);
-            $(this).closest('.detail-header').siblings('.detail-body[data-path="' + path + '"]').show();
-        } else if (state && state == 'false') {
-            $(this).bootstrapSwitch('state', false, false);
-            $(this).closest('.detail-header').siblings('.detail-body[data-path="' + path + '"]').hide();
-        }
+        ResourcedMaster.UIStore.get('.row.hosts .toggler-body[data-path="' + path + '"]').then(function(doc) {
+            if(doc && doc.state == true) {
+                elem.bootstrapSwitch('state', true, true);
+                elem.closest('.detail-header').siblings('.detail-body[data-path="' + path + '"]').show();
+            } else if(doc && doc.state == false) {
+                elem.bootstrapSwitch('state', false, false);
+                elem.closest('.detail-header').siblings('.detail-body[data-path="' + path + '"]').hide();
+            }
+        });
     });
 
     $('.row.hosts .host-value').each(function() {
@@ -267,10 +273,19 @@ $('.container.saved-queries .toggler-header').on('switchChange.bootstrapSwitch',
         $(this).closest('.container.saved-queries').find('.row.saved-queries:gt(4)').hide();
     }
 
-    // Set state in cookie
-    $.cookie('.container.saved-queries .toggler-header', state, {
-        path: '/',
-        expires: 365
+    var uiStoreID = '.container.saved-queries .toggler-header';
+    var uiStoreData = {
+        _id: uiStoreID,
+        state: state
+    };
+
+    ResourcedMaster.UIStore.get(uiStoreID).then(function(doc) {
+        if(doc) { uiStoreData._rev = doc._rev; }
+        return ResourcedMaster.UIStore.put(uiStoreData);
+    }).catch(function (err) {
+        if(err.name == 'not_found') {
+            return ResourcedMaster.UIStore.put(uiStoreData);
+        }
     });
 });
 
@@ -279,10 +294,19 @@ $('.row.hosts .toggler-header').on('switchChange.bootstrapSwitch', function(even
 
     var hostID = $(this).data('host-id');
 
-    // Set state in cookie
-    $.cookie('.row.hosts .toggler-header[data-host-id="' + hostID + '"]', state, {
-        path: '/',
-        expires: 365
+    var uiStoreID = '.row.hosts .toggler-header[data-host-id="' + hostID + '"]';
+    var uiStoreData = {
+        _id: uiStoreID,
+        state: state
+    };
+
+    ResourcedMaster.UIStore.get(uiStoreID).then(function(doc) {
+        if(doc) { uiStoreData._rev = doc._rev; }
+        return ResourcedMaster.UIStore.put(uiStoreData);
+    }).catch(function(err) {
+        if(err.name == 'not_found') {
+            return ResourcedMaster.UIStore.put(uiStoreData);
+        }
     });
 });
 
@@ -292,10 +316,19 @@ $('.row.hosts .toggler-body').on('switchChange.bootstrapSwitch', function(event,
 
     $detailHeader.siblings('.detail-body[data-path="' + path + '"]').toggle();
 
-    // Set state in cookie
-    $.cookie('.row.hosts .toggler-body[data-path="' + path + '"]', state, {
-        path: '/',
-        expires: 365
+    var uiStoreID = '.row.hosts .toggler-body[data-path="' + path + '"]';
+    var uiStoreData = {
+        _id: uiStoreID,
+        state: state
+    };
+
+    ResourcedMaster.UIStore.get(uiStoreID).then(function(doc) {
+        if(doc) { uiStoreData._rev = doc._rev; }
+        return ResourcedMaster.UIStore.put(uiStoreData);
+    }).catch(function (err) {
+        if(err.name == 'not_found') {
+            return ResourcedMaster.UIStore.put(uiStoreData);
+        }
     });
 });
 
