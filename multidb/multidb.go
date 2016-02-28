@@ -50,7 +50,9 @@ func (mdb *MultiDB) PickNext() *sqlx.DB {
 }
 
 func (mdb *MultiDB) NumOfConnectionsByReplicationPercentage() int {
-	return int(math.Ceil(float64(mdb.replicationPercentage / 100 * len(mdb.DBs))))
+	return int(
+		math.Ceil(
+			float64(mdb.replicationPercentage) / float64(100) * float64(len(mdb.DBs))))
 }
 
 func (mdb *MultiDB) PickMultipleForWrites() []*sqlx.DB {
