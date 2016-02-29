@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/gorilla/context"
+	"github.com/gorilla/mux"
 	"github.com/gorilla/sessions"
 	"github.com/jmoiron/sqlx"
 	"github.com/resourced/resourced-master/dal"
@@ -176,4 +177,21 @@ func DeleteUsersID(w http.ResponseWriter, r *http.Request) {
 	err := errors.New("DELETE method is not implemented.")
 	libhttp.HandleErrorJson(w, err)
 	return
+}
+
+// GetUsersEmailVerificationToken verifies user email.
+func GetUsersEmailVerificationToken(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "text/html")
+
+	db := context.Get(r, "db.Core").(*sqlx.DB)
+
+	emailVerificationToken := mux.Vars(r)["token"]
+
+	_, err := dal.NewUser(db).UpdateEmailVerification(nil, emailVerificationToken)
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
+
+	http.Redirect(w, r, "/login", 301)
 }

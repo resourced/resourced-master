@@ -7,6 +7,8 @@ import (
 
 	"github.com/jmoiron/sqlx"
 	"golang.org/x/crypto/bcrypt"
+
+	"github.com/resourced/resourced-master/libstring"
 )
 
 func NewUser(db *sqlx.DB) *User {
@@ -19,9 +21,11 @@ func NewUser(db *sqlx.DB) *User {
 }
 
 type UserRow struct {
-	ID       int64  `db:"id"`
-	Email    string `db:"email"`
-	Password string `db:"password"`
+	ID                     int64          `db:"id"`
+	Email                  string         `db:"email"`
+	Password               string         `db:"password"`
+	EmailVerificationToken sql.NullString `db:"email_verification_token"`
+	EmailVerified          bool           `db:"email_verified"`
 }
 
 type User struct {
@@ -64,6 +68,15 @@ func (u *User) GetByEmail(tx *sqlx.Tx, email string) (*UserRow, error) {
 	return user, err
 }
 
+// GetByEmailVerificationToken returns record by email_verification_token.
+func (u *User) GetByEmailVerificationToken(tx *sqlx.Tx, emailVerificationToken string) (*UserRow, error) {
+	user := &UserRow{}
+	query := fmt.Sprintf("SELECT * FROM %v WHERE email_verification_token=$1", u.table)
+	err := u.db.Get(user, query, emailVerificationToken)
+
+	return user, err
+}
+
 // GetByEmail returns record by email but checks password first.
 func (u *User) GetUserByEmailAndPassword(tx *sqlx.Tx, email, password string) (*UserRow, error) {
 	user, err := u.GetByEmail(tx, email)
@@ -96,9 +109,15 @@ func (u *User) Signup(tx *sqlx.Tx, email, password, passwordAgain string) (*User
 		return nil, err
 	}
 
+	emailVerificationToken, err := libstring.GeneratePassword(32)
+	if err != nil {
+		return nil, err
+	}
+
 	data := make(map[string]interface{})
 	data["email"] = email
 	data["password"] = hashedPassword
+	data["email_verification_token"] = emailVerificationToken
 
 	sqlResult, err := u.InsertIntoTable(tx, data)
 	if err != nil {
@@ -133,4 +152,29 @@ func (u *User) UpdateEmailAndPasswordById(tx *sqlx.Tx, userId int64, email, pass
 	}
 
 	return u.GetByID(tx, userId)
+}
+
+// UpdateEmailVerification acknowledge email verification.
+func (u *User) UpdateEmailVerification(tx *sqlx.Tx, emailVerificationToken string) (*UserRow, error) {
+	if emailVerificationToken == "" {
+		return nil, errors.New("Token cannot be empty")
+	}
+
+	existingUser, err := u.GetByEmailVerificationToken(tx, emailVerificationToken)
+	if err != nil {
+		return nil, err
+	}
+
+	data := make(map[string]interface{})
+	data["email_verification_token"] = ""
+	data["email_verified"] = true
+
+	if len(data) > 0 {
+		_, err := u.UpdateByKeyValueString(tx, data, "email_verification_token", emailVerificationToken)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return u.GetByID(tx, existingUser.ID)
 }

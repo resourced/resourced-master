@@ -1,10 +1,13 @@
 CREATE TABLE users (
     id BIGSERIAL PRIMARY KEY NOT NULL,
     email TEXT NOT NULL,
-    password TEXT NOT NULL
+    password TEXT NOT NULL,
+    email_verification_token TEXT,
+    email_verified BOOLEAN NOT NULL DEFAULT FALSE
 );
 
 CREATE UNIQUE INDEX idx_users_email on users (email);
+CREATE INDEX idx_users_email_verified on users (email_verified);
 
 CREATE TABLE clusters (
     id BIGSERIAL PRIMARY KEY NOT NULL,

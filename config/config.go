@@ -52,6 +52,16 @@ func NewGeneralConfig(configDir string) (config GeneralConfig, err error) {
 	return config, err
 }
 
+type EmailConfig struct {
+	From          string
+	SubjectPrefix string
+	Host          string
+	Port          int
+	Username      string
+	Password      string
+	Identity      string
+}
+
 // GeneralConfig stores all configuration data.
 type GeneralConfig struct {
 	Addr           string
@@ -68,15 +78,7 @@ type GeneralConfig struct {
 	Watchers struct {
 		ListFetchInterval string
 
-		Email struct {
-			From          string
-			SubjectPrefix string
-			Host          string
-			Port          int
-			Username      string
-			Password      string
-			Identity      string
-		}
+		Email EmailConfig
 
 		SMSEmailGateway map[string]string
 
@@ -96,6 +98,8 @@ type GeneralConfig struct {
 		ReplicationPercentage int
 		DataRetention         int
 	}
+
+	Email EmailConfig
 }
 
 // NewDBConfig is the constructor for DBConfig.

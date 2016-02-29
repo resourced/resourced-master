@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"net/smtp"
 	"os"
 	"strings"
 	"sync"
@@ -20,9 +19,9 @@ import (
 	"github.com/resourced/resourced-master/config"
 	"github.com/resourced/resourced-master/dal"
 	"github.com/resourced/resourced-master/handlers"
-	"github.com/resourced/resourced-master/libsmtp"
 	"github.com/resourced/resourced-master/libstring"
 	"github.com/resourced/resourced-master/libtime"
+	"github.com/resourced/resourced-master/mailer"
 	"github.com/resourced/resourced-master/middlewares"
 )
 
@@ -111,6 +110,8 @@ func (app *Application) mux() *mux.Router {
 	router.Handle("/watchers/{watcherid:[0-9]+}/triggers/{id:[0-9]+}", alice.New(CSRF, MustLogin, SetClusters).ThenFunc(handlers.PostPutDeleteWatcherTriggerID)).Methods("POST", "PUT", "DELETE")
 
 	router.Handle("/users/{id:[0-9]+}", alice.New(CSRF, MustLogin).ThenFunc(handlers.PostPutDeleteUsersID)).Methods("POST", "PUT", "DELETE")
+
+	router.HandleFunc("/users/email-verification/{token}", handlers.GetUsersEmailVerificationToken).Methods("GET")
 
 	router.Handle("/clusters", alice.New(CSRF, MustLogin, SetClusters).ThenFunc(handlers.GetClusters)).Methods("GET")
 	router.Handle("/clusters", alice.New(CSRF, MustLogin).ThenFunc(handlers.PostClusters)).Methods("POST")
@@ -420,16 +421,6 @@ func (app *Application) RunTrigger(clusterID int64, watcherRow *dal.WatcherRow) 
 		violationsCount := len(tsWatchers)
 
 		if int64(violationsCount) >= triggerRow.LowViolationsCount && int64(violationsCount) <= triggerRow.HighViolationsCount {
-			emailAuth := smtp.PlainAuth(
-				app.GeneralConfig.Watchers.Email.Identity,
-				app.GeneralConfig.Watchers.Email.Username,
-				app.GeneralConfig.Watchers.Email.Password,
-				app.GeneralConfig.Watchers.Email.Host)
-
-			emailHostAndPort := fmt.Sprintf("%v:%v", app.GeneralConfig.Watchers.Email.Host, app.GeneralConfig.Watchers.Email.Port)
-
-			emailFrom := app.GeneralConfig.Watchers.Email.From
-
 			if triggerRow.ActionTransport() == "nothing" {
 				// Do nothing
 
@@ -451,16 +442,23 @@ func (app *Application) RunTrigger(clusterID int64, watcherRow *dal.WatcherRow) 
 					body = string(bodyBytes)
 				}
 
-				message := libsmtp.BuildMessage(emailFrom, to, subject, body)
-
-				err = smtp.SendMail(emailHostAndPort, emailAuth, emailFrom, []string{to}, []byte(message))
+				mailr, err := mailer.New(app.GeneralConfig.Watchers.Email)
 				if err != nil {
 					logrus.WithFields(logrus.Fields{
-						"Method":          "smtp.SendMail",
+						"Method": "mailer.New",
+					}).Error(err)
+					continue
+				}
+
+				err = mailr.Send(to, subject, body)
+				if err != nil {
+					logrus.WithFields(logrus.Fields{
+						"Method":          "mailer.Send",
 						"ActionTransport": triggerRow.ActionTransport(),
-						"HostAndPort":     emailHostAndPort,
-						"From":            emailFrom,
+						"HostAndPort":     mailr.HostAndPort,
+						"From":            mailr.From,
 						"To":              to,
+						"Subject":         subject,
 					}).Error(err)
 					continue
 				}
@@ -484,16 +482,23 @@ func (app *Application) RunTrigger(clusterID int64, watcherRow *dal.WatcherRow) 
 				subject := ""
 				body := fmt.Sprintf(`%v Watcher(ID: %v): %v, Query: %v, failed %v times`, app.GeneralConfig.Watchers.Email.SubjectPrefix, watcherRow.ID, watcherRow.Name, watcherRow.SavedQuery, violationsCount)
 
-				message := libsmtp.BuildMessage(emailFrom, to, subject, body)
+				mailr, err := mailer.New(app.GeneralConfig.Watchers.Email)
+				if err != nil {
+					logrus.WithFields(logrus.Fields{
+						"Method": "mailer.New",
+					}).Error(err)
+					continue
+				}
 
-				err = smtp.SendMail(emailHostAndPort, emailAuth, emailFrom, []string{to}, []byte(message))
+				err = mailr.Send(to, subject, body)
 				if err != nil {
 					logrus.WithFields(logrus.Fields{
 						"Method":          "smtp.SendMail",
 						"ActionTransport": triggerRow.ActionTransport(),
-						"HostAndPort":     emailHostAndPort,
-						"From":            emailFrom,
+						"HostAndPort":     mailr.HostAndPort,
+						"From":            mailr.From,
 						"To":              to,
+						"Subject":         subject,
 					}).Error(err)
 					continue
 				}

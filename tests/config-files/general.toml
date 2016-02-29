@@ -18,3 +18,12 @@ CertFile = ""
 
 # Path to HTTPS key file
 KeyFile = ""
+
+[Email]
+From = "dontreply@example.com"
+SubjectPrefix = "[ResourceDMaster]"
+Host = "smtp.gmail.com"
+Port = 587
+Username = ""
+Password = ""
+Identity = ""
