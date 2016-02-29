@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"errors"
+	"fmt"
 	"html/template"
 	"net/http"
 	"strings"
@@ -12,6 +13,7 @@ import (
 	"github.com/jmoiron/sqlx"
 	"github.com/resourced/resourced-master/dal"
 	"github.com/resourced/resourced-master/libhttp"
+	"github.com/resourced/resourced-master/mailer"
 )
 
 func GetSignup(w http.ResponseWriter, r *http.Request) {
@@ -54,6 +56,18 @@ func PostSignup(w http.ResponseWriter, r *http.Request) {
 		libhttp.HandleErrorJson(w, err)
 		return
 	}
+
+	go func(userRow *dal.UserRow) {
+		if userRow.EmailVerificationToken.String != "" {
+			mailer := context.Get(r, "mailer.GeneralConfig").(*mailer.Mailer)
+
+			url := fmt.Sprintf("http://localhost:55655/users/email-verification/%v", userRow.EmailVerificationToken.String)
+
+			body := fmt.Sprintf("Click the following link to verify your email address:\n\n%v", url)
+
+			mailer.Send(userRow.Email, "Email Verification", body)
+		}
+	}(userRow)
 
 	// Perform login
 	PostLogin(w, r)

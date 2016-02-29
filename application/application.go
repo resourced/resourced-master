@@ -47,6 +47,23 @@ func New(configDir string) (*Application, error) {
 	app.GeneralConfig = generalConfig
 	app.DBConfig = dbConfig
 	app.cookieStore = sessions.NewCookieStore([]byte(app.GeneralConfig.CookieSecret))
+	app.Mailers = make(map[string]*mailer.Mailer)
+
+	if app.GeneralConfig.Email != nil {
+		mailer, err := mailer.New(app.GeneralConfig.Email)
+		if err != nil {
+			return nil, err
+		}
+		app.Mailers["GeneralConfig"] = mailer
+	}
+
+	if app.GeneralConfig.Watchers.Email != nil {
+		mailer, err := mailer.New(app.GeneralConfig.Watchers.Email)
+		if err != nil {
+			return nil, err
+		}
+		app.Mailers["GeneralConfig.Watchers"] = mailer
+	}
 
 	return app, err
 }
@@ -57,6 +74,7 @@ type Application struct {
 	GeneralConfig config.GeneralConfig
 	DBConfig      *config.DBConfig
 	cookieStore   *sessions.CookieStore
+	Mailers       map[string]*mailer.Mailer
 }
 
 func (app *Application) MiddlewareStruct() (*interpose.Middleware, error) {
@@ -64,6 +82,7 @@ func (app *Application) MiddlewareStruct() (*interpose.Middleware, error) {
 	middle.Use(middlewares.SetAddr(app.GeneralConfig.Addr))
 	middle.Use(middlewares.SetDBs(app.DBConfig))
 	middle.Use(middlewares.SetCookieStore(app.cookieStore))
+	middle.Use(middlewares.SetMailers(app.Mailers))
 
 	middle.UseHandler(app.mux())
 
@@ -442,11 +461,8 @@ func (app *Application) RunTrigger(clusterID int64, watcherRow *dal.WatcherRow) 
 					body = string(bodyBytes)
 				}
 
-				mailr, err := mailer.New(app.GeneralConfig.Watchers.Email)
-				if err != nil {
-					logrus.WithFields(logrus.Fields{
-						"Method": "mailer.New",
-					}).Error(err)
+				mailr, ok := app.Mailers["GeneralConfig.Watchers"]
+				if !ok {
 					continue
 				}
 
@@ -482,11 +498,8 @@ func (app *Application) RunTrigger(clusterID int64, watcherRow *dal.WatcherRow) 
 				subject := ""
 				body := fmt.Sprintf(`%v Watcher(ID: %v): %v, Query: %v, failed %v times`, app.GeneralConfig.Watchers.Email.SubjectPrefix, watcherRow.ID, watcherRow.Name, watcherRow.SavedQuery, violationsCount)
 
-				mailr, err := mailer.New(app.GeneralConfig.Watchers.Email)
-				if err != nil {
-					logrus.WithFields(logrus.Fields{
-						"Method": "mailer.New",
-					}).Error(err)
+				mailr, ok := app.Mailers["GeneralConfig.Watchers"]
+				if !ok {
 					continue
 				}
 

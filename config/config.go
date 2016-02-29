@@ -78,7 +78,7 @@ type GeneralConfig struct {
 	Watchers struct {
 		ListFetchInterval string
 
-		Email EmailConfig
+		Email *EmailConfig
 
 		SMSEmailGateway map[string]string
 
@@ -99,7 +99,7 @@ type GeneralConfig struct {
 		DataRetention         int
 	}
 
-	Email EmailConfig
+	Email *EmailConfig
 }
 
 // NewDBConfig is the constructor for DBConfig.

@@ -12,6 +12,7 @@ import (
 	"github.com/resourced/resourced-master/config"
 	"github.com/resourced/resourced-master/dal"
 	"github.com/resourced/resourced-master/libhttp"
+	"github.com/resourced/resourced-master/mailer"
 )
 
 func SetAddr(addr string) func(http.Handler) http.Handler {
@@ -45,6 +46,18 @@ func SetCookieStore(cookieStore *sessions.CookieStore) func(http.Handler) http.H
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			context.Set(r, "cookieStore", cookieStore)
+
+			next.ServeHTTP(w, r)
+		})
+	}
+}
+
+func SetMailers(mailers map[string]*mailer.Mailer) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			for key, mailr := range mailers {
+				context.Set(r, "mailer."+key, mailr)
+			}
 
 			next.ServeHTTP(w, r)
 		})
