@@ -80,6 +80,8 @@ type Application struct {
 func (app *Application) MiddlewareStruct() (*interpose.Middleware, error) {
 	middle := interpose.New()
 	middle.Use(middlewares.SetAddr(app.GeneralConfig.Addr))
+	middle.Use(middlewares.SetVIPAddr(app.GeneralConfig.VIPAddr))
+	middle.Use(middlewares.SetVIPProtocol(app.GeneralConfig.VIPProtocol))
 	middle.Use(middlewares.SetDBs(app.DBConfig))
 	middle.Use(middlewares.SetCookieStore(app.cookieStore))
 	middle.Use(middlewares.SetMailers(app.Mailers))

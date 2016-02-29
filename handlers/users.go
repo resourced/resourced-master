@@ -61,7 +61,10 @@ func PostSignup(w http.ResponseWriter, r *http.Request) {
 		if userRow.EmailVerificationToken.String != "" {
 			mailer := context.Get(r, "mailer.GeneralConfig").(*mailer.Mailer)
 
-			url := fmt.Sprintf("http://localhost:55655/users/email-verification/%v", userRow.EmailVerificationToken.String)
+			vipAddr := context.Get(r, "vipAddr").(string)
+			vipProtocol := context.Get(r, "vipProtocol").(string)
+
+			url := fmt.Sprintf("%v://%v/users/email-verification/%v", vipProtocol, vipAddr, userRow.EmailVerificationToken.String)
 
 			body := fmt.Sprintf("Click the following link to verify your email address:\n\n%v", url)
 

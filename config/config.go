@@ -69,6 +69,8 @@ type GeneralConfig struct {
 	DSN            string
 	CookieSecret   string
 	RequestTimeout string
+	VIPAddr        string
+	VIPProtocol    string
 
 	HTTPS struct {
 		CertFile string

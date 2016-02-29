@@ -15,20 +15,39 @@ import (
 	"github.com/resourced/resourced-master/mailer"
 )
 
-func SetAddr(addr string) func(http.Handler) http.Handler {
+// SetStringKeyValue set arbitrary key value on context and passes it around to every request handler
+func SetStringKeyValue(key, value string) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			if strings.HasPrefix(addr, ":") {
-				addr = "localhost" + addr
-			}
-
-			context.Set(r, "addr", addr)
+			context.Set(r, key, value)
 
 			next.ServeHTTP(w, r)
 		})
 	}
 }
 
+// SetAddr passes daemon host and port to every request handler
+func SetAddr(addr string) func(http.Handler) http.Handler {
+	if strings.HasPrefix(addr, ":") {
+		addr = "localhost" + addr
+	}
+	return SetStringKeyValue("addr", addr)
+}
+
+// SetVIPAddr passes VIP host and port to every request handler
+func SetVIPAddr(vipAddr string) func(http.Handler) http.Handler {
+	if strings.HasPrefix(vipAddr, ":") {
+		vipAddr = "localhost" + vipAddr
+	}
+	return SetStringKeyValue("vipAddr", vipAddr)
+}
+
+// SetVIPProtocol passes VIP protocol to every request handler
+func SetVIPProtocol(vipProtocol string) func(http.Handler) http.Handler {
+	return SetStringKeyValue("vipProtocol", vipProtocol)
+}
+
+// SetDBs passes all database connections to every request handler
 func SetDBs(dbConfig *config.DBConfig) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -42,6 +61,7 @@ func SetDBs(dbConfig *config.DBConfig) func(http.Handler) http.Handler {
 	}
 }
 
+// SetCookieStore passes cookie storage to every request handler
 func SetCookieStore(cookieStore *sessions.CookieStore) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -52,6 +72,7 @@ func SetCookieStore(cookieStore *sessions.CookieStore) func(http.Handler) http.H
 	}
 }
 
+// SetMailers passes all mailers to every request handler
 func SetMailers(mailers map[string]*mailer.Mailer) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

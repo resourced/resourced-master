@@ -12,6 +12,11 @@ RequestTimeout = "1s"
 # Change this!
 CookieSecret = "T0PS3CR3T"
 
+# In production, change this to your VIP host and port
+VIPAddr = "localhost:55655"
+
+VIPProtocol = "http"
+
 [HTTPS]
 # Path to HTTPS cert file
 CertFile = ""
