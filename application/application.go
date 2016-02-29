@@ -449,7 +449,7 @@ func (app *Application) RunTrigger(clusterID int64, watcherRow *dal.WatcherRow) 
 				}
 
 				to := triggerRow.ActionEmail()
-				subject := fmt.Sprintf(`%v Watcher(ID: %v): %v, Query: %v`, app.GeneralConfig.Watchers.Email.SubjectPrefix, watcherRow.ID, watcherRow.Name, watcherRow.SavedQuery)
+				subject := fmt.Sprintf(`Watcher(ID: %v): %v, Query: %v`, watcherRow.ID, watcherRow.Name, watcherRow.SavedQuery.String)
 				body := ""
 
 				if lastViolation != nil {
