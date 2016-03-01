@@ -15,3 +15,14 @@ func SleepString(definition string) error {
 	time.Sleep(delayTime)
 	return nil
 }
+
+func IsLeapYear(y int) bool {
+	year := time.Date(y, time.December, 31, 0, 0, 0, 0, time.Local)
+	days := year.YearDay()
+
+	if days > 365 {
+		return true
+	}
+
+	return false
+}
