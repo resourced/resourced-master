@@ -161,17 +161,17 @@ ResourcedMaster.metrics.getEvents = function(accessToken, eventType, options) {
     });
 };
 
-ResourcedMaster.metrics.get1dayEvents = function(doneCallback) {
+ResourcedMaster.metrics.getEventsLastXRange = function(count, unit, doneCallback) {
     $.when(
         ResourcedMaster.metrics.getEvents(ResourcedMaster.globals.AccessToken, 'line', {
-            'from': moment().subtract(1, 'days'),
+            'from': moment().subtract(count, unit),
             'to': moment(),
             'successCallback': function(result) {
                 ResourcedMaster.globals.TSEventLines = result;
             }
         }),
         ResourcedMaster.metrics.getEvents(ResourcedMaster.globals.AccessToken, 'band', {
-            'from': moment().subtract(1, 'days'),
+            'from': moment().subtract(count, unit),
             'to': moment(),
             'successCallback': function(result) {
                 ResourcedMaster.globals.TSEventLines = result;
@@ -191,6 +191,10 @@ ResourcedMaster.metrics.get1dayEvents = function(doneCallback) {
             doneCallback(a1, a2);
         }
     });
+};
+
+ResourcedMaster.metrics.get1dayEvents = function(doneCallback) {
+    return ResourcedMaster.metrics.getEventsLastXRange(1, 'days', doneCallback);
 };
 
 

@@ -26,7 +26,8 @@
                     <button class="btn btn-default btn-xs" data-toggle="modal" data-target="#graphs-modal"
                         data-id="{{ $graph.ID }}"
                         data-name="{{ $graph.Name }}"
-                        data-description="{{ $graph.Description }}">
+                        data-description="{{ $graph.Description }}"
+                        data-range="{{ $graph.Range }}">
                         Details
                     </button>
 
@@ -60,6 +61,27 @@
                             <label>Name</label>
                             <input type="text" class="form-control" name="Name" value="">
                         </div>
+
+                        <div class="col-sm-12">
+                            <label>Range</label>
+                            <select class="form-control" name="Range">
+                                <option value="5 minutes">5 minutes</option>
+                                <option value="10 minutes">10 minutes</option>
+                                <option value="15 minutes">15 minutes</option>
+                                <option value="30 minutes">30 minutes</option>
+                                <option value="60 minutes">60 minutes</option>
+                                <option value="2 hours">2 hours</option>
+                                <option value="3 hours">3 hours</option>
+                                <option value="6 hours">6 hours</option>
+                                <option value="12 hours">12 hours</option>
+                                <option value="24 hours">24 hours</option>
+                                <option value="2 days">2 days</option>
+                                <option value="3 days">3 days</option>
+                                <option value="7 days">7 days</option>
+                            </select>
+                        </div>
+
+
 
                         <div class="col-sm-12">
                             <label>Description</label>
@@ -120,6 +142,7 @@ $('#graphs-modal').on('show.bs.modal', function (event) {
     var id = button.data('id');
     var name = button.data('name');
     var description = button.data('description');
+    var range = button.data('range');
 
     var modal = $(this);
 
@@ -128,6 +151,9 @@ $('#graphs-modal').on('show.bs.modal', function (event) {
     }
     if(description) {
         modal.find('textarea').val(description);
+    }
+    if(range) {
+        modal.find('select[name="Range"]').val(range);
     }
 
     if(id) {

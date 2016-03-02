@@ -210,6 +210,7 @@ func PutGraphsID(w http.ResponseWriter, r *http.Request) {
 
 	name := r.FormValue("Name")
 	description := r.FormValue("Description")
+	range_ := r.FormValue("Range")
 
 	data := make(map[string]interface{})
 	if name != "" {
@@ -217,6 +218,9 @@ func PutGraphsID(w http.ResponseWriter, r *http.Request) {
 	}
 	if description != "" {
 		data["description"] = description
+	}
+	if range_ != "" {
+		data["range"] = range_
 	}
 
 	metrics := r.Form["MetricsWithOrder"]
@@ -227,13 +231,16 @@ func PutGraphsID(w http.ResponseWriter, r *http.Request) {
 			libhttp.HandleErrorJson(w, err)
 			return
 		}
+
 		data["metrics"] = metricsJSONBytes
 	}
 
-	_, err = dal.NewGraph(db).UpdateByID(nil, data, id)
-	if err != nil {
-		libhttp.HandleErrorJson(w, err)
-		return
+	if len(data) > 0 {
+		_, err = dal.NewGraph(db).UpdateByID(nil, data, id)
+		if err != nil {
+			libhttp.HandleErrorJson(w, err)
+			return
+		}
 	}
 
 	http.Redirect(w, r, fmt.Sprintf("/graphs/%v", id), 301)

@@ -86,10 +86,17 @@ setInterval(function() {
 
 ResourcedMaster.globals.ChartKeys = [];
 ResourcedMaster.globals.AccessToken = '{{ $.AccessToken.Token }}';
+ResourcedMaster.globals.CurrentGraph = {
+    ID: {{ $.CurrentGraph.ID }},
+    ClusterID: {{ $.CurrentGraph.ClusterID }},
+    Name: '{{ $.CurrentGraph.Name }}',
+    Description: '{{ $.CurrentGraph.Description }}',
+    Range: '{{ $.CurrentGraph.Range }}'
+};
 
 function renderChartPreview() {
     var metrics = ResourcedMaster.globals.ChartKeys;
-    var lastMetricIDAndKey = metrics[metrics.length -1].split(/\-(.+)?/);
+    var lastMetricIDAndKey = metrics[metrics.length - 1].split(/\-(.+)?/);
     var lastMetricID = lastMetricIDAndKey[0];
     var lastMetricKey = lastMetricIDAndKey[1];
     var containerDOM = $('#add-chart-modal').find('.add-chart-modal-container');
@@ -161,11 +168,16 @@ $(window).resize(function() {
 });
 
 $(document).ready(function() {
-    ResourcedMaster.metrics.get1dayEvents(function(a1, a2) {
+    var currentGraphRangeSplit = ResourcedMaster.globals.CurrentGraph.Range.split(" ");
+    var currentGraphRangeCount = parseInt(currentGraphRangeSplit[0], 10);
+    var currentGraphRangeUnit = currentGraphRangeSplit[1];
+
+    ResourcedMaster.metrics.getEventsLastXRange(currentGraphRangeCount, currentGraphRangeUnit, function(a1, a2) {
         $('input.daterange').each(function(index) {
             var drpElem = $(this);
 
             var settings = jQuery.extend(true, {}, ResourcedMaster.daterange.defaultSettings);
+            settings.startDate = moment().subtract(currentGraphRangeCount, currentGraphRangeUnit);
 
             if(index % 3 == 0) {
                 settings.opens = 'right';

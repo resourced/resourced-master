@@ -30,6 +30,7 @@ type GraphRow struct {
 	ClusterID   int64               `db:"cluster_id"`
 	Name        string              `db:"name"`
 	Description string              `db:"description"`
+	Range       string              `db:"range"`
 	Metrics     sqlx_types.JSONText `db:"metrics"`
 }
 

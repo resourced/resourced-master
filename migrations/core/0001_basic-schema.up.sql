@@ -103,6 +103,7 @@ CREATE TABLE graphs (
     cluster_id bigint REFERENCES clusters (id),
     name TEXT NOT NULL,
     description TEXT,
+    range TEXT NOT NULL DEFAULT '15 minutes',
     metrics JSONB
 );
 
