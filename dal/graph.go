@@ -109,11 +109,8 @@ func (a *Graph) GetById(tx *sqlx.Tx, id int64) (*GraphRow, error) {
 	return row, err
 }
 
-func (a *Graph) Create(tx *sqlx.Tx, clusterID int64, name, description string) (*GraphRow, error) {
-	data := make(map[string]interface{})
+func (a *Graph) Create(tx *sqlx.Tx, clusterID int64, data map[string]interface{}) (*GraphRow, error) {
 	data["cluster_id"] = clusterID
-	data["name"] = name
-	data["description"] = description
 
 	metricsJSONBytes, err := a.BuildMetricsJSONForSave(tx, clusterID, nil)
 	if err != nil {

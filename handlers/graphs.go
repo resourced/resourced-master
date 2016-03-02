@@ -59,10 +59,16 @@ func PostGraphs(w http.ResponseWriter, r *http.Request) {
 
 	name := r.FormValue("Name")
 	description := r.FormValue("Description")
+	range_ := r.FormValue("Range")
 
 	db := context.Get(r, "db.Core").(*sqlx.DB)
 
-	_, err := dal.NewGraph(db).Create(nil, currentCluster.ID, name, description)
+	data := make(map[string]interface{})
+	data["name"] = name
+	data["description"] = description
+	data["range"] = range_
+
+	_, err := dal.NewGraph(db).Create(nil, currentCluster.ID, data)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
