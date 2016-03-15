@@ -22,7 +22,7 @@ func NewHost(db *sqlx.DB) *Host {
 	return host
 }
 
-type ResourcedPayload struct {
+type AgentResourcePayload struct {
 	Data     map[string]interface{}
 	GoStruct string
 	Host     struct {
@@ -172,8 +172,8 @@ func (h *Host) GetByName(tx *sqlx.Tx, name string) (*HostRow, error) {
 	return hostRow, err
 }
 
-func (h *Host) parseResourcedPayload(tx *sqlx.Tx, accessTokenRow *AccessTokenRow, jsonData []byte) (map[string]interface{}, error) {
-	resourcedPayloads := make(map[string]*ResourcedPayload)
+func (h *Host) parseAgentResourcePayload(tx *sqlx.Tx, accessTokenRow *AccessTokenRow, jsonData []byte) (map[string]interface{}, error) {
+	resourcedPayloads := make(map[string]*AgentResourcePayload)
 
 	err := json.Unmarshal(jsonData, &resourcedPayloads)
 	if err != nil {
@@ -210,7 +210,7 @@ func (h *Host) parseResourcedPayload(tx *sqlx.Tx, accessTokenRow *AccessTokenRow
 
 // CreateOrUpdate performs insert/update for one host data.
 func (h *Host) CreateOrUpdate(tx *sqlx.Tx, accessTokenRow *AccessTokenRow, jsonData []byte) (*HostRow, error) {
-	data, err := h.parseResourcedPayload(tx, accessTokenRow, jsonData)
+	data, err := h.parseAgentResourcePayload(tx, accessTokenRow, jsonData)
 	if err != nil {
 		return nil, err
 	}

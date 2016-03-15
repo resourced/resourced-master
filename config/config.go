@@ -101,6 +101,18 @@ type GeneralConfig struct {
 		DataRetention         int
 	}
 
+	ExecutorLogs struct {
+		DSNs                  []string
+		ReplicationPercentage int
+		DataRetention         int
+	}
+
+	Logs struct {
+		DSNs                  []string
+		ReplicationPercentage int
+		DataRetention         int
+	}
+
 	Email *EmailConfig
 }
 
@@ -144,13 +156,27 @@ func NewDBConfig(generalConfig GeneralConfig) (*DBConfig, error) {
 	}
 	conf.TSEvents = tsEventMultiDB
 
+	tsExecutorLogMultiDB, err := multidb.New(generalConfig.ExecutorLogs.DSNs, generalConfig.ExecutorLogs.ReplicationPercentage)
+	if err != nil {
+		return nil, err
+	}
+	conf.TSExecutorLogs = tsExecutorLogMultiDB
+
+	tsLogMultiDB, err := multidb.New(generalConfig.Logs.DSNs, generalConfig.Logs.ReplicationPercentage)
+	if err != nil {
+		return nil, err
+	}
+	conf.TSLogs = tsLogMultiDB
+
 	return conf, nil
 }
 
 type DBConfig struct {
-	Core       *sqlx.DB
-	CoreDSN    string
-	TSWatchers *multidb.MultiDB
-	TSMetrics  *multidb.MultiDB
-	TSEvents   *multidb.MultiDB
+	Core           *sqlx.DB
+	CoreDSN        string
+	TSWatchers     *multidb.MultiDB
+	TSMetrics      *multidb.MultiDB
+	TSEvents       *multidb.MultiDB
+	TSExecutorLogs *multidb.MultiDB
+	TSLogs         *multidb.MultiDB
 }

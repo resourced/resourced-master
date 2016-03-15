@@ -55,6 +55,8 @@ func SetDBs(dbConfig *config.DBConfig) func(http.Handler) http.Handler {
 			context.Set(r, "multidb.TSWatchers", dbConfig.TSWatchers)
 			context.Set(r, "multidb.TSMetrics", dbConfig.TSMetrics)
 			context.Set(r, "multidb.TSEvents", dbConfig.TSEvents)
+			context.Set(r, "multidb.TSExecutorLogs", dbConfig.TSExecutorLogs)
+			context.Set(r, "multidb.TSLogs", dbConfig.TSLogs)
 
 			next.ServeHTTP(w, r)
 		})
