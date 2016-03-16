@@ -2,8 +2,10 @@ package dal
 
 import (
 	"encoding/json"
+	"fmt"
 	"time"
 
+	"github.com/Sirupsen/logrus"
 	"github.com/jmoiron/sqlx"
 	sqlx_types "github.com/jmoiron/sqlx/types"
 )
@@ -22,6 +24,7 @@ type AgentLogPayload struct {
 		Tags map[string]string
 	}
 	LogLines []string
+	Filename string
 }
 
 type TSLogRow struct {
@@ -45,30 +48,50 @@ func (ts *TSLog) CreateFromJSON(tx *sqlx.Tx, clusterID int64, jsonData []byte) e
 		return err
 	}
 
-	return ts.Create(tx, clusterID, payload.Host.Name, payload.Host.Tags, payload.LogLines, "")
+	return ts.Create(tx, clusterID, payload.Host.Name, payload.Host.Tags, payload.LogLines, payload.Filename)
 }
 
 // Create a new record.
-func (ts *TSLog) Create(tx *sqlx.Tx, clusterID int64, hostname string, tags map[string]string, loglines []string, filename string) error {
-	for _, logline := range loglines {
-		insertData := make(map[string]interface{})
-		insertData["cluster_id"] = clusterID
-		insertData["created"] = time.Now().UTC()
-		insertData["hostname"] = hostname
-		insertData["logline"] = logline
-		insertData["filename"] = filename
-
-		tagsInJson, err := json.Marshal(tags)
-		if err != nil {
-			continue
-		}
-		insertData["tags"] = tagsInJson
-
-		_, err = ts.InsertIntoTable(tx, insertData)
+func (ts *TSLog) Create(tx *sqlx.Tx, clusterID int64, hostname string, tags map[string]string, loglines []string, filename string) (err error) {
+	if tx == nil {
+		tx, err = ts.db.Beginx()
 		if err != nil {
 			return err
 		}
 	}
 
-	return nil
+	query := fmt.Sprintf("INSERT INTO %v (cluster_id, created, hostname, logline, filename, tags) VALUES ($1, $2, $3, $4, $5, $6)", ts.table)
+
+	prepared, err := ts.db.Preparex(query)
+	if err != nil {
+		return err
+	}
+
+	for _, logline := range loglines {
+		tagsInJson, err := json.Marshal(tags)
+		if err != nil {
+			continue
+		}
+
+		created := time.Now().UTC()
+
+		logFields := logrus.Fields{
+			"Method":    "TSLog.Create",
+			"Query":     query,
+			"ClusterID": clusterID,
+			"Created":   created,
+			"Hostname":  hostname,
+			"Logline":   logline,
+			"Filename":  filename,
+			"Tags":      string(tagsInJson),
+		}
+
+		_, err = prepared.Exec(clusterID, created, hostname, logline, filename, tagsInJson)
+		if err != nil {
+			logFields["Error"] = err.Error()
+			logrus.WithFields(logFields).Error("Failed to execute insert query")
+		}
+		logrus.WithFields(logFields).Info("Insert Query")
+	}
+	return tx.Commit()
 }
