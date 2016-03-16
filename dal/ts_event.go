@@ -38,7 +38,7 @@ type TSEventRow struct {
 }
 
 type TSEvent struct {
-	Base
+	TSBase
 }
 
 // AllLinesByClusterIDAndCreatedFromRangeForHighchart returns all rows given created_from range.

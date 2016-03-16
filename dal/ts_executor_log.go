@@ -25,7 +25,7 @@ type TSExecutorLogRow struct {
 }
 
 type TSExecutorLog struct {
-	Base
+	TSBase
 }
 
 func (ts *TSExecutorLog) CreateFromJSON(tx *sqlx.Tx, clusterID int64, jsonData []byte) error {

@@ -179,6 +179,9 @@ func (app *Application) PruneAll() {
 	for {
 		app.PruneTSWatchersOnce()
 		app.PruneTSMetricsOnce()
+		app.PruneTSEventsOnce()
+		app.PruneTSExecutorLogsOnce()
+		app.PruneTSLogsOnce()
 
 		libtime.SleepString("24h")
 	}
@@ -206,6 +209,48 @@ func (app *Application) PruneTSMetricsOnce() {
 				logrus.WithFields(logrus.Fields{
 					"Method":        "TSMetric.DeleteByDayInterval",
 					"DataRetention": app.GeneralConfig.Metrics.DataRetention,
+				}).Error(err)
+			}
+		}()
+	}
+}
+
+func (app *Application) PruneTSEventsOnce() {
+	for _, db := range app.DBConfig.TSEvents.DBs {
+		go func() {
+			err := dal.NewTSEvent(db).DeleteByDayInterval(nil, app.GeneralConfig.Events.DataRetention)
+			if err != nil {
+				logrus.WithFields(logrus.Fields{
+					"Method":        "TSEvent.DeleteByDayInterval",
+					"DataRetention": app.GeneralConfig.Events.DataRetention,
+				}).Error(err)
+			}
+		}()
+	}
+}
+
+func (app *Application) PruneTSExecutorLogsOnce() {
+	for _, db := range app.DBConfig.TSExecutorLogs.DBs {
+		go func() {
+			err := dal.NewTSExecutorLog(db).DeleteByDayInterval(nil, app.GeneralConfig.ExecutorLogs.DataRetention)
+			if err != nil {
+				logrus.WithFields(logrus.Fields{
+					"Method":        "TSExecutorLog.DeleteByDayInterval",
+					"DataRetention": app.GeneralConfig.ExecutorLogs.DataRetention,
+				}).Error(err)
+			}
+		}()
+	}
+}
+
+func (app *Application) PruneTSLogsOnce() {
+	for _, db := range app.DBConfig.TSLogs.DBs {
+		go func() {
+			err := dal.NewTSLog(db).DeleteByDayInterval(nil, app.GeneralConfig.Logs.DataRetention)
+			if err != nil {
+				logrus.WithFields(logrus.Fields{
+					"Method":        "TSLog.DeleteByDayInterval",
+					"DataRetention": app.GeneralConfig.Logs.DataRetention,
 				}).Error(err)
 			}
 		}()

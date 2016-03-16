@@ -37,7 +37,7 @@ type TSLogRow struct {
 }
 
 type TSLog struct {
-	Base
+	TSBase
 }
 
 func (ts *TSLog) CreateFromJSON(tx *sqlx.Tx, clusterID int64, jsonData []byte) error {

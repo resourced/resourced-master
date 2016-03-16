@@ -1,7 +1,6 @@
 package dal
 
 import (
-	"errors"
 	"fmt"
 	"time"
 
@@ -43,7 +42,7 @@ type TSMetricRow struct {
 }
 
 type TSMetric struct {
-	Base
+	TSBase
 }
 
 func (ts *TSMetric) metricRowsForHighchart(tx *sqlx.Tx, host string, tsMetricRows []*TSMetricRow) (*TSMetricHighchartPayload, error) {
@@ -332,29 +331,4 @@ func (ts *TSMetric) AllByMetricIDAndIntervalForHighchart(tx *sqlx.Tx, clusterID,
 	}
 
 	return highChartPayloads, nil
-}
-
-// DeleteByDayInterval deletes all record older than x days ago.
-func (ts *TSMetric) DeleteByDayInterval(tx *sqlx.Tx, dayInterval int) error {
-	if ts.table == "" {
-		return errors.New("Table must not be empty.")
-	}
-
-	tx, wrapInSingleTransaction, err := ts.newTransactionIfNeeded(tx)
-	if tx == nil {
-		return errors.New("Transaction struct must not be empty.")
-	}
-	if err != nil {
-		return err
-	}
-
-	query := fmt.Sprintf("DELETE FROM %v WHERE created < (NOW() at time zone 'utc' - INTERVAL '%v day')", ts.table, dayInterval)
-
-	_, err = tx.Exec(query)
-
-	if wrapInSingleTransaction == true {
-		err = tx.Commit()
-	}
-
-	return err
 }
