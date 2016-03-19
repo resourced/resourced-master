@@ -120,8 +120,8 @@ $('#search-input').bind("input propertychange", function(e) {
                 <h3>{{ $host.Name }}</h3>
             </div>
 
-            {{ range $tag := $host.StringTags }}
-            <span class="label label-primary">{{ $tag }}</span>
+            {{ range $tagKey, $tagValue := $host.GetTags }}
+            <a class="label label-primary" href="/?q=tags.{{ $tagKey }} %3D {{ $tagValue }}">{{ $tagKey }} : {{ $tagValue }}</a>
             {{ end }}
 
             <div class="details" style="display: none">

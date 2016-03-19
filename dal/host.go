@@ -49,17 +49,11 @@ type HostRow struct {
 	Data          sqlx_types.JSONText `db:"data"`
 }
 
-func (h *HostRow) StringTags() []string {
+func (h *HostRow) GetTags() map[string]string {
 	tags := make(map[string]string)
 	h.Tags.Unmarshal(&tags)
 
-	tagsSlice := make([]string, 0)
-
-	for key, value := range tags {
-		tagsSlice = append(tagsSlice, key+" : "+value)
-	}
-
-	return tagsSlice
+	return tags
 }
 
 func (h *HostRow) DataAsFlatKeyValue() map[string]map[string]interface{} {
