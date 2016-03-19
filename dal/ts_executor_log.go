@@ -36,7 +36,7 @@ func (ts *TSExecutorLog) CreateFromJSON(tx *sqlx.Tx, clusterID int64, jsonData [
 		return err
 	}
 
-	return ts.Create(tx, clusterID, payload.Host.Name, payload.Host.Tags, payload.LogLines)
+	return ts.Create(tx, clusterID, payload.Host.Name, payload.Host.Tags, payload.Data.LogLines)
 }
 
 // Create a new record.
