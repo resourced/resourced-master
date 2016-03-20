@@ -3,8 +3,9 @@ package querybuilder
 
 import (
 	"fmt"
-	"github.com/resourced/resourced-master/libstring"
 	"strings"
+
+	"github.com/resourced/resourced-master/libstring"
 )
 
 // Parse parses ResourceD query and turns it into postgres query.

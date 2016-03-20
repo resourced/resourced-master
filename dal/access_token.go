@@ -3,7 +3,9 @@ package dal
 import (
 	"database/sql"
 	"fmt"
+
 	"github.com/jmoiron/sqlx"
+
 	"github.com/resourced/resourced-master/libstring"
 )
 

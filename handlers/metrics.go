@@ -3,11 +3,12 @@ package handlers
 import (
 	"encoding/json"
 	"errors"
+	"net/http"
+	"strconv"
+
 	"github.com/gorilla/context"
 	"github.com/gorilla/mux"
 	"github.com/jmoiron/sqlx"
-	"net/http"
-	"strconv"
 
 	"github.com/resourced/resourced-master/dal"
 	"github.com/resourced/resourced-master/libhttp"

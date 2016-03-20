@@ -6,9 +6,10 @@ import (
 	"crypto/rand"
 	"encoding/base64"
 	"encoding/json"
-	"github.com/mitchellh/go-homedir"
 	"os"
 	"strings"
+
+	"github.com/mitchellh/go-homedir"
 )
 
 // ExpandTilde is a convenience function that expands ~ to full path.

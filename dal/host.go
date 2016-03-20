@@ -10,6 +10,7 @@ import (
 	"github.com/jmoiron/sqlx"
 	sqlx_types "github.com/jmoiron/sqlx/types"
 	"github.com/nytlabs/gojsonexplode"
+
 	"github.com/resourced/resourced-master/querybuilder"
 )
 

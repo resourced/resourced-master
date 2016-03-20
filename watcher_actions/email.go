@@ -1,8 +1,9 @@
 package watcher_actions
 
 import (
-	"github.com/resourced/resourced-master/dal"
 	"gopkg.in/gomail.v2"
+
+	"github.com/resourced/resourced-master/dal"
 )
 
 type Email struct {

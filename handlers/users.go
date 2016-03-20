@@ -11,6 +11,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/gorilla/sessions"
 	"github.com/jmoiron/sqlx"
+
 	"github.com/resourced/resourced-master/dal"
 	"github.com/resourced/resourced-master/libhttp"
 	"github.com/resourced/resourced-master/mailer"

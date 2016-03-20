@@ -9,6 +9,7 @@ import (
 	"github.com/gorilla/context"
 	"github.com/gorilla/sessions"
 	"github.com/jmoiron/sqlx"
+
 	"github.com/resourced/resourced-master/config"
 	"github.com/resourced/resourced-master/dal"
 	"github.com/resourced/resourced-master/libhttp"

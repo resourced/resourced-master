@@ -16,6 +16,7 @@ import (
 	"github.com/justinas/alice"
 	_ "github.com/lib/pq"
 	"github.com/marcw/pagerduty"
+
 	"github.com/resourced/resourced-master/config"
 	"github.com/resourced/resourced-master/dal"
 	"github.com/resourced/resourced-master/handlers"

@@ -7,6 +7,7 @@ import (
 
 	"github.com/gorilla/context"
 	"github.com/jmoiron/sqlx"
+
 	"github.com/resourced/resourced-master/dal"
 	"github.com/resourced/resourced-master/libhttp"
 )

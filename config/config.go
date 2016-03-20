@@ -7,6 +7,7 @@ import (
 
 	"github.com/BurntSushi/toml"
 	"github.com/jmoiron/sqlx"
+
 	"github.com/resourced/resourced-master/multidb"
 	"github.com/resourced/resourced/libstring"
 )
