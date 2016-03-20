@@ -1,0 +1,72 @@
+{{define "second-navbar"}}
+<nav class="navbar navbar-default">
+    <div class="container">
+        <div class="form-group form-group-search-and-save">
+            <form class="navbar-form navbar-left search-form" role="search" action="/">
+                <input type="hidden" name="gorilla.csrf.Token" value="{{ $.CSRFToken }}">
+                <div class="input-group">
+                    <input id="search-input" name="q" type="text" class="form-control" placeholder="Press enter to search">
+                </div>
+            </form>
+
+            <form class="navbar-form navbar-left saved-queries-form" action="/saved-queries" method="post">
+                <input type="hidden" name="gorilla.csrf.Token" value="{{ $.CSRFToken }}">
+                <input id="saved-queries-input" name="SavedQuery" type="hidden">
+
+                <div class="input-group">
+                    <span class="input-group-btn">
+                        <button type="submit" class="btn btn-primary">Save Query</button>
+                    </span>
+                </div>
+            </form>
+        </div>
+    </div>
+</nav>
+
+<script>
+$(window).load(function() {
+    var key = "q";
+    var value = "";
+    var sPageURL = window.location.search.substring(1);
+    var sURLVariables = sPageURL.split('&');
+
+    for (var i = 0; i < sURLVariables.length; i++) {
+        var sParameterName = sURLVariables[i].split('=');
+        if (sParameterName[0] == key) {
+            value = sParameterName[1];
+        }
+    }
+
+    value = value.replace(/\+/g, " ");
+
+    if(value != "") {
+        $('[name="q"]').val(decodeURIComponent(value));
+    }
+
+    // On load, cp search input to saved-queries input.
+    $('#saved-queries-input').val($('#search-input').val());
+});
+
+// This catches keyup, onchange, and paste events.
+// cp search input to saved-queries input
+$('#search-input').bind("input propertychange", function(e) {
+    $('#saved-queries-input').val($(this).val());
+});
+</script>
+{{ end }}
+
+{{define "content"}}
+<!-- Logs -->
+<div class="container logs">
+    <div class="row">
+        <div class="col-lg-12">
+            <div class="page-header">
+                <h2>Logs</h2>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+</script>
+{{end}}

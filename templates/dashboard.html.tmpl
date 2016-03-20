@@ -63,6 +63,7 @@
 
                 <li class="nav-hosts"><a href="/">Hosts</a></li>
                 <li class="nav-graphs"><a href="/graphs">Graphs</a></li>
+                <li class="nav-logs"><a href="/logs">Logs</a></li>
                 <li class="nav-watchers"><a href="/watchers">Watchers</a></li>
             </ul>
             {{ end }}
@@ -170,6 +171,8 @@
             $('.nav-hosts').addClass('active');
         } else if(path.indexOf('/graphs') > -1) {
             $('.nav-graphs').addClass('active');
+        } else if(path.indexOf('/logs') > -1) {
+            $('.nav-logs').addClass('active');
         } else if(path.indexOf('/watchers') > -1) {
             $('.nav-watchers').addClass('active');
         } else if(path == '/metadata') {

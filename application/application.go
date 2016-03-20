@@ -118,6 +118,8 @@ func (app *Application) mux() *mux.Router {
 	router.Handle("/graphs", alice.New(CSRF, MustLogin, SetClusters).ThenFunc(handlers.PostGraphs)).Methods("POST")
 	router.Handle("/graphs/{id:[0-9]+}", alice.New(CSRF, MustLogin, SetClusters).ThenFunc(handlers.GetPostPutDeleteGraphsID)).Methods("GET", "POST", "PUT", "DELETE")
 
+	router.Handle("/logs", alice.New(CSRF, MustLogin, SetClusters).ThenFunc(handlers.GetLogs)).Methods("GET")
+
 	router.Handle("/watchers", alice.New(CSRF, MustLogin, SetClusters).ThenFunc(handlers.GetWatchers)).Methods("GET")
 	router.Handle("/watchers", alice.New(CSRF, MustLogin, SetClusters).ThenFunc(handlers.PostWatchers)).Methods("POST")
 	router.Handle("/watchers/{id:[0-9]+}", alice.New(CSRF, MustLogin, SetClusters).ThenFunc(handlers.PostPutDeleteWatcherID)).Methods("POST", "PUT", "DELETE")
