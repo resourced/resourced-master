@@ -51,7 +51,7 @@
                                     <td>
                                         <form method="post" action="/access-tokens/{{ $accessToken.ID }}/level">
                                             <input type="hidden" name="gorilla.csrf.Token" value="{{ $.CSRFToken }}">
-                                            <select name="Level" onchange="$(this).closest('form').submit();">
+                                            <select name="Level" onchange="$(this).closest('form').submit();" style="color: #000">
                                                 <option value="read" {{if eq $accessToken.Level "read"}} selected {{end}}>Read</option>
                                                 <option value="write" {{if eq $accessToken.Level "write"}} selected {{end}}>Write</option>
                                                 <option value="execute" {{if eq $accessToken.Level "execute"}} selected {{end}}>Execute</option>

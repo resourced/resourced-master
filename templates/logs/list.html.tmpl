@@ -60,11 +60,201 @@ $('#search-input').bind("input propertychange", function(e) {
 <div class="container logs">
     <div class="row">
         <div class="col-lg-12">
-            <div class="page-header">
-                <h2>Logs</h2>
+            <div class="page-header" style="padding-bottom: 0">
+                <ul class="nav nav-tabs">
+                    <li role="presentation" class="active"><a href="/logs">Logs</a></li>
+                    <li role="presentation"><a href="/logs/executors">Executor Logs</a></li>
+                </ul>
             </div>
         </div>
     </div>
+
+    <div class="row" style="margin-bottom: 16px">
+        <div class="col-lg-12">
+            <div class="row">
+                <div class="col-lg-4 col-md-4">
+                    2016-03-16 05:04:31.345864
+                </div>
+                <div class="col-lg-4 col-md-4">
+                    didip-mac-mini.local
+                </div>
+                <div class="col-lg-4 col-md-4">
+
+                </div>
+            </div>
+
+            <div class="row" style="padding-bottom: 6px">
+                <div class="col-lg-12">
+                    <a href="/?q=tags.mysql %3D 5.6.24" class="label label-primary">mysql : 5.6.24</a>
+                    <a href="/?q=tags.os %3D OS%20X%20Yosemite" class="label label-primary">os : OS X Yosemite</a>
+                    <a href="/?q=tags.postgres %3D 9.4.2" class="label label-primary">postgres : 9.4.2</a>
+                    <a href="/?q=tags.redis %3D 3.0.1" class="label label-primary">redis : 3.0.1</a>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-lg-12" style="font-size: 11px">
+                    INFO[10319] Insert Query                                  Method=Base.InsertIntoTable Query=INSERT INTO ts_metrics (metric_id,key,host,value,cluster_id) VALUES (,,,,)+
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row" style="margin-bottom: 16px">
+        <div class="col-lg-12">
+            <div class="row">
+                <div class="col-lg-4 col-md-4">
+                    2016-03-19 05:48:12.081998
+                </div>
+                <div class="col-lg-4 col-md-4">
+                    didip-mac-mini.local
+                </div>
+                <div class="col-lg-4 col-md-4">
+                    /private/var/log/system.log
+                </div>
+            </div>
+
+            <div class="row" style="padding-bottom: 6px">
+                <div class="col-lg-12">
+                    <a href="/?q=tags.mysql %3D 5.6.24" class="label label-primary">mysql : 5.6.24</a>
+                    <a href="/?q=tags.os %3D OS%20X%20Yosemite" class="label label-primary">os : OS X Yosemite</a>
+                    <a href="/?q=tags.postgres %3D 9.4.2" class="label label-primary">postgres : 9.4.2</a>
+                    <a href="/?q=tags.redis %3D 3.0.1" class="label label-primary">redis : 3.0.1</a>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-lg-12" style="font-size: 11px">
+                    Mar 18 01:20:42 didip-mac-mini com.apple.xpc.launchd[1] (com.mysql.mysqld.plist[20895]): Service could not initialize: Unable to set current working directory. error = 2: No such file or directory, path = /usr/local/mysql: 15D21: xpcproxy + 12028 [1353][13E77DA5-3602-31BF-B074-49D4EE27E9D8]: 0x2
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row" style="margin-bottom: 16px">
+        <div class="col-lg-12">
+            <div class="row">
+                <div class="col-lg-4 col-md-4">
+                    2016-03-19 05:48:12.081998
+                </div>
+                <div class="col-lg-4 col-md-4">
+                    didip-mac-mini.local
+                </div>
+                <div class="col-lg-4 col-md-4">
+                    /private/var/log/system.log
+                </div>
+            </div>
+
+            <div class="row" style="padding-bottom: 6px">
+                <div class="col-lg-12">
+                    <a href="/?q=tags.mysql %3D 5.6.24" class="label label-primary">mysql : 5.6.24</a>
+                    <a href="/?q=tags.os %3D OS%20X%20Yosemite" class="label label-primary">os : OS X Yosemite</a>
+                    <a href="/?q=tags.postgres %3D 9.4.2" class="label label-primary">postgres : 9.4.2</a>
+                    <a href="/?q=tags.redis %3D 3.0.1" class="label label-primary">redis : 3.0.1</a>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-lg-12" style="font-size: 11px">
+                    Mar 18 01:20:42 didip-mac-mini com.apple.xpc.launchd[1] (com.mysql.mysqld.plist[20895]): Service could not initialize: Unable to set current working directory. error = 2: No such file or directory, path = /usr/local/mysql: 15D21: xpcproxy + 12028 [1353][13E77DA5-3602-31BF-B074-49D4EE27E9D8]: 0x2
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row" style="margin-bottom: 16px">
+        <div class="col-lg-12">
+            <div class="row">
+                <div class="col-lg-4 col-md-4">
+                    2016-03-19 05:48:12.081998
+                </div>
+                <div class="col-lg-4 col-md-4">
+                    didip-mac-mini.local
+                </div>
+                <div class="col-lg-4 col-md-4">
+                    /private/var/log/system.log
+                </div>
+            </div>
+
+            <div class="row" style="padding-bottom: 6px">
+                <div class="col-lg-12">
+                    <a href="/?q=tags.mysql %3D 5.6.24" class="label label-primary">mysql : 5.6.24</a>
+                    <a href="/?q=tags.os %3D OS%20X%20Yosemite" class="label label-primary">os : OS X Yosemite</a>
+                    <a href="/?q=tags.postgres %3D 9.4.2" class="label label-primary">postgres : 9.4.2</a>
+                    <a href="/?q=tags.redis %3D 3.0.1" class="label label-primary">redis : 3.0.1</a>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-lg-12" style="font-size: 11px">
+                    Mar 18 01:20:42 didip-mac-mini com.apple.xpc.launchd[1] (com.mysql.mysqld.plist[20895]): Service could not initialize: Unable to set current working directory. error = 2: No such file or directory, path = /usr/local/mysql: 15D21: xpcproxy + 12028 [1353][13E77DA5-3602-31BF-B074-49D4EE27E9D8]: 0x2
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row" style="margin-bottom: 16px">
+        <div class="col-lg-12">
+            <div class="row">
+                <div class="col-lg-4 col-md-4">
+                    2016-03-19 05:48:12.081998
+                </div>
+                <div class="col-lg-4 col-md-4">
+                    didip-mac-mini.local
+                </div>
+                <div class="col-lg-4 col-md-4">
+                    /private/var/log/system.log
+                </div>
+            </div>
+
+            <div class="row" style="padding-bottom: 6px">
+                <div class="col-lg-12">
+                    <a href="/?q=tags.mysql %3D 5.6.24" class="label label-primary">mysql : 5.6.24</a>
+                    <a href="/?q=tags.os %3D OS%20X%20Yosemite" class="label label-primary">os : OS X Yosemite</a>
+                    <a href="/?q=tags.postgres %3D 9.4.2" class="label label-primary">postgres : 9.4.2</a>
+                    <a href="/?q=tags.redis %3D 3.0.1" class="label label-primary">redis : 3.0.1</a>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-lg-12" style="font-size: 11px">
+                    Mar 18 01:20:42 didip-mac-mini com.apple.xpc.launchd[1] (com.mysql.mysqld.plist[20895]): Service could not initialize: Unable to set current working directory. error = 2: No such file or directory, path = /usr/local/mysql: 15D21: xpcproxy + 12028 [1353][13E77DA5-3602-31BF-B074-49D4EE27E9D8]: 0x2
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row" style="margin-bottom: 16px">
+        <div class="col-lg-12">
+            <div class="row">
+                <div class="col-lg-4 col-md-4">
+                    2016-03-19 05:48:12.081998
+                </div>
+                <div class="col-lg-4 col-md-4">
+                    didip-mac-mini.local
+                </div>
+                <div class="col-lg-4 col-md-4">
+                    /private/var/log/system.log
+                </div>
+            </div>
+
+            <div class="row" style="padding-bottom: 6px">
+                <div class="col-lg-12">
+                    <a href="/?q=tags.mysql %3D 5.6.24" class="label label-primary">mysql : 5.6.24</a>
+                    <a href="/?q=tags.os %3D OS%20X%20Yosemite" class="label label-primary">os : OS X Yosemite</a>
+                    <a href="/?q=tags.postgres %3D 9.4.2" class="label label-primary">postgres : 9.4.2</a>
+                    <a href="/?q=tags.redis %3D 3.0.1" class="label label-primary">redis : 3.0.1</a>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-lg-12" style="font-size: 11px">
+                    Mar 18 01:20:42 didip-mac-mini com.apple.xpc.launchd[1] (com.mysql.mysqld.plist[20895]): Service could not initialize: Unable to set current working directory. error = 2: No such file or directory, path = /usr/local/mysql: 15D21: xpcproxy + 12028 [1353][13E77DA5-3602-31BF-B074-49D4EE27E9D8]: 0x2
+                </div>
+            </div>
+        </div>
+    </div>
+
 </div>
 
 <script>
