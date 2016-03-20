@@ -208,32 +208,8 @@ func (ts *TSMetric) AllByMetricIDHostAndRange(tx *sqlx.Tx, clusterID, metricID i
 	return rows, err
 }
 
-func (ts *TSMetric) AllByMetricIDHostAndInterval(tx *sqlx.Tx, clusterID, metricID int64, host string, interval string) ([]*TSMetricRow, error) {
-	if interval == "" {
-		interval = "1 hour"
-	}
-
-	rows := []*TSMetricRow{}
-	query := fmt.Sprintf("SELECT * FROM %v WHERE cluster_id=$1 AND metric_id=$2 AND host=$3 AND created >= (NOW() at time zone 'utc' - INTERVAL '%v') ORDER BY cluster_id,metric_id,created ASC", ts.table, interval)
-	err := ts.db.Select(&rows, query, clusterID, metricID, host)
-
-	if err != nil {
-		err = fmt.Errorf("%v. Query: %v", err.Error(), query)
-	}
-	return rows, err
-}
-
 func (ts *TSMetric) AllByMetricIDHostAndRangeForHighchart(tx *sqlx.Tx, clusterID, metricID int64, host string, from, to int64) (*TSMetricHighchartPayload, error) {
 	tsMetricRows, err := ts.AllByMetricIDHostAndRange(tx, clusterID, metricID, host, from, to)
-	if err != nil {
-		return nil, err
-	}
-
-	return ts.metricRowsForHighchart(tx, host, tsMetricRows)
-}
-
-func (ts *TSMetric) AllByMetricIDHostAndIntervalForHighchart(tx *sqlx.Tx, clusterID, metricID int64, host string, interval string) (*TSMetricHighchartPayload, error) {
-	tsMetricRows, err := ts.AllByMetricIDHostAndInterval(tx, clusterID, metricID, host, interval)
 	if err != nil {
 		return nil, err
 	}

@@ -4,6 +4,7 @@ import (
 	"html/template"
 	"io/ioutil"
 	"net/http"
+	"strconv"
 
 	"github.com/gorilla/context"
 	"github.com/gorilla/csrf"
@@ -16,7 +17,37 @@ import (
 func GetLogs(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html")
 
+	qParams := r.URL.Query()
+
+	fromString := qParams.Get("From")
+	if fromString == "" {
+		fromString = qParams.Get("from")
+	}
+	from, err := strconv.ParseInt(fromString, 10, 64)
+	if err != nil {
+		from = -1
+	}
+
+	toString := qParams.Get("To")
+	if toString == "" {
+		toString = qParams.Get("to")
+	}
+	to, err := strconv.ParseInt(toString, 10, 64)
+	if err != nil {
+		to = -1
+	}
+
 	currentUser := context.Get(r, "currentUser").(*dal.UserRow)
+
+	currentCluster := context.Get(r, "currentCluster").(*dal.ClusterRow)
+
+	tsLogsDB := context.Get(r, "multidb.TSLogs").(*multidb.MultiDB).PickRandom()
+
+	tsLogs, err := dal.NewTSLog(tsLogsDB).AllByRange(nil, currentCluster.ID, from, to)
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
 
 	data := struct {
 		CSRFToken          string
@@ -24,12 +55,14 @@ func GetLogs(w http.ResponseWriter, r *http.Request) {
 		CurrentUser        *dal.UserRow
 		Clusters           []*dal.ClusterRow
 		CurrentClusterJson string
+		Logs               []*dal.TSLogRow
 	}{
 		csrf.Token(r),
 		context.Get(r, "addr").(string),
 		currentUser,
 		context.Get(r, "clusters").([]*dal.ClusterRow),
 		string(context.Get(r, "currentClusterJson").([]byte)),
+		tsLogs,
 	}
 
 	tmpl, err := template.ParseFiles("templates/dashboard.html.tmpl", "templates/logs/list.html.tmpl")

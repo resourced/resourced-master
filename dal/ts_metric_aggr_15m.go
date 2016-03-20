@@ -154,18 +154,6 @@ func (ts *TSMetricAggr15m) AllByMetricIDHostAndRange(tx *sqlx.Tx, clusterID, met
 	return rows, err
 }
 
-func (ts *TSMetricAggr15m) AllByMetricIDHostAndInterval(tx *sqlx.Tx, clusterID, metricID int64, host, interval string) ([]*TSMetricAggr15mRow, error) {
-	if interval == "" {
-		interval = "1 hour"
-	}
-
-	rows := []*TSMetricAggr15mRow{}
-	query := fmt.Sprintf("SELECT * FROM %v WHERE cluster_id=$1 AND metric_id=$2 AND host=$3 AND created >= (NOW() at time zone 'utc' - INTERVAL '%v') AND host <> '' ORDER BY cluster_id,metric_id,created ASC", ts.table, interval)
-	err := ts.db.Select(&rows, query, clusterID, metricID, host)
-
-	return rows, err
-}
-
 func (ts *TSMetricAggr15m) AllByMetricIDAndRange(tx *sqlx.Tx, clusterID, metricID, from, to int64) ([]*TSMetricAggr15mRow, error) {
 	rows := []*TSMetricAggr15mRow{}
 	query := fmt.Sprintf("SELECT * FROM %v WHERE cluster_id=$1 AND metric_id=$2 AND created >= to_timestamp($3) at time zone 'utc' AND created <= to_timestamp($4) at time zone 'utc' AND host <> '' ORDER BY cluster_id,metric_id,created ASC", ts.table)
@@ -216,15 +204,6 @@ func (ts *TSMetricAggr15m) TransformForHighchart(tx *sqlx.Tx, tsMetricRows []*TS
 
 func (ts *TSMetricAggr15m) AllByMetricIDHostAndRangeForHighchart(tx *sqlx.Tx, clusterID, metricID int64, host string, from, to int64) ([]*TSMetricHighchartPayload, error) {
 	tsMetricRows, err := ts.AllByMetricIDHostAndRange(tx, clusterID, metricID, host, from, to)
-	if err != nil {
-		return nil, err
-	}
-
-	return ts.TransformForHighchart(tx, tsMetricRows)
-}
-
-func (ts *TSMetricAggr15m) AllByMetricIDHostAndIntervalForHighchart(tx *sqlx.Tx, clusterID, metricID int64, host, interval string) ([]*TSMetricHighchartPayload, error) {
-	tsMetricRows, err := ts.AllByMetricIDHostAndInterval(tx, clusterID, metricID, host, interval)
 	if err != nil {
 		return nil, err
 	}

@@ -1,9 +1,10 @@
 package dal
 
 import (
-	_ "github.com/lib/pq"
 	"testing"
 	"time"
+
+	_ "github.com/lib/pq"
 )
 
 func newTSMetricForTest(t *testing.T) *TSMetric {

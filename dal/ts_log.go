@@ -38,6 +38,13 @@ type TSLogRow struct {
 	Logline   string              `db:"logline"`
 }
 
+func (tsr *TSLogRow) GetTags() map[string]string {
+	tags := make(map[string]string)
+	tsr.Tags.Unmarshal(&tags)
+
+	return tags
+}
+
 type TSLog struct {
 	TSBase
 }
@@ -96,4 +103,24 @@ func (ts *TSLog) Create(tx *sqlx.Tx, clusterID int64, hostname string, tags map[
 		logrus.WithFields(logFields).Info("Insert Query")
 	}
 	return tx.Commit()
+}
+
+// AllByRange returns all logs withing time range.
+func (ts *TSLog) AllByRange(tx *sqlx.Tx, clusterID int64, from, to int64) ([]*TSLogRow, error) {
+	// Default is 1 hour range
+	if to == -1 {
+		to = time.Now().UTC().Unix()
+	}
+	if from == -1 {
+		from = to - 3600
+	}
+
+	rows := []*TSLogRow{}
+	query := fmt.Sprintf("SELECT * FROM %v WHERE cluster_id=$1 AND created >= to_timestamp($2) at time zone 'utc' AND created <= to_timestamp($3) at time zone 'utc' ORDER BY created DESC", ts.table)
+	err := ts.db.Select(&rows, query, clusterID, from, to)
+
+	if err != nil {
+		err = fmt.Errorf("%v. Query: %v", err.Error(), query)
+	}
+	return rows, err
 }

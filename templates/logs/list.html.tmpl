@@ -69,36 +69,37 @@ $('#search-input').bind("input propertychange", function(e) {
         </div>
     </div>
 
+    {{ range $log := .Logs }}
     <div class="row" style="margin-bottom: 16px">
         <div class="col-lg-12">
             <div class="row">
                 <div class="col-lg-4 col-md-4">
-                    2016-03-16 05:04:31.345864
+                    {{ $log.Created }}
                 </div>
                 <div class="col-lg-4 col-md-4">
-                    didip-mac-mini.local
+                    {{ $log.Hostname }}
                 </div>
                 <div class="col-lg-4 col-md-4">
-
+                    {{ $log.Filename }}
                 </div>
             </div>
 
             <div class="row" style="padding-bottom: 6px">
                 <div class="col-lg-12">
-                    <a href="/?q=tags.mysql %3D 5.6.24" class="label label-primary">mysql : 5.6.24</a>
-                    <a href="/?q=tags.os %3D OS%20X%20Yosemite" class="label label-primary">os : OS X Yosemite</a>
-                    <a href="/?q=tags.postgres %3D 9.4.2" class="label label-primary">postgres : 9.4.2</a>
-                    <a href="/?q=tags.redis %3D 3.0.1" class="label label-primary">redis : 3.0.1</a>
+                    {{ range $tagKey, $tagValue := $log.GetTags }}
+                    <a class="label label-primary" href="/?q=tags.{{ $tagKey }} %3D {{ $tagValue }}">{{ $tagKey }} : {{ $tagValue }}</a>
+                    {{ end }}
                 </div>
             </div>
 
             <div class="row">
                 <div class="col-lg-12" style="font-size: 11px">
-                    INFO[10319] Insert Query                                  Method=Base.InsertIntoTable Query=INSERT INTO ts_metrics (metric_id,key,host,value,cluster_id) VALUES (,,,,)+
+                    {{ $log.Logline }}
                 </div>
             </div>
         </div>
     </div>
+    {{ end }}
 
     <div class="row" style="margin-bottom: 16px">
         <div class="col-lg-12">
