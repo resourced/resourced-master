@@ -63,6 +63,21 @@ $('#search-input').bind("input propertychange", function(e) {
             <div class="page-header" style="padding-bottom: 0">
                 <div class="btn-group btn-group-sm pull-right" role="group" style="margin-top: 4px">
                     <a type="button" class="btn btn-primary btn-pagination-prev" href=""><span aria-hidden="true" class="glyphicon glyphicon-arrow-left"></span></a>
+
+                    <div class="btn-group btn-group-sm" role="group">
+                        <button type="button" class="btn btn-primary dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                            <span class="pagination-range-display">15 Minutes</span>&nbsp;<span class="caret"></span>
+                        </button>
+                        <ul class="dropdown-menu">
+                            <li><a class="pagination-range" href="javascript:void(0)" data-seconds="900">15 Minutes</a></li>
+                            <li><a class="pagination-range" href="javascript:void(0)" data-seconds="1800">30 Minutes</a></li>
+                            <li><a class="pagination-range" href="javascript:void(0)" data-seconds="3600">60 minutes</a></li>
+                            <li><a class="pagination-range" href="javascript:void(0)" data-seconds="7200">2 hours</a></li>
+                            <li><a class="pagination-range" href="javascript:void(0)" data-seconds="10800">3 hours</a></li>
+                            <li><a class="pagination-range" href="javascript:void(0)" data-seconds="14400">4 hours</a></li>
+                        </ul>
+                    </div>
+
                     <a type="button" class="btn btn-primary btn-pagination-next" href=""><span aria-hidden="true" class="glyphicon glyphicon-arrow-right"></span></a>
                 </div>
 
@@ -92,7 +107,7 @@ $('#search-input').bind("input propertychange", function(e) {
             <div class="row" style="padding-bottom: 6px">
                 <div class="col-lg-12">
                     {{ range $tagKey, $tagValue := $log.GetTags }}
-                    <a class="label label-primary" href="/?q=tags.{{ $tagKey }} %3D {{ $tagValue }}">{{ $tagKey }} : {{ $tagValue }}</a>
+                    <a class="label label-default" href="/?q=tags.{{ $tagKey }} %3D {{ $tagValue }}">{{ $tagKey }} : {{ $tagValue }}</a>
                     {{ end }}
                 </div>
             </div>
@@ -106,166 +121,26 @@ $('#search-input').bind("input propertychange", function(e) {
     </div>
     {{ end }}
 
-    <div class="row" style="margin-bottom: 16px">
-        <div class="col-lg-12">
-            <div class="row">
-                <div class="col-lg-4 col-md-4">
-                    2016-03-19 05:48:12.081998
-                </div>
-                <div class="col-lg-4 col-md-4">
-                    didip-mac-mini.local
-                </div>
-                <div class="col-lg-4 col-md-4">
-                    /private/var/log/system.log
-                </div>
-            </div>
-
-            <div class="row" style="padding-bottom: 6px">
-                <div class="col-lg-12">
-                    <a href="/?q=tags.mysql %3D 5.6.24" class="label label-primary">mysql : 5.6.24</a>
-                    <a href="/?q=tags.os %3D OS%20X%20Yosemite" class="label label-primary">os : OS X Yosemite</a>
-                    <a href="/?q=tags.postgres %3D 9.4.2" class="label label-primary">postgres : 9.4.2</a>
-                    <a href="/?q=tags.redis %3D 3.0.1" class="label label-primary">redis : 3.0.1</a>
-                </div>
-            </div>
-
-            <div class="row">
-                <div class="col-lg-12" style="font-size: 11px">
-                    Mar 18 01:20:42 didip-mac-mini com.apple.xpc.launchd[1] (com.mysql.mysqld.plist[20895]): Service could not initialize: Unable to set current working directory. error = 2: No such file or directory, path = /usr/local/mysql: 15D21: xpcproxy + 12028 [1353][13E77DA5-3602-31BF-B074-49D4EE27E9D8]: 0x2
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="row" style="margin-bottom: 16px">
-        <div class="col-lg-12">
-            <div class="row">
-                <div class="col-lg-4 col-md-4">
-                    2016-03-19 05:48:12.081998
-                </div>
-                <div class="col-lg-4 col-md-4">
-                    didip-mac-mini.local
-                </div>
-                <div class="col-lg-4 col-md-4">
-                    /private/var/log/system.log
-                </div>
-            </div>
-
-            <div class="row" style="padding-bottom: 6px">
-                <div class="col-lg-12">
-                    <a href="/?q=tags.mysql %3D 5.6.24" class="label label-primary">mysql : 5.6.24</a>
-                    <a href="/?q=tags.os %3D OS%20X%20Yosemite" class="label label-primary">os : OS X Yosemite</a>
-                    <a href="/?q=tags.postgres %3D 9.4.2" class="label label-primary">postgres : 9.4.2</a>
-                    <a href="/?q=tags.redis %3D 3.0.1" class="label label-primary">redis : 3.0.1</a>
-                </div>
-            </div>
-
-            <div class="row">
-                <div class="col-lg-12" style="font-size: 11px">
-                    Mar 18 01:20:42 didip-mac-mini com.apple.xpc.launchd[1] (com.mysql.mysqld.plist[20895]): Service could not initialize: Unable to set current working directory. error = 2: No such file or directory, path = /usr/local/mysql: 15D21: xpcproxy + 12028 [1353][13E77DA5-3602-31BF-B074-49D4EE27E9D8]: 0x2
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="row" style="margin-bottom: 16px">
-        <div class="col-lg-12">
-            <div class="row">
-                <div class="col-lg-4 col-md-4">
-                    2016-03-19 05:48:12.081998
-                </div>
-                <div class="col-lg-4 col-md-4">
-                    didip-mac-mini.local
-                </div>
-                <div class="col-lg-4 col-md-4">
-                    /private/var/log/system.log
-                </div>
-            </div>
-
-            <div class="row" style="padding-bottom: 6px">
-                <div class="col-lg-12">
-                    <a href="/?q=tags.mysql %3D 5.6.24" class="label label-primary">mysql : 5.6.24</a>
-                    <a href="/?q=tags.os %3D OS%20X%20Yosemite" class="label label-primary">os : OS X Yosemite</a>
-                    <a href="/?q=tags.postgres %3D 9.4.2" class="label label-primary">postgres : 9.4.2</a>
-                    <a href="/?q=tags.redis %3D 3.0.1" class="label label-primary">redis : 3.0.1</a>
-                </div>
-            </div>
-
-            <div class="row">
-                <div class="col-lg-12" style="font-size: 11px">
-                    Mar 18 01:20:42 didip-mac-mini com.apple.xpc.launchd[1] (com.mysql.mysqld.plist[20895]): Service could not initialize: Unable to set current working directory. error = 2: No such file or directory, path = /usr/local/mysql: 15D21: xpcproxy + 12028 [1353][13E77DA5-3602-31BF-B074-49D4EE27E9D8]: 0x2
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="row" style="margin-bottom: 16px">
-        <div class="col-lg-12">
-            <div class="row">
-                <div class="col-lg-4 col-md-4">
-                    2016-03-19 05:48:12.081998
-                </div>
-                <div class="col-lg-4 col-md-4">
-                    didip-mac-mini.local
-                </div>
-                <div class="col-lg-4 col-md-4">
-                    /private/var/log/system.log
-                </div>
-            </div>
-
-            <div class="row" style="padding-bottom: 6px">
-                <div class="col-lg-12">
-                    <a href="/?q=tags.mysql %3D 5.6.24" class="label label-primary">mysql : 5.6.24</a>
-                    <a href="/?q=tags.os %3D OS%20X%20Yosemite" class="label label-primary">os : OS X Yosemite</a>
-                    <a href="/?q=tags.postgres %3D 9.4.2" class="label label-primary">postgres : 9.4.2</a>
-                    <a href="/?q=tags.redis %3D 3.0.1" class="label label-primary">redis : 3.0.1</a>
-                </div>
-            </div>
-
-            <div class="row">
-                <div class="col-lg-12" style="font-size: 11px">
-                    Mar 18 01:20:42 didip-mac-mini com.apple.xpc.launchd[1] (com.mysql.mysqld.plist[20895]): Service could not initialize: Unable to set current working directory. error = 2: No such file or directory, path = /usr/local/mysql: 15D21: xpcproxy + 12028 [1353][13E77DA5-3602-31BF-B074-49D4EE27E9D8]: 0x2
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="row" style="margin-bottom: 16px">
-        <div class="col-lg-12">
-            <div class="row">
-                <div class="col-lg-4 col-md-4">
-                    2016-03-19 05:48:12.081998
-                </div>
-                <div class="col-lg-4 col-md-4">
-                    didip-mac-mini.local
-                </div>
-                <div class="col-lg-4 col-md-4">
-                    /private/var/log/system.log
-                </div>
-            </div>
-
-            <div class="row" style="padding-bottom: 6px">
-                <div class="col-lg-12">
-                    <a href="/?q=tags.mysql %3D 5.6.24" class="label label-primary">mysql : 5.6.24</a>
-                    <a href="/?q=tags.os %3D OS%20X%20Yosemite" class="label label-primary">os : OS X Yosemite</a>
-                    <a href="/?q=tags.postgres %3D 9.4.2" class="label label-primary">postgres : 9.4.2</a>
-                    <a href="/?q=tags.redis %3D 3.0.1" class="label label-primary">redis : 3.0.1</a>
-                </div>
-            </div>
-
-            <div class="row">
-                <div class="col-lg-12" style="font-size: 11px">
-                    Mar 18 01:20:42 didip-mac-mini com.apple.xpc.launchd[1] (com.mysql.mysqld.plist[20895]): Service could not initialize: Unable to set current working directory. error = 2: No such file or directory, path = /usr/local/mysql: 15D21: xpcproxy + 12028 [1353][13E77DA5-3602-31BF-B074-49D4EE27E9D8]: 0x2
-                </div>
-            </div>
-        </div>
-    </div>
-
     <div class="row">
         <div class="col-lg-12">
             <div style="padding-top: 8px; padding-bottom: 8px; margin-bottom: 16px; border-top: 1px solid #999">
                 <div class="btn-group btn-group-sm pull-right" role="group" style="margin-top: 3px">
                     <a type="button" class="btn btn-primary btn-pagination-prev" href=""><span aria-hidden="true" class="glyphicon glyphicon-arrow-left"></span></a>
+
+                    <div class="btn-group btn-group-sm" role="group">
+                        <button type="button" class="btn btn-primary dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                            <span class="pagination-range-display">15 Minutes</span>&nbsp;<span class="caret"></span>
+                        </button>
+                        <ul class="dropdown-menu">
+                            <li><a class="pagination-range" href="javascript:void(0)" data-seconds="900">15 Minutes</a></li>
+                            <li><a class="pagination-range" href="javascript:void(0)" data-seconds="1800">30 Minutes</a></li>
+                            <li><a class="pagination-range" href="javascript:void(0)" data-seconds="3600">60 minutes</a></li>
+                            <li><a class="pagination-range" href="javascript:void(0)" data-seconds="7200">2 hours</a></li>
+                            <li><a class="pagination-range" href="javascript:void(0)" data-seconds="10800">3 hours</a></li>
+                            <li><a class="pagination-range" href="javascript:void(0)" data-seconds="14400">4 hours</a></li>
+                        </ul>
+                    </div>
+
                     <a type="button" class="btn btn-primary btn-pagination-next" href=""><span aria-hidden="true" class="glyphicon glyphicon-arrow-right"></span></a>
                 </div>
 
@@ -277,5 +152,51 @@ $('#search-input').bind("input propertychange", function(e) {
 </div>
 
 <script>
+function setupPrevAndNextArrows(range, rangeText, from, to, _rev) {
+    var doc = {
+        _id: 'ResourcedMaster.logs.pagination',
+        from: from,
+        to, to,
+        text: rangeText,
+        range: range
+    };
+    if(_rev) {
+        doc._rev = _rev;
+    }
+
+    console.log(doc);
+
+    ResourcedMaster.UIStore.put(doc);
+
+    $('.pagination-range-display').text(rangeText);
+
+    $('.btn-pagination-prev').attr('href', '/logs?from=' + (from - range) + '&to=' + from);
+    $('.btn-pagination-next').attr('href', '/logs?from=' + to + '&to=' + (to + range));
+}
+
+$(document).ready(function() {
+    ResourcedMaster.UIStore.get('ResourcedMaster.logs.pagination').then(function(doc) {
+        if (doc.range && doc.text && doc.from && doc.to) {
+            setupPrevAndNextArrows(doc.range, doc.text, doc.from, doc.to, doc._rev);
+        } else {
+            // Default is 15 minutes
+            setupPrevAndNextArrows(900, '15 Minutes', {{ .From }}, {{ .To }});
+        }
+    });
+});
+
+$('.pagination-range').click(function() {
+    var range = $(this).data('seconds');
+    var text = $(this).text();
+
+    ResourcedMaster.UIStore.get('ResourcedMaster.logs.pagination').then(function(doc) {
+        if (doc.range && doc.text && doc.from && doc.to) {
+            setupPrevAndNextArrows(range, text, doc.from, doc.to, doc._rev);
+        } else {
+            // Default is 15 minutes
+            setupPrevAndNextArrows(range, text, {{ .From }}, {{ .To }});
+        }
+    });
+});
 </script>
 {{end}}

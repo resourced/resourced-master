@@ -107,12 +107,12 @@ func (ts *TSLog) Create(tx *sqlx.Tx, clusterID int64, hostname string, tags map[
 
 // AllByRange returns all logs withing time range.
 func (ts *TSLog) AllByRange(tx *sqlx.Tx, clusterID int64, from, to int64) ([]*TSLogRow, error) {
-	// Default is 1 hour range
+	// Default is 15 minutes range
 	if to == -1 {
 		to = time.Now().UTC().Unix()
 	}
 	if from == -1 {
-		from = to - 3600
+		from = to - 900
 	}
 
 	rows := []*TSLogRow{}
