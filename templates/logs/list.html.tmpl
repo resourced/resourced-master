@@ -89,6 +89,17 @@ $('#search-input').bind("input propertychange", function(e) {
         </div>
     </div>
 
+    {{ if eq (len .Logs) 0 }}
+    <div class="jumbotron" style="margin-bottom: 16px">
+        <h2 style="margin-top: 0">No logs available in the given date range.</h2>
+        <ul>
+            <li>Make sure that the agents are configured correctly.</li>
+            <li>The 1st page of pagination starts from current time and looks back N range. Make sure your date range is set correctly.</li>
+            <li>You can use the URL GET param to change the date range. Simply set <code>from=</code> and <code>to=</code>.</li>
+        </ul>
+    </div>
+    {{ end }}
+
     {{ range $log := .Logs }}
     <div class="row" style="margin-bottom: 16px">
         <div class="col-lg-12">
@@ -123,7 +134,7 @@ $('#search-input').bind("input propertychange", function(e) {
 
     <div class="row">
         <div class="col-lg-12">
-            <div style="padding-top: 8px; padding-bottom: 8px; margin-bottom: 16px; border-top: 1px solid #999">
+            <div style="padding-top: 8px; padding-bottom: 8px; margin-bottom: 16px; border-top: 1px solid #4e5d6c">
                 <div class="btn-group btn-group-sm pull-right" role="group" style="margin-top: 3px">
                     <a type="button" class="btn btn-primary btn-pagination-prev" href=""><span aria-hidden="true" class="glyphicon glyphicon-arrow-left"></span></a>
 
