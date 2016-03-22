@@ -36,15 +36,15 @@ func parseAnd(input string) string {
 	return ""
 }
 
-// parseNameStatement parses ResourceD hostname related query statement and turns it into postgres statement.
-func parseNameStatement(statement, operator string) string {
+// parseStringField parses ResourceD "string field" query and turns it into postgres statement.
+func parseStringField(statement, field, operator string) string {
 	parts := strings.Split(statement, operator)
 
 	hostname := parts[len(parts)-1]
 	hostname = strings.TrimSpace(hostname)
 	hostname = libstring.StripChars(hostname, `"'`)
 
-	return fmt.Sprintf("hostname %v '%v'", operator, hostname)
+	return fmt.Sprintf("%v %v '%v'", field, operator, hostname)
 }
 
 // parseStatement parses ResourceD statement and turns it into postgres statement.
@@ -87,16 +87,16 @@ func parseStatement(statement string) string {
 	// "~"   : Matches regular expression, case sensitive.
 	if strings.HasPrefix(statement, "Hostname") || strings.HasPrefix(statement, "hostname") {
 		if strings.Contains(statement, "=") {
-			return parseNameStatement(statement, "=")
+			return parseStringField(statement, "hostname", "=")
 
 		} else if strings.Contains(statement, "!~*") {
-			return parseNameStatement(statement, "!~*")
+			return parseStringField(statement, "hostname", "!~*")
 
 		} else if strings.Contains(statement, "!~") {
-			return parseNameStatement(statement, "!~")
+			return parseStringField(statement, "hostname", "!~")
 
 		} else if strings.Contains(statement, "~*") {
-			return parseNameStatement(statement, "~*")
+			return parseStringField(statement, "hostname", "~*")
 
 		} else if strings.Contains(statement, "~^") {
 			parts := strings.Split(statement, "~^")
@@ -108,7 +108,42 @@ func parseStatement(statement string) string {
 			return `hostname LIKE '` + hostname + `%'`
 
 		} else if strings.Contains(statement, "~") {
-			return parseNameStatement(statement, "~")
+			return parseStringField(statement, "hostname", "~")
+		}
+	}
+
+	// Querying filename.
+	// Operators:
+	// "="   : Exact match.
+	// "!~*" : Does not match regular expression, case insensitive.
+	// "!~"  : Does not match regular expression, case sensitive.
+	// "~*"  : Matches regular expression, case insensitive.
+	// "~^"  : Starts with, case sensitive.
+	// "~"   : Matches regular expression, case sensitive.
+	if strings.HasPrefix(statement, "Filename") || strings.HasPrefix(statement, "filename") {
+		if strings.Contains(statement, "=") {
+			return parseStringField(statement, "filename", "=")
+
+		} else if strings.Contains(statement, "!~*") {
+			return parseStringField(statement, "filename", "!~*")
+
+		} else if strings.Contains(statement, "!~") {
+			return parseStringField(statement, "filename", "!~")
+
+		} else if strings.Contains(statement, "~*") {
+			return parseStringField(statement, "filename", "~*")
+
+		} else if strings.Contains(statement, "~^") {
+			parts := strings.Split(statement, "~^")
+
+			filename := parts[len(parts)-1]
+			filename = strings.TrimSpace(filename)
+			filename = libstring.StripChars(filename, `"'`)
+
+			return `filename LIKE '` + filename + `%'`
+
+		} else if strings.Contains(statement, "~") {
+			return parseStringField(statement, "filename", "~")
 		}
 	}
 

@@ -17,92 +17,107 @@ func TestParseTags(t *testing.T) {
 	}
 }
 
-func TestParseNameExact(t *testing.T) {
+func TestParseFilenameExact(t *testing.T) {
 	toBeTested := []string{
-		`Name = "Awesome Sauce"`,
-		`Name="Awesome Sauce"`,
-		`name = "Awesome Sauce"`,
+		`Filename = "/var/log/message"`,
+		`Filename="/var/log/message"`,
+		`filename = "/var/log/message"`,
 	}
 
 	for _, testString := range toBeTested {
 		output := Parse(testString)
-		if output != `name = 'Awesome Sauce'` {
-			t.Errorf("Failed to generate name query. Output: %v", output)
+		if output != `filename = '/var/log/message'` {
+			t.Errorf("Failed to generate filename query. Output: %v", output)
 		}
 	}
 }
 
-func TestParseNameStartsWith(t *testing.T) {
+func TestParseHostnameExact(t *testing.T) {
 	toBeTested := []string{
-		`Name ~^ "brotato"`,
-		`Name~^"brotato"`,
-		`name ~^ "brotato"`,
+		`Hostname = "Awesome Sauce"`,
+		`Hostname="Awesome Sauce"`,
+		`hostname = "Awesome Sauce"`,
 	}
 
 	for _, testString := range toBeTested {
 		output := Parse(testString)
-		if output != `name LIKE 'brotato%'` {
-			t.Errorf("Failed to generate name query. Output: %v", output)
+		if output != `hostname = 'Awesome Sauce'` {
+			t.Errorf("Failed to generate hostname query. Output: %v", output)
 		}
 	}
 }
 
-func TestParseNameDoesNotMatchRegexCaseInsensitive(t *testing.T) {
+func TestParseHostnameStartsWith(t *testing.T) {
 	toBeTested := []string{
-		`Name !~* "brotato"`,
-		`Name!~*"brotato"`,
-		`name !~* "brotato"`,
+		`Hostname ~^ "brotato"`,
+		`Hostname~^"brotato"`,
+		`hostname ~^ "brotato"`,
 	}
 
 	for _, testString := range toBeTested {
 		output := Parse(testString)
-		if output != `name !~* 'brotato'` {
-			t.Errorf("Failed to generate name query. Output: %v", output)
+		if output != `hostname LIKE 'brotato%'` {
+			t.Errorf("Failed to generate hostname query. Output: %v", output)
 		}
 	}
 }
 
-func TestParseNameDoesNotMatchRegexCaseSensitive(t *testing.T) {
+func TestParseHostnameDoesNotMatchRegexCaseInsensitive(t *testing.T) {
 	toBeTested := []string{
-		`Name !~ "brotato"`,
-		`Name!~"brotato"`,
-		`name !~ "brotato"`,
+		`Hostname !~* "brotato"`,
+		`Hostname!~*"brotato"`,
+		`hostname !~* "brotato"`,
 	}
 
 	for _, testString := range toBeTested {
 		output := Parse(testString)
-		if output != `name !~ 'brotato'` {
-			t.Errorf("Failed to generate name query. Output: %v", output)
+		if output != `hostname !~* 'brotato'` {
+			t.Errorf("Failed to generate hostname query. Output: %v", output)
 		}
 	}
 }
 
-func TestParseNameMatchRegexCaseInsensitive(t *testing.T) {
+func TestParseHostnameDoesNotMatchRegexCaseSensitive(t *testing.T) {
 	toBeTested := []string{
-		`Name ~* "brotato"`,
-		`Name~*"brotato"`,
-		`name ~* "brotato"`,
+		`Hostname !~ "brotato"`,
+		`Hostname!~"brotato"`,
+		`hostname !~ "brotato"`,
 	}
 
 	for _, testString := range toBeTested {
 		output := Parse(testString)
-		if output != `name ~* 'brotato'` {
-			t.Errorf("Failed to generate name query. Output: %v", output)
+		if output != `hostname !~ 'brotato'` {
+			t.Errorf("Failed to generate hostname query. Output: %v", output)
 		}
 	}
 }
 
-func TestParseNameMatchRegexCaseSensitive(t *testing.T) {
+func TestParseHostnameMatchRegexCaseInsensitive(t *testing.T) {
 	toBeTested := []string{
-		`Name ~ "brotato"`,
-		`Name~"brotato"`,
-		`name ~ "brotato"`,
+		`Hostname ~* "brotato"`,
+		`Hostname~*"brotato"`,
+		`hostname ~* "brotato"`,
 	}
 
 	for _, testString := range toBeTested {
 		output := Parse(testString)
-		if output != `name ~ 'brotato'` {
-			t.Errorf("Failed to generate name query. Output: %v", output)
+		if output != `hostname ~* 'brotato'` {
+			t.Errorf("Failed to generate hostname query. Output: %v", output)
+		}
+	}
+}
+
+func TestParseHostnameMatchRegexCaseSensitive(t *testing.T) {
+	toBeTested := []string{
+		`Hostname ~ "brotato"`,
+		`Hostname~"brotato"`,
+		`hostname ~ "brotato"`,
+	}
+
+	for _, testString := range toBeTested {
+		output := Parse(testString)
+		if output != `hostname ~ 'brotato'` {
+			t.Errorf("Failed to generate hostname query. Output: %v", output)
 		}
 	}
 }
@@ -115,15 +130,15 @@ func TestParseJsonTraversal(t *testing.T) {
 
 	output := Parse(toBeTested)
 	if output != `data #>> '{/free,Memory,Free}' > '10000000'` {
-		t.Errorf("Failed to generate name query. Output: %v", output)
+		t.Errorf("Failed to generate data query. Output: %v", output)
 	}
 }
 
 func TestParseAnd(t *testing.T) {
-	toBeTested := `tags.aaa = bbb AND Name~^"brotato" AND /free.Memory.Free > 10000000`
+	toBeTested := `tags.aaa = bbb AND Hostname~^"brotato" AND /free.Memory.Free > 10000000`
 
 	output := Parse(toBeTested)
-	if output != `tags #>> '{aaa}' = 'bbb' and name LIKE 'brotato%' and data #>> '{/free,Memory,Free}' > '10000000'` {
-		t.Errorf("Failed to generate name query. Output: %v", output)
+	if output != `tags #>> '{aaa}' = 'bbb' and hostname LIKE 'brotato%' and data #>> '{/free,Memory,Free}' > '10000000'` {
+		t.Errorf("Failed to generate mixed of tags,hostname, and data query. Output: %v", output)
 	}
 }
