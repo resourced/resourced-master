@@ -39,13 +39,15 @@ func GetLogs(w http.ResponseWriter, r *http.Request) {
 		from = to - 900
 	}
 
+	query := qParams.Get("q")
+
 	currentUser := context.Get(r, "currentUser").(*dal.UserRow)
 
 	currentCluster := context.Get(r, "currentCluster").(*dal.ClusterRow)
 
 	tsLogsDB := context.Get(r, "multidb.TSLogs").(*multidb.MultiDB).PickRandom()
 
-	tsLogs, err := dal.NewTSLog(tsLogsDB).AllByRange(nil, currentCluster.ID, from, to)
+	tsLogs, err := dal.NewTSLog(tsLogsDB).AllByClusterIDRangeAndQuery(nil, currentCluster.ID, from, to, query)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return

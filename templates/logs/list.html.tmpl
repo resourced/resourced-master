@@ -118,7 +118,7 @@ $('#search-input').bind("input propertychange", function(e) {
             <div class="row" style="padding-bottom: 6px">
                 <div class="col-lg-12">
                     {{ range $tagKey, $tagValue := $log.GetTags }}
-                    <a class="label label-default" href="/?q=tags.{{ $tagKey }} %3D {{ $tagValue }}">{{ $tagKey }} : {{ $tagValue }}</a>
+                    <a class="label label-default" href="/logs?q=tags.{{ $tagKey }} %3D {{ $tagValue }}">{{ $tagKey }} : {{ $tagValue }}</a>
                     {{ end }}
                 </div>
             </div>
