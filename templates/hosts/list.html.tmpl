@@ -3,7 +3,6 @@
     <div class="container">
         <div class="form-group form-group-search-and-save">
             <form class="navbar-form navbar-left search-form" role="search" action="/">
-                <input type="hidden" name="gorilla.csrf.Token" value="{{ $.CSRFToken }}">
                 <div class="input-group">
                     <input id="search-input" name="q" type="text" class="form-control" placeholder="Press enter to search">
                 </div>
@@ -117,7 +116,7 @@ $('#search-input').bind("input propertychange", function(e) {
                     <input type="checkbox" class="toggler toggler-header pull-right" data-size="mini" data-host-id="{{ $host.ID }}">
                 </div>
 
-                <h3>{{ $host.Name }}</h3>
+                <h3>{{ $host.Hostname }}</h3>
             </div>
 
             {{ range $tagKey, $tagValue := $host.GetTags }}
@@ -155,7 +154,7 @@ $('#search-input').bind("input propertychange", function(e) {
                                         <button class="btn btn-success btn-sm active" data-toggle="modal" data-target="#graph-modal"
                                             data-metric-id="{{ index $.MetricsMap (print $path "." $key) }}",
                                             data-metric-key="{{ print $path "." $key }}"
-                                            data-host="{{ $host.Name }}">
+                                            data-host="{{ $host.Hostname }}">
                                             <span class="glyphicon glyphicon-stats" aria-hidden="true"></span>
                                         </button>
 

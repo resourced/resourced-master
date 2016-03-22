@@ -330,7 +330,7 @@ func (app *Application) PassiveWatchOnce(clusterID int64, watcherRow *dal.Watche
 	if numAffectedHosts == 0 || numAffectedHosts >= watcherRow.LowAffectedHosts {
 		tsWatcherDataHosts := make([]string, numAffectedHosts)
 		for i, affectedHost := range affectedHosts {
-			tsWatcherDataHosts[i] = affectedHost.Name
+			tsWatcherDataHosts[i] = affectedHost.Hostname
 		}
 
 		tsWatcherData := make(map[string]interface{})

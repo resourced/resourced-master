@@ -44,7 +44,7 @@ type HostRow struct {
 	ID            int64               `db:"id" json:"-"`
 	AccessTokenID int64               `db:"access_token_id" json:"-"`
 	ClusterID     int64               `db:"cluster_id"`
-	Name          string              `db:"name"`
+	Hostname      string              `db:"hostname"`
 	Updated       time.Time           `db:"updated"`
 	Tags          sqlx_types.JSONText `db:"tags"`
 	Data          sqlx_types.JSONText `db:"data"`
@@ -158,11 +158,11 @@ func (h *Host) GetByID(tx *sqlx.Tx, id int64) (*HostRow, error) {
 	return hostRow, err
 }
 
-// GetByName returns record by name.
-func (h *Host) GetByName(tx *sqlx.Tx, name string) (*HostRow, error) {
+// GetByHostname returns record by hostname.
+func (h *Host) GetByHostname(tx *sqlx.Tx, hostname string) (*HostRow, error) {
 	hostRow := &HostRow{}
-	query := fmt.Sprintf("SELECT * FROM %v WHERE name=$1", h.table)
-	err := h.db.Get(hostRow, query, name)
+	query := fmt.Sprintf("SELECT * FROM %v WHERE hostname=$1", h.table)
+	err := h.db.Get(hostRow, query, hostname)
 
 	return hostRow, err
 }
@@ -182,7 +182,7 @@ func (h *Host) parseAgentResourcePayload(tx *sqlx.Tx, accessTokenRow *AccessToke
 	data["cluster_id"] = accessTokenRow.ClusterID
 
 	for path, resourcedPayload := range resourcedPayloads {
-		data["name"] = resourcedPayload.Host.Name
+		data["hostname"] = resourcedPayload.Host.Name
 
 		tagsInJson, err := json.Marshal(resourcedPayload.Host.Tags)
 		if err != nil {
@@ -210,11 +210,11 @@ func (h *Host) CreateOrUpdate(tx *sqlx.Tx, accessTokenRow *AccessTokenRow, jsonD
 		return nil, err
 	}
 
-	if data["name"] == nil {
-		return nil, errors.New("Host name cannot be empty.")
+	if data["hostname"] == nil {
+		return nil, errors.New("Hostname cannot be empty.")
 	}
 
-	hostRow, err := h.GetByName(tx, data["name"].(string))
+	hostRow, err := h.GetByHostname(tx, data["hostname"].(string))
 
 	// Perform INSERT
 	if hostRow == nil || err != nil {
@@ -231,7 +231,7 @@ func (h *Host) CreateOrUpdate(tx *sqlx.Tx, accessTokenRow *AccessTokenRow, jsonD
 	}
 
 	// Perform UPDATE
-	_, err = h.UpdateByKeyValueString(tx, data, "name", data["name"].(string))
+	_, err = h.UpdateByKeyValueString(tx, data, "hostname", data["hostname"].(string))
 	if err != nil {
 		return nil, err
 	}

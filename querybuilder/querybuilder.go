@@ -36,15 +36,15 @@ func parseAnd(input string) string {
 	return ""
 }
 
-// parseNameStatement parses ResourceD name related query statement and turns it into postgres statement.
+// parseNameStatement parses ResourceD hostname related query statement and turns it into postgres statement.
 func parseNameStatement(statement, operator string) string {
 	parts := strings.Split(statement, operator)
 
-	name := parts[len(parts)-1]
-	name = strings.TrimSpace(name)
-	name = libstring.StripChars(name, `"'`)
+	hostname := parts[len(parts)-1]
+	hostname = strings.TrimSpace(hostname)
+	hostname = libstring.StripChars(hostname, `"'`)
 
-	return fmt.Sprintf("name %v '%v'", operator, name)
+	return fmt.Sprintf("hostname %v '%v'", operator, hostname)
 }
 
 // parseStatement parses ResourceD statement and turns it into postgres statement.
@@ -77,7 +77,7 @@ func parseStatement(statement string) string {
 		}
 	}
 
-	// Querying name.
+	// Querying hostname.
 	// Operators:
 	// "="   : Exact match.
 	// "!~*" : Does not match regular expression, case insensitive.
@@ -85,7 +85,7 @@ func parseStatement(statement string) string {
 	// "~*"  : Matches regular expression, case insensitive.
 	// "~^"  : Starts with, case sensitive.
 	// "~"   : Matches regular expression, case sensitive.
-	if strings.HasPrefix(statement, "Name") || strings.HasPrefix(statement, "name") {
+	if strings.HasPrefix(statement, "Hostname") || strings.HasPrefix(statement, "hostname") {
 		if strings.Contains(statement, "=") {
 			return parseNameStatement(statement, "=")
 
@@ -101,11 +101,11 @@ func parseStatement(statement string) string {
 		} else if strings.Contains(statement, "~^") {
 			parts := strings.Split(statement, "~^")
 
-			name := parts[len(parts)-1]
-			name = strings.TrimSpace(name)
-			name = libstring.StripChars(name, `"'`)
+			hostname := parts[len(parts)-1]
+			hostname = strings.TrimSpace(hostname)
+			hostname = libstring.StripChars(hostname, `"'`)
 
-			return `name LIKE '` + name + `%'`
+			return `hostname LIKE '` + hostname + `%'`
 
 		} else if strings.Contains(statement, "~") {
 			return parseNameStatement(statement, "~")

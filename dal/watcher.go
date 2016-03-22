@@ -329,7 +329,7 @@ func (w *Watcher) HostsToPerformActiveChecks(clusterID int64, watcherRow *Watche
 		hostnames = make([]string, len(hosts))
 
 		for i, host := range hosts {
-			hostnames[i] = host.Name
+			hostnames[i] = host.Hostname
 		}
 	}
 

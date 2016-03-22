@@ -87,14 +87,14 @@ func (ts *TSMetric) CreateByHostRow(tx *sqlx.Tx, hostRow *HostRow, metricsMap ma
 				// Deserialized JSON number -> interface{} always have float64 as type.
 				if trueValueFloat64, ok := value.(float64); ok {
 					// Ignore error for now, there's no need to break the entire loop when one insert fails.
-					err := ts.Create(tx, hostRow.ClusterID, metricID, metricKey, hostRow.Name, trueValueFloat64)
+					err := ts.Create(tx, hostRow.ClusterID, metricID, metricKey, hostRow.Hostname, trueValueFloat64)
 					if err != nil {
 						logrus.WithFields(logrus.Fields{
 							"Method":    "TSMetric.Create",
 							"ClusterID": hostRow.ClusterID,
 							"MetricID":  metricID,
 							"MetricKey": metricKey,
-							"Hostname":  hostRow.Name,
+							"Hostname":  hostRow.Hostname,
 							"Value":     trueValueFloat64,
 						}).Error(err)
 					}

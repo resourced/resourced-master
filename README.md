@@ -65,24 +65,24 @@ curl -u 0b79bab50daca910b000d4f1a2b675d604257e42: https://localhost:55655/api/ho
 
 You can query hosts data using SQL-like language.
 
-There are 3 fields to query from: `name`, `tags`, and `data`.
+There are 3 fields to query from: `hostname`, `tags`, and `data`.
 
 Currently, you can only use *AND* conjunctive operators.
 
 
 **Query by hostname**
 
-* Exact match: `name = "localhost"`
+* Exact match: `hostname = "localhost"`
 
-* Starts-with match: `name ~^ "awesome-app-"`
+* Starts-with match: `hostname ~^ "awesome-app-"`
 
-* Regex match, case insensitive: `name ~* "awesome-app-"`
+* Regex match, case insensitive: `hostname ~* "awesome-app-"`
 
-* Regex match, case sensitive: `name ~ "awesome-app-"`
+* Regex match, case sensitive: `hostname ~ "awesome-app-"`
 
-* Regex match negation, case sensitive: `name !~ "awesome-app-"`
+* Regex match negation, case sensitive: `hostname !~ "awesome-app-"`
 
-* Regex match negation, case insensitive: `name !~* "awesome-app-"`
+* Regex match negation, case insensitive: `hostname !~* "awesome-app-"`
 
 
 **Query by tags**
