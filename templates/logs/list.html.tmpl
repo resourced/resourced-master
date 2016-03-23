@@ -97,14 +97,19 @@ $('#search-input').bind("input propertychange", function(e) {
             <li>You can use the URL GET param to change the date range. Simply set <code>from=</code> and <code>to=</code>.</li>
         </ul>
     </div>
+    {{ else }}
+    <div class="pull-right" style="margin-top: -14px; margin-bottom: 10px; font-size: 11px">
+        <small class="time-unix-to-local">{{ $.From }}</small> - <small class="time-unix-to-local">{{ $.To }}</small>
+    </div>
+
     {{ end }}
 
     {{ range $log := .Logs }}
     <div class="row" style="margin-bottom: 16px">
         <div class="col-lg-12">
             <div class="row">
-                <div class="col-lg-4 col-md-4">
-                    {{ $log.Created }}
+                <div class="col-lg-4 col-md-4 time-unix-to-local">
+                    {{ $log.Created.Unix }}
                 </div>
                 <div class="col-lg-4 col-md-4">
                     {{ $log.Hostname }}
@@ -131,30 +136,30 @@ $('#search-input').bind("input propertychange", function(e) {
     </div>
     {{ end }}
 
-    <div class="row">
-        <div class="col-lg-12">
-            <div style="padding-top: 8px; padding-bottom: 8px; margin-bottom: 16px; border-top: 1px solid #4e5d6c">
-                <div class="btn-group btn-group-sm pull-right" role="group" style="margin-top: 3px">
-                    <a type="button" class="btn btn-primary btn-pagination-prev" href=""><span aria-hidden="true" class="glyphicon glyphicon-arrow-left"></span></a>
+    <div class="row" style="padding-top: 8px; padding-bottom: 8px; margin-bottom: 16px; border-top: 1px solid #4e5d6c">
+        <div class="col-lg-4 col-md-6 col-sm-6 col-xs-6">
+            <input id="search-input" name="q" type="text" class="form-control input-sm" placeholder="Press enter to search" onkeyup="filter(this)">
+        </div>
 
-                    <div class="btn-group btn-group-sm" role="group">
-                        <button type="button" class="btn btn-primary dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                            <span class="pagination-range-display">15 Minutes</span>&nbsp;<span class="caret"></span>
-                        </button>
-                        <ul class="dropdown-menu">
-                            <li><a class="pagination-range" href="javascript:void(0)" data-seconds="900">15 Minutes</a></li>
-                            <li><a class="pagination-range" href="javascript:void(0)" data-seconds="1800">30 Minutes</a></li>
-                            <li><a class="pagination-range" href="javascript:void(0)" data-seconds="3600">60 minutes</a></li>
-                            <li><a class="pagination-range" href="javascript:void(0)" data-seconds="7200">2 hours</a></li>
-                            <li><a class="pagination-range" href="javascript:void(0)" data-seconds="10800">3 hours</a></li>
-                            <li><a class="pagination-range" href="javascript:void(0)" data-seconds="14400">4 hours</a></li>
-                        </ul>
-                    </div>
+        <div class="col-lg-8 col-md-6 col-sm-6 col-xs-6">
+            <div class="btn-group btn-group-sm pull-right" role="group">
+                <a type="button" class="btn btn-primary btn-pagination-prev" href=""><span aria-hidden="true" class="glyphicon glyphicon-arrow-left"></span></a>
 
-                    <a type="button" class="btn btn-primary btn-pagination-next" href=""><span aria-hidden="true" class="glyphicon glyphicon-arrow-right"></span></a>
+                <div class="btn-group btn-group-sm" role="group">
+                    <button type="button" class="btn btn-primary dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                        <span class="pagination-range-display">15 Minutes</span>&nbsp;<span class="caret"></span>
+                    </button>
+                    <ul class="dropdown-menu">
+                        <li><a class="pagination-range" href="javascript:void(0)" data-seconds="900">15 Minutes</a></li>
+                        <li><a class="pagination-range" href="javascript:void(0)" data-seconds="1800">30 Minutes</a></li>
+                        <li><a class="pagination-range" href="javascript:void(0)" data-seconds="3600">60 minutes</a></li>
+                        <li><a class="pagination-range" href="javascript:void(0)" data-seconds="7200">2 hours</a></li>
+                        <li><a class="pagination-range" href="javascript:void(0)" data-seconds="10800">3 hours</a></li>
+                        <li><a class="pagination-range" href="javascript:void(0)" data-seconds="14400">4 hours</a></li>
+                    </ul>
                 </div>
 
-                <input id="search-input" name="q" type="text" class="form-control" placeholder="Press enter to search" style="width: 400px" onkeyup="filter(this)">
+                <a type="button" class="btn btn-primary btn-pagination-next" href=""><span aria-hidden="true" class="glyphicon glyphicon-arrow-right"></span></a>
             </div>
         </div>
     </div>
@@ -174,23 +179,31 @@ function setupPrevAndNextArrows(range, rangeText, from, to, _rev) {
         doc._rev = _rev;
     }
 
-    console.log(doc);
-
-    ResourcedMaster.UIStore.put(doc);
+    var promise = ResourcedMaster.UIStore.put(doc);
 
     $('.pagination-range-display').text(rangeText);
 
     $('.btn-pagination-prev').attr('href', '/logs?from=' + (from - range) + '&to=' + from);
     $('.btn-pagination-next').attr('href', '/logs?from=' + to + '&to=' + (to + range));
+
+    return promise;
 }
 
 $(document).ready(function() {
+    var to = {{ .To }};
+    var from = {{ .From }};
+
+    console.log(to);
+
     ResourcedMaster.UIStore.get('ResourcedMaster.logs.pagination').then(function(doc) {
-        if (doc.range && doc.text && doc.from && doc.to) {
-            setupPrevAndNextArrows(doc.range, doc.text, doc.from, doc.to, doc._rev);
-        } else {
+        if (doc && doc.range && doc.text) {
+            setupPrevAndNextArrows(doc.range, doc.text, from, to, doc._rev);
+        }
+
+    }).catch(function (err) {
+        if(err.name == 'not_found') {
             // Default is 15 minutes
-            setupPrevAndNextArrows(900, '15 Minutes', {{ .From }}, {{ .To }});
+            setupPrevAndNextArrows(900, '15 Minutes', from, to);
         }
     });
 });
@@ -200,11 +213,22 @@ $('.pagination-range').click(function() {
     var text = $(this).text();
 
     ResourcedMaster.UIStore.get('ResourcedMaster.logs.pagination').then(function(doc) {
-        if (doc.range && doc.text && doc.from && doc.to) {
-            setupPrevAndNextArrows(range, text, doc.from, doc.to, doc._rev);
-        } else {
-            // Default is 15 minutes
-            setupPrevAndNextArrows(range, text, {{ .From }}, {{ .To }});
+        if (doc && doc.from && doc.to) {
+            var to = doc.to;
+            var from = doc.to - range;
+
+            setupPrevAndNextArrows(range, text, from, to, doc._rev).then(function(doc) {
+                window.location = '/logs?from=' + from + '&to=' + to;
+            });
+        }
+    }).catch(function (err) {
+        var to = {{ .To }};
+        var from = to - range;
+
+        if(err.name == 'not_found') {
+            setupPrevAndNextArrows(range, text, from, to).then(function(doc) {
+                window.location = '/logs?from=' + from + '&to=' + to;
+            });
         }
     });
 });
