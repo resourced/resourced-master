@@ -91,7 +91,8 @@ $('#search-input').bind("input propertychange", function(e) {
     {{ if eq (len .Logs) 0 }}
     <div class="jumbotron" style="margin-bottom: 16px">
         <h2 style="margin-top: 0">No logs available in the given date range.</h2>
-        <ul>
+        <small class="time-unix-to-local">{{ $.From }}</small> - <small class="time-unix-to-local">{{ $.To }}</small>
+        <ul style="margin-top: 6px">
             <li>Make sure that the agents are configured correctly.</li>
             <li>The 1st page of pagination starts from current time and looks back N range. Make sure your date range is set correctly.</li>
             <li>You can use the URL GET param to change the date range. Simply set <code>from=</code> and <code>to=</code>.</li>
@@ -192,18 +193,22 @@ function setupPrevAndNextArrows(range, rangeText, from, to, _rev) {
 $(document).ready(function() {
     var to = {{ .To }};
     var from = {{ .From }};
+    var range = to - from;
 
-    console.log(to);
+    var text = $('.pagination-range[data-seconds="' + range + '"]').first().text();
+    if(text == '') {
+        text = 'Custom';
+    }
 
     ResourcedMaster.UIStore.get('ResourcedMaster.logs.pagination').then(function(doc) {
-        if (doc && doc.range && doc.text) {
-            setupPrevAndNextArrows(doc.range, doc.text, from, to, doc._rev);
+        if (doc) {
+            setupPrevAndNextArrows(range, text, from, to, doc._rev);
         }
 
     }).catch(function (err) {
         if(err.name == 'not_found') {
             // Default is 15 minutes
-            setupPrevAndNextArrows(900, '15 Minutes', from, to);
+            setupPrevAndNextArrows(range, text, from, to);
         }
     });
 });

@@ -226,9 +226,6 @@ select {
         width: 100%;
     }
 
-    .saved-queries-form .btn {
-        margin: 0;
-    }
     .navbar-nav {
         margin-top: 0;
         margin-bottom: 0;
@@ -236,10 +233,16 @@ select {
     .dropdown-toggle, .dropdown-menu {
         text-align: right;
     }
-    .row.saved-queries form {
-        float: right;
+    .saved-queries-form {
+        margin: 0;
     }
 }
+@media(max-width:650px) {
+    .graph-search-input {
+        display: none;
+    }
+}
+
 @media(max-width:600px) {
     .updated-timestamp {
         display: none;
