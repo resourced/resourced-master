@@ -5,6 +5,8 @@
             <form class="navbar-form navbar-left search-form" role="search" action="/logs">
                 <div class="input-group">
                     <input id="search-input" name="q" type="text" class="form-control" placeholder="Press enter to search">
+                    <input type="hidden" name="from" value="{{ $.From }}">
+                    <input type="hidden" name="to" value="{{ $.To }}">
                 </div>
             </form>
 
@@ -182,10 +184,15 @@ function setupPrevAndNextArrows(range, rangeText, from, to, _rev) {
 
     var promise = ResourcedMaster.UIStore.put(doc);
 
+    var getParams={};window.location.search.replace(/[?&]+([^=&]+)=([^&]*)/gi,function(str,key,value){getParams[key] = value;});
+
     $('.pagination-range-display').text(rangeText);
 
-    $('.btn-pagination-prev').attr('href', '/logs?from=' + (from - range) + '&to=' + from);
-    $('.btn-pagination-next').attr('href', '/logs?from=' + to + '&to=' + (to + range));
+    $('.btn-pagination-prev').attr('href', '/logs?from=' + (from - range) + '&to=' + from + '&q=' + getParams['q']);
+    $('.btn-pagination-next').attr('href', '/logs?from=' + to + '&to=' + (to + range) + '&q=' + getParams['q']);
+
+    $('.search-form input[name="from"]').val(from);
+    $('.search-form input[name="to"]').val(to);
 
     return promise;
 }
@@ -216,6 +223,7 @@ $(document).ready(function() {
 $('.pagination-range').click(function() {
     var range = $(this).data('seconds');
     var text = $(this).text();
+    var getParams={};window.location.search.replace(/[?&]+([^=&]+)=([^&]*)/gi,function(str,key,value){getParams[key] = value;});
 
     ResourcedMaster.UIStore.get('ResourcedMaster.logs.pagination').then(function(doc) {
         if (doc && doc.from && doc.to) {
@@ -223,7 +231,7 @@ $('.pagination-range').click(function() {
             var from = doc.to - range;
 
             setupPrevAndNextArrows(range, text, from, to, doc._rev).then(function(doc) {
-                window.location = '/logs?from=' + from + '&to=' + to;
+                window.location = '/logs?from=' + from + '&to=' + to + '&q=' + getParams['q'];
             });
         }
     }).catch(function (err) {
@@ -232,7 +240,7 @@ $('.pagination-range').click(function() {
 
         if(err.name == 'not_found') {
             setupPrevAndNextArrows(range, text, from, to).then(function(doc) {
-                window.location = '/logs?from=' + from + '&to=' + to;
+                window.location = '/logs?from=' + from + '&to=' + to + '&q=' + getParams['q'];
             });
         }
     });
