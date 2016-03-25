@@ -188,8 +188,8 @@ function setupPrevAndNextArrows(range, rangeText, from, to, _rev) {
 
     $('.pagination-range-display').text(rangeText);
 
-    $('.btn-pagination-prev').attr('href', '/logs?from=' + (from - range) + '&to=' + from + '&q=' + getParams['q']);
-    $('.btn-pagination-next').attr('href', '/logs?from=' + to + '&to=' + (to + range) + '&q=' + getParams['q']);
+    $('.btn-pagination-prev').attr('href', '/logs?from=' + (from - range) + '&to=' + from + '&q=' + (getParams['q'] || ''));
+    $('.btn-pagination-next').attr('href', '/logs?from=' + to + '&to=' + (to + range) + '&q=' + (getParams['q'] || ''));
 
     $('.search-form input[name="from"]').val(from);
     $('.search-form input[name="to"]').val(to);
@@ -231,7 +231,7 @@ $('.pagination-range').click(function() {
             var from = doc.to - range;
 
             setupPrevAndNextArrows(range, text, from, to, doc._rev).then(function(doc) {
-                window.location = '/logs?from=' + from + '&to=' + to + '&q=' + getParams['q'];
+                window.location = '/logs?from=' + from + '&to=' + to + '&q=' + (getParams['q'] || '');
             });
         }
     }).catch(function (err) {
@@ -240,7 +240,7 @@ $('.pagination-range').click(function() {
 
         if(err.name == 'not_found') {
             setupPrevAndNextArrows(range, text, from, to).then(function(doc) {
-                window.location = '/logs?from=' + from + '&to=' + to + '&q=' + getParams['q'];
+                window.location = '/logs?from=' + from + '&to=' + to + '&q=' + (getParams['q'] || '');
             });
         }
     });

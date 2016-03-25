@@ -67,41 +67,42 @@ func (ts *TSLog) Create(tx *sqlx.Tx, clusterID int64, hostname string, tags map[
 	if tx == nil {
 		tx, err = ts.db.Beginx()
 		if err != nil {
+			logrus.Error(err)
 			return err
 		}
 	}
 
-	query := fmt.Sprintf("INSERT INTO %v (cluster_id, created, hostname, logline, filename, tags) VALUES ($1, $2, $3, $4, $5, $6)", ts.table)
+	query := fmt.Sprintf("INSERT INTO %v (cluster_id, hostname, logline, filename, tags) VALUES ($1, $2, $3, $4, $5)", ts.table)
 
 	prepared, err := ts.db.Preparex(query)
 	if err != nil {
+		logrus.Error(err)
 		return err
 	}
 
 	for _, logline := range loglines {
 		tagsInJson, err := json.Marshal(tags)
 		if err != nil {
-			continue
+			tagsInJson = []byte("{}")
 		}
-
-		created := time.Now().UTC()
 
 		logFields := logrus.Fields{
 			"Method":    "TSLog.Create",
 			"Query":     query,
 			"ClusterID": clusterID,
-			"Created":   created,
 			"Hostname":  hostname,
 			"Logline":   logline,
 			"Filename":  filename,
 			"Tags":      string(tagsInJson),
 		}
 
-		_, err = prepared.Exec(clusterID, created, hostname, logline, filename, tagsInJson)
+		_, err = prepared.Exec(clusterID, hostname, logline, filename, tagsInJson)
 		if err != nil {
 			logFields["Error"] = err.Error()
 			logrus.WithFields(logFields).Error("Failed to execute insert query")
+			continue
 		}
+
 		logrus.WithFields(logFields).Info("Insert Query")
 	}
 	return tx.Commit()
@@ -138,5 +139,8 @@ func (ts *TSLog) AllByClusterIDRangeAndQuery(tx *sqlx.Tx, clusterID int64, from,
 	query := fmt.Sprintf("SELECT * FROM %v WHERE cluster_id=$1 AND created >= to_timestamp($2) at time zone 'utc' AND created <= to_timestamp($3) at time zone 'utc' AND %v ORDER BY created DESC", ts.table, pgQuery)
 	err := ts.db.Select(&rows, query, clusterID, from, to)
 
+	if err != nil {
+		err = fmt.Errorf("%v. Query: %v", err.Error(), query)
+	}
 	return rows, err
 }
