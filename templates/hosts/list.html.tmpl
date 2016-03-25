@@ -97,6 +97,14 @@ $('#search-input').bind("input propertychange", function(e) {
     {{ end }}
 </div>
 
+{{ if eq (len .Hosts) 0 }}
+<div class="container" style="margin-top: 40px">
+    <div class="jumbotron">
+        <h2 style="margin-top: 0">Welcome to ResourceD</h2>
+        <p>If you haven't already, configure your agents using access tokens defined <a href="/clusters">here</a>.</p>
+    </div>
+</div>
+{{ else }}
 <!-- Hosts -->
 <div class="container hosts">
     <div class="row">
@@ -198,6 +206,7 @@ $('#search-input').bind("input propertychange", function(e) {
         </div>
     </div>
 </div>
+{{ end }}
 
 <script>
 ResourcedMaster.globals.AccessToken = '{{ $.AccessToken.Token }}';
