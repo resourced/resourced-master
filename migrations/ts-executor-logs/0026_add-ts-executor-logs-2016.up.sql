@@ -61,7 +61,7 @@ create index idx_ts_executor_logs_m12_2016_search on ts_executor_logs_m12_2016 u
 
 create or replace function on_ts_executor_logs_insert_2016() returns trigger as $$
 begin
-    if (    new.created >= TIMESTAMPTZ '2016-01-01 00:00:00-00' and new.created < TIMESTAMPTZ '2016-02-01 00:00:00-00') then
+    if ( new.created >= TIMESTAMPTZ '2016-01-01 00:00:00-00' and new.created < TIMESTAMPTZ '2016-02-01 00:00:00-00') then
         insert into ts_executor_logs_m1_2016 values (new.*);
     elsif ( new.created >= TIMESTAMPTZ '2016-02-01 00:00:00-00' and new.created < TIMESTAMPTZ '2016-03-01 00:00:00-00') then
         insert into ts_executor_logs_m2_2016 values (new.*);
