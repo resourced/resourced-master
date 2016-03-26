@@ -40,7 +40,7 @@ CREATE TABLE hosts (
     cluster_id bigint REFERENCES clusters (id) ON UPDATE CASCADE ON DELETE CASCADE,
     access_token_id bigint REFERENCES access_tokens (id),
     hostname TEXT NOT NULL,
-    updated TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT (NOW() at time zone 'utc'),
+    updated TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT (NOW() at time zone 'utc'),
     tags JSONB,
     data JSONB
 );
@@ -70,7 +70,7 @@ CREATE INDEX idx_metadata_key on metadata (key);
 CREATE TABLE daemons (
     id BIGSERIAL PRIMARY KEY NOT NULL,
     hostname TEXT NOT NULL,
-    updated TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT (NOW() at time zone 'utc')
+    updated TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT (NOW() at time zone 'utc')
 );
 
 CREATE INDEX idx_daemons_hostname on daemons (hostname);

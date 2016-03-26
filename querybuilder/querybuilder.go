@@ -36,15 +36,26 @@ func parseAnd(input string) string {
 	return ""
 }
 
-// parseStringField parses ResourceD "string field" query and turns it into postgres statement.
+// parseStringField parses ResourceD "string" query and turns it into postgres statement.
 func parseStringField(statement, field, operator string) string {
 	parts := strings.Split(statement, operator)
 
-	hostname := parts[len(parts)-1]
-	hostname = strings.TrimSpace(hostname)
-	hostname = libstring.StripChars(hostname, `"'`)
+	data := parts[len(parts)-1]
+	data = strings.TrimSpace(data)
+	data = libstring.StripChars(data, `"'`)
 
-	return fmt.Sprintf("%v %v '%v'", field, operator, hostname)
+	return fmt.Sprintf("%v %v '%v'", field, operator, data)
+}
+
+// parseFullTextSearchField parses ResourceD "search" query and turns it into postgres statement.
+func parseFullTextSearchField(statement, field, operator string) string {
+	parts := strings.Split(statement, operator)
+
+	searchQuery := parts[len(parts)-1]
+	searchQuery = strings.TrimSpace(searchQuery)
+	searchQuery = libstring.StripChars(searchQuery, `"'`)
+
+	return fmt.Sprintf("to_tsvector('english', %v) @@ to_tsquery('%v')", field, searchQuery)
 }
 
 // parseStatement parses ResourceD statement and turns it into postgres statement.
@@ -176,6 +187,15 @@ func parseStatement(statement string) string {
 			value = libstring.StripChars(value, `"'`)
 
 			return fmt.Sprintf("data #>> '{%v}' %v '%v'", pgJsonPath, operator, value)
+		}
+	}
+
+	// Querying logline.
+	// Operators:
+	// "search" : Full text search.
+	if strings.HasPrefix(statement, "Logline") || strings.HasPrefix(statement, "logline") {
+		if strings.Contains(statement, "search") {
+			return parseFullTextSearchField(statement, "logline", "search")
 		}
 	}
 

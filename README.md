@@ -63,9 +63,11 @@ curl -u 0b79bab50daca910b000d4f1a2b675d604257e42: https://localhost:55655/api/ho
 
 ## Querying
 
-You can query hosts data using SQL-like language.
+ResourceD offers SQL-like language to query your data.
 
-There are 3 fields to query from: `hostname`, `tags`, and `data`.
+### Host Data
+
+There are 3 fields to query from: `hostname`, `tags`, and `JSON path`.
 
 Currently, you can only use *AND* conjunctive operators.
 
@@ -92,13 +94,38 @@ Currently, you can only use *AND* conjunctive operators.
 * Multiple exact match: `tags.mysql = 5.6.24 and tags.redis = 3.0.1`
 
 
-**Query by data**
+**Query by JSON path**
 
-To craft data query, start with ResourceD path and then use "." delimited separator as you get deeper into the JSON structure.
+To craft JSON path query, start with ResourceD path and then use "." delimited separator as you get deeper into the JSON structure.
 
 For example, let's say your resourced agent shipped `/free` data:
 ```json
 {"/free": {"Swap": {"Free": 0, "Used": 0, "Total": 0}, "Memory": {"Free": 1346609152, "Used": 7243325440, "Total": 8589934592, "ActualFree": 3666075648, "ActualUsed": 4923858944}}}
 ```
 
-You can then query "Swap": "Used": data: `/free.Swap.Used > 10000000`
+You can then query `Swap -> Used` this way: `/free.Swap.Used > 10000000`
+
+### Log Data
+
+There are 3 fields to query from: `hostname`, `tags`, and `logline`.
+
+Currently, you can only use *AND* conjunctive operators.
+
+
+**Query by hostname**
+
+The same as Host Data.
+
+
+**Query by tags**
+
+The same as Host Data.
+
+
+**Query by logline**
+
+ResourceD offers full-text search for loglines. Basic example: `logline search "error & mysql"`.
+
+The search query must consist of single tokens separated by the Boolean operators & (AND), | (OR) and ! (NOT). These operators can be grouped using parentheses.
+
+Visit http://www.postgresql.org/docs/current/static/textsearch-controls.html for more details.
