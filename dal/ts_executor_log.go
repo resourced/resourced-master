@@ -2,10 +2,13 @@ package dal
 
 import (
 	"encoding/json"
+	"fmt"
 	"time"
 
 	"github.com/jmoiron/sqlx"
 	sqlx_types "github.com/jmoiron/sqlx/types"
+
+	"github.com/resourced/resourced-master/querybuilder"
 )
 
 func NewTSExecutorLog(db *sqlx.DB) *TSExecutorLog {
@@ -59,4 +62,45 @@ func (ts *TSExecutorLog) Create(tx *sqlx.Tx, clusterID int64, hostname string, t
 	}
 
 	return nil
+}
+
+// AllByClusterIDAndRange returns all logs withing time range.
+func (ts *TSExecutorLog) AllByClusterIDAndRange(tx *sqlx.Tx, clusterID int64, from, to int64) ([]*TSLogRow, error) {
+	// Default is 15 minutes range
+	if to == -1 {
+		to = time.Now().UTC().Unix()
+	}
+	if from == -1 {
+		from = to - 900
+	}
+
+	rows := []*TSLogRow{}
+	query := fmt.Sprintf("SELECT * FROM %v WHERE cluster_id=$1 AND created >= to_timestamp($2) at time zone 'utc' AND created <= to_timestamp($3) at time zone 'utc' ORDER BY created DESC", ts.table)
+	err := ts.db.Select(&rows, query, clusterID, from, to)
+
+	println(query)
+	println(from)
+	println(to)
+
+	if err != nil {
+		err = fmt.Errorf("%v. Query: %v", err.Error(), query)
+	}
+	return rows, err
+}
+
+// AllByClusterIDRangeAndQuery returns all rows by resourced query.
+func (ts *TSExecutorLog) AllByClusterIDRangeAndQuery(tx *sqlx.Tx, clusterID int64, from, to int64, resourcedQuery string) ([]*TSLogRow, error) {
+	pgQuery := querybuilder.Parse(resourcedQuery)
+	if pgQuery == "" {
+		return ts.AllByClusterIDAndRange(tx, clusterID, from, to)
+	}
+
+	rows := []*TSLogRow{}
+	query := fmt.Sprintf("SELECT * FROM %v WHERE cluster_id=$1 AND created >= to_timestamp($2) at time zone 'utc' AND created <= to_timestamp($3) at time zone 'utc' AND %v ORDER BY created DESC", ts.table, pgQuery)
+	err := ts.db.Select(&rows, query, clusterID, from, to)
+
+	if err != nil {
+		err = fmt.Errorf("%v. Query: %v", err.Error(), query)
+	}
+	return rows, err
 }

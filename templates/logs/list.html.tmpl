@@ -83,8 +83,8 @@ $('#search-input').bind("input propertychange", function(e) {
                 </div>
 
                 <ul class="nav nav-tabs">
-                    <li role="presentation" class="active"><a href="/logs">Logs</a></li>
-                    <li role="presentation"><a href="/logs/executors">Executor Logs</a></li>
+                    <li role="presentation" class="tabs logs-tab"><a href="/logs">Logs</a></li>
+                    <li role="presentation" class="tabs executor-logs-tab"><a href="/logs/executors">Executor Logs</a></li>
                 </ul>
             </div>
         </div>
@@ -198,6 +198,14 @@ function setupPrevAndNextArrows(range, rangeText, from, to, _rev) {
 }
 
 $(document).ready(function() {
+    if(window.location.pathname.indexOf('/executors') != -1) {
+        $('.tabs').removeClass('active');
+        $('.executor-logs-tab').addClass('active');
+    } else {
+        $('.tabs').removeClass('active');
+        $('.logs-tab').addClass('active');
+    }
+
     var to = {{ .To }};
     var from = {{ .From }};
     var range = to - from;
