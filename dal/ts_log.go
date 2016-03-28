@@ -26,7 +26,7 @@ type AgentLogPayload struct {
 		Tags map[string]string
 	}
 	Data struct {
-		LogLines []string
+		Loglines []string
 		Filename string
 	}
 }
@@ -59,7 +59,7 @@ func (ts *TSLog) CreateFromJSON(tx *sqlx.Tx, clusterID int64, jsonData []byte) e
 		return err
 	}
 
-	return ts.Create(tx, clusterID, payload.Host.Name, payload.Host.Tags, payload.Data.LogLines, payload.Data.Filename)
+	return ts.Create(tx, clusterID, payload.Host.Name, payload.Host.Tags, payload.Data.Loglines, payload.Data.Filename)
 }
 
 // Create a new record.

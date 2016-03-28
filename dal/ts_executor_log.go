@@ -36,7 +36,7 @@ func (ts *TSExecutorLog) CreateFromJSON(tx *sqlx.Tx, clusterID int64, jsonData [
 		return err
 	}
 
-	return ts.Create(tx, clusterID, payload.Host.Name, payload.Host.Tags, payload.Data.LogLines)
+	return ts.Create(tx, clusterID, payload.Host.Name, payload.Host.Tags, payload.Data.Loglines)
 }
 
 // Create a new record.
@@ -44,15 +44,13 @@ func (ts *TSExecutorLog) Create(tx *sqlx.Tx, clusterID int64, hostname string, t
 	for _, logline := range loglines {
 		insertData := make(map[string]interface{})
 		insertData["cluster_id"] = clusterID
-		insertData["created"] = time.Now().UTC()
 		insertData["hostname"] = hostname
 		insertData["logline"] = logline
 
 		tagsInJson, err := json.Marshal(tags)
-		if err != nil {
-			continue
+		if err == nil {
+			insertData["tags"] = tagsInJson
 		}
-		insertData["tags"] = tagsInJson
 
 		_, err = ts.InsertIntoTable(tx, insertData)
 		if err != nil {
