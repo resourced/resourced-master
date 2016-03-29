@@ -228,56 +228,8 @@ func (ts *TSMetric) AllByMetricIDAndRange(tx *sqlx.Tx, clusterID, metricID int64
 	return rows, err
 }
 
-func (ts *TSMetric) AllByMetricIDAndInterval(tx *sqlx.Tx, clusterID, metricID int64, interval string) ([]*TSMetricRow, error) {
-	if interval == "" {
-		interval = "1 hour"
-	}
-
-	rows := []*TSMetricRow{}
-	query := fmt.Sprintf("SELECT * FROM %v WHERE cluster_id=$1 AND metric_id=$2 AND created >= (NOW() at time zone 'utc' - INTERVAL '%v') ORDER BY cluster_id,metric_id,created ASC", ts.table, interval)
-	err := ts.db.Select(&rows, query, clusterID, metricID)
-
-	if err != nil {
-		err = fmt.Errorf("%v. Query: %v", err.Error(), query)
-	}
-	return rows, err
-}
-
 func (ts *TSMetric) AllByMetricIDAndRangeForHighchart(tx *sqlx.Tx, clusterID, metricID int64, from, to int64) ([]*TSMetricHighchartPayload, error) {
 	tsMetricRows, err := ts.AllByMetricIDAndRange(tx, clusterID, metricID, from, to)
-	if err != nil {
-		return nil, err
-	}
-
-	// Group all TSMetricRows per host
-	mapHostsAndMetrics := make(map[string][]*TSMetricRow)
-
-	for _, tsMetricRow := range tsMetricRows {
-		host := tsMetricRow.Host
-
-		if _, ok := mapHostsAndMetrics[host]; !ok {
-			mapHostsAndMetrics[host] = make([]*TSMetricRow, 0)
-		}
-
-		mapHostsAndMetrics[host] = append(mapHostsAndMetrics[host], tsMetricRow)
-	}
-
-	// Then generate multiple Highchart payloads per all these hosts.
-	highChartPayloads := make([]*TSMetricHighchartPayload, 0)
-
-	for host, tsMetricRows := range mapHostsAndMetrics {
-		highChartPayload, err := ts.metricRowsForHighchart(tx, host, tsMetricRows)
-		if err != nil {
-			return nil, err
-		}
-		highChartPayloads = append(highChartPayloads, highChartPayload)
-	}
-
-	return highChartPayloads, nil
-}
-
-func (ts *TSMetric) AllByMetricIDAndIntervalForHighchart(tx *sqlx.Tx, clusterID, metricID int64, interval string) ([]*TSMetricHighchartPayload, error) {
-	tsMetricRows, err := ts.AllByMetricIDAndInterval(tx, clusterID, metricID, interval)
 	if err != nil {
 		return nil, err
 	}
