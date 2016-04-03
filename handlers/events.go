@@ -13,7 +13,6 @@ import (
 
 	"github.com/resourced/resourced-master/dal"
 	"github.com/resourced/resourced-master/libhttp"
-	"github.com/resourced/resourced-master/multidb"
 )
 
 func GetApiEventsLine(w http.ResponseWriter, r *http.Request) {
@@ -46,7 +45,7 @@ func GetApiEventsLine(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tsEventsDB := context.Get(r, "multidb.TSEvents").(*multidb.MultiDB).PickRandom()
+	tsEventsDB := context.Get(r, "db.TSEvent").(*sqlx.DB)
 
 	rows, err := dal.NewTSEvent(tsEventsDB).AllLinesByClusterIDAndCreatedFromRangeForHighchart(nil, accessTokenRow.ClusterID, from, to)
 	if err != nil {
@@ -93,7 +92,7 @@ func GetApiEventsBand(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tsEventsDB := context.Get(r, "multidb.TSEvents").(*multidb.MultiDB).PickRandom()
+	tsEventsDB := context.Get(r, "db.TSEvent").(*sqlx.DB)
 
 	rows, err := dal.NewTSEvent(tsEventsDB).AllBandsByClusterIDAndCreatedFromRangeForHighchart(nil, accessTokenRow.ClusterID, from, to)
 	if err != nil {
@@ -125,16 +124,14 @@ func PostApiEvents(w http.ResponseWriter, r *http.Request) {
 
 	var tsEventRow *dal.TSEventRow
 
-	// Asynchronously write time series data to ts_metrics
 	id := dal.NewTSEvent(db).NewExplicitID()
 
-	dbs := context.Get(r, "multidb.TSEvents").(*multidb.MultiDB).PickMultipleForWrites()
-	for _, db := range dbs {
-		tsEventRow, err = dal.NewTSEvent(db).CreateFromJSON(nil, id, accessTokenRow.ClusterID, dataJson)
-		if err != nil {
-			libhttp.HandleErrorJson(w, err)
-			return
-		}
+	tsEventsDB := context.Get(r, "db.TSEvent").(*sqlx.DB)
+
+	tsEventRow, err = dal.NewTSEvent(tsEventsDB).CreateFromJSON(nil, id, accessTokenRow.ClusterID, dataJson)
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
 	}
 
 	tsEventRowJson, err := json.Marshal(tsEventRow)
@@ -157,14 +154,12 @@ func DeleteApiEventsID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Asynchronously write time series data to ts_metrics
-	dbs := context.Get(r, "multidb.TSEvents").(*multidb.MultiDB).PickMultipleForWrites()
-	for _, db := range dbs {
-		_, err = dal.NewTSEvent(db).DeleteByClusterIDAndID(nil, accessTokenRow.ClusterID, id)
-		if err != nil {
-			libhttp.HandleErrorJson(w, err)
-			return
-		}
+	tsEventsDB := context.Get(r, "db.TSEvent").(*sqlx.DB)
+
+	_, err = dal.NewTSEvent(tsEventsDB).DeleteByClusterIDAndID(nil, accessTokenRow.ClusterID, id)
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
 	}
 
 	w.Write([]byte(fmt.Sprintf(`{"Message": "Deleted event", "ID": %v"}`, id)))

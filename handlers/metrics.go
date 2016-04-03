@@ -12,7 +12,6 @@ import (
 
 	"github.com/resourced/resourced-master/dal"
 	"github.com/resourced/resourced-master/libhttp"
-	"github.com/resourced/resourced-master/multidb"
 )
 
 func PostMetrics(w http.ResponseWriter, r *http.Request) {
@@ -82,9 +81,9 @@ func GetApiTSMetricsByHost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tsMetricsDB := context.Get(r, "multidb.TSMetrics").(*multidb.MultiDB).PickRandom()
+	tsMetricDB := context.Get(r, "db.TSMetric").(*sqlx.DB)
 
-	hcMetrics, err := dal.NewTSMetric(tsMetricsDB).AllByMetricIDHostAndRangeForHighchart(nil, metricRow.ClusterID, id, host, from, to)
+	hcMetrics, err := dal.NewTSMetric(tsMetricDB).AllByMetricIDHostAndRangeForHighchart(nil, metricRow.ClusterID, id, host, from, to)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
@@ -143,9 +142,9 @@ func GetApiTSMetricsByHost15Min(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tsMetricsDB := context.Get(r, "multidb.TSMetrics").(*multidb.MultiDB).PickRandom()
+	tsMetricDB := context.Get(r, "db.TSMetric").(*sqlx.DB)
 
-	hcMetrics, err := dal.NewTSMetricAggr15m(tsMetricsDB).AllByMetricIDHostAndRangeForHighchart(nil, metricRow.ClusterID, id, host, from, to)
+	hcMetrics, err := dal.NewTSMetricAggr15m(tsMetricDB).AllByMetricIDHostAndRangeForHighchart(nil, metricRow.ClusterID, id, host, from, to)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
@@ -202,9 +201,9 @@ func GetApiTSMetrics(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tsMetricsDB := context.Get(r, "multidb.TSMetrics").(*multidb.MultiDB).PickRandom()
+	tsMetricDB := context.Get(r, "db.TSMetric").(*sqlx.DB)
 
-	hcMetrics, err := dal.NewTSMetric(tsMetricsDB).AllByMetricIDAndRangeForHighchart(nil, metricRow.ClusterID, id, from, to)
+	hcMetrics, err := dal.NewTSMetric(tsMetricDB).AllByMetricIDAndRangeForHighchart(nil, metricRow.ClusterID, id, from, to)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
@@ -261,9 +260,9 @@ func GetApiTSMetrics15Min(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tsMetricsDB := context.Get(r, "multidb.TSMetrics").(*multidb.MultiDB).PickRandom()
+	tsMetricDB := context.Get(r, "db.TSMetric").(*sqlx.DB)
 
-	hcMetrics, err := dal.NewTSMetricAggr15m(tsMetricsDB).AllByMetricIDAndRangeForHighchart(nil, metricRow.ClusterID, id, from, to)
+	hcMetrics, err := dal.NewTSMetricAggr15m(tsMetricDB).AllByMetricIDAndRangeForHighchart(nil, metricRow.ClusterID, id, from, to)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return

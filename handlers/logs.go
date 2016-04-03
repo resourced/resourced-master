@@ -9,10 +9,10 @@ import (
 
 	"github.com/gorilla/context"
 	"github.com/gorilla/csrf"
+	"github.com/jmoiron/sqlx"
 
 	"github.com/resourced/resourced-master/dal"
 	"github.com/resourced/resourced-master/libhttp"
-	"github.com/resourced/resourced-master/multidb"
 )
 
 func GetLogs(w http.ResponseWriter, r *http.Request) {
@@ -45,7 +45,7 @@ func GetLogs(w http.ResponseWriter, r *http.Request) {
 
 	currentCluster := context.Get(r, "currentCluster").(*dal.ClusterRow)
 
-	tsLogsDB := context.Get(r, "multidb.TSLogs").(*multidb.MultiDB).PickRandom()
+	tsLogsDB := context.Get(r, "db.TSLog").(*sqlx.DB)
 
 	tsLogs, err := dal.NewTSLog(tsLogsDB).AllByClusterIDRangeAndQuery(nil, currentCluster.ID, from, to, query)
 	if err != nil {
@@ -112,7 +112,7 @@ func GetLogsExecutors(w http.ResponseWriter, r *http.Request) {
 
 	currentCluster := context.Get(r, "currentCluster").(*dal.ClusterRow)
 
-	tsExecutorLogsDB := context.Get(r, "multidb.TSExecutorLogs").(*multidb.MultiDB).PickRandom()
+	tsExecutorLogsDB := context.Get(r, "db.TSExecutorLog").(*sqlx.DB)
 
 	tsLogs, err := dal.NewTSExecutorLog(tsExecutorLogsDB).AllByClusterIDRangeAndQuery(nil, currentCluster.ID, from, to, query)
 	if err != nil {
@@ -160,13 +160,12 @@ func PostApiLogs(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	dbs := context.Get(r, "multidb.TSLogs").(*multidb.MultiDB).PickMultipleForWrites()
-	for _, db := range dbs {
-		err = dal.NewTSLog(db).CreateFromJSON(nil, accessTokenRow.ClusterID, dataJson)
-		if err != nil {
-			libhttp.HandleErrorJson(w, err)
-			return
-		}
+	tsLogsDB := context.Get(r, "db.TSLog").(*sqlx.DB)
+
+	err = dal.NewTSLog(tsLogsDB).CreateFromJSON(nil, accessTokenRow.ClusterID, dataJson)
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
 	}
 
 	w.Write([]byte(`{"Message": "Success"}`))

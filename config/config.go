@@ -8,7 +8,6 @@ import (
 	"github.com/BurntSushi/toml"
 	"github.com/jmoiron/sqlx"
 
-	"github.com/resourced/resourced-master/multidb"
 	"github.com/resourced/resourced/libstring"
 )
 
@@ -85,33 +84,28 @@ type GeneralConfig struct {
 
 		SMSEmailGateway map[string]string
 
-		DSNs                  []string
-		ReplicationPercentage int
-		DataRetention         int
+		DSN           string
+		DataRetention int
 	}
 
 	Metrics struct {
-		DSNs                  []string
-		ReplicationPercentage int
-		DataRetention         int
+		DSN           string
+		DataRetention int
 	}
 
 	Events struct {
-		DSNs                  []string
-		ReplicationPercentage int
-		DataRetention         int
+		DSN           string
+		DataRetention int
 	}
 
 	ExecutorLogs struct {
-		DSNs                  []string
-		ReplicationPercentage int
-		DataRetention         int
+		DSN           string
+		DataRetention int
 	}
 
 	Logs struct {
-		DSNs                  []string
-		ReplicationPercentage int
-		DataRetention         int
+		DSN           string
+		DataRetention int
 	}
 
 	Email *EmailConfig
@@ -119,65 +113,52 @@ type GeneralConfig struct {
 
 // NewDBConfig is the constructor for DBConfig.
 func NewDBConfig(generalConfig GeneralConfig) (*DBConfig, error) {
-	// Set defaults
-	if generalConfig.Watchers.ReplicationPercentage <= 0 {
-		generalConfig.Watchers.ReplicationPercentage = 100
-	}
-	if generalConfig.Metrics.ReplicationPercentage <= 0 {
-		generalConfig.Metrics.ReplicationPercentage = 100
-	}
-	if generalConfig.Events.ReplicationPercentage <= 0 {
-		generalConfig.Events.ReplicationPercentage = 100
-	}
-
 	conf := &DBConfig{}
 
-	coreDB, err := sqlx.Connect("postgres", generalConfig.DSN)
+	db, err := sqlx.Connect("postgres", generalConfig.DSN)
 	if err != nil {
 		return nil, err
 	}
-	conf.Core = coreDB
-	conf.CoreDSN = generalConfig.DSN
+	conf.Core = db
 
-	tsWatcherMultiDB, err := multidb.New(generalConfig.Watchers.DSNs, generalConfig.Watchers.ReplicationPercentage)
+	db, err = sqlx.Connect("postgres", generalConfig.Watchers.DSN)
 	if err != nil {
 		return nil, err
 	}
-	conf.TSWatchers = tsWatcherMultiDB
+	conf.TSWatcher = db
 
-	tsMetricMultiDB, err := multidb.New(generalConfig.Metrics.DSNs, generalConfig.Metrics.ReplicationPercentage)
+	db, err = sqlx.Connect("postgres", generalConfig.Metrics.DSN)
 	if err != nil {
 		return nil, err
 	}
-	conf.TSMetrics = tsMetricMultiDB
+	conf.TSMetric = db
 
-	tsEventMultiDB, err := multidb.New(generalConfig.Events.DSNs, generalConfig.Events.ReplicationPercentage)
+	db, err = sqlx.Connect("postgres", generalConfig.Events.DSN)
 	if err != nil {
 		return nil, err
 	}
-	conf.TSEvents = tsEventMultiDB
+	conf.TSEvent = db
 
-	tsExecutorLogMultiDB, err := multidb.New(generalConfig.ExecutorLogs.DSNs, generalConfig.ExecutorLogs.ReplicationPercentage)
+	db, err = sqlx.Connect("postgres", generalConfig.ExecutorLogs.DSN)
 	if err != nil {
 		return nil, err
 	}
-	conf.TSExecutorLogs = tsExecutorLogMultiDB
+	conf.TSExecutorLog = db
 
-	tsLogMultiDB, err := multidb.New(generalConfig.Logs.DSNs, generalConfig.Logs.ReplicationPercentage)
+	db, err = sqlx.Connect("postgres", generalConfig.Logs.DSN)
 	if err != nil {
 		return nil, err
 	}
-	conf.TSLogs = tsLogMultiDB
+	conf.TSLog = db
 
 	return conf, nil
 }
 
 type DBConfig struct {
-	Core           *sqlx.DB
-	CoreDSN        string
-	TSWatchers     *multidb.MultiDB
-	TSMetrics      *multidb.MultiDB
-	TSEvents       *multidb.MultiDB
-	TSExecutorLogs *multidb.MultiDB
-	TSLogs         *multidb.MultiDB
+	Core          *sqlx.DB
+	TSWatcher     *sqlx.DB
+	TSMetric      *sqlx.DB
+	TSEvent       *sqlx.DB
+	TSExecutorLog *sqlx.DB
+	TSLog         *sqlx.DB
 }

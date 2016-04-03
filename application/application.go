@@ -181,84 +181,74 @@ func (app *Application) mux() *mux.Router {
 
 func (app *Application) PruneAll() {
 	for {
-		app.PruneTSWatchersOnce()
-		app.PruneTSMetricsOnce()
-		app.PruneTSEventsOnce()
-		app.PruneTSExecutorLogsOnce()
-		app.PruneTSLogsOnce()
+		app.PruneTSWatcherOnce()
+		app.PruneTSMetricOnce()
+		app.PruneTSEventOnce()
+		app.PruneTSExecutorLogOnce()
+		app.PruneTSLogOnce()
 
 		libtime.SleepString("24h")
 	}
 }
 
-func (app *Application) PruneTSWatchersOnce() {
-	for _, db := range app.DBConfig.TSWatchers.DBs {
-		go func() {
-			err := dal.NewTSWatcher(db).DeleteByDayInterval(nil, app.GeneralConfig.Watchers.DataRetention)
-			if err != nil {
-				logrus.WithFields(logrus.Fields{
-					"Method":        "TSWatcher.DeleteByDayInterval",
-					"DataRetention": app.GeneralConfig.Watchers.DataRetention,
-				}).Error(err)
-			}
-		}()
-	}
+func (app *Application) PruneTSWatcherOnce() {
+	go func() {
+		err := dal.NewTSWatcher(app.DBConfig.TSWatcher).DeleteByDayInterval(nil, app.GeneralConfig.Watchers.DataRetention)
+		if err != nil {
+			logrus.WithFields(logrus.Fields{
+				"Method":        "TSWatcher.DeleteByDayInterval",
+				"DataRetention": app.GeneralConfig.Watchers.DataRetention,
+			}).Error(err)
+		}
+	}()
 }
 
-func (app *Application) PruneTSMetricsOnce() {
-	for _, db := range app.DBConfig.TSMetrics.DBs {
-		go func() {
-			err := dal.NewTSMetric(db).DeleteByDayInterval(nil, app.GeneralConfig.Metrics.DataRetention)
-			if err != nil {
-				logrus.WithFields(logrus.Fields{
-					"Method":        "TSMetric.DeleteByDayInterval",
-					"DataRetention": app.GeneralConfig.Metrics.DataRetention,
-				}).Error(err)
-			}
-		}()
-	}
+func (app *Application) PruneTSMetricOnce() {
+	go func() {
+		err := dal.NewTSMetric(app.DBConfig.TSMetric).DeleteByDayInterval(nil, app.GeneralConfig.Metrics.DataRetention)
+		if err != nil {
+			logrus.WithFields(logrus.Fields{
+				"Method":        "TSMetric.DeleteByDayInterval",
+				"DataRetention": app.GeneralConfig.Metrics.DataRetention,
+			}).Error(err)
+		}
+	}()
 }
 
-func (app *Application) PruneTSEventsOnce() {
-	for _, db := range app.DBConfig.TSEvents.DBs {
-		go func() {
-			err := dal.NewTSEvent(db).DeleteByDayInterval(nil, app.GeneralConfig.Events.DataRetention)
-			if err != nil {
-				logrus.WithFields(logrus.Fields{
-					"Method":        "TSEvent.DeleteByDayInterval",
-					"DataRetention": app.GeneralConfig.Events.DataRetention,
-				}).Error(err)
-			}
-		}()
-	}
+func (app *Application) PruneTSEventOnce() {
+	go func() {
+		err := dal.NewTSEvent(app.DBConfig.TSEvent).DeleteByDayInterval(nil, app.GeneralConfig.Events.DataRetention)
+		if err != nil {
+			logrus.WithFields(logrus.Fields{
+				"Method":        "TSEvent.DeleteByDayInterval",
+				"DataRetention": app.GeneralConfig.Events.DataRetention,
+			}).Error(err)
+		}
+	}()
 }
 
-func (app *Application) PruneTSExecutorLogsOnce() {
-	for _, db := range app.DBConfig.TSExecutorLogs.DBs {
-		go func() {
-			err := dal.NewTSExecutorLog(db).DeleteByDayInterval(nil, app.GeneralConfig.ExecutorLogs.DataRetention)
-			if err != nil {
-				logrus.WithFields(logrus.Fields{
-					"Method":        "TSExecutorLog.DeleteByDayInterval",
-					"DataRetention": app.GeneralConfig.ExecutorLogs.DataRetention,
-				}).Error(err)
-			}
-		}()
-	}
+func (app *Application) PruneTSExecutorLogOnce() {
+	go func() {
+		err := dal.NewTSExecutorLog(app.DBConfig.TSExecutorLog).DeleteByDayInterval(nil, app.GeneralConfig.ExecutorLogs.DataRetention)
+		if err != nil {
+			logrus.WithFields(logrus.Fields{
+				"Method":        "TSExecutorLog.DeleteByDayInterval",
+				"DataRetention": app.GeneralConfig.ExecutorLogs.DataRetention,
+			}).Error(err)
+		}
+	}()
 }
 
-func (app *Application) PruneTSLogsOnce() {
-	for _, db := range app.DBConfig.TSLogs.DBs {
-		go func() {
-			err := dal.NewTSLog(db).DeleteByDayInterval(nil, app.GeneralConfig.Logs.DataRetention)
-			if err != nil {
-				logrus.WithFields(logrus.Fields{
-					"Method":        "TSLog.DeleteByDayInterval",
-					"DataRetention": app.GeneralConfig.Logs.DataRetention,
-				}).Error(err)
-			}
-		}()
-	}
+func (app *Application) PruneTSLogOnce() {
+	go func() {
+		err := dal.NewTSLog(app.DBConfig.TSLog).DeleteByDayInterval(nil, app.GeneralConfig.Logs.DataRetention)
+		if err != nil {
+			logrus.WithFields(logrus.Fields{
+				"Method":        "TSLog.DeleteByDayInterval",
+				"DataRetention": app.GeneralConfig.Logs.DataRetention,
+			}).Error(err)
+		}
+	}()
 }
 
 func (app *Application) WatchAll() {
@@ -343,20 +333,17 @@ func (app *Application) PassiveWatchOnce(clusterID int64, watcherRow *dal.Watche
 		}
 
 		// Write to ts_watchers asynchronously
-		dbs := app.DBConfig.TSWatchers.PickMultipleForWrites()
-		for _, db := range dbs {
-			go func() {
-				err := dal.NewTSWatcher(db).Create(nil, clusterID, watcherRow.ID, numAffectedHosts, jsonData)
-				if err != nil {
-					logrus.WithFields(logrus.Fields{
-						"Method":          "TSWatcher.Create",
-						"ClusterID":       clusterID,
-						"WatcherID":       watcherRow.ID,
-						"NumAffectedHost": numAffectedHosts,
-					}).Error(err)
-				}
-			}()
-		}
+		go func() {
+			err := dal.NewTSWatcher(app.DBConfig.TSWatcher).Create(nil, clusterID, watcherRow.ID, numAffectedHosts, jsonData)
+			if err != nil {
+				logrus.WithFields(logrus.Fields{
+					"Method":          "TSWatcher.Create",
+					"ClusterID":       clusterID,
+					"WatcherID":       watcherRow.ID,
+					"NumAffectedHost": numAffectedHosts,
+				}).Error(err)
+			}
+		}()
 	}
 
 	return err
@@ -449,20 +436,17 @@ func (app *Application) ActiveWatchOnce(clusterID int64, watcherRow *dal.Watcher
 		}
 
 		// Write to ts_watchers asynchronously
-		dbs := app.DBConfig.TSWatchers.PickMultipleForWrites()
-		for _, db := range dbs {
-			go func() {
-				err := dal.NewTSWatcher(db).Create(nil, clusterID, watcherRow.ID, int64(numAffectedHosts), jsonData)
-				if err != nil {
-					logrus.WithFields(logrus.Fields{
-						"Method":          "TSWatcher.Create",
-						"ClusterID":       clusterID,
-						"WatcherID":       watcherRow.ID,
-						"NumAffectedHost": numAffectedHosts,
-					}).Error(err)
-				}
-			}()
-		}
+		go func() {
+			err := dal.NewTSWatcher(app.DBConfig.TSWatcher).Create(nil, clusterID, watcherRow.ID, int64(numAffectedHosts), jsonData)
+			if err != nil {
+				logrus.WithFields(logrus.Fields{
+					"Method":          "TSWatcher.Create",
+					"ClusterID":       clusterID,
+					"WatcherID":       watcherRow.ID,
+					"NumAffectedHost": numAffectedHosts,
+				}).Error(err)
+			}
+		}()
 	}
 
 	return nil
@@ -474,15 +458,13 @@ func (app *Application) RunTrigger(clusterID int64, watcherRow *dal.WatcherRow) 
 		return nil
 	}
 
-	tsWatcherDB := app.DBConfig.TSWatchers.PickRandom()
-
 	triggerRows, err := dal.NewWatcherTrigger(app.DBConfig.Core).AllByClusterIDAndWatcherID(nil, clusterID, watcherRow.ID)
 	if err != nil {
 		return err
 	}
 
 	for _, triggerRow := range triggerRows {
-		tsWatchers, err := dal.NewTSWatcher(tsWatcherDB).AllViolationsByClusterIDWatcherIDAndInterval(nil, clusterID, watcherRow.ID, watcherRow.LowAffectedHosts, triggerRow.CreatedInterval)
+		tsWatchers, err := dal.NewTSWatcher(app.DBConfig.TSWatcher).AllViolationsByClusterIDWatcherIDAndInterval(nil, clusterID, watcherRow.ID, watcherRow.LowAffectedHosts, triggerRow.CreatedInterval)
 		if err != nil {
 			return err
 		}

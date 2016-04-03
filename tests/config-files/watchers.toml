@@ -1,9 +1,7 @@
 [Watchers]
 ListFetchInterval = "60s"
-DSNs = [
-    "postgres://localhost:5432/resourced-master-ts-watchers-1?sslmode=disable",
-    "postgres://localhost:5432/resourced-master-ts-watchers-2?sslmode=disable"
-]
+DSN = "postgres://localhost:5432/resourced-master-ts-watchers?sslmode=disable"
+
 
 # DataRetention defines how long time series data are kept.
 # The unit is defined in days.

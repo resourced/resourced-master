@@ -5,10 +5,10 @@ import (
 	"net/http"
 
 	"github.com/gorilla/context"
+	"github.com/jmoiron/sqlx"
 
 	"github.com/resourced/resourced-master/dal"
 	"github.com/resourced/resourced-master/libhttp"
-	"github.com/resourced/resourced-master/multidb"
 )
 
 func PostApiExecutors(w http.ResponseWriter, r *http.Request) {
@@ -22,13 +22,12 @@ func PostApiExecutors(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	dbs := context.Get(r, "multidb.TSExecutorLogs").(*multidb.MultiDB).PickMultipleForWrites()
-	for _, db := range dbs {
-		err = dal.NewTSExecutorLog(db).CreateFromJSON(nil, accessTokenRow.ClusterID, dataJson)
-		if err != nil {
-			libhttp.HandleErrorJson(w, err)
-			return
-		}
+	tsExecutorLogDB := context.Get(r, "db.TSExecutorLog").(*sqlx.DB)
+
+	err = dal.NewTSExecutorLog(tsExecutorLogDB).CreateFromJSON(nil, accessTokenRow.ClusterID, dataJson)
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
 	}
 
 	w.Write([]byte(`{"Message": "Success"}`))

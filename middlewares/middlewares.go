@@ -53,11 +53,11 @@ func SetDBs(dbConfig *config.DBConfig) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			context.Set(r, "db.Core", dbConfig.Core)
-			context.Set(r, "multidb.TSWatchers", dbConfig.TSWatchers)
-			context.Set(r, "multidb.TSMetrics", dbConfig.TSMetrics)
-			context.Set(r, "multidb.TSEvents", dbConfig.TSEvents)
-			context.Set(r, "multidb.TSExecutorLogs", dbConfig.TSExecutorLogs)
-			context.Set(r, "multidb.TSLogs", dbConfig.TSLogs)
+			context.Set(r, "db.TSWatcher", dbConfig.TSWatcher)
+			context.Set(r, "db.TSMetric", dbConfig.TSMetric)
+			context.Set(r, "db.TSEvent", dbConfig.TSEvent)
+			context.Set(r, "db.TSExecutorLog", dbConfig.TSExecutorLog)
+			context.Set(r, "db.TSLog", dbConfig.TSLog)
 
 			next.ServeHTTP(w, r)
 		})
