@@ -33,11 +33,11 @@ func (d *Daemon) daemonRowFromSqlResult(tx *sqlx.Tx, sqlResult sql.Result) (*Dae
 		return nil, err
 	}
 
-	return d.GetById(tx, id)
+	return d.GetByID(tx, id)
 }
 
-// GetById returns one record by id.
-func (d *Daemon) GetById(tx *sqlx.Tx, id int64) (*DaemonRow, error) {
+// GetByID returns one record by id.
+func (d *Daemon) GetByID(tx *sqlx.Tx, id int64) (*DaemonRow, error) {
 	row := &DaemonRow{}
 	query := fmt.Sprintf("SELECT * FROM %v WHERE id=$1", d.table)
 	err := d.db.Get(row, query, id)

@@ -75,7 +75,7 @@ func GetApiTSMetricsByHost(w http.ResponseWriter, r *http.Request) {
 
 	host := mux.Vars(r)["host"]
 
-	metricRow, err := dal.NewMetric(db).GetById(nil, id)
+	metricRow, err := dal.NewMetric(db).GetByID(nil, id)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
@@ -136,7 +136,7 @@ func GetApiTSMetricsByHost15Min(w http.ResponseWriter, r *http.Request) {
 
 	host := mux.Vars(r)["host"]
 
-	metricRow, err := dal.NewMetric(db).GetById(nil, id)
+	metricRow, err := dal.NewMetric(db).GetByID(nil, id)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
@@ -195,7 +195,7 @@ func GetApiTSMetrics(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	metricRow, err := dal.NewMetric(db).GetById(nil, id)
+	metricRow, err := dal.NewMetric(db).GetByID(nil, id)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
@@ -254,7 +254,7 @@ func GetApiTSMetrics15Min(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	metricRow, err := dal.NewMetric(db).GetById(nil, id)
+	metricRow, err := dal.NewMetric(db).GetByID(nil, id)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return

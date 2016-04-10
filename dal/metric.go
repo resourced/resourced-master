@@ -42,11 +42,11 @@ func (d *Metric) metricRowFromSqlResult(tx *sqlx.Tx, sqlResult sql.Result) (*Met
 		return nil, err
 	}
 
-	return d.GetById(tx, id)
+	return d.GetByID(tx, id)
 }
 
-// GetById returns one record by id.
-func (d *Metric) GetById(tx *sqlx.Tx, id int64) (*MetricRow, error) {
+// GetByID returns one record by id.
+func (d *Metric) GetByID(tx *sqlx.Tx, id int64) (*MetricRow, error) {
 	row := &MetricRow{}
 	query := fmt.Sprintf("SELECT * FROM %v WHERE id=$1", d.table)
 	err := d.db.Get(row, query, id)

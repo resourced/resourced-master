@@ -110,3 +110,18 @@ CREATE TABLE graphs (
 CREATE INDEX idx_graphs_name on graphs (name);
 CREATE INDEX idx_graphs_description on graphs (description);
 CREATE INDEX idx_graphs_metrics ON graphs USING gin(metrics);
+
+CREATE TABLE checks (
+    id BIGSERIAL PRIMARY KEY NOT NULL,
+    cluster_id bigint REFERENCES clusters (id),
+    name TEXT NOT NULL,
+    interval TEXT NOT NULL,
+    hosts_query TEXT,
+    hosts_list JSONB DEFAULT '[]',
+    expressions JSONB,
+    triggers JSONB,
+    last_result_hosts JSONB DEFAULT '[]',
+    last_result_expressions JSONB
+);
+
+CREATE INDEX idx_checks_name on checks (name);

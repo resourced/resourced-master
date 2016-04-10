@@ -31,11 +31,11 @@ func (a *Cluster) clusterRowFromSqlResult(tx *sqlx.Tx, sqlResult sql.Result) (*C
 		return nil, err
 	}
 
-	return a.GetById(tx, id)
+	return a.GetByID(tx, id)
 }
 
-// GetById returns one record by id.
-func (a *Cluster) GetById(tx *sqlx.Tx, id int64) (*ClusterRow, error) {
+// GetByID returns one record by id.
+func (a *Cluster) GetByID(tx *sqlx.Tx, id int64) (*ClusterRow, error) {
 	row := &ClusterRow{}
 	query := fmt.Sprintf("SELECT * FROM %v WHERE id=$1", a.table)
 	err := a.db.Get(row, query, id)

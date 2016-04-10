@@ -1,0 +1,275 @@
+{{define "second-navbar"}}
+{{ end }}
+
+{{define "content"}}
+<!-- Checks -->
+<div class="container checks">
+    <div class="row">
+        <div class="col-lg-12">
+            <div class="page-header">
+                <button class="btn btn-primary pull-right" data-toggle="modal" data-target="#checks-modal">
+                    New Check
+                </button>
+
+                <input id="search-input" name="q" type="text" class="form-control pull-right check-search-input" placeholder="Type to search" style="width: 400px" onkeyup="filter(this)">
+
+                <h2>Checks</h2>
+            </div>
+        </div>
+    </div>
+
+    {{ range $check := .Checks }}
+    <div class="row checks">
+        <div class="col-xs-12 col-lg-12">
+            <div class="pull-right">
+                <div class="btn-group" role="group">
+                    <button class="btn btn-default btn-xs" data-toggle="modal" data-target="#checks-modal"
+                        data-id="{{ $check.ID }}"
+                        data-name="{{ $check.Name }}">
+                        Details
+                    </button>
+
+                    <a class="btn btn-success btn-xs" href="/checks/{{ $check.ID }}">View</a>
+                </div>
+            </div>
+
+            <h4 style="margin-top: 0">{{ $check.Name }}</h4>
+        </div>
+    </div>
+    {{ end }}
+</div>
+
+<!-- Checks Modal -->
+<div class="modal fade" id="checks-modal" tabindex="-1" role="dialog" aria-labelledby="checks-details-label" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post" action="/checks">
+                <input type="hidden" name="gorilla.csrf.Token" value="{{ $.CSRFToken }}">
+                <input type="hidden" name="_method" value="post">
+
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                    <h4 class="modal-title" id="checks-details-label">1. Basic Check Info</h4>
+                </div>
+
+                <div class="modal-body">
+                    <div class="row form-group">
+                        <div class="col-sm-6">
+                            <label>Name</label>
+                            <input type="text" class="form-control" name="Name" value="">
+                        </div>
+
+                        <div class="col-sm-6">
+                            <label>Interval</label>
+
+                            <div class="input-group">
+                                <input type="text" class="form-control" name="IntervalInSeconds">
+                                <span class="input-group-addon">seconds</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-header">
+                    <h4 class="modal-title" id="checks-details-label">2. Hosts to Check</h4>
+                </div>
+
+                <div class="modal-body">
+                    <div class="row form-group">
+                        <div class="col-sm-12">
+                            <label>Query for Hosts</label>
+                            <div class="input-group">
+                                <input type="text" class="form-control" name="HostsQuery">
+                                <span class="input-group-btn">
+                                    <button class="btn btn-info" type="button">Search</button>
+                                </span>
+                            </div>
+                        </div>
+
+                        <div class="col-sm-12">
+                            <label>or, provide explicit hosts</label>
+                            <textarea class="form-control" name="HostsList" row="10" placeholder="One host, one line"></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-header">
+                    <h4 class="modal-title" id="checks-details-label">3. Check Expressions</h4>
+                </div>
+
+                <input type="hidden" name="Expressions">
+
+                <div class="modal-body">
+                    <div class="row form-group">
+                        <div class="col-sm-12">
+                            Check
+
+                            <select style="color: #000; margin-bottom: 10px">
+                                <option value="RawHostData">raw host data</option>
+                                <option value="RelativeHostData">relative host data</option>
+                                <option value="LogData">log data</option>
+                                <option value="Ping">ping</option>
+                                <option value="SSH">SSH</option>
+                                <option value="HTTP">HTTP</option>
+                            </select>
+
+                            <br>
+
+                            where
+
+                            <select style="color: #000; margin-bottom: 10px">
+                                <option value="/uptime.loadavg">/uptime.loadavg</option>
+                            </select>
+
+                            <select style="color: #000; margin-bottom: 10px">
+                                <option value=">">></option>
+                                <option value=">">>=</option>
+                                <option value="=">=</option>
+                                <option value="<"><</option>
+                                <option value="<="><=</option>
+                            </select>
+
+                            <input type="number" style="width: 70px" value="1">
+
+                            <br>
+
+                            affecting at minimum <input type="number" style="width: 70px" value="1"> hosts.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-header">
+                    <select style="color: #000; width: 100%">
+                        <option value="AND">AND</option>
+                        <option value="OR">OR</option>
+                    </select>
+                </div>
+
+                <div class="modal-body">
+                    <div class="row form-group">
+                        <div class="col-sm-12">
+                            Check
+
+                            <select style="color: #000; margin-bottom: 10px">
+                                <option value="RelativeHostData">relative host data</option>
+                                <option value="RawHostData">raw host data</option>
+                                <option value="LogData">log data</option>
+                                <option value="Ping">ping</option>
+                                <option value="SSH">SSH</option>
+                                <option value="HTTP">HTTP</option>
+                            </select>
+
+                            <br>
+
+                            where
+
+                            <select style="color: #000; margin-bottom: 10px">
+                                <option value="/uptime.loadavg">/uptime.loadavg</option>
+                            </select>
+
+                            is <input type="number" style="width: 70px" value="200"> percent
+
+                            <select style="color: #000; margin-bottom: 10px">
+                                <option value=">">greater than</option>
+                                <option value="<">less than</option>
+                            </select>
+
+                            <br>
+
+                            the previous <input type="number" style="width: 70px" value="15"> minutes of
+
+                            <select style="color: #000; margin-bottom: 10px">
+                                <option value="avg">average</option>
+                                <option value="max">maximum</option>
+                                <option value="min">minimum</option>
+                                <option value="sum">sum</option>
+                            </select>
+
+                            host data
+
+                            <br>
+
+                            affecting at minimum <input type="number" style="width: 70px" value="1"> hosts.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-danger pull-left" data-dismiss="modal">
+                        Delete
+                    </button>
+
+                    <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                    <button type="submit" class="btn btn-primary">Save</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+function filter(element) {
+    var value = $(element).val();
+    if(value == '') {
+        $('.row.checks').show();
+    }
+    else {
+        value = value.toLowerCase();
+
+        $('.row.checks').each(function() {
+            var title = $(this).find('h4').text().toLowerCase().trim();
+            var description = $(this).find('p').text().toLowerCase().trim();
+
+            if(title.search(value) > -1 || description.search(value) > -1) {
+                $(this).show();
+            }
+            else {
+                $(this).hide();
+            }
+        });
+    }
+};
+
+$(document).ready(function() {
+    if($('.row.checks').length == 0) {
+        $('#search-input').hide();
+    }
+});
+
+$('#checks-modal form .btn-primary').click(function() {
+    $('#checks-modal form input[name="_method"]').val('put');
+    $(this).closest('form').submit();
+});
+
+$('#checks-modal').on('show.bs.modal', function (event) {
+    var button = $(event.relatedTarget);   // Button that triggered the modal
+    var id = button.data('id');
+    var name = button.data('name');
+    var description = button.data('description');
+    var range = button.data('range');
+
+    var modal = $(this);
+
+    if(name) {
+        modal.find('input[name="Name"]').val(name);
+    }
+    if(description) {
+        modal.find('textarea').val(description);
+    }
+    if(range) {
+        modal.find('select[name="Range"]').val(range);
+    }
+
+    if(id) {
+        modal.find('form').attr('action', '/checks/' + id);
+        modal.find('.btn-danger').show();
+    } else {
+        modal.find('input[name="Name"]').val('');
+        modal.find('textarea').val('');
+
+        modal.find('form').attr('action', '/checks');
+        modal.find('.btn-danger').hide();
+    }
+});
+</script>
+{{end}}

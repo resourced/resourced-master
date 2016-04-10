@@ -68,7 +68,7 @@ func (a *Graph) rowFromSqlResult(tx *sqlx.Tx, sqlResult sql.Result) (*GraphRow, 
 		return nil, err
 	}
 
-	return a.GetById(tx, id)
+	return a.GetByID(tx, id)
 }
 
 func (a *Graph) BuildMetricsJSONForSave(tx *sqlx.Tx, clusterID int64, idsAndKeys []string) ([]byte, error) {
@@ -100,8 +100,8 @@ func (a *Graph) BuildMetricsJSONForSave(tx *sqlx.Tx, clusterID int64, idsAndKeys
 	return json.Marshal(metrics)
 }
 
-// GetById returns one record by id.
-func (a *Graph) GetById(tx *sqlx.Tx, id int64) (*GraphRow, error) {
+// GetByID returns one record by id.
+func (a *Graph) GetByID(tx *sqlx.Tx, id int64) (*GraphRow, error) {
 	row := &GraphRow{}
 	query := fmt.Sprintf("SELECT * FROM %v WHERE id=$1", a.table)
 	err := a.db.Get(row, query, id)
