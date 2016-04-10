@@ -1,8 +1,10 @@
 package handlers
 
 import (
+	"encoding/json"
 	"html/template"
 	"net/http"
+	"strings"
 
 	"github.com/gorilla/context"
 	"github.com/gorilla/csrf"
@@ -50,6 +52,50 @@ func GetChecks(w http.ResponseWriter, r *http.Request) {
 	}
 
 	tmpl.Execute(w, data)
+}
+
+func PostChecks(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "text/html")
+
+	currentCluster := context.Get(r, "currentCluster").(*dal.ClusterRow)
+
+	name := r.FormValue("Name")
+
+	intervalInSeconds := r.FormValue("IntervalInSeconds")
+	if intervalInSeconds == "" {
+		intervalInSeconds = "60"
+	}
+
+	hostsQuery := r.FormValue("HostsQuery")
+
+	hostsListWithNewlines := r.FormValue("HostsList")
+	hostsList := strings.Split(hostsListWithNewlines, "\n")
+
+	hostsListJSON, err := json.Marshal(hostsList)
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
+
+	db := context.Get(r, "db.Core").(*sqlx.DB)
+
+	data := make(map[string]interface{})
+	data["name"] = name
+	data["interval"] = intervalInSeconds + "s"
+	data["hosts_query"] = hostsQuery
+	data["hosts_list"] = hostsListJSON
+	data["expressions"] = []byte("{}")
+	data["triggers"] = []byte("{}")
+	data["last_result_hosts"] = []byte("[]")
+	data["last_result_expressions"] = []byte("{}")
+
+	_, err = dal.NewCheck(db).Create(nil, currentCluster.ID, data)
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
+
+	http.Redirect(w, r, "/checks", 301)
 }
 
 func PostPutDeleteCheckID(w http.ResponseWriter, r *http.Request) {

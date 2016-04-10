@@ -123,6 +123,7 @@ func (app *Application) mux() *mux.Router {
 	router.Handle("/logs/executors", alice.New(CSRF, MustLogin, SetClusters).ThenFunc(handlers.GetLogsExecutors)).Methods("GET")
 
 	router.Handle("/checks", alice.New(CSRF, MustLogin, SetClusters).ThenFunc(handlers.GetChecks)).Methods("GET")
+	router.Handle("/checks", alice.New(CSRF, MustLogin, SetClusters).ThenFunc(handlers.PostChecks)).Methods("POST")
 
 	router.Handle("/watchers", alice.New(CSRF, MustLogin, SetClusters).ThenFunc(handlers.GetWatchers)).Methods("GET")
 	router.Handle("/watchers", alice.New(CSRF, MustLogin, SetClusters).ThenFunc(handlers.PostWatchers)).Methods("POST")
