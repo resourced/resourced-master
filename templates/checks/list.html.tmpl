@@ -4,6 +4,14 @@
 {{define "content"}}
 <!-- Checks -->
 <div class="container checks">
+    {{ if eq (len .Metrics) 0 }}
+    <div class="jumbotron" style="margin-top: 40px">
+        <h2>Unable to create a check without metrics data</h2>
+        <p>You can start collecting metrics by pressing <a class="btn btn-success btn-sm" href="/">Chart Metric?</a> button under Hosts tab.</p>
+    </div>
+
+    {{ else }}
+
     <div class="row">
         <div class="col-lg-12">
             <div class="page-header">
@@ -23,19 +31,25 @@
         <div class="col-xs-12 col-lg-12">
             <div class="pull-right">
                 <div class="btn-group" role="group">
+                    <button class="btn btn-default btn-xs" data-toggle="modal" data-target="#triggers-modal"
+                        data-id="{{ $check.ID }}"
+                        data-name="{{ $check.Name }}">
+                        Triggers
+                    </button>
+
                     <button class="btn btn-default btn-xs" data-toggle="modal" data-target="#checks-modal"
                         data-id="{{ $check.ID }}"
                         data-name="{{ $check.Name }}">
-                        Details
+                        Edit
                     </button>
-
-                    <a class="btn btn-success btn-xs" href="/checks/{{ $check.ID }}">View</a>
                 </div>
             </div>
 
             <h4 style="margin-top: 0">{{ $check.Name }}</h4>
         </div>
     </div>
+    {{ end }}
+
     {{ end }}
 </div>
 
@@ -97,7 +111,7 @@
                     <h4 class="modal-title" id="checks-details-label">3. Check Expressions</h4>
                 </div>
 
-                <input type="hidden" name="Expressions">
+                <input type="hidden" name="Expressions" value="{}">
 
                 <div class="modal-body">
                     <div class="row form-group">
@@ -118,7 +132,9 @@
                             where
 
                             <select style="color: #000; margin-bottom: 10px">
-                                <option value="/uptime.loadavg">/uptime.loadavg</option>
+                                {{ range $metric := .Metrics }}
+                                <option value="{{ $metric.Key }}">{{ $metric.Key }}</option>
+                                {{ end }}
                             </select>
 
                             <select style="color: #000; margin-bottom: 10px">
@@ -206,6 +222,24 @@
         </div>
     </div>
 </div>
+
+<script type="text/template" id="check-expression-type-tmpl">
+    <select style="color: #000; margin-bottom: 10px">
+        <option value="RawHostData">raw host data</option>
+        <option value="RelativeHostData">relative host data</option>
+        <option value="LogData">log data</option>
+        <option value="Ping">ping</option>
+        <option value="SSH">SSH</option>
+        <option value="HTTP">HTTP</option>
+    </select>
+</script>
+
+<script type="text/template" id="check-expression-metrics-tmpl">
+    <select style="color: #000; margin-bottom: 10px">
+        <option value="/uptime.loadavg">/uptime.loadavg</option>
+    </select>
+</script>
+
 
 <script>
 function filter(element) {

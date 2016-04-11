@@ -17,6 +17,11 @@ func NewCheck(db *sqlx.DB) *Check {
 	return g
 }
 
+type CheckRowsWithError struct {
+	Checks []*CheckRow
+	Error  error
+}
+
 type CheckRow struct {
 	ID                    int64               `db:"id"`
 	ClusterID             int64               `db:"cluster_id"`

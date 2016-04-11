@@ -23,9 +23,42 @@ func GetChecks(w http.ResponseWriter, r *http.Request) {
 
 	currentCluster := context.Get(r, "currentCluster").(*dal.ClusterRow)
 
-	checks, err := dal.NewCheck(db).AllByClusterID(nil, currentCluster.ID)
-	if err != nil {
-		libhttp.HandleErrorJson(w, err)
+	// -----------------------------------
+	// Create channels to receive SQL rows
+	// -----------------------------------
+	checksChan := make(chan *dal.CheckRowsWithError)
+	defer close(checksChan)
+
+	metricsChan := make(chan *dal.MetricRowsWithError)
+	defer close(metricsChan)
+
+	// --------------------------
+	// Fetch SQL rows in parallel
+	// --------------------------
+	go func(currentCluster *dal.ClusterRow) {
+		checksWithError := &dal.CheckRowsWithError{}
+		checksWithError.Checks, checksWithError.Error = dal.NewCheck(db).AllByClusterID(nil, currentCluster.ID)
+		checksChan <- checksWithError
+	}(currentCluster)
+
+	go func(currentCluster *dal.ClusterRow) {
+		metricsWithError := &dal.MetricRowsWithError{}
+		metricsWithError.Metrics, metricsWithError.Error = dal.NewMetric(db).AllByClusterID(nil, currentCluster.ID)
+		metricsChan <- metricsWithError
+	}(currentCluster)
+
+	// -----------------------------------
+	// Wait for channels to return results
+	// -----------------------------------
+	checksWithError := <-checksChan
+	if checksWithError.Error != nil && checksWithError.Error.Error() != "sql: no rows in result set" {
+		libhttp.HandleErrorJson(w, checksWithError.Error)
+		return
+	}
+
+	metricsWithError := <-metricsChan
+	if metricsWithError.Error != nil && metricsWithError.Error.Error() != "sql: no rows in result set" {
+		libhttp.HandleErrorJson(w, metricsWithError.Error)
 		return
 	}
 
@@ -36,13 +69,15 @@ func GetChecks(w http.ResponseWriter, r *http.Request) {
 		Clusters           []*dal.ClusterRow
 		CurrentClusterJson string
 		Checks             []*dal.CheckRow
+		Metrics            []*dal.MetricRow
 	}{
 		csrf.Token(r),
 		context.Get(r, "addr").(string),
 		currentUser,
 		context.Get(r, "clusters").([]*dal.ClusterRow),
 		string(context.Get(r, "currentClusterJson").([]byte)),
-		checks,
+		checksWithError.Checks,
+		metricsWithError.Metrics,
 	}
 
 	tmpl, err := template.ParseFiles("templates/dashboard.html.tmpl", "templates/checks/list.html.tmpl")
