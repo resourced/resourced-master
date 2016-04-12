@@ -377,15 +377,17 @@ $(document).on('click', '.btn-remove-expression', function() {
 $(document).on('click', '.btn-add-expression', function() {
     $('.expression-container').append($('#expression-boolean-operator-tmpl').html());
     $('.expression-container').append('<div class="modal-body expression">' + $('.expression:first').html() + '</div>');
-
-    console.log(buildExpressions());
 });
 
 $('#checks-modal form .btn-primary').click(function() {
-    $('#checks-modal form input[name="_method"]').val('put');
-    if($('input[name="Name"]').val() != '') {
-        $(this).closest('form').submit();
+    if($('input[name="Name"]').val() == '') {
+        return false;
     }
+    var expressions = buildExpressions();
+
+    $(this).closest('form').find('input[name="Expressions"]').val(JSON.stringify(expressions));
+
+    $(this).closest('form').submit();
 });
 
 $('#checks-modal').on('show.bs.modal', function (event) {
@@ -409,6 +411,7 @@ $('#checks-modal').on('show.bs.modal', function (event) {
 
     if(id) {
         modal.find('form').attr('action', '/checks/' + id);
+        modal.find('form input[name="_method"]').val('put');
         modal.find('.btn-danger').show();
     } else {
         modal.find('input[name="Name"]').val('');
