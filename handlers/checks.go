@@ -94,14 +94,10 @@ func PostChecks(w http.ResponseWriter, r *http.Request) {
 
 	currentCluster := context.Get(r, "currentCluster").(*dal.ClusterRow)
 
-	name := r.FormValue("Name")
-
 	intervalInSeconds := r.FormValue("IntervalInSeconds")
 	if intervalInSeconds == "" {
 		intervalInSeconds = "60"
 	}
-
-	hostsQuery := r.FormValue("HostsQuery")
 
 	hostsListWithNewlines := r.FormValue("HostsList")
 	hostsList := strings.Split(hostsListWithNewlines, "\n")
@@ -115,11 +111,11 @@ func PostChecks(w http.ResponseWriter, r *http.Request) {
 	db := context.Get(r, "db.Core").(*sqlx.DB)
 
 	data := make(map[string]interface{})
-	data["name"] = name
+	data["name"] = r.FormValue("Name")
 	data["interval"] = intervalInSeconds + "s"
-	data["hosts_query"] = hostsQuery
+	data["hosts_query"] = r.FormValue("HostsQuery")
 	data["hosts_list"] = hostsListJSON
-	data["expressions"] = []byte("{}")
+	data["expressions"] = r.FormValue("Expressions")
 	data["triggers"] = []byte("{}")
 	data["last_result_hosts"] = []byte("[]")
 	data["last_result_expressions"] = []byte("{}")
