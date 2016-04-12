@@ -186,6 +186,16 @@ select {
     line-height: 1.0;
 }
 
+.expression select {
+    color: #000;
+    margin-bottom: 10px;
+}
+.expression-boolean-operator select {
+    color: #000;
+    margin-bottom: 10px;
+    width: 100%;
+}
+
 @media(max-width:1200px) {
     .form-group-search-and-save .search-form, .form-group-search-and-save .search-form .input-group {
         width: 832px;

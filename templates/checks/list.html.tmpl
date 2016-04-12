@@ -113,99 +113,93 @@
 
                 <input type="hidden" name="Expressions" value="{}">
 
-                <div class="modal-body">
-                    <div class="row form-group">
-                        <div class="col-sm-12">
-                            Check
+                <div class="expression-container">
+                    <div class="modal-body expression">
+                        <div class="row form-group">
+                            <div class="col-sm-12">
+                                <div class="btn-group btn-group-xs pull-right" role="group">
+                                    <button type="button" class="btn btn-info btn-remove-expression">-</button>
+                                    <button type="button" class="btn btn-info btn-add-expression">+</button>
+                                </div>
 
-                            <select style="color: #000; margin-bottom: 10px">
-                                <option value="RawHostData">raw host data</option>
-                                <option value="RelativeHostData">relative host data</option>
-                                <option value="LogData">log data</option>
-                                <option value="Ping">ping</option>
-                                <option value="SSH">SSH</option>
-                                <option value="HTTP">HTTP</option>
-                            </select>
+                                Check
 
-                            <br>
+                                <select class="expression-type" name="ExpressionType">
+                                    <option value="RawHostData">raw host data</option>
+                                    <option value="RelativeHostData">relative host data</option>
+                                    <option value="LogData">log data</option>
+                                    <option value="Ping">ping</option>
+                                    <option value="SSH">SSH</option>
+                                    <option value="HTTP">HTTP</option>
+                                </select>
 
-                            where
+                                <br>
 
-                            <select style="color: #000; margin-bottom: 10px">
-                                {{ range $metric := .Metrics }}
-                                <option value="{{ $metric.Key }}">{{ $metric.Key }}</option>
-                                {{ end }}
-                            </select>
+                                <span class="expression-where">where</span>
 
-                            <select style="color: #000; margin-bottom: 10px">
-                                <option value=">">></option>
-                                <option value=">">>=</option>
-                                <option value="=">=</option>
-                                <option value="<"><</option>
-                                <option value="<="><=</option>
-                            </select>
+                                <select class="expression-part expression-part-host-metrics">
+                                    {{ range $metric := .Metrics }}
+                                    <option value="{{ $metric.Key }}">{{ $metric.Key }}</option>
+                                    {{ end }}
+                                </select>
 
-                            <input type="number" style="width: 70px" value="1">
+                                <span class="expression-part expression-part-raw-host">
+                                    <select name="ExpressionOperator">
+                                        <option value=">">></option>
+                                        <option value=">">>=</option>
+                                        <option value="=">=</option>
+                                        <option value="<"><</option>
+                                        <option value="<="><=</option>
+                                    </select>
 
-                            <br>
+                                    <input name="ExpressionValue" type="number" style="width: 70px" value="1">
+                                </span>
 
-                            affecting at minimum <input type="number" style="width: 70px" value="1"> hosts.
-                        </div>
-                    </div>
-                </div>
+                                <span class="expression-part expression-part-relative-host" style="display: none">
+                                    is <input name="ExpressionValue" type="number" style="width: 70px" value="200"> percent
 
-                <div class="modal-header">
-                    <select style="color: #000; width: 100%">
-                        <option value="AND">AND</option>
-                        <option value="OR">OR</option>
-                    </select>
-                </div>
+                                    <select name="ExpressionOperator">
+                                        <option value=">">greater than</option>
+                                        <option value="<">less than</option>
+                                    </select>
 
-                <div class="modal-body">
-                    <div class="row form-group">
-                        <div class="col-sm-12">
-                            Check
+                                    <br>
 
-                            <select style="color: #000; margin-bottom: 10px">
-                                <option value="RelativeHostData">relative host data</option>
-                                <option value="RawHostData">raw host data</option>
-                                <option value="LogData">log data</option>
-                                <option value="Ping">ping</option>
-                                <option value="SSH">SSH</option>
-                                <option value="HTTP">HTTP</option>
-                            </select>
+                                    the previous <input name="ExpressionPrevRange" type="number" style="width: 70px" value="15"> minutes of
 
-                            <br>
+                                    <select name="ExpressionPrevAggr">
+                                        <option value="avg">average</option>
+                                        <option value="max">maximum</option>
+                                        <option value="min">minimum</option>
+                                        <option value="sum">sum</option>
+                                    </select>
 
-                            where
+                                    host data
+                                </span>
 
-                            <select style="color: #000; margin-bottom: 10px">
-                                <option value="/uptime.loadavg">/uptime.loadavg</option>
-                            </select>
+                                <span class="expression-part expression-part-log" style="display: none">
+                                    the count of logline containing <input name="ExpressionSearch" type="text" placeholder="error">
 
-                            is <input type="number" style="width: 70px" value="200"> percent
+                                    <br>
 
-                            <select style="color: #000; margin-bottom: 10px">
-                                <option value=">">greater than</option>
-                                <option value="<">less than</option>
-                            </select>
+                                    is
 
-                            <br>
+                                    <select name="ExpressionOperator">
+                                        <option value=">">greater than</option>
+                                        <option value="<">less than</option>
+                                    </select>
 
-                            the previous <input type="number" style="width: 70px" value="15"> minutes of
+                                    <input name="ExpressionValue" type="number" style="width: 70px" value="1">
 
-                            <select style="color: #000; margin-bottom: 10px">
-                                <option value="avg">average</option>
-                                <option value="max">maximum</option>
-                                <option value="min">minimum</option>
-                                <option value="sum">sum</option>
-                            </select>
+                                    <br>
 
-                            host data
+                                    the last <input name="ExpressionPrevRange" type="number" style="width: 70px" value="15"> minutes
+                                </span>
 
-                            <br>
+                                <br class="expression-where">
 
-                            affecting at minimum <input type="number" style="width: 70px" value="1"> hosts.
+                                affecting at minimum <input type="number" style="width: 70px" value="1"> hosts.
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -223,23 +217,14 @@
     </div>
 </div>
 
-<script type="text/template" id="check-expression-type-tmpl">
-    <select style="color: #000; margin-bottom: 10px">
-        <option value="RawHostData">raw host data</option>
-        <option value="RelativeHostData">relative host data</option>
-        <option value="LogData">log data</option>
-        <option value="Ping">ping</option>
-        <option value="SSH">SSH</option>
-        <option value="HTTP">HTTP</option>
-    </select>
+<script type="text/template" id="expression-boolean-operator-tmpl">
+    <div class="modal-header expression-boolean-operator">
+        <select name="BooleanOperator">
+            <option value="AND">AND</option>
+            <option value="OR">OR</option>
+        </select>
+    </div>
 </script>
-
-<script type="text/template" id="check-expression-metrics-tmpl">
-    <select style="color: #000; margin-bottom: 10px">
-        <option value="/uptime.loadavg">/uptime.loadavg</option>
-    </select>
-</script>
-
 
 <script>
 function filter(element) {
@@ -268,6 +253,54 @@ $(document).ready(function() {
     if($('.row.checks').length == 0) {
         $('#search-input').hide();
     }
+});
+
+// Show or hide expression part appropriately
+$('select.expression-type').change(function(){
+    var val = $(this).val();
+    var expressionElem = $(this).closest('.expression');
+
+    if(val == 'RawHostData') {
+        $(expressionElem).find('.expression-part').hide();
+        $(expressionElem).find('.expression-part-host-metrics').show();
+        $(expressionElem).find('.expression-part-raw-host').show();
+
+    } else if(val == 'RelativeHostData') {
+        $(expressionElem).find('.expression-part').hide();
+        $(expressionElem).find('.expression-part-host-metrics').show();
+        $(expressionElem).find('.expression-part-relative-host').show();
+
+    } else if(val == 'LogData') {
+        $(expressionElem).find('.expression-part').hide();
+        $(expressionElem).find('.expression-part-log').show();
+
+    } else if(val == 'Ping') {
+        $(expressionElem).find('.expression-part').hide();
+        $(expressionElem).find('.expression-where').hide();
+
+    } else if(val == 'SSH') {
+        $(expressionElem).find('.expression-part').hide();
+        $(expressionElem).find('.expression-where').hide();
+
+    } else if(val == 'HTTP') {
+        $(expressionElem).find('.expression-part').hide();
+        $(expressionElem).find('.expression-where').hide();
+    }
+});
+
+$( document ).on('click', '.btn-remove-expression', function() {
+    var expressionElem = $(this).closest('.expression');
+    var booleanExpressionElem = expressionElem.prev('.expression-boolean-operator');
+
+    if($('.expression').length > 1) {
+        booleanExpressionElem.remove();
+        expressionElem.remove();
+    }
+});
+
+$( document ).on('click', '.btn-add-expression', function() {
+    $('.expression-container').append($('#expression-boolean-operator-tmpl').html());
+    $('.expression-container').append('<div class="modal-body expression">' + $('.expression:first').html() + '</div>');
 });
 
 $('#checks-modal form .btn-primary').click(function() {
