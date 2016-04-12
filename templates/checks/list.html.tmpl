@@ -196,9 +196,27 @@
                                     the last <input name="ExpressionPrevRange" type="number" style="width: 70px" value="15"> minutes
                                 </span>
 
+                                <span class="expression-part expression-part-ssh" style="display: none">
+                                    the port is <input name="ExpressionPort" type="number" value="22"> and
+                                </span>
+
+                                <span class="expression-part expression-part-http" style="display: none">
+                                    the port is <input name="ExpressionPort" type="number" value="80">
+
+                                    &nbsp;using the following headers: <input name="ExpressionHeaders" type="text" style="width: 100%" placeholder="key=value,key=value">
+
+                                    <br>
+
+                                    or username: <input name="ExpressionUsername" type="text">
+
+                                    <br>
+
+                                    and password: <input name="ExpressionPassword" type="text">
+                                </span>
+
                                 <br class="expression-where">
 
-                                affecting at minimum <input type="number" style="width: 70px" value="1"> hosts.
+                                affecting at minimum <input name="ExpressionMinHost" type="number" style="width: 70px" value="1"> hosts.
                             </div>
                         </div>
                     </div>
@@ -220,8 +238,8 @@
 <script type="text/template" id="expression-boolean-operator-tmpl">
     <div class="modal-header expression-boolean-operator">
         <select name="BooleanOperator">
-            <option value="AND">AND</option>
-            <option value="OR">OR</option>
+            <option value="and">AND</option>
+            <option value="or">OR</option>
         </select>
     </div>
 </script>
@@ -249,6 +267,59 @@ function filter(element) {
     }
 };
 
+function buildExpressions() {
+    var output = [];
+
+    $('.expression-container').children().each(function() {
+        var elem = $(this);
+        var data = {};
+
+        if(elem.hasClass('expression')) {
+            data['Type'] = elem.find('select.expression-type').val();
+            data['MinHost'] = elem.find('input[name="ExpressionMinHost"]').val();
+
+            if(data['Type'] == 'RawHostData') {
+                data['Metric'] = elem.find('select.expression-part-host-metrics').val();
+                data['Operator'] = elem.find('.expression-part-raw-host select[name="ExpressionOperator"]').val();
+                data['Value'] = elem.find('.expression-part-raw-host select[name="ExpressionValue"]').val();
+
+            } else if(data['Type'] == 'RelativeHostData') {
+                data['Metric'] = elem.find('select.expression-part-host-metrics').val();
+                data['Operator'] = elem.find('.expression-part-relative-host select[name="ExpressionOperator"]').val();
+                data['Value'] = elem.find('.expression-part-relative-host select[name="ExpressionValue"]').val();
+                data['PrevRange'] = elem.find('.expression-part-relative-host input[name="ExpressionPrevRange"]').val();
+                data['PrevAggr'] = elem.find('.expression-part-relative-host select[name="ExpressionPrevAggr"]').val();
+
+            } else if(data['Type'] == 'LogData') {
+                data['Search'] = elem.find('.expression-part-log input[name="ExpressionSearch"]').val();
+                data['Operator'] = elem.find('.expression-part-log select[name="ExpressionOperator"]').val();
+                data['Value'] = elem.find('.expression-part-log input[name="ExpressionValue"]').val();
+                data['PrevRange'] = elem.find('.expression-part-log input[name="ExpressionPrevRange"]').val();
+
+            } else if(data['Type'] == 'Ping') {
+
+            } else if(data['Type'] == 'SSH') {
+                data['Port'] = elem.find('.expression-part-ssh input[name="ExpressionPort"]').val();
+
+            } else if(data['Type'] == 'HTTP') {
+                data['Port'] = elem.find('.expression-part-http input[name="ExpressionPort"]').val();
+                data['Headers'] = elem.find('.expression-part-http input[name="ExpressionHeaders"]').val();
+                data['Username'] = elem.find('.expression-part-http input[name="ExpressionUsername"]').val();
+                data['Password'] = elem.find('.expression-part-http input[name="ExpressionPassword"]').val();
+
+            }
+
+        } else if(elem.hasClass('expression-boolean-operator')) {
+            data['Type'] = 'BooleanOperator';
+            data['Operator'] = elem.find('select[name="BooleanOperator"]').val();
+        }
+
+        output.push(data);
+    });
+
+    return output;
+}
+
 $(document).ready(function() {
     if($('.row.checks').length == 0) {
         $('#search-input').hide();
@@ -256,39 +327,44 @@ $(document).ready(function() {
 });
 
 // Show or hide expression part appropriately
-$('select.expression-type').change(function(){
-    var val = $(this).val();
+$(document).on('change', 'select.expression-type', function() {
+    var expressionType = $(this).val();
     var expressionElem = $(this).closest('.expression');
 
-    if(val == 'RawHostData') {
+    if(expressionType == 'RawHostData') {
         $(expressionElem).find('.expression-part').hide();
+        $(expressionElem).find('.expression-where').show();
         $(expressionElem).find('.expression-part-host-metrics').show();
         $(expressionElem).find('.expression-part-raw-host').show();
 
-    } else if(val == 'RelativeHostData') {
+    } else if(expressionType == 'RelativeHostData') {
         $(expressionElem).find('.expression-part').hide();
+        $(expressionElem).find('.expression-where').show();
         $(expressionElem).find('.expression-part-host-metrics').show();
         $(expressionElem).find('.expression-part-relative-host').show();
 
-    } else if(val == 'LogData') {
+    } else if(expressionType == 'LogData') {
         $(expressionElem).find('.expression-part').hide();
+        $(expressionElem).find('.expression-where').show();
         $(expressionElem).find('.expression-part-log').show();
 
-    } else if(val == 'Ping') {
+    } else if(expressionType == 'Ping') {
         $(expressionElem).find('.expression-part').hide();
         $(expressionElem).find('.expression-where').hide();
 
-    } else if(val == 'SSH') {
+    } else if(expressionType == 'SSH') {
         $(expressionElem).find('.expression-part').hide();
-        $(expressionElem).find('.expression-where').hide();
+        $(expressionElem).find('.expression-where').show();
+        $(expressionElem).find('.expression-part-ssh').show();
 
-    } else if(val == 'HTTP') {
+    } else if(expressionType == 'HTTP') {
         $(expressionElem).find('.expression-part').hide();
-        $(expressionElem).find('.expression-where').hide();
+        $(expressionElem).find('.expression-where').show();
+        $(expressionElem).find('.expression-part-http').show();
     }
 });
 
-$( document ).on('click', '.btn-remove-expression', function() {
+$(document).on('click', '.btn-remove-expression', function() {
     var expressionElem = $(this).closest('.expression');
     var booleanExpressionElem = expressionElem.prev('.expression-boolean-operator');
 
@@ -298,14 +374,18 @@ $( document ).on('click', '.btn-remove-expression', function() {
     }
 });
 
-$( document ).on('click', '.btn-add-expression', function() {
+$(document).on('click', '.btn-add-expression', function() {
     $('.expression-container').append($('#expression-boolean-operator-tmpl').html());
     $('.expression-container').append('<div class="modal-body expression">' + $('.expression:first').html() + '</div>');
+
+    console.log(buildExpressions());
 });
 
 $('#checks-modal form .btn-primary').click(function() {
     $('#checks-modal form input[name="_method"]').val('put');
-    $(this).closest('form').submit();
+    if($('input[name="Name"]').val() != '') {
+        $(this).closest('form').submit();
+    }
 });
 
 $('#checks-modal').on('show.bs.modal', function (event) {

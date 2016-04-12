@@ -190,6 +190,13 @@ select {
     color: #000;
     margin-bottom: 10px;
 }
+.expression input {
+    color: #000;
+    margin-bottom: 10px;
+}
+.expression input[name="ExpressionPort"] {
+    width: 60px;
+}
 .expression-boolean-operator select {
     color: #000;
     margin-bottom: 10px;
