@@ -485,7 +485,7 @@ $('#checks-modal').on('show.bs.modal', function (event) {
         modal.find('input[name="Name"]').val(name);
     }
     if(interval) {
-        modal.find('input[name="IntervalInSeconds"]').val(interval);
+        modal.find('input[name="IntervalInSeconds"]').val(parseInt(interval, 10));
     }
     if(hostsQuery) {
         modal.find('input[name="HostsQuery"]').val(hostsQuery);

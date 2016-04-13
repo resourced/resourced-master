@@ -72,7 +72,7 @@ func (a *Check) Create(tx *sqlx.Tx, clusterID int64, data map[string]interface{}
 // AllByClusterID returns all rows by cluster_id.
 func (a *Check) AllByClusterID(tx *sqlx.Tx, clusterID int64) ([]*CheckRow, error) {
 	rows := []*CheckRow{}
-	query := fmt.Sprintf("SELECT * FROM %v WHERE cluster_id=$1", a.table)
+	query := fmt.Sprintf("SELECT * FROM %v WHERE cluster_id=$1 ORDER BY id DESC", a.table)
 	err := a.db.Select(&rows, query, clusterID)
 
 	return rows, err
@@ -81,7 +81,7 @@ func (a *Check) AllByClusterID(tx *sqlx.Tx, clusterID int64) ([]*CheckRow, error
 // AllChecks returns all rows.
 func (a *Check) AllChecks(tx *sqlx.Tx) ([]*CheckRow, error) {
 	rows := []*CheckRow{}
-	query := fmt.Sprintf("SELECT * FROM %v", a.table)
+	query := fmt.Sprintf("SELECT * FROM %v ORDER BY id DESC", a.table)
 	err := a.db.Select(&rows, query)
 
 	return rows, err

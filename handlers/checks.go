@@ -90,6 +90,8 @@ func GetChecks(w http.ResponseWriter, r *http.Request) {
 }
 
 func PostChecks(w http.ResponseWriter, r *http.Request) {
+	db := context.Get(r, "db.Core").(*sqlx.DB)
+
 	w.Header().Set("Content-Type", "text/html")
 
 	currentCluster := context.Get(r, "currentCluster").(*dal.ClusterRow)
@@ -108,8 +110,6 @@ func PostChecks(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	db := context.Get(r, "db.Core").(*sqlx.DB)
-
 	data := make(map[string]interface{})
 	data["name"] = r.FormValue("Name")
 	data["interval"] = intervalInSeconds + "s"
@@ -118,7 +118,7 @@ func PostChecks(w http.ResponseWriter, r *http.Request) {
 	data["expressions"] = r.FormValue("Expressions")
 	data["triggers"] = []byte("{}")
 	data["last_result_hosts"] = []byte("[]")
-	data["last_result_expressions"] = []byte("{}")
+	data["last_result_expressions"] = []byte("[]")
 
 	_, err = dal.NewCheck(db).Create(nil, currentCluster.ID, data)
 	if err != nil {
@@ -143,21 +143,36 @@ func PostPutDeleteCheckID(w http.ResponseWriter, r *http.Request) {
 }
 
 func PutCheckID(w http.ResponseWriter, r *http.Request) {
+	db := context.Get(r, "db.Core").(*sqlx.DB)
+
 	id, err := getInt64SlugFromPath(w, r, "id")
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
 	}
 
-	updateParams, err := watcherPassiveFormData(r)
+	intervalInSeconds := r.FormValue("IntervalInSeconds")
+	if intervalInSeconds == "" {
+		intervalInSeconds = "60"
+	}
+
+	hostsListWithNewlines := r.FormValue("HostsList")
+	hostsList := strings.Split(hostsListWithNewlines, "\n")
+
+	hostsListJSON, err := json.Marshal(hostsList)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
 	}
 
-	db := context.Get(r, "db.Core").(*sqlx.DB)
+	data := make(map[string]interface{})
+	data["name"] = r.FormValue("Name")
+	data["interval"] = intervalInSeconds + "s"
+	data["hosts_query"] = r.FormValue("HostsQuery")
+	data["hosts_list"] = hostsListJSON
+	data["expressions"] = r.FormValue("Expressions")
 
-	_, err = dal.NewCheck(db).UpdateByID(nil, updateParams, id)
+	_, err = dal.NewCheck(db).UpdateByID(nil, data, id)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
@@ -178,6 +193,35 @@ func DeleteCheckID(w http.ResponseWriter, r *http.Request) {
 	currentCluster := context.Get(r, "currentCluster").(*dal.ClusterRow)
 
 	_, err = dal.NewCheck(db).DeleteByClusterIDAndID(nil, currentCluster.ID, id)
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
+
+	http.Redirect(w, r, r.Referer(), 301)
+}
+
+func PostCheckIDSilence(w http.ResponseWriter, r *http.Request) {
+	db := context.Get(r, "db.Core").(*sqlx.DB)
+
+	id, err := getInt64SlugFromPath(w, r, "id")
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
+
+	check := dal.NewCheck(db)
+
+	checkRow, err := check.GetByID(nil, id)
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
+
+	data := make(map[string]interface{})
+	data["is_silenced"] = !checkRow.IsSilenced
+
+	_, err = check.UpdateByID(nil, data, id)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
