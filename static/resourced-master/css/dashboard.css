@@ -186,6 +186,9 @@ select {
     line-height: 1.0;
 }
 
+.row.checks h3 {
+    margin-top: 0;
+}
 .expression select {
     color: #000;
     margin-bottom: 10px;

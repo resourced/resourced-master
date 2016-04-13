@@ -29,23 +29,37 @@
     {{ range $check := .Checks }}
     <div class="row checks">
         <div class="col-xs-12 col-lg-12">
-            <div class="pull-right">
+            <div class="pull-right" style="margin-top: 5px">
                 <div class="btn-group" role="group">
-                    <button class="btn btn-default btn-xs" data-toggle="modal" data-target="#triggers-modal"
-                        data-id="{{ $check.ID }}"
-                        data-name="{{ $check.Name }}">
-                        Triggers
-                    </button>
+                    <form action="/checks/{{ $check.ID }}/silence" method="post" style="display: inline-block; float: left">
+                        <input type="hidden" name="gorilla.csrf.Token" value="{{ $.CSRFToken }}">
+                    {{ if eq $check.IsSilenced true }}
+                        <button type="submit" class="btn btn-danger btn-xs active" style="vertical-align: top">Unmute</button>
+                    {{ else }}
+                        <button type="submit" class="btn btn-danger btn-xs" style="vertical-align: top">Mute!</button>
+                    {{ end }}
+                    </form>
 
                     <button class="btn btn-default btn-xs" data-toggle="modal" data-target="#checks-modal"
                         data-id="{{ $check.ID }}"
-                        data-name="{{ $check.Name }}">
-                        Edit
+                        data-name="{{ $check.Name }}"
+                        data-interval="{{ $check.Interval }}"
+                        data-hosts-query="{{ $check.HostsQuery }}"
+                        data-hosts-list="{{ $check.HostsList }}"
+                        data-expressions="{{ $check.Expressions }}">
+                        Details
+                    </button>
+
+                    <button class="btn btn-default btn-xs btn-show-triggers" data-check-id="{{ $check.ID }}">Show Triggers</button>
+
+                    <button class="btn btn-success btn-xs" data-toggle="modal" data-target="#trigger-modal"
+                        data-check-id="{{ $check.ID }}">
+                        New Trigger
                     </button>
                 </div>
             </div>
 
-            <h4 style="margin-top: 0">{{ $check.Name }}</h4>
+            <h3>{{ $check.Name }}</h3>
         </div>
     </div>
     {{ end }}
@@ -267,70 +281,7 @@ function filter(element) {
     }
 };
 
-function buildExpressions() {
-    var output = [];
-
-    $('.expression-container').children().each(function() {
-        var elem = $(this);
-        var data = {};
-
-        if(elem.hasClass('expression')) {
-            data['Type'] = elem.find('select.expression-type').val();
-            data['MinHost'] = elem.find('input[name="ExpressionMinHost"]').val();
-
-            if(data['Type'] == 'RawHostData') {
-                data['Metric'] = elem.find('select.expression-part-host-metrics').val();
-                data['Operator'] = elem.find('.expression-part-raw-host select[name="ExpressionOperator"]').val();
-                data['Value'] = elem.find('.expression-part-raw-host select[name="ExpressionValue"]').val();
-
-            } else if(data['Type'] == 'RelativeHostData') {
-                data['Metric'] = elem.find('select.expression-part-host-metrics').val();
-                data['Operator'] = elem.find('.expression-part-relative-host select[name="ExpressionOperator"]').val();
-                data['Value'] = elem.find('.expression-part-relative-host select[name="ExpressionValue"]').val();
-                data['PrevRange'] = elem.find('.expression-part-relative-host input[name="ExpressionPrevRange"]').val();
-                data['PrevAggr'] = elem.find('.expression-part-relative-host select[name="ExpressionPrevAggr"]').val();
-
-            } else if(data['Type'] == 'LogData') {
-                data['Search'] = elem.find('.expression-part-log input[name="ExpressionSearch"]').val();
-                data['Operator'] = elem.find('.expression-part-log select[name="ExpressionOperator"]').val();
-                data['Value'] = elem.find('.expression-part-log input[name="ExpressionValue"]').val();
-                data['PrevRange'] = elem.find('.expression-part-log input[name="ExpressionPrevRange"]').val();
-
-            } else if(data['Type'] == 'Ping') {
-
-            } else if(data['Type'] == 'SSH') {
-                data['Port'] = elem.find('.expression-part-ssh input[name="ExpressionPort"]').val();
-
-            } else if(data['Type'] == 'HTTP') {
-                data['Port'] = elem.find('.expression-part-http input[name="ExpressionPort"]').val();
-                data['Headers'] = elem.find('.expression-part-http input[name="ExpressionHeaders"]').val();
-                data['Username'] = elem.find('.expression-part-http input[name="ExpressionUsername"]').val();
-                data['Password'] = elem.find('.expression-part-http input[name="ExpressionPassword"]').val();
-
-            }
-
-        } else if(elem.hasClass('expression-boolean-operator')) {
-            data['Type'] = 'BooleanOperator';
-            data['Operator'] = elem.find('select[name="BooleanOperator"]').val();
-        }
-
-        output.push(data);
-    });
-
-    return output;
-}
-
-$(document).ready(function() {
-    if($('.row.checks').length == 0) {
-        $('#search-input').hide();
-    }
-});
-
-// Show or hide expression part appropriately
-$(document).on('change', 'select.expression-type', function() {
-    var expressionType = $(this).val();
-    var expressionElem = $(this).closest('.expression');
-
+function showOrHideExpressionParts(expressionType, expressionElem) {
     if(expressionType == 'RawHostData') {
         $(expressionElem).find('.expression-part').hide();
         $(expressionElem).find('.expression-where').show();
@@ -362,6 +313,135 @@ $(document).on('change', 'select.expression-type', function() {
         $(expressionElem).find('.expression-where').show();
         $(expressionElem).find('.expression-part-http').show();
     }
+}
+
+function buildExpressions() {
+    var output = [];
+
+    $('.expression-container').children().each(function() {
+        var elem = $(this);
+        var expression = {};
+
+        if(elem.hasClass('expression')) {
+            expression['Type'] = elem.find('select.expression-type').val();
+            expression['MinHost'] = elem.find('input[name="ExpressionMinHost"]').val();
+
+            if(expression['Type'] == 'RawHostData') {
+                expression['Metric'] = elem.find('select.expression-part-host-metrics').val();
+                expression['Operator'] = elem.find('.expression-part-raw-host select[name="ExpressionOperator"]').val();
+                expression['Value'] = elem.find('.expression-part-raw-host select[name="ExpressionValue"]').val();
+
+            } else if(expression['Type'] == 'RelativeHostData') {
+                expression['Metric'] = elem.find('select.expression-part-host-metrics').val();
+                expression['Operator'] = elem.find('.expression-part-relative-host select[name="ExpressionOperator"]').val();
+                expression['Value'] = elem.find('.expression-part-relative-host select[name="ExpressionValue"]').val();
+                expression['PrevRange'] = elem.find('.expression-part-relative-host input[name="ExpressionPrevRange"]').val();
+                expression['PrevAggr'] = elem.find('.expression-part-relative-host select[name="ExpressionPrevAggr"]').val();
+
+            } else if(expression['Type'] == 'LogData') {
+                expression['Search'] = elem.find('.expression-part-log input[name="ExpressionSearch"]').val();
+                expression['Operator'] = elem.find('.expression-part-log select[name="ExpressionOperator"]').val();
+                expression['Value'] = elem.find('.expression-part-log input[name="ExpressionValue"]').val();
+                expression['PrevRange'] = elem.find('.expression-part-log input[name="ExpressionPrevRange"]').val();
+
+            } else if(expression['Type'] == 'Ping') {
+
+            } else if(expression['Type'] == 'SSH') {
+                expression['Port'] = elem.find('.expression-part-ssh input[name="ExpressionPort"]').val();
+
+            } else if(expression['Type'] == 'HTTP') {
+                expression['Port'] = elem.find('.expression-part-http input[name="ExpressionPort"]').val();
+                expression['Headers'] = elem.find('.expression-part-http input[name="ExpressionHeaders"]').val();
+                expression['Username'] = elem.find('.expression-part-http input[name="ExpressionUsername"]').val();
+                expression['Password'] = elem.find('.expression-part-http input[name="ExpressionPassword"]').val();
+
+            }
+
+        } else if(elem.hasClass('expression-boolean-operator')) {
+            expression['Type'] = 'BooleanOperator';
+            expression['Operator'] = elem.find('select[name="BooleanOperator"]').val();
+        }
+
+        output.push(expression);
+    });
+
+    return output;
+}
+
+function renderNewExpressionsHTML() {
+    var container = $('.expression-container');
+    var firstExpressionHTML = '<div class="modal-body expression">' + $('.expression-container > .modal-body.expression:first').html() + '</div>';
+
+    container.html('');
+    container.append(firstExpressionHTML);
+}
+
+function renderEditExpressionsHTML(expressions) {
+    var container = $('.expression-container');
+    var firstExpressionHTML = '<div class="modal-body expression">' + $('.expression-container > .modal-body.expression:first').html() + '</div>';
+
+    container.html('');
+
+    for(var i = 0; i < expressions.length; i++) {
+        var expression = expressions[i];
+
+        if(expression['Type'] != 'BooleanOperator') {
+            container.append(firstExpressionHTML);
+
+            showOrHideExpressionParts(expression['Type'], container.find('.expression:last'));
+
+            container.find('.expression:last select.expression-type').val(expression['Type']);
+            container.find('.expression:last input[name="ExpressionMinHost"]').val(expression['MinHost']);
+        }
+
+        if(expression['Type'] == 'RawHostData') {
+            container.find('.expression:last select.expression-part-host-metrics').val(expression['Metric']);
+            container.find('.expression:last .expression-part-raw-host select[name="ExpressionOperator"]').val(expression['Operator']);
+            container.find('.expression:last .expression-part-raw-host select[name="ExpressionValue"]').val(expression['Value']);
+
+        } else if(expression['Type'] == 'RelativeHostData') {
+            container.find('.expression:last select.expression-part-host-metrics').val(expression['Metric']);
+            container.find('.expression:last .expression-part-relative-host select[name="ExpressionOperator"]').val(expression['Operator']);
+            container.find('.expression:last .expression-part-relative-host select[name="ExpressionValue"]').val(expression['Value']);
+            container.find('.expression:last .expression-part-relative-host input[name="ExpressionPrevRange"]').val(expression['PrevRange']);
+            container.find('.expression:last .expression-part-relative-host select[name="ExpressionPrevAggr"]').val(expression['PrevAggr']);
+
+        } else if(expression['Type'] == 'LogData') {
+            container.find('.expression:last .expression-part-log input[name="ExpressionSearch"]').val(expression['Search']);
+            container.find('.expression:last .expression-part-log select[name="ExpressionOperator"]').val(expression['Operator']);
+            container.find('.expression:last .expression-part-log input[name="ExpressionValue"]').val(expression['Value']);
+            container.find('.expression:last .expression-part-log input[name="ExpressionPrevRange"]').val(expression['PrevRange']);
+
+        } else if(expression['Type'] == 'Ping') {
+
+        } else if(expression['Type'] == 'SSH') {
+            container.find('.expression:last .expression-part-ssh input[name="ExpressionPort"]').val(expression['Port']);
+
+        } else if(expression['Type'] == 'HTTP') {
+            container.find('.expression:last .expression-part-http input[name="ExpressionPort"]').val(expression['Port']);
+            container.find('.expression:last .expression-part-http input[name="ExpressionHeaders"]').val(expression['Headers']);
+            container.find('.expression:last .expression-part-http input[name="ExpressionUsername"]').val(expression['Username']);
+            container.find('.expression:last .expression-part-http input[name="ExpressionPassword"]').val(expression['Password']);
+
+        } else if(expression['Type'] == 'BooleanOperator') {
+            container.append($('#expression-boolean-operator-tmpl').html());
+            container.find('.expression-boolean-operator:last select[name="BooleanOperator"]').val(expression['Operator']);
+        }
+    }
+}
+
+$(document).ready(function() {
+    if($('.row.checks').length == 0) {
+        $('#search-input').hide();
+    }
+});
+
+// Show or hide expression part appropriately
+$(document).on('change', 'select.expression-type', function() {
+    var expressionType = $(this).val();
+    var expressionElem = $(this).closest('.expression');
+
+    showOrHideExpressionParts(expressionType, expressionElem);
 });
 
 $(document).on('click', '.btn-remove-expression', function() {
@@ -394,31 +474,44 @@ $('#checks-modal').on('show.bs.modal', function (event) {
     var button = $(event.relatedTarget);   // Button that triggered the modal
     var id = button.data('id');
     var name = button.data('name');
-    var description = button.data('description');
-    var range = button.data('range');
+    var interval = button.data('interval');
+    var hostsQuery = button.data('hosts-query');
+    var hostsList = button.data('hosts-list');
+    var expressions = button.data('expressions');
 
     var modal = $(this);
 
     if(name) {
         modal.find('input[name="Name"]').val(name);
     }
-    if(description) {
-        modal.find('textarea').val(description);
+    if(interval) {
+        modal.find('input[name="IntervalInSeconds"]').val(interval);
     }
-    if(range) {
-        modal.find('select[name="Range"]').val(range);
+    if(hostsQuery) {
+        modal.find('input[name="HostsQuery"]').val(hostsQuery);
+    }
+    if(hostsList) {
+        modal.find('textarea[name="HostsList"]').val(hostsList.join('\n'));
+    }
+    if(expressions) {
+        modal.find('input[name="Expressions"]').val(JSON.stringify(expressions));
     }
 
     if(id) {
         modal.find('form').attr('action', '/checks/' + id);
         modal.find('form input[name="_method"]').val('put');
         modal.find('.btn-danger').show();
+
+        renderEditExpressionsHTML(expressions);
+
     } else {
         modal.find('input[name="Name"]').val('');
         modal.find('textarea').val('');
 
         modal.find('form').attr('action', '/checks');
         modal.find('.btn-danger').hide();
+
+        renderNewExpressionsHTML();
     }
 });
 </script>

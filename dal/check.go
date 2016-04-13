@@ -27,6 +27,7 @@ type CheckRow struct {
 	ClusterID             int64               `db:"cluster_id"`
 	Name                  string              `db:"name"`
 	Interval              string              `db:"interval"`
+	IsSilenced            bool                `db:"is_silenced"`
 	HostsQuery            string              `db:"hosts_query"`
 	HostsList             sqlx_types.JSONText `db:"hosts_list"`
 	Expressions           sqlx_types.JSONText `db:"expressions"`

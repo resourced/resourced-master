@@ -116,6 +116,7 @@ CREATE TABLE checks (
     cluster_id bigint REFERENCES clusters (id),
     name TEXT NOT NULL,
     interval TEXT NOT NULL,
+    is_silenced BOOLEAN NOT NULL DEFAULT FALSE,
     hosts_query TEXT,
     hosts_list JSONB DEFAULT '[]',
     expressions JSONB,
