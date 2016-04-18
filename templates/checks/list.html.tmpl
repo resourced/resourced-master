@@ -98,6 +98,7 @@
 
                                 <button class="btn btn-success btn-xs pull-right" data-toggle="modal" data-target="#trigger-modal"
                                     data-id="{{ $trigger.ID }}"
+                                    data-check-id="{{ $check.ID }}"
                                     data-check-interval="{{ $check.Interval }}"
                                     data-low-violations-count="{{ $trigger.LowViolationsCount }}"
                                     data-high-violations-count="{{ $trigger.HighViolationsCount }}"
@@ -107,7 +108,7 @@
                                     data-action-sms-phone="{{ $action.SMSPhone }}"
                                     data-action-pd-service-key="{{ $action.PagerDutyServiceKey }}"
                                     data-action-pd-service-description="{{ $action.PagerDutyDescription }}">
-                                    Edit Trigger
+                                    Edit
                                 </button>
                             </div>
                         </td>
