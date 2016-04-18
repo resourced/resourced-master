@@ -440,10 +440,9 @@ function filter(element) {
         value = value.toLowerCase();
 
         $('.row.checks').each(function() {
-            var title = $(this).find('h4').text().toLowerCase().trim();
-            var description = $(this).find('p').text().toLowerCase().trim();
+            var title = $(this).find('h3').text().toLowerCase().trim();
 
-            if(title.search(value) > -1 || description.search(value) > -1) {
+            if(title.search(value) > -1) {
                 $(this).show();
             }
             else {
