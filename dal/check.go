@@ -143,9 +143,9 @@ func (a *Check) DeleteTrigger(tx *sqlx.Tx, checkRow *CheckRow, trigger CheckTrig
 
 	newTriggers := make([]CheckTrigger, 0)
 
-	for i, trig := range triggers {
+	for _, trig := range triggers {
 		if trig.ID != trigger.ID {
-			newTriggers[i] = trig
+			newTriggers = append(newTriggers, trig)
 		}
 	}
 
@@ -160,6 +160,11 @@ func (a *Check) DeleteTrigger(tx *sqlx.Tx, checkRow *CheckRow, trigger CheckTrig
 	_, err = a.UpdateByID(tx, data, checkRow.ID)
 
 	return newTriggers, err
+}
+
+func (checkRow *CheckRow) GetTriggers() []CheckTrigger {
+	triggers, _ := checkRow.UnmarshalTriggers()
+	return triggers
 }
 
 func (checkRow *CheckRow) UnmarshalTriggers() ([]CheckTrigger, error) {
