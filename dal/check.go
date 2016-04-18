@@ -3,6 +3,7 @@ package dal
 import (
 	"database/sql"
 	"fmt"
+	"encoding/json"
 
 	"github.com/jmoiron/sqlx"
 	sqlx_types "github.com/jmoiron/sqlx/types"
@@ -85,4 +86,107 @@ func (a *Check) AllChecks(tx *sqlx.Tx) ([]*CheckRow, error) {
 	err := a.db.Select(&rows, query)
 
 	return rows, err
+}
+
+func (a *Check) AddTrigger(tx *sqlx.Tx, checkRow *CheckRow, trigger CheckTrigger) ([]CheckTrigger, error) {
+	triggers, err := checkRow.UnmarshalTriggers()
+	if err != nil {
+		return nil, err
+	}
+
+	triggers = append(triggers, trigger)
+
+	triggersJSON, err := json.Marshal(triggers)
+	if err != nil {
+		return nil, err
+	}
+
+	data := make(map[string]interface{})
+	data["triggers"] = triggersJSON
+
+	_, err = a.UpdateByID(tx, data, checkRow.ID)
+
+	return triggers, err
+}
+
+func (a *Check) UpdateTrigger(tx *sqlx.Tx, checkRow *CheckRow, trigger CheckTrigger) ([]CheckTrigger, error) {
+	triggers, err := checkRow.UnmarshalTriggers()
+	if err != nil {
+		return nil, err
+	}
+
+	for i, trig := range triggers {
+		if trig.ID == trigger.ID {
+			triggers[i] = trigger
+			break
+		}
+	}
+
+	triggersJSON, err := json.Marshal(triggers)
+	if err != nil {
+		return nil, err
+	}
+
+	data := make(map[string]interface{})
+	data["triggers"] = triggersJSON
+
+	_, err = a.UpdateByID(tx, data, checkRow.ID)
+
+	return triggers, err
+}
+
+func (a *Check) DeleteTrigger(tx *sqlx.Tx, checkRow *CheckRow, trigger CheckTrigger) ([]CheckTrigger, error) {
+	triggers, err := checkRow.UnmarshalTriggers()
+	if err != nil {
+		return nil, err
+	}
+
+	newTriggers := make([]CheckTrigger, 0)
+
+	for i, trig := range triggers {
+		if trig.ID != trigger.ID {
+			newTriggers[i] = trig
+		}
+	}
+
+	triggersJSON, err := json.Marshal(newTriggers)
+	if err != nil {
+		return nil, err
+	}
+
+	data := make(map[string]interface{})
+	data["triggers"] = triggersJSON
+
+	_, err = a.UpdateByID(tx, data, checkRow.ID)
+
+	return newTriggers, err
+}
+
+func (checkRow *CheckRow) UnmarshalTriggers() ([]CheckTrigger, error) {
+	var container []CheckTrigger
+
+	err := json.Unmarshal(checkRow.Triggers, &container)
+	if err != nil {
+		return nil, err
+	}
+
+	return container, nil
+}
+
+type CheckTrigger struct {
+	ID                  int64
+	LowViolationsCount  int64
+	HighViolationsCount int64
+	CreatedInterval     string
+	Action              CheckTriggerAction
+}
+
+type CheckTriggerAction struct {
+	Transport string
+	Email string
+	SMSPhone string
+	SMSCarrier string
+	PagerDutyServiceKey string
+	PagerDutyIncidentKey string
+	PagerDutyDescription string
 }

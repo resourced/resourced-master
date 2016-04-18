@@ -67,6 +67,105 @@
     {{ end }}
 </div>
 
+<!-- Trigger Modal -->
+<div class="modal fade" id="trigger-modal" tabindex="-1" role="dialog" aria-labelledby="triggers-details-label" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                <h4 class="modal-title" id="triggers-details-label">New Trigger</h4>
+            </div>
+
+            <form method="post" action="/checks/triggers">
+                <input type="hidden" name="gorilla.csrf.Token" value="{{ $.CSRFToken }}">
+                <input type="hidden" name="_method" value="post">
+
+                <div class="modal-body">
+                    <div class="row form-group">
+                        <div class="col-sm-12">
+                            <div class="input-group">
+                                <span class="input-group-addon" style="padding-left: 0">When violations occured between</span>
+
+                                <input type="number" class="form-control" name="LowViolationsCount" value="1">
+
+                                <span class="input-group-addon">and</span>
+
+                                <input type="number" class="form-control" name="HighViolationsCount">
+
+                                <span class="input-group-addon">the last</span>
+
+                                <select class="form-control" name="CreatedInterval">
+                                    <option value="15 minute">15 minutes</option>
+                                    <option value="30 minute">30 minutes</option>
+                                    <option value="60 minute">60 minutes</option>
+                                    <option value="2 hour">2 hours</option>
+                                    <option value="3 hour">3 hours</option>
+                                    <option value="6 hour">6 hours</option>
+                                    <option value="12 hour">12 hours</option>
+                                    <option value="24 hour">24 hours</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row form-group">
+                        <div class="col-sm-3 actions-selector-wrapper">
+                            <label>Actions</label>
+                            <select class="form-control" name="ActionTransport">
+                                <option value="nothing">Do Nothing</option>
+                                <option value="email">Send Email</option>
+                                <option value="sms">Send SMS</option>
+                                <option value="pagerduty">Send PagerDuty</option>
+                            </select>
+                        </div>
+
+                        <div class="col-sm-9 payload payload-email">
+                            <label>Email</label>
+                            <input type="email" class="form-control" name="ActionEmail" placeholder="bob@example.com" value="">
+                        </div>
+
+                        <div class="col-sm-3 payload payload-sms" style="display: none">
+                            <label>SMS Carrier</label>
+                            <select class="form-control" name="ActionSMSCarrier">
+                                <option value="alltel">Alltel</option>
+                                <option value="att">AT&T</option>
+                                <option value="sprint">Sprint</option>
+                                <option value="tmobile">T-Mobile</option>
+                                <option value="verizon">Verizon</option>
+                                <option value="virgin">Virgin Mobile</option>
+                            </select>
+                        </div>
+
+                        <div class="col-sm-6 payload payload-sms" style="display: none">
+                            <label>SMS Number</label>
+                            <input type="text" class="form-control" name="ActionSMSPhone" placeholder="10 digit numbers" value="">
+                        </div>
+
+                        <div class="col-sm-4 payload payload-pagerduty" style="display: none">
+                            <label>PD Service Key</label>
+                            <input type="text" class="form-control" name="ActionPagerDutyServiceKey" placeholder="" value="">
+                        </div>
+
+                        <div class="col-sm-5 payload payload-pagerduty" style="display: none">
+                            <label>PD Description</label>
+                            <input type="text" class="form-control" name="ActionPagerDutyDescription" placeholder="" value="">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-danger pull-left" data-dismiss="modal">
+                        Delete
+                    </button>
+
+                    <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary">Save</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 <!-- Checks Modal -->
 <div class="modal fade" id="checks-modal" tabindex="-1" role="dialog" aria-labelledby="checks-details-label" aria-hidden="true">
     <div class="modal-dialog">
@@ -430,6 +529,21 @@ function renderEditExpressionsHTML(expressions) {
     }
 }
 
+var changeActionTransport = function() {
+    var transportVal = $('select[name="ActionTransport"] option:selected').val();
+
+    if(transportVal == "nothing") {
+        $('.actions-selector-wrapper').removeClass('col-sm-3');
+        $('.actions-selector-wrapper').addClass('col-sm-12');
+    } else {
+        $('.actions-selector-wrapper').removeClass('col-sm-12');
+        $('.actions-selector-wrapper').addClass('col-sm-3');
+    }
+
+    $('.payload').hide();
+    $('.payload-' + transportVal).show();
+};
+
 $(document).ready(function() {
     if($('.row.checks').length == 0) {
         $('#search-input').hide();
@@ -513,6 +627,81 @@ $('#checks-modal').on('show.bs.modal', function (event) {
 
         renderNewExpressionsHTML();
     }
+});
+
+$('select[name="ActionTransport"]').change(changeActionTransport);
+
+$('#trigger-modal form .btn-primary').click(function() {
+    $(this).closest('form').submit();
+});
+
+$('#trigger-modal').on('show.bs.modal', function (event) {
+    var button = $(event.relatedTarget);   // Button that triggered the modal
+    var id = button.data('id');
+    var checkID = button.data('check-id');
+    var checkCheckInterval = button.data('check-check-interval');
+    var lowViolationsCount = button.data('low-violations-count');
+    var highViolationsCount = button.data('high-violations-count');
+    var actionTransport = button.data('action-transport');
+    var actionEmail = button.data('action-email');
+    var actionSMSCarrier = button.data('action-sms-carrier');
+    var actionSMSPhone = button.data('action-sms-phone');
+    var actionPagerDutyServiceKey = button.data('action-pd-service-key');
+    var actionPagerDutyServiceDescription = button.data('action-pd-service-description');
+
+    var modal = $(this);
+
+    // Wipe form first
+    modal.find('input[type="text"]').val('');
+    modal.find('input[type="number"]').val('');
+
+    modal.find('input[name="Name"]').val(name);
+
+    if(lowViolationsCount) {
+        modal.find('input[name="LowViolationsCount"]').val(lowViolationsCount);
+    } else {
+        modal.find('input[name="LowViolationsCount"]').val(1);
+    }
+    if(highViolationsCount) {
+        modal.find('input[name="HighViolationsCount"]').val(highViolationsCount);
+    }
+    if(actionTransport) {
+        $('select[name="ActionTransport"] option[value="' + actionTransport + '"]').attr('selected', 'selected');
+    }
+    if(actionEmail) {
+        modal.find('input[name="ActionEmail"]').val(actionEmail);
+    }
+    if(actionSMSCarrier) {
+        modal.find('input[name="ActionSMSCarrier"]').val(actionSMSCarrier);
+    }
+    if(actionSMSPhone) {
+        modal.find('input[name="ActionSMSPhone"]').val(actionSMSPhone);
+    }
+    if(actionPagerDutyServiceKey) {
+        modal.find('input[name="ActionPagerDutyServiceKey"]').val(actionPagerDutyServiceKey);
+    }
+    if(actionPagerDutyServiceDescription) {
+        modal.find('input[name="ActionPagerDutyDescription"]').val(actionPagerDutyServiceDescription);
+    }
+
+    if(id) {
+        modal.find('form').attr('action', '/checks/' + checkID + '/triggers/' + id);
+        modal.find('form input[name="_method"]').val('put');
+        modal.find('.btn-danger').show();
+        modal.find('.modal-title').text('Update Trigger (checked every ' + checkCheckInterval + ')');
+    } else {
+        modal.find('form').attr('action', '/checks/' + checkID + '/triggers');
+        modal.find('.btn-danger').hide();
+        modal.find('.modal-title').text('New Trigger (checked every ' + checkCheckInterval + ')');
+    }
+
+    // -----------------------------------------------
+
+    changeActionTransport();
+});
+
+$('#trigger-modal form .btn-primary').click(function() {
+    $(this).closest('form').submit();
 });
 </script>
 {{end}}

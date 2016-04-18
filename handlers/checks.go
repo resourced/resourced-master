@@ -5,10 +5,13 @@ import (
 	"html/template"
 	"net/http"
 	"strings"
+	"strconv"
+	"errors"
 
 	"github.com/gorilla/context"
 	"github.com/gorilla/csrf"
 	"github.com/jmoiron/sqlx"
+	"github.com/gorilla/mux"
 
 	"github.com/resourced/resourced-master/dal"
 	"github.com/resourced/resourced-master/libhttp"
@@ -116,7 +119,7 @@ func PostChecks(w http.ResponseWriter, r *http.Request) {
 	data["hosts_query"] = r.FormValue("HostsQuery")
 	data["hosts_list"] = hostsListJSON
 	data["expressions"] = r.FormValue("Expressions")
-	data["triggers"] = []byte("{}")
+	data["triggers"] = []byte("[]")
 	data["last_result_hosts"] = []byte("[]")
 	data["last_result_expressions"] = []byte("[]")
 
@@ -222,6 +225,187 @@ func PostCheckIDSilence(w http.ResponseWriter, r *http.Request) {
 	data["is_silenced"] = !checkRow.IsSilenced
 
 	_, err = check.UpdateByID(nil, data, id)
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
+
+	http.Redirect(w, r, r.Referer(), 301)
+}
+
+func newCheckTriggerFromForm(r *http.Request) (dal.CheckTrigger, error) {
+	lowViolationsCountString := r.FormValue("LowViolationsCount")
+	lowViolationsCount, err := strconv.ParseInt(lowViolationsCountString, 10, 64)
+	if err != nil {
+		return dal.CheckTrigger{}, err
+	}
+
+	var highViolationsCount int64
+
+	highViolationsCountString := r.FormValue("HighViolationsCount")
+	if highViolationsCountString == "" {
+		// Set highViolationsCount arbitrarily high when highViolationsCount value is missing.
+		// Because it means that the user does not want to set max value.
+		highViolationsCount = 1000000
+
+	} else {
+		highViolationsCount, err = strconv.ParseInt(highViolationsCountString, 10, 64)
+		if err != nil {
+			return dal.CheckTrigger{}, err
+		}
+	}
+
+	action := dal.CheckTriggerAction{}
+	action.Transport = r.FormValue("ActionTransport")
+	action.Email = r.FormValue("ActionEmail")
+	action.SMSCarrier = r.FormValue("ActionSMSCarrier")
+	action.SMSPhone = r.FormValue("ActionSMSPhone")
+	action.PagerDutyServiceKey = r.FormValue("ActionPagerDutyServiceKey")
+	action.PagerDutyDescription = r.FormValue("ActionPagerDutyDescription")
+
+	trigger := dal.CheckTrigger{}
+	trigger.LowViolationsCount = lowViolationsCount
+	trigger.HighViolationsCount = highViolationsCount
+	trigger.CreatedInterval = r.FormValue("CreatedInterval")
+	trigger.Action = action
+
+	return trigger, nil
+}
+
+func PostChecksTriggers(w http.ResponseWriter, r *http.Request) {
+	db := context.Get(r, "db.Core").(*sqlx.DB)
+
+	w.Header().Set("Content-Type", "text/html")
+
+	checkIDString := mux.Vars(r)["checkid"]
+	if checkIDString == "" {
+		libhttp.HandleErrorJson(w, errors.New("id cannot be empty."))
+		return
+	}
+
+	checkID, err := strconv.ParseInt(checkIDString, 10, 64)
+	if err != nil {
+		libhttp.HandleErrorJson(w, errors.New("id cannot be non numeric."))
+		return
+	}
+
+	trigger, err := newCheckTriggerFromForm(r)
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
+
+	check := dal.NewCheck(db)
+
+	trigger.ID = check.NewExplicitID()
+
+	checkRow, err := check.GetByID(nil, checkID)
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
+
+	_, err = check.AddTrigger(nil, checkRow, trigger)
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
+
+	http.Redirect(w, r, r.Referer(), 301)
+}
+
+func PostPutDeleteCheckTriggerID(w http.ResponseWriter, r *http.Request) {
+	method := r.FormValue("_method")
+	if method == "" {
+		method = "put"
+	}
+
+	if method == "post" || method == "put" {
+		PutCheckTriggerID(w, r)
+	} else if method == "delete" {
+		DeleteCheckTriggerID(w, r)
+	}
+}
+
+func PutCheckTriggerID(w http.ResponseWriter, r *http.Request) {
+	checkIDString := mux.Vars(r)["checkid"]
+	if checkIDString == "" {
+		libhttp.HandleErrorJson(w, errors.New("id cannot be empty."))
+		return
+	}
+
+	checkID, err := strconv.ParseInt(checkIDString, 10, 64)
+	if err != nil {
+		libhttp.HandleErrorJson(w, errors.New("id cannot be non numeric."))
+		return
+	}
+
+	id, err := getInt64SlugFromPath(w, r, "id")
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
+
+	trigger, err := newCheckTriggerFromForm(r)
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
+
+	trigger.ID = id
+
+	db := context.Get(r, "db.Core").(*sqlx.DB)
+
+	check := dal.NewCheck(db)
+
+	checkRow, err := check.GetByID(nil, checkID)
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
+
+	_, err = check.UpdateTrigger(nil, checkRow, trigger)
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
+
+	http.Redirect(w, r, r.Referer(), 301)
+}
+
+func DeleteCheckTriggerID(w http.ResponseWriter, r *http.Request) {
+	checkIDString := mux.Vars(r)["checkid"]
+	if checkIDString == "" {
+		libhttp.HandleErrorJson(w, errors.New("id cannot be empty."))
+		return
+	}
+
+	checkID, err := strconv.ParseInt(checkIDString, 10, 64)
+	if err != nil {
+		libhttp.HandleErrorJson(w, errors.New("id cannot be non numeric."))
+		return
+	}
+
+	id, err := getInt64SlugFromPath(w, r, "id")
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
+
+	trigger := dal.CheckTrigger{}
+	trigger.ID = id
+
+	db := context.Get(r, "db.Core").(*sqlx.DB)
+
+	check := dal.NewCheck(db)
+
+	checkRow, err := check.GetByID(nil, checkID)
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
+
+	_, err = check.DeleteTrigger(nil, checkRow, trigger)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
