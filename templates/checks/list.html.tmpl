@@ -783,6 +783,10 @@ $('#triggers-modal').on('show.bs.modal', function (event) {
     var checkID = button.data('check-id');
 
     $(this).find('.modal-body').html('<table class="table table-striped">' + $('#check-' + checkID + '-triggers').html() + '</table>');
+
+    $(this).find('table').tablesorter({
+        sortList: [[0,0], [1,0]]
+    });
 });
 
 </script>
