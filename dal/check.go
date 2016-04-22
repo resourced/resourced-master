@@ -2,8 +2,8 @@ package dal
 
 import (
 	"database/sql"
-	"fmt"
 	"encoding/json"
+	"fmt"
 
 	"github.com/jmoiron/sqlx"
 	sqlx_types "github.com/jmoiron/sqlx/types"
@@ -35,6 +35,39 @@ type CheckRow struct {
 	Triggers              sqlx_types.JSONText `db:"triggers"`
 	LastResultHosts       sqlx_types.JSONText `db:"last_result_hosts"`
 	LastResultExpressions sqlx_types.JSONText `db:"last_result_expressions"`
+}
+
+type CheckExpression struct {
+	Type      string
+	MinHost   int
+	Metric    string
+	Operator  string
+	Value     float64
+	PrevRange int
+	PrevAggr  string
+	Port      string
+	Headers   string
+	Username  string
+	Password  string
+	Result    bool
+}
+
+type CheckTrigger struct {
+	ID                  int64
+	LowViolationsCount  int64
+	HighViolationsCount int64
+	CreatedInterval     string
+	Action              CheckTriggerAction
+}
+
+type CheckTriggerAction struct {
+	Transport            string
+	Email                string
+	SMSPhone             string
+	SMSCarrier           string
+	PagerDutyServiceKey  string
+	PagerDutyIncidentKey string
+	PagerDutyDescription string
 }
 
 type Check struct {
@@ -79,13 +112,44 @@ func (a *Check) AllByClusterID(tx *sqlx.Tx, clusterID int64) ([]*CheckRow, error
 	return rows, err
 }
 
-// AllChecks returns all rows.
-func (a *Check) AllChecks(tx *sqlx.Tx) ([]*CheckRow, error) {
+// All returns all rows.
+func (a *Check) All(tx *sqlx.Tx) ([]*CheckRow, error) {
 	rows := []*CheckRow{}
 	query := fmt.Sprintf("SELECT * FROM %v ORDER BY id DESC", a.table)
 	err := a.db.Select(&rows, query)
 
 	return rows, err
+}
+
+// AllSplitToDaemons returns all rows divided into daemons equally.
+func (a *Check) AllSplitToDaemons(tx *sqlx.Tx, daemons []string) (map[string][]*CheckRow, error) {
+	rows, err := a.All(tx)
+	if err != nil {
+		return nil, err
+	}
+
+	buckets := make([][]*CheckRow, len(daemons))
+	for i, _ := range daemons {
+		buckets[i] = make([]*CheckRow, 0)
+	}
+
+	bucketsPointer := 0
+	for _, row := range rows {
+		buckets[bucketsPointer] = append(buckets[bucketsPointer], row)
+		bucketsPointer = bucketsPointer + 1
+
+		if bucketsPointer >= len(buckets) {
+			bucketsPointer = 0
+		}
+	}
+
+	result := make(map[string][]*CheckRow)
+
+	for i, watchersInbucket := range buckets {
+		result[daemons[i]] = watchersInbucket
+	}
+
+	return result, err
 }
 
 func (a *Check) AddTrigger(tx *sqlx.Tx, checkRow *CheckRow, trigger CheckTrigger) ([]CheckTrigger, error) {
@@ -178,20 +242,26 @@ func (checkRow *CheckRow) UnmarshalTriggers() ([]CheckTrigger, error) {
 	return container, nil
 }
 
-type CheckTrigger struct {
-	ID                  int64
-	LowViolationsCount  int64
-	HighViolationsCount int64
-	CreatedInterval     string
-	Action              CheckTriggerAction
+func (checkRow *CheckRow) GetHostsList() ([]string, error) {
+	var container []string
+
+	err := json.Unmarshal(checkRow.HostsList, &container)
+	if err != nil {
+		return nil, err
+	}
+
+	return container, nil
 }
 
-type CheckTriggerAction struct {
-	Transport string
-	Email string
-	SMSPhone string
-	SMSCarrier string
-	PagerDutyServiceKey string
-	PagerDutyIncidentKey string
-	PagerDutyDescription string
+func (checkRow *CheckRow) GetExpressions() ([]CheckExpression, error) {
+	var expressions []CheckExpression
+
+	println(string(checkRow.Expressions))
+
+	err := json.Unmarshal(checkRow.Expressions, &expressions)
+	if err != nil {
+		return expressions, err
+	}
+
+	return expressions, nil
 }

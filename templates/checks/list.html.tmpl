@@ -495,7 +495,7 @@ function buildExpressions() {
 
         if(elem.hasClass('expression')) {
             expression['Type'] = elem.find('select.expression-type').val();
-            expression['MinHost'] = elem.find('input[name="ExpressionMinHost"]').val();
+            expression['MinHost'] = parseInt(elem.find('input[name="ExpressionMinHost"]').val(), 10);
 
             if(expression['Type'] == 'RawHostData') {
                 expression['Metric'] = elem.find('select.expression-part-host-metrics').val();
@@ -506,7 +506,7 @@ function buildExpressions() {
                 expression['Metric'] = elem.find('select.expression-part-host-metrics').val();
                 expression['Operator'] = elem.find('.expression-part-relative-host select[name="ExpressionOperator"]').val();
                 expression['Value'] = elem.find('.expression-part-relative-host select[name="ExpressionValue"]').val();
-                expression['PrevRange'] = elem.find('.expression-part-relative-host input[name="ExpressionPrevRange"]').val();
+                expression['PrevRange'] = parseInt(elem.find('.expression-part-relative-host input[name="ExpressionPrevRange"]').val(), 10);
                 expression['PrevAggr'] = elem.find('.expression-part-relative-host select[name="ExpressionPrevAggr"]').val();
 
             } else if(expression['Type'] == 'LogData') {

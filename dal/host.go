@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/jmoiron/sqlx"
@@ -145,6 +146,30 @@ func (h *Host) AllByClusterIDQueryAndUpdatedInterval(tx *sqlx.Tx, clusterID int6
 	hosts := []*HostRow{}
 	query := fmt.Sprintf("SELECT * FROM %v WHERE cluster_id=$1 AND updated >= (NOW() at time zone 'utc' - INTERVAL '%v') AND %v", h.table, updatedInterval, pgQuery)
 	err := h.db.Select(&hosts, query, clusterID)
+
+	return hosts, err
+}
+
+// AllByClusterIDAndHostnames returns all rows by hostnames.
+func (h *Host) AllByClusterIDAndHostnames(tx *sqlx.Tx, clusterID int64, hostnames []string) ([]*HostRow, error) {
+	inPlaceHolders := make([]string, len(hostnames))
+
+	for i := 0; i < len(hostnames); i++ {
+		inPlaceHolders[i] = fmt.Sprintf("$%v", i+2)
+	}
+
+	hosts := []*HostRow{}
+
+	query := fmt.Sprintf("SELECT * FROM %v WHERE cluster_id=$1 AND hostname IN (%v)", h.table, strings.Join(inPlaceHolders, ","))
+
+	args := make([]interface{}, len(hostnames)+1)
+	args[0] = clusterID
+
+	for i := 1; i < len(hostnames)+1; i++ {
+		args[i] = hostnames[i-1]
+	}
+
+	err := h.db.Select(&hosts, query, args...)
 
 	return hosts, err
 }
