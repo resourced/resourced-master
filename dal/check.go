@@ -287,18 +287,7 @@ func (checkRow *CheckRow) EvalExpressions(hostDB *sqlx.DB) ([]CheckExpression, b
 		}
 	}
 
-	if hostRows != nil {
-		println("Check:")
-		println(checkRow.ID)
-		println(checkRow.Name)
-		println("")
-
-		println("Hosts Length:")
-		println(len(hostRows))
-		println("")
-	}
-
-	if err != nil || hostRows == nil || len(hostRows) == 0 {
+	if err != nil {
 		return nil, false, err
 	}
 
@@ -306,10 +295,6 @@ func (checkRow *CheckRow) EvalExpressions(hostDB *sqlx.DB) ([]CheckExpression, b
 	if err != nil {
 		return nil, false, err
 	}
-
-	println("Expressions Length:")
-	println(len(expressions))
-	println("")
 
 	expressionResults := make([]CheckExpression, 0)
 	var finalResult bool
@@ -357,6 +342,22 @@ func (checkRow *CheckRow) EvalExpressions(hostDB *sqlx.DB) ([]CheckExpression, b
 }
 
 func (checkRow *CheckRow) EvalRawHostDataExpression(hostRows []*HostRow, expression CheckExpression) CheckExpression {
+	if hostRows == nil || len(hostRows) <= 0 {
+		expression.Result = false
+		return expression
+	}
+
+	if hostRows != nil {
+		println("Check:")
+		println(checkRow.ID)
+		println(checkRow.Name)
+		println("")
+
+		println("Hosts Length:")
+		println(len(hostRows))
+		println("")
+	}
+
 	affectedHosts := 0
 	var perHostResult bool
 
