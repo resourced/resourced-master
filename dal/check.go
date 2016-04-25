@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	"github.com/jmoiron/sqlx"
 	sqlx_types "github.com/jmoiron/sqlx/types"
@@ -264,4 +265,155 @@ func (checkRow *CheckRow) GetExpressions() ([]CheckExpression, error) {
 	}
 
 	return expressions, nil
+}
+
+// EvalExpressions reduces the result of expression into a single true/false.
+// 1st value: List of all CheckExpression containing results.
+// 2nd value: The value of all expressions.
+// 3rd value: Error
+func (checkRow *CheckRow) EvalExpressions(hostDB *sqlx.DB) ([]CheckExpression, bool, error) {
+	var hostRows []*HostRow
+	var err error
+
+	host := NewHost(hostDB)
+
+	if checkRow.HostsQuery != "" {
+		hostRows, err = host.AllByClusterIDQueryAndUpdatedInterval(nil, checkRow.ClusterID, checkRow.HostsQuery, "5m")
+
+	} else {
+		hostnames, err := checkRow.GetHostsList()
+		if err == nil && len(hostnames) > 0 {
+			hostRows, err = host.AllByClusterIDAndHostnames(nil, checkRow.ClusterID, hostnames)
+		}
+	}
+
+	if hostRows != nil {
+		println("Check:")
+		println(checkRow.ID)
+		println(checkRow.Name)
+		println("")
+
+		println("Hosts Length:")
+		println(len(hostRows))
+		println("")
+	}
+
+	if err != nil || hostRows == nil || len(hostRows) == 0 {
+		return nil, false, err
+	}
+
+	expressions, err := checkRow.GetExpressions()
+	if err != nil {
+		return nil, false, err
+	}
+
+	println("Expressions Length:")
+	println(len(expressions))
+	println("")
+
+	expressionResults := make([]CheckExpression, 0)
+	var finalResult bool
+	var lastExpressionBooleanOperator string
+
+	for expIndex, expression := range expressions {
+		if expression.Type == "RawHostData" {
+			expression = checkRow.EvalRawHostDataExpression(hostRows, expression)
+
+		} else if expression.Type == "RelativeHostData" {
+
+		} else if expression.Type == "LogData" {
+
+		} else if expression.Type == "LogData" {
+
+		} else if expression.Type == "Ping" {
+
+		} else if expression.Type == "SSH" {
+
+		} else if expression.Type == "HTTP" {
+
+		} else if expression.Type == "BooleanOperator" {
+			lastExpressionBooleanOperator = expression.Operator
+		}
+
+		if expIndex == 0 {
+			finalResult = expression.Result
+
+		} else {
+			if lastExpressionBooleanOperator == "and" {
+				finalResult = finalResult && expression.Result
+
+			} else if lastExpressionBooleanOperator == "or" {
+				finalResult = finalResult || expression.Result
+			}
+		}
+
+		expressionResults = append(expressionResults, expression)
+	}
+
+	println("Final Result:")
+	println(finalResult)
+
+	return expressionResults, finalResult, nil
+}
+
+func (checkRow *CheckRow) EvalRawHostDataExpression(hostRows []*HostRow, expression CheckExpression) CheckExpression {
+	affectedHosts := 0
+	var perHostResult bool
+
+	for _, hostRow := range hostRows {
+		var val float64
+
+		for prefix, keyAndValue := range hostRow.DataAsFlatKeyValue() {
+			if !strings.HasPrefix(expression.Metric, prefix) {
+				continue
+			}
+
+			for key, value := range keyAndValue {
+				if strings.HasSuffix(expression.Metric, key) {
+					val = value.(float64)
+					break
+				}
+			}
+		}
+
+		if val < float64(0) {
+			continue
+		}
+
+		if expression.Operator == ">" {
+			println("eval >")
+			println(val)
+			println(expression.Value)
+			println(val > expression.Value)
+
+			perHostResult = val > expression.Value
+
+			println(perHostResult)
+			println("")
+
+		} else if expression.Operator == ">=" {
+			perHostResult = val >= expression.Value
+
+		} else if expression.Operator == "=" {
+			perHostResult = val == expression.Value
+
+		} else if expression.Operator == "<" {
+			perHostResult = val < expression.Value
+
+		} else if expression.Operator == "<=" {
+			perHostResult = val <= expression.Value
+		}
+
+		if perHostResult {
+			affectedHosts = affectedHosts + 1
+		}
+	}
+
+	println("calculating expression.Result")
+	println(affectedHosts)
+	println(expression.MinHost)
+
+	expression.Result = affectedHosts >= expression.MinHost
+
+	return expression
 }
