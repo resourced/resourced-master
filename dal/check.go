@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/jmoiron/sqlx"
 	sqlx_types "github.com/jmoiron/sqlx/types"
@@ -46,6 +47,7 @@ type CheckExpression struct {
 	Value     float64
 	PrevRange int
 	PrevAggr  string
+	Search    string
 	Port      string
 	Headers   string
 	Username  string
@@ -269,7 +271,7 @@ func (checkRow *CheckRow) GetExpressions() ([]CheckExpression, error) {
 // 1st value: List of all CheckExpression containing results.
 // 2nd value: The value of all expressions.
 // 3rd value: Error
-func (checkRow *CheckRow) EvalExpressions(hostDB *sqlx.DB, tsMetricDB *sqlx.DB) ([]CheckExpression, bool, error) {
+func (checkRow *CheckRow) EvalExpressions(hostDB *sqlx.DB, tsMetricDB *sqlx.DB, tsLogDB *sqlx.DB) ([]CheckExpression, bool, error) {
 	var hostRows []*HostRow
 	var err error
 
@@ -306,6 +308,7 @@ func (checkRow *CheckRow) EvalExpressions(hostDB *sqlx.DB, tsMetricDB *sqlx.DB) 
 			expression = checkRow.EvalRelativeHostDataExpression(tsMetricDB, hostRows, expression)
 
 		} else if expression.Type == "LogData" {
+			expression = checkRow.EvalLogDataExpression(tsLogDB, hostRows, expression)
 
 		} else if expression.Type == "Ping" {
 
@@ -447,6 +450,75 @@ func (checkRow *CheckRow) EvalRelativeHostDataExpression(tsMetricDB *sqlx.DB, ho
 
 		} else if expression.Operator == "<" {
 			perHostResult = valPercentage < expression.Value
+		}
+
+		if perHostResult {
+			affectedHosts = affectedHosts + 1
+		}
+	}
+
+	expression.Result = affectedHosts >= expression.MinHost
+
+	return expression
+}
+
+func (checkRow *CheckRow) EvalLogDataExpression(tsLogDB *sqlx.DB, hostRows []*HostRow, expression CheckExpression) CheckExpression {
+	hostnames, err := checkRow.GetHostsList()
+	if err != nil {
+		expression.Result = false
+		return expression
+	}
+
+	if len(hostnames) == 0 && hostRows != nil && len(hostRows) > 0 {
+		hostnames = make([]string, len(hostRows))
+
+		for i, hostRow := range hostRows {
+			hostnames[i] = hostRow.Hostname
+		}
+	}
+
+	if hostnames == nil || len(hostnames) <= 0 {
+		expression.Result = false
+		return expression
+	}
+
+	affectedHosts := 0
+	var perHostResult bool
+
+	for _, hostname := range hostnames {
+		println("hostname")
+		println(hostname)
+
+		now := time.Now().UTC()
+		from := now.Add(-1 * time.Duration(expression.PrevRange) * time.Minute).UTC().Unix()
+		to := now.Unix()
+		searchQuery := fmt.Sprintf(`logline search "%v"`, expression.Search)
+
+		println("time stuff:")
+		println(from)
+		println(to)
+
+		valInt64, err := NewTSLog(tsLogDB).CountByClusterIDRangeHostAndQuery(nil, checkRow.ClusterID, from, to, hostname, searchQuery)
+		if err != nil {
+			println(err.Error())
+			continue
+		}
+
+		val := float64(valInt64)
+
+		println("val")
+		println(val)
+		println(expression.Value)
+
+		if val < float64(0) {
+			continue
+		}
+
+		if expression.Operator == ">" {
+			perHostResult = val > expression.Value
+
+		} else if expression.Operator == "<" {
+			perHostResult = val < expression.Value
 		}
 
 		if perHostResult {

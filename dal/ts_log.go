@@ -2,6 +2,7 @@ package dal
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"time"
 
@@ -128,7 +129,7 @@ func (ts *TSLog) AllByClusterIDAndRange(tx *sqlx.Tx, clusterID int64, from, to i
 	return rows, err
 }
 
-// AllByClusterIDRangeAndQuery returns all rows by resourced query.
+// AllByClusterIDRangeAndQuery returns all rows by cluster id, unix timestamp range, and resourced query.
 func (ts *TSLog) AllByClusterIDRangeAndQuery(tx *sqlx.Tx, clusterID int64, from, to int64, resourcedQuery string) ([]*TSLogRow, error) {
 	pgQuery := querybuilder.Parse(resourcedQuery)
 	if pgQuery == "" {
@@ -143,4 +144,21 @@ func (ts *TSLog) AllByClusterIDRangeAndQuery(tx *sqlx.Tx, clusterID int64, from,
 		err = fmt.Errorf("%v. Query: %v", err.Error(), query)
 	}
 	return rows, err
+}
+
+// CountByClusterIDRangeHostAndQuery returns count by cluster id, unix timestamp range, host, and resourced query.
+func (ts *TSLog) CountByClusterIDRangeHostAndQuery(tx *sqlx.Tx, clusterID int64, from, to int64, hostname, resourcedQuery string) (int64, error) {
+	pgQuery := querybuilder.Parse(resourcedQuery)
+	if pgQuery == "" {
+		return -1, errors.New("Query is unparsable")
+	}
+
+	var count int64
+	query := fmt.Sprintf("SELECT count(logline) FROM %v WHERE cluster_id=$1 AND created >= to_timestamp($2) at time zone 'utc' AND created <= to_timestamp($3) at time zone 'utc' AND hostname=$4 AND %v", ts.table, pgQuery)
+	err := ts.db.Get(&count, query, clusterID, from, to, hostname)
+
+	if err != nil {
+		err = fmt.Errorf("%v. Query: %v", err.Error(), query)
+	}
+	return count, err
 }
