@@ -4,10 +4,12 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"os/exec"
 	"strings"
 	"time"
 
+	"github.com/Sirupsen/logrus"
 	"github.com/jmoiron/sqlx"
 	sqlx_types "github.com/jmoiron/sqlx/types"
 )
@@ -318,6 +320,7 @@ func (checkRow *CheckRow) EvalExpressions(hostDB *sqlx.DB, tsMetricDB *sqlx.DB, 
 			expression = checkRow.EvalSSHExpression(hostRows, expression)
 
 		} else if expression.Type == "HTTP" {
+			expression = checkRow.EvalHTTPExpression(hostRows, expression)
 
 		} else if expression.Type == "BooleanOperator" {
 			lastExpressionBooleanOperator = expression.Operator
@@ -606,15 +609,104 @@ func (checkRow *CheckRow) EvalSSHExpression(hostRows []*HostRow, expression Chec
 	affectedHosts := 0
 
 	for _, hostname := range hostnames {
-		println("hostname")
-		println(hostname)
-
 		outputBytes, err := checkRow.CheckSSH(hostname, expression.Port, expression.Username)
 		outputString := string(outputBytes)
 
-		println(outputString)
-
 		if err != nil && !strings.Contains(outputString, "Permission denied") && !strings.Contains(outputString, "Host key verification failed") {
+			println(err.Error())
+			affectedHosts = affectedHosts + 1
+		}
+	}
+
+	expression.Result = affectedHosts >= expression.MinHost
+
+	return expression
+}
+
+func (checkRow *CheckRow) CheckHTTP(hostname, scheme, port, method, user, pass string, headers map[string]string, body string) (resp *http.Response, err error) {
+	url := fmt.Sprintf("%v://%v:%s", scheme, hostname, port)
+
+	client := &http.Client{}
+
+	var req *http.Request
+
+	if body != "" {
+		req, err = http.NewRequest(strings.ToUpper(method), url, strings.NewReader(body))
+
+		// Detect if POST body is JSON and set content-type
+		if strings.HasPrefix(body, "{") || strings.HasPrefix(body, "[") {
+			req.Header.Set("Content-Type", "application/json")
+		} else {
+			req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+		}
+
+	} else {
+		req, err = http.NewRequest(strings.ToUpper(method), url, nil)
+	}
+
+	if err != nil {
+		logrus.WithFields(logrus.Fields{
+			"Method":     "http.NewRequest",
+			"URL":        url,
+			"HTTPMethod": method,
+		}).Error(err)
+		return nil, err
+	}
+
+	for headerKey, headerVal := range headers {
+		req.Header.Add(headerKey, headerVal)
+	}
+
+	if user != "" || pass != "" {
+		req.SetBasicAuth(user, pass)
+	}
+
+	resp, err = client.Do(req)
+	if err != nil {
+		logrus.WithFields(logrus.Fields{
+			"Method":     "http.Client{}.Do",
+			"URL":        url,
+			"HTTPMethod": method,
+		}).Error(err)
+		return nil, err
+
+	} else if resp != nil && resp.Body != nil {
+		resp.Body.Close()
+	}
+
+	return resp, err
+}
+
+func (checkRow *CheckRow) EvalHTTPExpression(hostRows []*HostRow, expression CheckExpression) CheckExpression {
+	hostnames, err := checkRow.GetHostsList()
+	if err != nil {
+		expression.Result = false
+		return expression
+	}
+
+	if len(hostnames) == 0 && hostRows != nil && len(hostRows) > 0 {
+		hostnames = make([]string, len(hostRows))
+
+		for i, hostRow := range hostRows {
+			hostnames[i] = hostRow.Hostname
+		}
+	}
+
+	if hostnames == nil || len(hostnames) <= 0 {
+		expression.Result = false
+		return expression
+	}
+
+	affectedHosts := 0
+
+	for _, hostname := range hostnames {
+		println("hostname")
+		println(hostname)
+
+		headers := make(map[string]string)
+
+		resp, err := checkRow.CheckHTTP(hostname, "http", expression.Port, "GET", expression.Username, expression.Password, headers, "")
+		if err != nil || (resp != nil && resp.StatusCode != 200) {
 			println(err.Error())
 			affectedHosts = affectedHosts + 1
 		}
