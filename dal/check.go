@@ -257,8 +257,6 @@ func (checkRow *CheckRow) GetHostsList() ([]string, error) {
 func (checkRow *CheckRow) GetExpressions() ([]CheckExpression, error) {
 	var expressions []CheckExpression
 
-	println(string(checkRow.Expressions))
-
 	err := json.Unmarshal(checkRow.Expressions, &expressions)
 	if err != nil {
 		return expressions, err
@@ -271,7 +269,7 @@ func (checkRow *CheckRow) GetExpressions() ([]CheckExpression, error) {
 // 1st value: List of all CheckExpression containing results.
 // 2nd value: The value of all expressions.
 // 3rd value: Error
-func (checkRow *CheckRow) EvalExpressions(hostDB *sqlx.DB) ([]CheckExpression, bool, error) {
+func (checkRow *CheckRow) EvalExpressions(hostDB *sqlx.DB, tsMetricDB *sqlx.DB) ([]CheckExpression, bool, error) {
 	var hostRows []*HostRow
 	var err error
 
@@ -305,8 +303,7 @@ func (checkRow *CheckRow) EvalExpressions(hostDB *sqlx.DB) ([]CheckExpression, b
 			expression = checkRow.EvalRawHostDataExpression(hostRows, expression)
 
 		} else if expression.Type == "RelativeHostData" {
-
-		} else if expression.Type == "LogData" {
+			expression = checkRow.EvalRelativeHostDataExpression(tsMetricDB, hostRows, expression)
 
 		} else if expression.Type == "LogData" {
 
@@ -335,9 +332,6 @@ func (checkRow *CheckRow) EvalExpressions(hostDB *sqlx.DB) ([]CheckExpression, b
 		expressionResults = append(expressionResults, expression)
 	}
 
-	println("Final Result:")
-	println(finalResult)
-
 	return expressionResults, finalResult, nil
 }
 
@@ -345,17 +339,6 @@ func (checkRow *CheckRow) EvalRawHostDataExpression(hostRows []*HostRow, express
 	if hostRows == nil || len(hostRows) <= 0 {
 		expression.Result = false
 		return expression
-	}
-
-	if hostRows != nil {
-		println("Check:")
-		println(checkRow.ID)
-		println(checkRow.Name)
-		println("")
-
-		println("Hosts Length:")
-		println(len(hostRows))
-		println("")
 	}
 
 	affectedHosts := 0
@@ -382,15 +365,7 @@ func (checkRow *CheckRow) EvalRawHostDataExpression(hostRows []*HostRow, express
 		}
 
 		if expression.Operator == ">" {
-			println("eval >")
-			println(val)
-			println(expression.Value)
-			println(val > expression.Value)
-
 			perHostResult = val > expression.Value
-
-			println(perHostResult)
-			println("")
 
 		} else if expression.Operator == ">=" {
 			perHostResult = val >= expression.Value
@@ -410,9 +385,74 @@ func (checkRow *CheckRow) EvalRawHostDataExpression(hostRows []*HostRow, express
 		}
 	}
 
-	println("calculating expression.Result")
-	println(affectedHosts)
-	println(expression.MinHost)
+	expression.Result = affectedHosts >= expression.MinHost
+
+	return expression
+}
+
+func (checkRow *CheckRow) EvalRelativeHostDataExpression(tsMetricDB *sqlx.DB, hostRows []*HostRow, expression CheckExpression) CheckExpression {
+	if hostRows == nil || len(hostRows) <= 0 {
+		expression.Result = false
+		return expression
+	}
+
+	affectedHosts := 0
+	var perHostResult bool
+
+	for _, hostRow := range hostRows {
+		aggregateData, err := NewTSMetric(tsMetricDB).GetAggregateXMinutesByHostnameAndKey(nil, checkRow.ClusterID, expression.PrevRange, hostRow.Hostname, expression.Metric)
+		if err != nil {
+			continue
+		}
+
+		var val float64
+
+		for prefix, keyAndValue := range hostRow.DataAsFlatKeyValue() {
+			if !strings.HasPrefix(expression.Metric, prefix) {
+				continue
+			}
+
+			for key, value := range keyAndValue {
+				if strings.HasSuffix(expression.Metric, key) {
+					val = value.(float64)
+					break
+				}
+			}
+		}
+
+		if val < float64(0) {
+			continue
+		}
+
+		var prevVal float64
+
+		if expression.PrevAggr == "avg" {
+			prevVal = aggregateData.Avg
+		} else if expression.PrevAggr == "max" {
+			prevVal = aggregateData.Max
+		} else if expression.PrevAggr == "min" {
+			prevVal = aggregateData.Min
+		} else if expression.PrevAggr == "sum" {
+			prevVal = aggregateData.Sum
+		}
+
+		if prevVal < float64(0) {
+			continue
+		}
+
+		valPercentage := (val / prevVal) * float64(100)
+
+		if expression.Operator == ">" {
+			perHostResult = valPercentage > expression.Value
+
+		} else if expression.Operator == "<" {
+			perHostResult = valPercentage < expression.Value
+		}
+
+		if perHostResult {
+			affectedHosts = affectedHosts + 1
+		}
+	}
 
 	expression.Result = affectedHosts >= expression.MinHost
 

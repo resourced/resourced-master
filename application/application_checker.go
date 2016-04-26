@@ -25,7 +25,7 @@ func (app *Application) CheckAll() {
 			case checkRows := <-checkRowsChan:
 				for _, checkRow := range checkRows {
 					go func(checkRow *dal.CheckRow) {
-						expressionResults, finalResult, err := checkRow.EvalExpressions(app.DBConfig.Core)
+						expressionResults, finalResult, err := checkRow.EvalExpressions(app.DBConfig.Core, app.DBConfig.TSMetric)
 
 						if err != nil || expressionResults == nil || len(expressionResults) == 0 {
 							libtime.SleepString(checkRow.Interval)

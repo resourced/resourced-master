@@ -101,7 +101,7 @@ func (ts *TSMetric) CreateByHostRow(tx *sqlx.Tx, hostRow *HostRow, metricsMap ma
 
 					// Aggregate avg,max,min,sum values per 15 minutes.
 					go func() {
-						selectAggrRows, err := ts.AggregateEvery(tx, hostRow.ClusterID, "15 minute")
+						selectAggrRows, err := ts.AggregateEveryXMinutes(tx, hostRow.ClusterID, 15)
 						if err != nil {
 							logrus.Error(err)
 						} else {
@@ -132,7 +132,7 @@ func (ts *TSMetric) CreateByHostRow(tx *sqlx.Tx, hostRow *HostRow, metricsMap ma
 
 					// Aggregate avg,max,min,sum values per 15 minutes per host.
 					go func() {
-						selectAggrRows, err := ts.AggregateEveryPerHost(tx, hostRow.ClusterID, "15 minute")
+						selectAggrRows, err := ts.AggregateEveryXMinutesPerHost(tx, hostRow.ClusterID, 15)
 						if err != nil {
 							logrus.Error(err)
 						} else {
@@ -167,13 +167,12 @@ func (ts *TSMetric) CreateByHostRow(tx *sqlx.Tx, hostRow *HostRow, metricsMap ma
 	return nil
 }
 
-func (ts *TSMetric) AggregateEvery(tx *sqlx.Tx, clusterID int64, interval string) ([]*TSMetricSelectAggregateRow, error) {
-	if interval == "" {
-		interval = "15 minute"
-	}
+func (ts *TSMetric) AggregateEveryXMinutes(tx *sqlx.Tx, clusterID int64, minutes int) ([]*TSMetricSelectAggregateRow, error) {
+	interval := fmt.Sprintf("%v minute", minutes)
+	seconds := minutes * 60
 
 	rows := []*TSMetricSelectAggregateRow{}
-	query := fmt.Sprintf("SELECT cluster_id, cast(CEILING(extract('epoch' from created)/900)*900 as bigint) AS created_unix, key, avg(value) as avg, max(value) as max, min(value) as min, sum(value) as sum FROM %v WHERE cluster_id=$1 AND created >= (NOW() at time zone 'utc' - INTERVAL '%v') GROUP BY cluster_id, created_unix, key ORDER BY created_unix ASC", ts.table, interval)
+	query := fmt.Sprintf("SELECT cluster_id, cast(CEILING(extract('epoch' from created)/%v)*%v as bigint) AS created_unix, key, avg(value) as avg, max(value) as max, min(value) as min, sum(value) as sum FROM %v WHERE cluster_id=$1 AND created >= (NOW() at time zone 'utc' - INTERVAL '%v') GROUP BY cluster_id, created_unix, key ORDER BY created_unix ASC", seconds, seconds, ts.table, interval)
 	err := ts.db.Select(&rows, query, clusterID)
 
 	if err != nil {
@@ -182,19 +181,31 @@ func (ts *TSMetric) AggregateEvery(tx *sqlx.Tx, clusterID int64, interval string
 	return rows, err
 }
 
-func (ts *TSMetric) AggregateEveryPerHost(tx *sqlx.Tx, clusterID int64, interval string) ([]*TSMetricSelectAggregateRow, error) {
-	if interval == "" {
-		interval = "15 minute"
-	}
+func (ts *TSMetric) AggregateEveryXMinutesPerHost(tx *sqlx.Tx, clusterID int64, minutes int) ([]*TSMetricSelectAggregateRow, error) {
+	interval := fmt.Sprintf("%v minute", minutes)
+	seconds := minutes * 60
 
 	rows := []*TSMetricSelectAggregateRow{}
-	query := fmt.Sprintf("SELECT cluster_id, cast(CEILING(extract('epoch' from created)/900)*900 as bigint) AS created_unix, host, key, avg(value) as avg, max(value) as max, min(value) as min, sum(value) as sum FROM %v WHERE cluster_id=$1 AND created >= (NOW() at time zone 'utc' - INTERVAL '%v') GROUP BY cluster_id, created_unix, host, key ORDER BY created_unix ASC", ts.table, interval)
+	query := fmt.Sprintf("SELECT cluster_id, cast(CEILING(extract('epoch' from created)/%v)*%v as bigint) AS created_unix, host, key, avg(value) as avg, max(value) as max, min(value) as min, sum(value) as sum FROM %v WHERE cluster_id=$1 AND created >= (NOW() at time zone 'utc' - INTERVAL '%v') GROUP BY cluster_id, created_unix, host, key ORDER BY created_unix ASC", seconds, seconds, ts.table, interval)
 	err := ts.db.Select(&rows, query, clusterID)
 
 	if err != nil {
 		err = fmt.Errorf("%v. Query: %v", err.Error(), query)
 	}
 	return rows, err
+}
+
+func (ts *TSMetric) GetAggregateXMinutesByHostnameAndKey(tx *sqlx.Tx, clusterID int64, minutes int, hostname, key string) (*TSMetricSelectAggregateRow, error) {
+	interval := fmt.Sprintf("%v minute", minutes)
+
+	row := &TSMetricSelectAggregateRow{}
+	query := fmt.Sprintf("SELECT cluster_id, cast(extract(epoch from now() at time zone 'utc') as bigint) AS created_unix, host, key, avg(value) as avg, max(value) as max, min(value) as min, sum(value) as sum FROM %v WHERE cluster_id=$1 AND created >= (NOW() at time zone 'utc' - INTERVAL '%v') AND host=$2 AND key=$3 GROUP BY cluster_id, host, key", ts.table, interval)
+	err := ts.db.Get(row, query, clusterID, hostname, key)
+
+	if err != nil {
+		err = fmt.Errorf("%v. Query: %v", err.Error(), query)
+	}
+	return row, err
 }
 
 func (ts *TSMetric) AllByMetricIDHostAndRange(tx *sqlx.Tx, clusterID, metricID int64, host string, from, to int64) ([]*TSMetricRow, error) {

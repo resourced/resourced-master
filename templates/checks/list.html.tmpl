@@ -500,20 +500,20 @@ function buildExpressions() {
             if(expression['Type'] == 'RawHostData') {
                 expression['Metric'] = elem.find('select.expression-part-host-metrics').val();
                 expression['Operator'] = elem.find('.expression-part-raw-host select[name="ExpressionOperator"]').val();
-                expression['Value'] = elem.find('.expression-part-raw-host select[name="ExpressionValue"]').val();
+                expression['Value'] = parseInt(elem.find('.expression-part-raw-host input[name="ExpressionValue"]').val(), 10);
 
             } else if(expression['Type'] == 'RelativeHostData') {
                 expression['Metric'] = elem.find('select.expression-part-host-metrics').val();
                 expression['Operator'] = elem.find('.expression-part-relative-host select[name="ExpressionOperator"]').val();
-                expression['Value'] = elem.find('.expression-part-relative-host select[name="ExpressionValue"]').val();
+                expression['Value'] = parseInt(elem.find('.expression-part-relative-host input[name="ExpressionValue"]').val(), 10);
                 expression['PrevRange'] = parseInt(elem.find('.expression-part-relative-host input[name="ExpressionPrevRange"]').val(), 10);
                 expression['PrevAggr'] = elem.find('.expression-part-relative-host select[name="ExpressionPrevAggr"]').val();
 
             } else if(expression['Type'] == 'LogData') {
                 expression['Search'] = elem.find('.expression-part-log input[name="ExpressionSearch"]').val();
                 expression['Operator'] = elem.find('.expression-part-log select[name="ExpressionOperator"]').val();
-                expression['Value'] = elem.find('.expression-part-log input[name="ExpressionValue"]').val();
-                expression['PrevRange'] = elem.find('.expression-part-log input[name="ExpressionPrevRange"]').val();
+                expression['Value'] = parseInt(elem.find('.expression-part-log input[name="ExpressionValue"]').val(), 10);
+                expression['PrevRange'] = parseInt(elem.find('.expression-part-log input[name="ExpressionPrevRange"]').val(), 10);
 
             } else if(expression['Type'] == 'Ping') {
 
@@ -568,12 +568,12 @@ function renderEditExpressionsHTML(expressions) {
         if(expression['Type'] == 'RawHostData') {
             container.find('.expression:last select.expression-part-host-metrics').val(expression['Metric']);
             container.find('.expression:last .expression-part-raw-host select[name="ExpressionOperator"]').val(expression['Operator']);
-            container.find('.expression:last .expression-part-raw-host select[name="ExpressionValue"]').val(expression['Value']);
+            container.find('.expression:last .expression-part-raw-host input[name="ExpressionValue"]').val(expression['Value']);
 
         } else if(expression['Type'] == 'RelativeHostData') {
             container.find('.expression:last select.expression-part-host-metrics').val(expression['Metric']);
             container.find('.expression:last .expression-part-relative-host select[name="ExpressionOperator"]').val(expression['Operator']);
-            container.find('.expression:last .expression-part-relative-host select[name="ExpressionValue"]').val(expression['Value']);
+            container.find('.expression:last .expression-part-relative-host input[name="ExpressionValue"]').val(expression['Value']);
             container.find('.expression:last .expression-part-relative-host input[name="ExpressionPrevRange"]').val(expression['PrevRange']);
             container.find('.expression:last .expression-part-relative-host select[name="ExpressionPrevAggr"]').val(expression['PrevAggr']);
 
