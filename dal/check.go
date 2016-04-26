@@ -315,6 +315,7 @@ func (checkRow *CheckRow) EvalExpressions(hostDB *sqlx.DB, tsMetricDB *sqlx.DB, 
 			expression = checkRow.EvalPingExpression(hostRows, expression)
 
 		} else if expression.Type == "SSH" {
+			expression = checkRow.EvalSSHExpression(hostRows, expression)
 
 		} else if expression.Type == "HTTP" {
 
@@ -522,7 +523,7 @@ func (checkRow *CheckRow) EvalLogDataExpression(tsLogDB *sqlx.DB, hostRows []*Ho
 	return expression
 }
 
-func (checkRow *CheckRow) Ping(hostname string) (outBytes []byte, err error) {
+func (checkRow *CheckRow) CheckPing(hostname string) (outBytes []byte, err error) {
 	return exec.Command("ping", "-c", "1", hostname).CombinedOutput()
 }
 
@@ -549,14 +550,71 @@ func (checkRow *CheckRow) EvalPingExpression(hostRows []*HostRow, expression Che
 	affectedHosts := 0
 
 	for _, hostname := range hostnames {
-		println("hostname")
-		println(hostname)
-
-		outputBytes, err := checkRow.Ping(hostname)
+		outputBytes, err := checkRow.CheckPing(hostname)
 
 		println(string(outputBytes))
 
 		if err != nil {
+			println(err.Error())
+			affectedHosts = affectedHosts + 1
+		}
+	}
+
+	expression.Result = affectedHosts >= expression.MinHost
+
+	return expression
+}
+
+func (checkRow *CheckRow) CheckSSH(hostname, port, user string) (outBytes []byte, err error) {
+	sshOptions := []string{"-o BatchMode=yes", "-o ConnectTimeout=10"}
+
+	if port != "" {
+		sshOptions = append(sshOptions, []string{"-p", port}...)
+	}
+
+	userAtHost := hostname
+
+	if user != "" {
+		userAtHost = fmt.Sprintf("%v@%v", user, hostname)
+	}
+
+	sshOptions = append(sshOptions, userAtHost)
+
+	return exec.Command("ssh", sshOptions...).CombinedOutput()
+}
+
+func (checkRow *CheckRow) EvalSSHExpression(hostRows []*HostRow, expression CheckExpression) CheckExpression {
+	hostnames, err := checkRow.GetHostsList()
+	if err != nil {
+		expression.Result = false
+		return expression
+	}
+
+	if len(hostnames) == 0 && hostRows != nil && len(hostRows) > 0 {
+		hostnames = make([]string, len(hostRows))
+
+		for i, hostRow := range hostRows {
+			hostnames[i] = hostRow.Hostname
+		}
+	}
+
+	if hostnames == nil || len(hostnames) <= 0 {
+		expression.Result = false
+		return expression
+	}
+
+	affectedHosts := 0
+
+	for _, hostname := range hostnames {
+		println("hostname")
+		println(hostname)
+
+		outputBytes, err := checkRow.CheckSSH(hostname, expression.Port, expression.Username)
+		outputString := string(outputBytes)
+
+		println(outputString)
+
+		if err != nil && !strings.Contains(outputString, "Permission denied") && !strings.Contains(outputString, "Host key verification failed") {
 			println(err.Error())
 			affectedHosts = affectedHosts + 1
 		}
