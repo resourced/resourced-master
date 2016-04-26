@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"os/exec"
 	"strings"
 	"time"
 
@@ -311,6 +312,7 @@ func (checkRow *CheckRow) EvalExpressions(hostDB *sqlx.DB, tsMetricDB *sqlx.DB, 
 			expression = checkRow.EvalLogDataExpression(tsLogDB, hostRows, expression)
 
 		} else if expression.Type == "Ping" {
+			expression = checkRow.EvalPingExpression(hostRows, expression)
 
 		} else if expression.Type == "SSH" {
 
@@ -486,17 +488,10 @@ func (checkRow *CheckRow) EvalLogDataExpression(tsLogDB *sqlx.DB, hostRows []*Ho
 	var perHostResult bool
 
 	for _, hostname := range hostnames {
-		println("hostname")
-		println(hostname)
-
 		now := time.Now().UTC()
 		from := now.Add(-1 * time.Duration(expression.PrevRange) * time.Minute).UTC().Unix()
 		to := now.Unix()
 		searchQuery := fmt.Sprintf(`logline search "%v"`, expression.Search)
-
-		println("time stuff:")
-		println(from)
-		println(to)
 
 		valInt64, err := NewTSLog(tsLogDB).CountByClusterIDRangeHostAndQuery(nil, checkRow.ClusterID, from, to, hostname, searchQuery)
 		if err != nil {
@@ -505,10 +500,6 @@ func (checkRow *CheckRow) EvalLogDataExpression(tsLogDB *sqlx.DB, hostRows []*Ho
 		}
 
 		val := float64(valInt64)
-
-		println("val")
-		println(val)
-		println(expression.Value)
 
 		if val < float64(0) {
 			continue
@@ -522,6 +513,51 @@ func (checkRow *CheckRow) EvalLogDataExpression(tsLogDB *sqlx.DB, hostRows []*Ho
 		}
 
 		if perHostResult {
+			affectedHosts = affectedHosts + 1
+		}
+	}
+
+	expression.Result = affectedHosts >= expression.MinHost
+
+	return expression
+}
+
+func (checkRow *CheckRow) Ping(hostname string) (outBytes []byte, err error) {
+	return exec.Command("ping", "-c", "1", hostname).CombinedOutput()
+}
+
+func (checkRow *CheckRow) EvalPingExpression(hostRows []*HostRow, expression CheckExpression) CheckExpression {
+	hostnames, err := checkRow.GetHostsList()
+	if err != nil {
+		expression.Result = false
+		return expression
+	}
+
+	if len(hostnames) == 0 && hostRows != nil && len(hostRows) > 0 {
+		hostnames = make([]string, len(hostRows))
+
+		for i, hostRow := range hostRows {
+			hostnames[i] = hostRow.Hostname
+		}
+	}
+
+	if hostnames == nil || len(hostnames) <= 0 {
+		expression.Result = false
+		return expression
+	}
+
+	affectedHosts := 0
+
+	for _, hostname := range hostnames {
+		println("hostname")
+		println(hostname)
+
+		outputBytes, err := checkRow.Ping(hostname)
+
+		println(string(outputBytes))
+
+		if err != nil {
+			println(err.Error())
 			affectedHosts = affectedHosts + 1
 		}
 	}
