@@ -317,6 +317,7 @@
                                     <option value="Ping">ping</option>
                                     <option value="SSH">SSH</option>
                                     <option value="HTTP">HTTP</option>
+                                    <option value="HTTPS">HTTPS</option>
                                 </select>
 
                                 <br>
@@ -387,17 +388,30 @@
                                 </span>
 
                                 <span class="expression-part expression-part-http" style="display: none">
-                                    the port is <input name="ExpressionPort" type="number" value="80">
+                                    method is
 
-                                    &nbsp;using the following headers: <input name="ExpressionHeaders" type="text" style="width: 100%" placeholder="key=value,key=value">
+                                    <select name="ExpressionHTTPMethod">
+                                        <option value="GET">GET</option>
+                                        <option value="POST">POST</option>
+                                        <option value="PUT">PUT</option>
+                                        <option value="DELETE">DELETE</option>
+                                    </select>
+
+                                    on port <input name="ExpressionPort" type="number" style="width: 70px" value="80">
 
                                     <br>
 
-                                    or username: <input name="ExpressionUsername" type="text">
+                                    using the following headers:
+                                    <textarea class="form-control" name="ExpressionHeaders" row="10" placeholder="key1=value1,key2=value2" style="margin-bottom: 10px"></textarea>
+
+                                    and body:
+                                    <textarea class="form-control" name="ExpressionHTTPBody" row="10" placeholder="content of HTTP body (optional)"></textarea>
 
                                     <br>
 
-                                    and password: <input name="ExpressionPassword" type="text">
+                                    with username: <input name="ExpressionUsername" type="text">
+
+                                    &nbsp;&nbsp;and password:&nbsp;&nbsp;<input name="ExpressionPassword" type="text">
                                 </span>
 
                                 <br class="expression-where">
@@ -479,7 +493,7 @@ function showOrHideExpressionParts(expressionType, expressionElem) {
         $(expressionElem).find('.expression-where').show();
         $(expressionElem).find('.expression-part-ssh').show();
 
-    } else if(expressionType == 'HTTP') {
+    } else if(expressionType == 'HTTP' || expressionType == 'HTTPS') {
         $(expressionElem).find('.expression-part').hide();
         $(expressionElem).find('.expression-where').show();
         $(expressionElem).find('.expression-part-http').show();
@@ -520,12 +534,14 @@ function buildExpressions() {
             } else if(expression['Type'] == 'SSH') {
                 expression['Port'] = elem.find('.expression-part-ssh input[name="ExpressionPort"]').val();
 
-            } else if(expression['Type'] == 'HTTP') {
+            } else if(expression['Type'] == 'HTTP' || expression['Type'] == 'HTTPS') {
+                expression['Protocol'] = expression['Type'].toLowerCase();
                 expression['Port'] = elem.find('.expression-part-http input[name="ExpressionPort"]').val();
-                expression['Headers'] = elem.find('.expression-part-http input[name="ExpressionHeaders"]').val();
+                expression['Headers'] = elem.find('.expression-part-http textarea[name="ExpressionHeaders"]').val();
                 expression['Username'] = elem.find('.expression-part-http input[name="ExpressionUsername"]').val();
                 expression['Password'] = elem.find('.expression-part-http input[name="ExpressionPassword"]').val();
-
+                expression['HTTPMethod'] = elem.find('.expression-part-http select[name="ExpressionHTTPMethod"]').val();
+                expression['HTTPBody'] = elem.find('.expression-part-http textarea[name="ExpressionHTTPBody"]').val();
             }
 
         } else if(elem.hasClass('expression-boolean-operator')) {
@@ -588,11 +604,13 @@ function renderEditExpressionsHTML(expressions) {
         } else if(expression['Type'] == 'SSH') {
             container.find('.expression:last .expression-part-ssh input[name="ExpressionPort"]').val(expression['Port']);
 
-        } else if(expression['Type'] == 'HTTP') {
+        } else if(expression['Type'] == 'HTTP' || expression['Type'] == 'HTTPS') {
             container.find('.expression:last .expression-part-http input[name="ExpressionPort"]').val(expression['Port']);
-            container.find('.expression:last .expression-part-http input[name="ExpressionHeaders"]').val(expression['Headers']);
+            container.find('.expression:last .expression-part-http textarea[name="ExpressionHeaders"]').val(expression['Headers']);
             container.find('.expression:last .expression-part-http input[name="ExpressionUsername"]').val(expression['Username']);
             container.find('.expression:last .expression-part-http input[name="ExpressionPassword"]').val(expression['Password']);
+            container.find('.expression:last .expression-part-http select[name="ExpressionHTTPMethod"]').val(expression['HTTPMethod']);
+            container.find('.expression:last .expression-part-http textarea[name="ExpressionHTTPBody"]').val(expression['HTTPBody']);
 
         } else if(expression['Type'] == 'BooleanOperator') {
             container.append($('#expression-boolean-operator-tmpl').html());

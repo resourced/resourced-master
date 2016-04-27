@@ -32,10 +32,6 @@ func (app *Application) CheckAll() {
 							return
 						}
 
-						println("Len Expression Results:")
-						println(len(expressionResults))
-
-						println("Final Result:")
 						println(finalResult)
 
 						libtime.SleepString(checkRow.Interval)

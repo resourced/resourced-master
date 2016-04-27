@@ -43,19 +43,22 @@ type CheckRow struct {
 }
 
 type CheckExpression struct {
-	Type      string
-	MinHost   int
-	Metric    string
-	Operator  string
-	Value     float64
-	PrevRange int
-	PrevAggr  string
-	Search    string
-	Port      string
-	Headers   string
-	Username  string
-	Password  string
-	Result    bool
+	Type       string
+	MinHost    int
+	Metric     string
+	Operator   string
+	Value      float64
+	PrevRange  int
+	PrevAggr   string
+	Search     string
+	Protocol   string
+	Port       string
+	Headers    string
+	Username   string
+	Password   string
+	HTTPMethod string
+	HTTPBody   string
+	Result     bool
 }
 
 type CheckTrigger struct {
@@ -705,9 +708,19 @@ func (checkRow *CheckRow) EvalHTTPExpression(hostRows []*HostRow, expression Che
 
 		headers := make(map[string]string)
 
-		resp, err := checkRow.CheckHTTP(hostname, "http", expression.Port, "GET", expression.Username, expression.Password, headers, "")
+		for _, headersNewLine := range strings.Split(expression.Headers, "\n") {
+			for _, kvString := range strings.Split(headersNewLine, ",") {
+				if strings.Contains(kvString, "=") {
+					kvSlice := strings.Split(kvString, "=")
+					if len(kvSlice) >= 2 {
+						headers[strings.TrimSpace(kvSlice[0])] = strings.TrimSpace(kvSlice[1])
+					}
+				}
+			}
+		}
+
+		resp, err := checkRow.CheckHTTP(hostname, expression.Protocol, expression.Port, expression.HTTPMethod, expression.Username, expression.Password, headers, expression.HTTPBody)
 		if err != nil || (resp != nil && resp.StatusCode != 200) {
-			println(err.Error())
 			affectedHosts = affectedHosts + 1
 		}
 	}
