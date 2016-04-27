@@ -35,6 +35,9 @@ func TestCheckCRUD(t *testing.T) {
 		t.Fatalf("Cluster ID should be assign properly. clusterRow.ID: %v", clusterRow.ID)
 	}
 
+	// ----------------------------------------------------------------------
+	// Real test begins here
+
 	hostname, _ := os.Hostname()
 
 	// Create Check
@@ -61,6 +64,8 @@ func TestCheckCRUD(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Deleting Checks by id should not fail. Error: %v", err)
 	}
+
+	// ----------------------------------------------------------------------
 
 	// DELETE FROM users WHERE id=...
 	_, err = u.DeleteByID(nil, userRow.ID)
@@ -93,6 +98,26 @@ func TestCheckEvalRawHostDataExpression(t *testing.T) {
 		t.Fatalf("Cluster ID should be assign properly. clusterRow.ID: %v", clusterRow.ID)
 	}
 
+	at := newAccessTokenForTest(t)
+
+	// Create access token
+	tokenRow, err := at.Create(nil, userRow.ID, clusterRow.ID, "execute")
+	if err != nil {
+		t.Fatalf("Creating a token should work. Error: %v", err)
+	}
+	if tokenRow.ID <= 0 {
+		t.Fatalf("AccessToken ID should be assign properly. tokenRow.ID: %v", tokenRow.ID)
+	}
+
+	// Create host
+	hostRow, err := newHostForTest(t).CreateOrUpdate(nil, tokenRow, []byte(`{"/stuff": {"Data": {"Score": 100}, "Host": {"Name": "localhost", "Tags": {"aaa": "bbb"}}}}`))
+	if err != nil {
+		t.Errorf("Creating a new host should work. Error: %v", err)
+	}
+
+	// ----------------------------------------------------------------------
+	// Real test begins here
+
 	hostname, _ := os.Hostname()
 
 	// Create Check
@@ -114,6 +139,9 @@ func TestCheckEvalRawHostDataExpression(t *testing.T) {
 		t.Fatalf("Check ID should be assign properly. CheckRow.ID: %v", checkRow.ID)
 	}
 
+	hosts := make([]*HostRow, 1)
+	hosts[0] = hostRow
+
 	// EvalRawHostDataExpression where hosts list is nil
 	// The result should be true, which means that this expression is a fail.
 	expression := checkRow.EvalRawHostDataExpression(nil, CheckExpression{})
@@ -121,33 +149,10 @@ func TestCheckEvalRawHostDataExpression(t *testing.T) {
 		t.Fatalf("Expression result is not true")
 	}
 
-	at := newAccessTokenForTest(t)
-
-	// Create access token
-	tokenRow, err := at.Create(nil, userRow.ID, clusterRow.ID, "execute")
-	if err != nil {
-		t.Fatalf("Creating a token should work. Error: %v", err)
-	}
-	if tokenRow.ID <= 0 {
-		t.Fatalf("AccessToken ID should be assign properly. tokenRow.ID: %v", tokenRow.ID)
-	}
-
-	// Create host
-	hostRow, err := newHostForTest(t).CreateOrUpdate(nil, tokenRow, []byte(`{"/stuff": {"Data": {"Score": 100}, "Host": {"Name": "localhost", "Tags": {"aaa": "bbb"}}}}`))
-	if err != nil {
-		t.Errorf("Creating a new host should work. Error: %v", err)
-	}
-	if hostRow.ID <= 0 {
-		t.Fatalf("Host ID should be assign properly. hostRow.ID: %v", hostRow.ID)
-	}
-
 	// EvalRawHostDataExpression where hosts list is not nil and valid expression.
 	// This is a basic happy path test.
 	// Host data is 100, and we set check to fail at 101.
 	// The result should be false, 100 is not greater than 101, which means that this expression does not fail.
-	hosts := make([]*HostRow, 1)
-	hosts[0] = hostRow
-
 	expression = CheckExpression{}
 	expression.Metric = "/stuff.Score"
 	expression.Operator = ">"
@@ -156,8 +161,61 @@ func TestCheckEvalRawHostDataExpression(t *testing.T) {
 
 	expression = checkRow.EvalRawHostDataExpression(hosts, expression)
 	if expression.Result.Value != false {
-		t.Fatalf("Expression result is not false. %v > %v", hostRow.DataAsFlatKeyValue()["/stuff"]["Score"], expression.Value)
+		t.Fatalf("Expression result is not false. %v %v %v", hostRow.DataAsFlatKeyValue()["/stuff"]["Score"], expression.Operator, expression.Value)
 	}
+
+	// Arithmetic expression test.
+	// Host data is 100, see if the arithmetic comparison works.
+	// Greater than is already tested, above.
+	expression = CheckExpression{}
+	expression.Metric = "/stuff.Score"
+	expression.Operator = ">="
+	expression.MinHost = 1
+	expression.Value = float64(100)
+
+	expression = checkRow.EvalRawHostDataExpression(hosts, expression)
+	if expression.Result.Value != true {
+		// The result should be true, 100 is greater than or equal to 100, which means that this expression fails.
+		t.Fatalf("Expression result should be true. %v %v %v", hostRow.DataAsFlatKeyValue()["/stuff"]["Score"], expression.Operator, expression.Value)
+	}
+
+	expression = CheckExpression{}
+	expression.Metric = "/stuff.Score"
+	expression.Operator = "="
+	expression.MinHost = 1
+	expression.Value = float64(100)
+
+	expression = checkRow.EvalRawHostDataExpression(hosts, expression)
+	if expression.Result.Value != true {
+		// The result should be true, 100 is equal to 100, which means that this expression fails.
+		t.Fatalf("Expression result should be true. %v %v %v", hostRow.DataAsFlatKeyValue()["/stuff"]["Score"], expression.Operator, expression.Value)
+	}
+
+	expression = CheckExpression{}
+	expression.Metric = "/stuff.Score"
+	expression.Operator = "<"
+	expression.MinHost = 1
+	expression.Value = float64(200)
+
+	expression = checkRow.EvalRawHostDataExpression(hosts, expression)
+	if expression.Result.Value != true {
+		// The result should be true, 100 is less than 200, which means that this expression fails.
+		t.Fatalf("Expression result should be true. %v %v %v", hostRow.DataAsFlatKeyValue()["/stuff"]["Score"], expression.Operator, expression.Value)
+	}
+
+	expression = CheckExpression{}
+	expression.Metric = "/stuff.Score"
+	expression.Operator = "<="
+	expression.MinHost = 1
+	expression.Value = float64(100)
+
+	expression = checkRow.EvalRawHostDataExpression(hosts, expression)
+	if expression.Result.Value != true {
+		// The result should be true, 100 is less than or equal to 100, which means that this expression fails.
+		t.Fatalf("Expression result should be true. %v %v %v", hostRow.DataAsFlatKeyValue()["/stuff"]["Score"], expression.Operator, expression.Value)
+	}
+
+	// ----------------------------------------------------------------------
 
 	// DELETE FROM hosts WHERE id=...
 	_, err = newHostForTest(t).DeleteByID(nil, hostRow.ID)
