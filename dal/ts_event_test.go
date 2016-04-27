@@ -36,7 +36,7 @@ func TestTSEventCreate(t *testing.T) {
 	}
 
 	// Create TSEvent without passing dates
-	tsEventRow, err := newTSEventForTest(t).Create(nil, clusterRow.ID, -1, -1, "Launched uber feature")
+	tsEventRow, err := newTSEventForTest(t).Create(nil, newClusterForTest(t).NewExplicitID(), clusterRow.ID, -1, -1, "Launched uber feature")
 	if err != nil {
 		t.Fatalf("Creating a TSEvent should work. Error: %v", err)
 	}
@@ -49,7 +49,7 @@ func TestTSEventCreate(t *testing.T) {
 	}
 
 	// Create TSEvent with from timestamp only
-	tsEventRow, err = newTSEventForTest(t).Create(nil, clusterRow.ID, time.Now().Unix(), -1, "Launched uber feature 2")
+	tsEventRow, err = newTSEventForTest(t).Create(nil, newClusterForTest(t).NewExplicitID(), clusterRow.ID, time.Now().Unix(), -1, "Launched uber feature 2")
 	if err != nil {
 		t.Fatalf("Creating a TSEvent should work. Error: %v", err)
 	}
@@ -62,7 +62,7 @@ func TestTSEventCreate(t *testing.T) {
 	}
 
 	// Create TSEvent with from and to timestamps only
-	tsEventRow, err = newTSEventForTest(t).Create(nil, clusterRow.ID, time.Now().Unix(), time.Now().Unix(), "Launched uber feature 3")
+	tsEventRow, err = newTSEventForTest(t).Create(nil, newClusterForTest(t).NewExplicitID(), clusterRow.ID, time.Now().Unix(), time.Now().Unix(), "Launched uber feature 3")
 	if err != nil {
 		t.Fatalf("Creating a TSEvent should work. Error: %v", err)
 	}

@@ -91,7 +91,7 @@ func TestHostCRUD(t *testing.T) {
 	}
 
 	// SELECT * FROM hosts WHERE name=...
-	_, err = newHostForTest(t).GetByHostname(nil, hostRow.Name)
+	_, err = newHostForTest(t).GetByHostname(nil, hostRow.Hostname)
 	if err != nil {
 		t.Fatalf("Selecting host by name should not fail. Error: %v", err)
 	}

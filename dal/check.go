@@ -58,7 +58,12 @@ type CheckExpression struct {
 	Password   string
 	HTTPMethod string
 	HTTPBody   string
-	Result     bool
+	Result     struct {
+		Value         bool
+		Message       string
+		BadHostnames  []string
+		GoodHostnames []string
+	}
 }
 
 type CheckTrigger struct {
@@ -322,7 +327,7 @@ func (checkRow *CheckRow) EvalExpressions(hostDB *sqlx.DB, tsMetricDB *sqlx.DB, 
 		} else if expression.Type == "SSH" {
 			expression = checkRow.EvalSSHExpression(hostRows, expression)
 
-		} else if expression.Type == "HTTP" {
+		} else if expression.Type == "HTTP" || expression.Type == "HTTPS" {
 			expression = checkRow.EvalHTTPExpression(hostRows, expression)
 
 		} else if expression.Type == "BooleanOperator" {
@@ -330,14 +335,14 @@ func (checkRow *CheckRow) EvalExpressions(hostDB *sqlx.DB, tsMetricDB *sqlx.DB, 
 		}
 
 		if expIndex == 0 {
-			finalResult = expression.Result
+			finalResult = expression.Result.Value
 
 		} else {
 			if lastExpressionBooleanOperator == "and" {
-				finalResult = finalResult && expression.Result
+				finalResult = finalResult && expression.Result.Value
 
 			} else if lastExpressionBooleanOperator == "or" {
-				finalResult = finalResult || expression.Result
+				finalResult = finalResult || expression.Result.Value
 			}
 		}
 
@@ -349,7 +354,8 @@ func (checkRow *CheckRow) EvalExpressions(hostDB *sqlx.DB, tsMetricDB *sqlx.DB, 
 
 func (checkRow *CheckRow) EvalRawHostDataExpression(hostRows []*HostRow, expression CheckExpression) CheckExpression {
 	if hostRows == nil || len(hostRows) <= 0 {
-		expression.Result = false
+		expression.Result.Value = true
+		expression.Result.Message = "There are no hosts to check"
 		return expression
 	}
 
@@ -397,14 +403,14 @@ func (checkRow *CheckRow) EvalRawHostDataExpression(hostRows []*HostRow, express
 		}
 	}
 
-	expression.Result = affectedHosts >= expression.MinHost
+	expression.Result.Value = affectedHosts >= expression.MinHost
 
 	return expression
 }
 
 func (checkRow *CheckRow) EvalRelativeHostDataExpression(tsMetricDB *sqlx.DB, hostRows []*HostRow, expression CheckExpression) CheckExpression {
 	if hostRows == nil || len(hostRows) <= 0 {
-		expression.Result = false
+		expression.Result.Value = false
 		return expression
 	}
 
@@ -466,7 +472,7 @@ func (checkRow *CheckRow) EvalRelativeHostDataExpression(tsMetricDB *sqlx.DB, ho
 		}
 	}
 
-	expression.Result = affectedHosts >= expression.MinHost
+	expression.Result.Value = affectedHosts >= expression.MinHost
 
 	return expression
 }
@@ -474,7 +480,7 @@ func (checkRow *CheckRow) EvalRelativeHostDataExpression(tsMetricDB *sqlx.DB, ho
 func (checkRow *CheckRow) EvalLogDataExpression(tsLogDB *sqlx.DB, hostRows []*HostRow, expression CheckExpression) CheckExpression {
 	hostnames, err := checkRow.GetHostsList()
 	if err != nil {
-		expression.Result = false
+		expression.Result.Value = false
 		return expression
 	}
 
@@ -487,7 +493,7 @@ func (checkRow *CheckRow) EvalLogDataExpression(tsLogDB *sqlx.DB, hostRows []*Ho
 	}
 
 	if hostnames == nil || len(hostnames) <= 0 {
-		expression.Result = false
+		expression.Result.Value = false
 		return expression
 	}
 
@@ -524,7 +530,7 @@ func (checkRow *CheckRow) EvalLogDataExpression(tsLogDB *sqlx.DB, hostRows []*Ho
 		}
 	}
 
-	expression.Result = affectedHosts >= expression.MinHost
+	expression.Result.Value = affectedHosts >= expression.MinHost
 
 	return expression
 }
@@ -536,7 +542,7 @@ func (checkRow *CheckRow) CheckPing(hostname string) (outBytes []byte, err error
 func (checkRow *CheckRow) EvalPingExpression(hostRows []*HostRow, expression CheckExpression) CheckExpression {
 	hostnames, err := checkRow.GetHostsList()
 	if err != nil {
-		expression.Result = false
+		expression.Result.Value = false
 		return expression
 	}
 
@@ -549,7 +555,7 @@ func (checkRow *CheckRow) EvalPingExpression(hostRows []*HostRow, expression Che
 	}
 
 	if hostnames == nil || len(hostnames) <= 0 {
-		expression.Result = false
+		expression.Result.Value = false
 		return expression
 	}
 
@@ -566,7 +572,7 @@ func (checkRow *CheckRow) EvalPingExpression(hostRows []*HostRow, expression Che
 		}
 	}
 
-	expression.Result = affectedHosts >= expression.MinHost
+	expression.Result.Value = affectedHosts >= expression.MinHost
 
 	return expression
 }
@@ -592,7 +598,7 @@ func (checkRow *CheckRow) CheckSSH(hostname, port, user string) (outBytes []byte
 func (checkRow *CheckRow) EvalSSHExpression(hostRows []*HostRow, expression CheckExpression) CheckExpression {
 	hostnames, err := checkRow.GetHostsList()
 	if err != nil {
-		expression.Result = false
+		expression.Result.Value = false
 		return expression
 	}
 
@@ -605,7 +611,7 @@ func (checkRow *CheckRow) EvalSSHExpression(hostRows []*HostRow, expression Chec
 	}
 
 	if hostnames == nil || len(hostnames) <= 0 {
-		expression.Result = false
+		expression.Result.Value = false
 		return expression
 	}
 
@@ -621,7 +627,7 @@ func (checkRow *CheckRow) EvalSSHExpression(hostRows []*HostRow, expression Chec
 		}
 	}
 
-	expression.Result = affectedHosts >= expression.MinHost
+	expression.Result.Value = affectedHosts >= expression.MinHost
 
 	return expression
 }
@@ -683,7 +689,7 @@ func (checkRow *CheckRow) CheckHTTP(hostname, scheme, port, method, user, pass s
 func (checkRow *CheckRow) EvalHTTPExpression(hostRows []*HostRow, expression CheckExpression) CheckExpression {
 	hostnames, err := checkRow.GetHostsList()
 	if err != nil {
-		expression.Result = false
+		expression.Result.Value = false
 		return expression
 	}
 
@@ -696,16 +702,13 @@ func (checkRow *CheckRow) EvalHTTPExpression(hostRows []*HostRow, expression Che
 	}
 
 	if hostnames == nil || len(hostnames) <= 0 {
-		expression.Result = false
+		expression.Result.Value = false
 		return expression
 	}
 
 	affectedHosts := 0
 
 	for _, hostname := range hostnames {
-		println("hostname")
-		println(hostname)
-
 		headers := make(map[string]string)
 
 		for _, headersNewLine := range strings.Split(expression.Headers, "\n") {
@@ -725,7 +728,7 @@ func (checkRow *CheckRow) EvalHTTPExpression(hostRows []*HostRow, expression Che
 		}
 	}
 
-	expression.Result = affectedHosts >= expression.MinHost
+	expression.Result.Value = affectedHosts >= expression.MinHost
 
 	return expression
 }
