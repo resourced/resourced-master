@@ -215,6 +215,20 @@ func TestCheckEvalRawHostDataExpression(t *testing.T) {
 		t.Fatalf("Expression result should be true. %v %v %v", hostRow.DataAsFlatKeyValue()["/stuff"]["Score"], expression.Operator, expression.Value)
 	}
 
+	// Case when host does not contain a particular metric.
+	expression = CheckExpression{}
+	expression.Metric = "/stuff.DoesNotExist"
+	expression.Operator = "<="
+	expression.MinHost = 1
+	expression.Value = float64(100)
+
+	expression = checkRow.EvalRawHostDataExpression(hosts, expression)
+	if expression.Result.Value != true {
+		// The result should be true
+		// If we cannot find metric on the host, then we assume there's something wrong with the host. Thus, this expression must fails.
+		t.Fatalf("Expression result should be true")
+	}
+
 	// ----------------------------------------------------------------------
 
 	// DELETE FROM hosts WHERE id=...

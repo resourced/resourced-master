@@ -378,8 +378,10 @@ func (checkRow *CheckRow) EvalRawHostDataExpression(hostRows []*HostRow, express
 			}
 		}
 
+		// If a Host does not contain a particular metric,
+		// We assume that there's something wrong with it.
 		if val < float64(0) {
-			continue
+			perHostResult = true
 		}
 
 		if expression.Operator == ">" {
