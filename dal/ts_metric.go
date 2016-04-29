@@ -62,7 +62,7 @@ func (ts *TSMetric) metricRowsForHighchart(tx *sqlx.Tx, host string, tsMetricRow
 }
 
 // Create a new record.
-func (ts *TSMetric) Create(tx *sqlx.Tx, clusterID, metricID int64, key, host string, value float64) error {
+func (ts *TSMetric) Create(tx *sqlx.Tx, clusterID, metricID int64, host, key string, value float64) error {
 	insertData := make(map[string]interface{})
 	insertData["cluster_id"] = clusterID
 	insertData["metric_id"] = metricID
@@ -87,7 +87,7 @@ func (ts *TSMetric) CreateByHostRow(tx *sqlx.Tx, hostRow *HostRow, metricsMap ma
 				// Deserialized JSON number -> interface{} always have float64 as type.
 				if trueValueFloat64, ok := value.(float64); ok {
 					// Ignore error for now, there's no need to break the entire loop when one insert fails.
-					err := ts.Create(tx, hostRow.ClusterID, metricID, metricKey, hostRow.Hostname, trueValueFloat64)
+					err := ts.Create(tx, hostRow.ClusterID, metricID, hostRow.Hostname, metricKey, trueValueFloat64)
 					if err != nil {
 						logrus.WithFields(logrus.Fields{
 							"Method":    "TSMetric.Create",
@@ -203,7 +203,7 @@ func (ts *TSMetric) GetAggregateXMinutesByHostnameAndKey(tx *sqlx.Tx, clusterID 
 	err := ts.db.Get(row, query, clusterID, hostname, key)
 
 	if err != nil {
-		err = fmt.Errorf("%v. Query: %v", err.Error(), query)
+		err = fmt.Errorf("%v. Query: %v, ClusterID: %v, Hostname: %v, Key: %v", err.Error(), query, clusterID, hostname, key)
 	}
 	return row, err
 }

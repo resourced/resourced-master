@@ -412,7 +412,8 @@ func (checkRow *CheckRow) EvalRawHostDataExpression(hostRows []*HostRow, express
 
 func (checkRow *CheckRow) EvalRelativeHostDataExpression(tsMetricDB *sqlx.DB, hostRows []*HostRow, expression CheckExpression) CheckExpression {
 	if hostRows == nil || len(hostRows) <= 0 {
-		expression.Result.Value = false
+		expression.Result.Value = true
+		expression.Result.Message = "There are no hosts to check"
 		return expression
 	}
 
@@ -420,8 +421,15 @@ func (checkRow *CheckRow) EvalRelativeHostDataExpression(tsMetricDB *sqlx.DB, ho
 	var perHostResult bool
 
 	for _, hostRow := range hostRows {
+
 		aggregateData, err := NewTSMetric(tsMetricDB).GetAggregateXMinutesByHostnameAndKey(nil, checkRow.ClusterID, expression.PrevRange, hostRow.Hostname, expression.Metric)
 		if err != nil {
+			// If a Host does not contain historical data of a particular metric,
+			// We assume that there's something wrong with it.
+			if strings.Contains(err.Error(), "no rows in result set") {
+				perHostResult = true
+				affectedHosts = affectedHosts + 1
+			}
 			continue
 		}
 
@@ -440,8 +448,10 @@ func (checkRow *CheckRow) EvalRelativeHostDataExpression(tsMetricDB *sqlx.DB, ho
 			}
 		}
 
+		// If a Host does not contain a particular metric,
+		// We assume that there's something wrong with it.
 		if val < float64(0) {
-			continue
+			perHostResult = true
 		}
 
 		var prevVal float64
