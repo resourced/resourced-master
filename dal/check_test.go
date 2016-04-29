@@ -18,42 +18,60 @@ func checkHostExpressionSetupForTest(t *testing.T) map[string]interface{} {
 	hostname, _ := os.Hostname()
 
 	// Signup
-	userRow, err := newUserForTest(t).Signup(nil, newEmailForTest(), "abc123", "abc123")
+	u := newUserForTest(t)
+	defer u.db.Close()
+
+	userRow, err := u.Signup(nil, newEmailForTest(), "abc123", "abc123")
 	if err != nil {
 		t.Fatalf("Signing up user should work. Error: %v", err)
 	}
 	setupRows["userRow"] = userRow
 
 	// Create cluster for user
-	clusterRow, err := newClusterForTest(t).Create(nil, userRow.ID, "cluster-name")
+	c := newClusterForTest(t)
+	defer c.db.Close()
+
+	clusterRow, err := c.Create(nil, userRow.ID, "cluster-name")
 	if err != nil {
 		t.Fatalf("Creating a cluster for user should work. Error: %v", err)
 	}
 	setupRows["clusterRow"] = clusterRow
 
 	// Create access token
-	tokenRow, err := newAccessTokenForTest(t).Create(nil, userRow.ID, clusterRow.ID, "execute")
+	at := newAccessTokenForTest(t)
+	defer at.db.Close()
+
+	tokenRow, err := at.Create(nil, userRow.ID, clusterRow.ID, "execute")
 	if err != nil {
 		t.Fatalf("Creating a token should work. Error: %v", err)
 	}
 	setupRows["tokenRow"] = tokenRow
 
 	// Create host
-	hostRow, err := newHostForTest(t).CreateOrUpdate(nil, tokenRow, []byte(fmt.Sprintf(`{"/stuff": {"Data": {"Score": 100}, "Host": {"Name": "%v", "Tags": {"aaa": "bbb"}}}}`, hostname)))
+	h := newHostForTest(t)
+	defer h.db.Close()
+
+	hostRow, err := h.CreateOrUpdate(nil, tokenRow, []byte(fmt.Sprintf(`{"/stuff": {"Data": {"Score": 100}, "Host": {"Name": "%v", "Tags": {"aaa": "bbb"}}}}`, hostname)))
 	if err != nil {
 		t.Errorf("Creating a new host should work. Error: %v", err)
 	}
 	setupRows["hostRow"] = hostRow
 
 	// Create Metric
-	metricRow, err := newMetricForTest(t).CreateOrUpdate(nil, clusterRow.ID, "/stuff.Score")
+	m := newMetricForTest(t)
+	defer m.db.Close()
+
+	metricRow, err := m.CreateOrUpdate(nil, clusterRow.ID, "/stuff.Score")
 	if err != nil {
 		t.Fatalf("Creating a Metric should work. Error: %v", err)
 	}
 	setupRows["metricRow"] = metricRow
 
 	// Create TSMetric
-	err = newTSMetricForTest(t).Create(nil, clusterRow.ID, metricRow.ID, hostname, "/stuff.Score", float64(100))
+	tsm := newTSMetricForTest(t)
+	defer tsm.db.Close()
+
+	err = tsm.Create(nil, clusterRow.ID, metricRow.ID, hostname, "/stuff.Score", float64(100))
 	if err != nil {
 		t.Fatalf("Creating a TSMetric should work. Error: %v", err)
 	}
@@ -63,31 +81,46 @@ func checkHostExpressionSetupForTest(t *testing.T) map[string]interface{} {
 
 func checkHostExpressionTeardownForTest(t *testing.T, setupRows map[string]interface{}) {
 	// DELETE FROM hosts WHERE id=...
-	_, err := newHostForTest(t).DeleteByID(nil, setupRows["hostRow"].(*HostRow).ID)
+	h := newHostForTest(t)
+	defer h.db.Close()
+
+	_, err := h.DeleteByID(nil, setupRows["hostRow"].(*HostRow).ID)
 	if err != nil {
 		t.Fatalf("Deleting access_tokens by id should not fail. Error: %v", err)
 	}
 
 	// DELETE FROM access_tokens WHERE id=...
-	_, err = newAccessTokenForTest(t).DeleteByID(nil, setupRows["tokenRow"].(*AccessTokenRow).ID)
+	at := newAccessTokenForTest(t)
+	defer at.db.Close()
+
+	_, err = at.DeleteByID(nil, setupRows["tokenRow"].(*AccessTokenRow).ID)
 	if err != nil {
 		t.Fatalf("Deleting access_tokens by id should not fail. Error: %v", err)
 	}
 
 	// DELETE FROM metrics WHERE id=...
-	_, err = newMetricForTest(t).DeleteByID(nil, setupRows["metricRow"].(*MetricRow).ID)
+	m := newMetricForTest(t)
+	defer m.db.Close()
+
+	_, err = m.DeleteByID(nil, setupRows["metricRow"].(*MetricRow).ID)
 	if err != nil {
 		t.Fatalf("Deleting access_tokens by id should not fail. Error: %v", err)
 	}
 
 	// DELETE FROM clusters WHERE id=...
-	_, err = newCheckForTest(t).DeleteByID(nil, setupRows["clusterRow"].(*ClusterRow).ID)
+	c := newClusterForTest(t)
+	defer c.db.Close()
+
+	_, err = c.DeleteByID(nil, setupRows["clusterRow"].(*ClusterRow).ID)
 	if err != nil {
 		t.Fatalf("Deleting ClusterRow by id should not fail. Error: %v", err)
 	}
 
 	// DELETE FROM users WHERE id=...
-	_, err = newUserForTest(t).DeleteByID(nil, setupRows["userRow"].(*UserRow).ID)
+	u := newUserForTest(t)
+	defer u.db.Close()
+
+	_, err = u.DeleteByID(nil, setupRows["userRow"].(*UserRow).ID)
 	if err != nil {
 		t.Fatalf("Deleting user by id should not fail. Error: %v", err)
 	}
@@ -95,6 +128,7 @@ func checkHostExpressionTeardownForTest(t *testing.T, setupRows map[string]inter
 
 func TestCheckCRUD(t *testing.T) {
 	u := newUserForTest(t)
+	defer u.db.Close()
 
 	// Signup
 	userRow, err := u.Signup(nil, newEmailForTest(), "abc123", "abc123")
@@ -109,7 +143,10 @@ func TestCheckCRUD(t *testing.T) {
 	}
 
 	// Create cluster for user
-	clusterRow, err := newClusterForTest(t).Create(nil, userRow.ID, "cluster-name")
+	c := newClusterForTest(t)
+	defer c.db.Close()
+
+	clusterRow, err := c.Create(nil, userRow.ID, "cluster-name")
 	if err != nil {
 		t.Fatalf("Creating a cluster for user should work. Error: %v", err)
 	}
@@ -133,7 +170,10 @@ func TestCheckCRUD(t *testing.T) {
 	data["last_result_hosts"] = []byte("[]")
 	data["last_result_expressions"] = []byte("[]")
 
-	checkRow, err := newCheckForTest(t).Create(nil, clusterRow.ID, data)
+	chk := newCheckForTest(t)
+	defer chk.db.Close()
+
+	checkRow, err := chk.Create(nil, clusterRow.ID, data)
 	if err != nil {
 		t.Fatalf("Creating a Check should not fail. Error: %v", err)
 	}
@@ -142,7 +182,7 @@ func TestCheckCRUD(t *testing.T) {
 	}
 
 	// DELETE FROM Checks WHERE id=...
-	_, err = NewCheck(u.db).DeleteByID(nil, checkRow.ID)
+	_, err = chk.DeleteByID(nil, checkRow.ID)
 	if err != nil {
 		t.Fatalf("Deleting Checks by id should not fail. Error: %v", err)
 	}
@@ -175,7 +215,10 @@ func TestCheckEvalRawHostDataExpression(t *testing.T) {
 	data["last_result_hosts"] = []byte("[]")
 	data["last_result_expressions"] = []byte("[]")
 
-	checkRow, err := newCheckForTest(t).Create(nil, setupRows["clusterRow"].(*ClusterRow).ID, data)
+	chk := newCheckForTest(t)
+	defer chk.db.Close()
+
+	checkRow, err := chk.Create(nil, setupRows["clusterRow"].(*ClusterRow).ID, data)
 	if err != nil {
 		t.Fatalf("Creating a Check should not fail. Error: %v", err)
 	}
@@ -276,7 +319,7 @@ func TestCheckEvalRawHostDataExpression(t *testing.T) {
 	// ----------------------------------------------------------------------
 
 	// DELETE FROM Checks WHERE id=...
-	_, err = newCheckForTest(t).DeleteByID(nil, checkRow.ID)
+	_, err = chk.DeleteByID(nil, checkRow.ID)
 	if err != nil {
 		t.Fatalf("Deleting Checks by id should not fail. Error: %v", err)
 	}
@@ -303,7 +346,10 @@ func TestCheckEvalRelativeHostDataExpression(t *testing.T) {
 	data["last_result_hosts"] = []byte("[]")
 	data["last_result_expressions"] = []byte("[]")
 
-	checkRow, err := newCheckForTest(t).Create(nil, setupRows["clusterRow"].(*ClusterRow).ID, data)
+	chk := newCheckForTest(t)
+	defer chk.db.Close()
+
+	checkRow, err := chk.Create(nil, setupRows["clusterRow"].(*ClusterRow).ID, data)
 	if err != nil {
 		t.Fatalf("Creating a Check should not fail. Error: %v", err)
 	}
@@ -340,7 +386,10 @@ func TestCheckEvalRelativeHostDataExpression(t *testing.T) {
 
 	// Arithmetic relative expression test.
 	// Create a tiny value for TSMetric
-	err = newTSMetricForTest(t).Create(nil, setupRows["clusterRow"].(*ClusterRow).ID, setupRows["metricRow"].(*MetricRow).ID, hostname, "/stuff.Score", float64(10))
+	tsm := newTSMetricForTest(t)
+	defer tsm.db.Close()
+
+	err = tsm.Create(nil, setupRows["clusterRow"].(*ClusterRow).ID, setupRows["metricRow"].(*MetricRow).ID, hostname, "/stuff.Score", float64(10))
 	if err != nil {
 		t.Fatalf("Creating a TSMetric should work. Error: %v", err)
 	}
@@ -378,7 +427,7 @@ func TestCheckEvalRelativeHostDataExpression(t *testing.T) {
 	// ----------------------------------------------------------------------
 
 	// DELETE FROM Checks WHERE id=...
-	_, err = newCheckForTest(t).DeleteByID(nil, checkRow.ID)
+	_, err = chk.DeleteByID(nil, checkRow.ID)
 	if err != nil {
 		t.Fatalf("Deleting Checks by id should not fail. Error: %v", err)
 	}

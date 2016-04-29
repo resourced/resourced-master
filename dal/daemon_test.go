@@ -11,8 +11,11 @@ func newDaemonForTest(t *testing.T) *Daemon {
 }
 
 func TestDaemonCRUD(t *testing.T) {
+	d := newDaemonForTest(t)
+	defer d.db.Close()
+
 	// Create Daemon
-	daemonRow, err := newDaemonForTest(t).CreateOrUpdate(nil, "hostname")
+	daemonRow, err := d.CreateOrUpdate(nil, "hostname")
 	if err != nil {
 		t.Fatalf("Creating a Daemon should work. Error: %v", err)
 	}
@@ -20,7 +23,7 @@ func TestDaemonCRUD(t *testing.T) {
 		t.Fatalf("Daemon ID should be assign properly. DaemonRow.ID: %v", daemonRow.ID)
 	}
 
-	daemonRow2, err := newDaemonForTest(t).GetByHostname(nil, "hostname")
+	daemonRow2, err := d.GetByHostname(nil, "hostname")
 	if err != nil {
 		t.Fatalf("Getting daemon by hostname should not fail. Error: %v", err)
 	}
@@ -28,7 +31,7 @@ func TestDaemonCRUD(t *testing.T) {
 		t.Fatalf("Got the wrong daemon")
 	}
 
-	_, err = newDaemonForTest(t).DeleteByID(nil, daemonRow.ID)
+	_, err = d.DeleteByID(nil, daemonRow.ID)
 	if err != nil {
 		t.Fatalf("Deleting Daemons by id should not fail. Error: %v", err)
 	}

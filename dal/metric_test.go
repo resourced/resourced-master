@@ -12,6 +12,7 @@ func newMetricForTest(t *testing.T) *Metric {
 
 func TestMetricCRUD(t *testing.T) {
 	u := newUserForTest(t)
+	defer u.db.Close()
 
 	// Signup
 	userRow, err := u.Signup(nil, newEmailForTest(), "abc123", "abc123")
@@ -25,8 +26,11 @@ func TestMetricCRUD(t *testing.T) {
 		t.Fatal("Signing up user should work.")
 	}
 
+	cl := newClusterForTest(t)
+	defer cl.db.Close()
+
 	// Create cluster for user
-	clusterRow, err := newClusterForTest(t).Create(nil, userRow.ID, "cluster-name")
+	clusterRow, err := cl.Create(nil, userRow.ID, "cluster-name")
 	if err != nil {
 		t.Fatalf("Creating a cluster for user should work. Error: %v", err)
 	}
@@ -35,7 +39,10 @@ func TestMetricCRUD(t *testing.T) {
 	}
 
 	// Create Metric
-	metricRow, err := newMetricForTest(t).CreateOrUpdate(nil, clusterRow.ID, "/test.metric.key")
+	m := newMetricForTest(t)
+	defer m.db.Close()
+
+	metricRow, err := m.CreateOrUpdate(nil, clusterRow.ID, "/test.metric.key")
 	if err != nil {
 		t.Fatalf("Creating a Metric should work. Error: %v", err)
 	}
@@ -43,13 +50,13 @@ func TestMetricCRUD(t *testing.T) {
 		t.Fatalf("Metric ID should be assign properly. MetricRow.ID: %v", metricRow.ID)
 	}
 
-	_, err = newMetricForTest(t).DeleteByID(nil, metricRow.ID)
+	_, err = m.DeleteByID(nil, metricRow.ID)
 	if err != nil {
 		t.Fatalf("Deleting Metrics by id should not fail. Error: %v", err)
 	}
 
 	// DELETE FROM clusters WHERE id=...
-	_, err = NewCluster(u.db).DeleteByID(nil, clusterRow.ID)
+	_, err = cl.DeleteByID(nil, clusterRow.ID)
 	if err != nil {
 		t.Fatalf("Deleting clusters by id should not fail. Error: %v", err)
 	}

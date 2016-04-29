@@ -12,6 +12,7 @@ func newHostForTest(t *testing.T) *Host {
 
 func TestHostCRUD(t *testing.T) {
 	u := newUserForTest(t)
+	defer u.db.Close()
 
 	// Signup
 	userRow, err := u.Signup(nil, newEmailForTest(), "abc123", "abc123")
@@ -26,6 +27,7 @@ func TestHostCRUD(t *testing.T) {
 	}
 
 	cl := newClusterForTest(t)
+	defer cl.db.Close()
 
 	// Create cluster for user
 	clusterRow, err := cl.Create(nil, userRow.ID, "cluster-name")
@@ -37,6 +39,7 @@ func TestHostCRUD(t *testing.T) {
 	}
 
 	at := newAccessTokenForTest(t)
+	defer at.db.Close()
 
 	// Create access token
 	tokenRow, err := at.Create(nil, userRow.ID, clusterRow.ID, "execute")
@@ -47,8 +50,11 @@ func TestHostCRUD(t *testing.T) {
 		t.Fatalf("AccessToken ID should be assign properly. tokenRow.ID: %v", tokenRow.ID)
 	}
 
+	h := newHostForTest(t)
+	defer h.db.Close()
+
 	// Create host
-	hostRow, err := newHostForTest(t).CreateOrUpdate(nil, tokenRow, []byte(`{"/stuff": {"Data": {"Score": 100}, "Host": {"Name": "localhost", "Tags": {"aaa": "bbb"}}}}`))
+	hostRow, err := h.CreateOrUpdate(nil, tokenRow, []byte(`{"/stuff": {"Data": {"Score": 100}, "Host": {"Name": "localhost", "Tags": {"aaa": "bbb"}}}}`))
 	if err != nil {
 		t.Errorf("Creating a new host should work. Error: %v", err)
 	}
@@ -57,7 +63,7 @@ func TestHostCRUD(t *testing.T) {
 	}
 
 	// SELECT * FROM hosts
-	hostRows, err := newHostForTest(t).AllByClusterID(nil, clusterRow.ID)
+	hostRows, err := h.AllByClusterID(nil, clusterRow.ID)
 	if err != nil {
 		t.Fatalf("Selecting all hosts should not fail. Error: %v", err)
 	}
@@ -65,7 +71,7 @@ func TestHostCRUD(t *testing.T) {
 		t.Fatalf("There should be at least one host. Hosts length: %v", len(hostRows))
 	}
 
-	hostRows, err = newHostForTest(t).AllByClusterIDAndUpdatedInterval(nil, clusterRow.ID, "5 minutes")
+	hostRows, err = h.AllByClusterIDAndUpdatedInterval(nil, clusterRow.ID, "5 minutes")
 	if err != nil {
 		t.Fatalf("Getting all hosts should not fail. Error: %v", err)
 	}
@@ -74,30 +80,30 @@ func TestHostCRUD(t *testing.T) {
 	}
 
 	// SELECT * FROM hosts by query
-	_, err = newHostForTest(t).AllByClusterIDAndQuery(nil, clusterRow.ID, `/stuff.Score = 100`)
+	_, err = h.AllByClusterIDAndQuery(nil, clusterRow.ID, `/stuff.Score = 100`)
 	if err != nil {
 		t.Fatalf("Selecting all hosts by query should not fail. Error: %v", err)
 	}
 
-	_, err = newHostForTest(t).AllByClusterIDQueryAndUpdatedInterval(nil, clusterRow.ID, `/stuff.Score = 100`, "5 minutes")
+	_, err = h.AllByClusterIDQueryAndUpdatedInterval(nil, clusterRow.ID, `/stuff.Score = 100`, "5 minutes")
 	if err != nil {
 		t.Fatalf("Counting all hosts by query should not fail. Error: %v", err)
 	}
 
 	// SELECT * FROM hosts WHERE id=...
-	_, err = newHostForTest(t).GetByID(nil, hostRow.ID)
+	_, err = h.GetByID(nil, hostRow.ID)
 	if err != nil {
 		t.Fatalf("Selecting host by id should not fail. Error: %v", err)
 	}
 
 	// SELECT * FROM hosts WHERE name=...
-	_, err = newHostForTest(t).GetByHostname(nil, hostRow.Hostname)
+	_, err = h.GetByHostname(nil, hostRow.Hostname)
 	if err != nil {
 		t.Fatalf("Selecting host by name should not fail. Error: %v", err)
 	}
 
 	// DELETE FROM hosts WHERE id=...
-	_, err = newHostForTest(t).DeleteByID(nil, hostRow.ID)
+	_, err = h.DeleteByID(nil, hostRow.ID)
 	if err != nil {
 		t.Fatalf("Deleting access_tokens by id should not fail. Error: %v", err)
 	}

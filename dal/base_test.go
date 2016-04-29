@@ -36,6 +36,7 @@ func newBaseForTest(t *testing.T) *Base {
 
 func TestNewTransactionIfNeeded(t *testing.T) {
 	base := newBaseForTest(t)
+	defer base.db.Close()
 
 	// New Transaction block
 	tx, wrapInSingleTransaction, err := base.newTransactionIfNeeded(nil)
@@ -68,6 +69,7 @@ func TestNewTransactionIfNeeded(t *testing.T) {
 func TestCreateDeleteGeneric(t *testing.T) {
 	base := newBaseForTest(t)
 	base.table = "users"
+	defer base.db.Close()
 
 	// INSERT INTO users (name) VALUES (...)
 	data := make(map[string]interface{})
@@ -97,6 +99,7 @@ func TestCreateDeleteGeneric(t *testing.T) {
 func TestCreateDeleteByID(t *testing.T) {
 	base := newBaseForTest(t)
 	base.table = "users"
+	defer base.db.Close()
 
 	// INSERT INTO users (...) VALUES (...)
 	data := make(map[string]interface{})
@@ -124,6 +127,7 @@ func TestCreateDeleteByID(t *testing.T) {
 func TestCreateUpdateGenericDelete(t *testing.T) {
 	base := newBaseForTest(t)
 	base.table = "users"
+	defer base.db.Close()
 
 	// INSERT INTO users (...) VALUES (...)
 	data := make(map[string]interface{})
@@ -160,6 +164,7 @@ func TestCreateUpdateGenericDelete(t *testing.T) {
 func TestCreateUpdateByIDDelete(t *testing.T) {
 	base := newBaseForTest(t)
 	base.table = "users"
+	defer base.db.Close()
 
 	// INSERT INTO users (...) VALUES (...)
 	data := make(map[string]interface{})
@@ -195,6 +200,7 @@ func TestCreateUpdateByIDDelete(t *testing.T) {
 func TestCreateUpdateByKeyValueStringDelete(t *testing.T) {
 	base := newBaseForTest(t)
 	base.table = "users"
+	defer base.db.Close()
 
 	originalEmail := newEmailForTest()
 

@@ -12,6 +12,7 @@ func newUserForTest(t *testing.T) *User {
 
 func TestUserCRUD(t *testing.T) {
 	u := newUserForTest(t)
+	defer u.db.Close()
 
 	// Signup
 	userRow, err := u.Signup(nil, newEmailForTest(), "abc123", "abc123")

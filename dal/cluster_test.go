@@ -12,6 +12,7 @@ func newClusterForTest(t *testing.T) *Cluster {
 
 func TestClusterCRUD(t *testing.T) {
 	u := newUserForTest(t)
+	defer u.db.Close()
 
 	// Signup
 	userRow, err := u.Signup(nil, newEmailForTest(), "abc123", "abc123")
@@ -25,8 +26,11 @@ func TestClusterCRUD(t *testing.T) {
 		t.Fatal("Signing up user should work.")
 	}
 
+	c := newClusterForTest(t)
+	defer c.db.Close()
+
 	// Create cluster for user
-	clusterRow, err := newClusterForTest(t).Create(nil, userRow.ID, "cluster-name")
+	clusterRow, err := c.Create(nil, userRow.ID, "cluster-name")
 	if err != nil {
 		t.Fatalf("Creating a cluster for user should work. Error: %v", err)
 	}
