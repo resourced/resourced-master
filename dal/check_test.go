@@ -434,3 +434,71 @@ func TestCheckEvalRelativeHostDataExpression(t *testing.T) {
 
 	checkHostExpressionTeardownForTest(t, setupRows)
 }
+
+func TestCheckEvalLogDataExpression(t *testing.T) {
+	setupRows := checkHostExpressionSetupForTest(t)
+
+	// ----------------------------------------------------------------------
+	// Real test begins here
+
+	hostname, _ := os.Hostname()
+
+	// Create Check
+	data := make(map[string]interface{})
+	data["name"] = "check-name"
+	data["interval"] = "60s"
+	data["hosts_query"] = ""
+	data["hosts_list"] = []byte("[\"" + hostname + "\"]")
+	data["expressions"] = []byte("[]")
+	data["triggers"] = []byte("[]")
+	data["last_result_hosts"] = []byte("[]")
+	data["last_result_expressions"] = []byte("[]")
+
+	chk := newCheckForTest(t)
+	defer chk.db.Close()
+
+	// Create a Check
+	checkRow, err := chk.Create(nil, setupRows["clusterRow"].(*ClusterRow).ID, data)
+	if err != nil {
+		t.Fatalf("Creating a Check should not fail. Error: %v", err)
+	}
+	if checkRow.ID <= 0 {
+		t.Fatalf("Check ID should be assign properly. CheckRow.ID: %v", checkRow.ID)
+	}
+
+	// Create TSLog
+	dataJSONString := fmt.Sprintf(`{"Host": {"Name": "%v", "Tags": {}}, "Data": {"Filename":"", "Loglines": ["aaa", "bbb"]}}`, hostname)
+
+	err = newTSLogForTest(t).CreateFromJSON(nil, setupRows["clusterRow"].(*ClusterRow).ID, []byte(dataJSONString))
+	if err != nil {
+		t.Fatalf("Creating a TSLog should work. Error: %v", err)
+	}
+
+	db := newDbForTest(t)
+	defer db.Close()
+
+	// EvalLogDataExpression with valid expression.
+	// This is a basic happy path test.
+	expression := CheckExpression{}
+	expression.Search = "aaa"
+	expression.Operator = ">"
+	expression.MinHost = 1
+	expression.Value = float64(0)
+	expression.PrevRange = 15
+
+	expression = checkRow.EvalLogDataExpression(db, nil, expression)
+	if expression.Result.Value != true {
+		// The result should be true. The count of logs with "aaa" string is indeed greater than 0, which means that this expression must fail.
+		t.Fatalf("Expression result is not %v %v", expression.Operator, expression.Value)
+	}
+
+	// ----------------------------------------------------------------------
+
+	// DELETE FROM Checks WHERE id=...
+	_, err = chk.DeleteByID(nil, checkRow.ID)
+	if err != nil {
+		t.Fatalf("Deleting Checks by id should not fail. Error: %v", err)
+	}
+
+	checkHostExpressionTeardownForTest(t, setupRows)
+}

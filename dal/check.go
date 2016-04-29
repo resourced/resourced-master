@@ -520,9 +520,10 @@ func (checkRow *CheckRow) EvalLogDataExpression(tsLogDB *sqlx.DB, hostRows []*Ho
 
 		valInt64, err := NewTSLog(tsLogDB).CountByClusterIDRangeHostAndQuery(nil, checkRow.ClusterID, from, to, hostname, searchQuery)
 		if err != nil {
-			println(err.Error())
 			continue
 		}
+
+		println(valInt64)
 
 		val := float64(valInt64)
 
