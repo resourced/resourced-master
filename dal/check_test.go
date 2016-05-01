@@ -587,7 +587,7 @@ func TestCheckEvalSSHExpression(t *testing.T) {
 		t.Fatalf("Check ID should be assign properly. CheckRow.ID: %v", checkRow.ID)
 	}
 
-	// EvalPingExpression with valid expression.
+	// EvalSSHExpression with valid expression.
 	// This is a basic happy path test.
 	expression := CheckExpression{}
 	expression.MinHost = 1
@@ -595,8 +595,66 @@ func TestCheckEvalSSHExpression(t *testing.T) {
 
 	expression = checkRow.EvalSSHExpression(nil, expression)
 	if expression.Result.Value != false {
-		// The result should be false. The ping check should not fail since it is pinging localhost, which means that this expression must not fail.
+		// The result should be false. The check should not fail since it performs SSH to localhost, which means that this expression must not fail.
 		t.Fatalf("Expression should not fail")
+	}
+
+	// ----------------------------------------------------------------------
+
+	// DELETE FROM Checks WHERE id=...
+	_, err = chk.DeleteByID(nil, checkRow.ID)
+	if err != nil {
+		t.Fatalf("Deleting Checks by id should not fail. Error: %v", err)
+	}
+
+	checkHostExpressionTeardownForTest(t, setupRows)
+}
+
+// TestCheckEvalHTTPExpression
+// Make sure you run Master daemon on port 55655 for this test to pass.
+func TestCheckEvalHTTPExpression(t *testing.T) {
+	setupRows := checkHostExpressionSetupForTest(t)
+
+	// ----------------------------------------------------------------------
+	// Real test begins here
+
+	hostname, _ := os.Hostname()
+
+	// Create Check
+	data := make(map[string]interface{})
+	data["name"] = "check-name"
+	data["interval"] = "60s"
+	data["hosts_query"] = ""
+	data["hosts_list"] = []byte("[\"" + hostname + "\"]")
+	data["expressions"] = []byte("[]")
+	data["triggers"] = []byte("[]")
+	data["last_result_hosts"] = []byte("[]")
+	data["last_result_expressions"] = []byte("[]")
+
+	chk := newCheckForTest(t)
+	defer chk.db.Close()
+
+	// Create a Check
+	checkRow, err := chk.Create(nil, setupRows["clusterRow"].(*ClusterRow).ID, data)
+	if err != nil {
+		t.Fatalf("Creating a Check should not fail. Error: %v", err)
+	}
+	if checkRow.ID <= 0 {
+		t.Fatalf("Check ID should be assign properly. CheckRow.ID: %v", checkRow.ID)
+	}
+
+	// EvalHTTPExpression with valid expression.
+	// This is a basic happy path test.
+	expression := CheckExpression{}
+	expression.MinHost = 1
+	expression.Port = "55655"
+	expression.Protocol = "http"
+	expression.HTTPMethod = "GET"
+
+	expression = checkRow.EvalHTTPExpression(nil, expression)
+	if expression.Result.Value != false {
+		// To make this test pass, you should run Master daemon on localhost 55655.
+		t.Fatalf("Expression should not fail checking HTTP on port %v", expression.Port)
 	}
 
 	// ----------------------------------------------------------------------
