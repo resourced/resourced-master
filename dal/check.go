@@ -515,10 +515,9 @@ func (checkRow *CheckRow) EvalLogDataExpression(tsLogDB *sqlx.DB, hostRows []*Ho
 	for _, hostname := range hostnames {
 		now := time.Now().UTC()
 		from := now.Add(-1 * time.Duration(expression.PrevRange) * time.Minute).UTC().Unix()
-		to := now.Unix()
 		searchQuery := fmt.Sprintf(`logline search "%v"`, expression.Search)
 
-		valInt64, err := NewTSLog(tsLogDB).CountByClusterIDRangeHostAndQuery(nil, checkRow.ClusterID, from, to, hostname, searchQuery)
+		valInt64, err := NewTSLog(tsLogDB).CountByClusterIDFromTimestampHostAndQuery(nil, checkRow.ClusterID, from, hostname, searchQuery)
 		if err != nil {
 			continue
 		}

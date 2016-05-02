@@ -146,19 +146,24 @@ func (ts *TSLog) AllByClusterIDRangeAndQuery(tx *sqlx.Tx, clusterID int64, from,
 	return rows, err
 }
 
-// CountByClusterIDRangeHostAndQuery returns count by cluster id, unix timestamp range, host, and resourced query.
-func (ts *TSLog) CountByClusterIDRangeHostAndQuery(tx *sqlx.Tx, clusterID int64, from, to int64, hostname, resourcedQuery string) (int64, error) {
+// CountByClusterIDFromTimestampHostAndQuery returns count by cluster id, from unix timestamp, host, and resourced query.
+func (ts *TSLog) CountByClusterIDFromTimestampHostAndQuery(tx *sqlx.Tx, clusterID int64, from int64, hostname, resourcedQuery string) (int64, error) {
 	pgQuery := querybuilder.Parse(resourcedQuery)
 	if pgQuery == "" {
 		return -1, errors.New("Query is unparsable")
 	}
 
 	var count int64
-	query := fmt.Sprintf("SELECT count(logline) FROM %v WHERE cluster_id=$1 AND created >= to_timestamp($2) at time zone 'utc' AND created <= to_timestamp($3) at time zone 'utc' AND hostname=$4 AND %v", ts.table, pgQuery)
-	err := ts.db.Get(&count, query, clusterID, from, to, hostname)
+	query := fmt.Sprintf("SELECT count(logline) FROM %v WHERE cluster_id=$1 AND created >= to_timestamp($2) at time zone 'utc' AND hostname=$3 AND %v", ts.table, pgQuery)
+	err := ts.db.Get(&count, query, clusterID, from, hostname)
+
+	println(query)
+	println(clusterID)
+	println(from)
+	println(hostname)
 
 	if err != nil {
-		err = fmt.Errorf("%v. Query: %v", err.Error(), query)
+		err = fmt.Errorf("%v. Query: %v, ClusterID: %v, From: %v, Hostname: %v", err.Error(), query, clusterID, from, hostname)
 	}
 	return count, err
 }
