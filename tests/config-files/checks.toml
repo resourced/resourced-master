@@ -1,0 +1,25 @@
+[Checks]
+ListFetchInterval = "60s"
+DSN = "postgres://localhost:5432/resourced-master-ts-checks?sslmode=disable"
+
+
+# DataRetention defines how long time series data are kept.
+# The unit is defined in days.
+DataRetention = 1
+
+[Checks.Email]
+From = "alert@example.com"
+SubjectPrefix = "[ERROR]"
+Host = "smtp.gmail.com"
+Port = 587
+Username = ""
+Password = ""
+Identity = ""
+
+[Checks.SMSEmailGateway]
+att = "txt.att.net"
+alltel = "message.alltel.com"
+sprint = "messaging.sprintpcs.com"
+tmobile = "tmomail.com"
+verizon = "vtext.com"
+virgin = "vmobl.com"

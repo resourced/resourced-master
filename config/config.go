@@ -108,6 +108,17 @@ type GeneralConfig struct {
 		DataRetention int
 	}
 
+	Checks struct {
+		ListFetchInterval string
+
+		Email *EmailConfig
+
+		SMSEmailGateway map[string]string
+
+		DSN           string
+		DataRetention int
+	}
+
 	Email *EmailConfig
 }
 
@@ -151,6 +162,12 @@ func NewDBConfig(generalConfig GeneralConfig) (*DBConfig, error) {
 	}
 	conf.TSLog = db
 
+	db, err = sqlx.Connect("postgres", generalConfig.Checks.DSN)
+	if err != nil {
+		return nil, err
+	}
+	conf.TSCheck = db
+
 	return conf, nil
 }
 
@@ -161,4 +178,5 @@ type DBConfig struct {
 	TSEvent       *sqlx.DB
 	TSExecutorLog *sqlx.DB
 	TSLog         *sqlx.DB
+	TSCheck       *sqlx.DB
 }

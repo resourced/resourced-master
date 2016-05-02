@@ -744,3 +744,11 @@ func (checkRow *CheckRow) EvalHTTPExpression(hostRows []*HostRow, expression Che
 
 	return expression
 }
+
+func (checkRow *CheckRow) RunTriggers(tsCheckDB *sqlx.DB) error {
+	if checkRow.IsSilenced {
+		return nil
+	}
+
+	return nil
+}
