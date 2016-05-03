@@ -246,15 +246,21 @@ func (a *Check) DeleteTrigger(tx *sqlx.Tx, checkRow *CheckRow, trigger CheckTrig
 	return newTriggers, err
 }
 
-func (checkRow *CheckRow) UnmarshalTriggers() ([]CheckTrigger, error) {
-	var container []CheckTrigger
+func (checkRow *CheckRow) GetTriggers() []CheckTrigger {
+	triggers, _ := checkRow.UnmarshalTriggers()
 
-	err := json.Unmarshal(checkRow.Triggers, &container)
+	return triggers
+}
+
+func (checkRow *CheckRow) UnmarshalTriggers() ([]CheckTrigger, error) {
+	var triggers []CheckTrigger
+
+	err := json.Unmarshal(checkRow.Triggers, &triggers)
 	if err != nil {
 		return nil, err
 	}
 
-	return container, nil
+	return triggers, nil
 }
 
 func (checkRow *CheckRow) GetHostsList() ([]string, error) {
