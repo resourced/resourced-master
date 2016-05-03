@@ -97,7 +97,7 @@ func main() {
 	// app.WatchAll()
 
 	// Run all checks
-	app.CheckAll()
+	app.CheckAndRunTriggers()
 
 	srv := &graceful.Server{
 		Timeout: requestTimeout,

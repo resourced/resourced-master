@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"os"
 	"os/exec"
 	"strings"
 	"time"
@@ -12,6 +13,11 @@ import (
 	"github.com/Sirupsen/logrus"
 	"github.com/jmoiron/sqlx"
 	sqlx_types "github.com/jmoiron/sqlx/types"
+	"github.com/marcw/pagerduty"
+
+	"github.com/resourced/resourced-master/config"
+	"github.com/resourced/resourced-master/libstring"
+	"github.com/resourced/resourced-master/mailer"
 )
 
 func NewCheck(db *sqlx.DB) *Check {
@@ -238,11 +244,6 @@ func (a *Check) DeleteTrigger(tx *sqlx.Tx, checkRow *CheckRow, trigger CheckTrig
 	_, err = a.UpdateByID(tx, data, checkRow.ID)
 
 	return newTriggers, err
-}
-
-func (checkRow *CheckRow) GetTriggers() []CheckTrigger {
-	triggers, _ := checkRow.UnmarshalTriggers()
-	return triggers
 }
 
 func (checkRow *CheckRow) UnmarshalTriggers() ([]CheckTrigger, error) {
@@ -745,10 +746,160 @@ func (checkRow *CheckRow) EvalHTTPExpression(hostRows []*HostRow, expression Che
 	return expression
 }
 
-func (checkRow *CheckRow) RunTriggers(tsCheckDB *sqlx.DB) error {
+func (checkRow *CheckRow) RunTriggers(appConfig config.GeneralConfig, tsCheckDB *sqlx.DB, mailr *mailer.Mailer) error {
 	if checkRow.IsSilenced {
 		return nil
 	}
 
+	triggers, err := checkRow.UnmarshalTriggers()
+	if err != nil {
+		logrus.Error(err)
+		return err
+	}
+
+	for _, trigger := range triggers {
+		tsCheckRows, err := NewTSCheck(tsCheckDB).AllViolationsByClusterIDCheckIDAndInterval(nil, checkRow.ClusterID, checkRow.ID, trigger.CreatedInterval)
+		if err != nil {
+			return err
+		}
+
+		if len(tsCheckRows) == 0 {
+			continue
+		}
+
+		lastViolation := tsCheckRows[0]
+		violationsCount := len(tsCheckRows)
+
+		println("violationsCount")
+		println(violationsCount)
+		println(trigger.LowViolationsCount)
+		println(trigger.HighViolationsCount)
+
+		if int64(violationsCount) >= trigger.LowViolationsCount && int64(violationsCount) <= trigger.HighViolationsCount {
+			if trigger.Action.Transport == "nothing" {
+				// Do nothing
+
+			} else if trigger.Action.Transport == "email" {
+				println("I should be here")
+				err = checkRow.RunEmailTrigger(trigger, lastViolation, violationsCount, mailr, appConfig)
+				if err != nil {
+					continue
+				}
+
+			} else if trigger.Action.Transport == "sms" {
+				err = checkRow.RunSMSTrigger(trigger, lastViolation, violationsCount, mailr, appConfig)
+				if err != nil {
+					continue
+				}
+
+			} else if trigger.Action.Transport == "pagerduty" {
+				err = checkRow.RunPagerDutyTrigger(trigger, lastViolation)
+				if err != nil {
+					logrus.Error(err)
+					continue
+				}
+			}
+		}
+	}
+
 	return nil
+}
+
+func (checkRow *CheckRow) RunEmailTrigger(trigger CheckTrigger, lastViolation *TSCheckRow, violationsCount int, mailr *mailer.Mailer, appConfig config.GeneralConfig) (err error) {
+	if trigger.Action.Email == "" {
+		return fmt.Errorf("Unable to send email because trigger.Action.Email is empty")
+	}
+
+	to := trigger.Action.Email
+	subject := fmt.Sprintf(`%v Check(ID: %v): %v, failed %v times`, appConfig.Checks.Email.SubjectPrefix, checkRow.ID, checkRow.Name, violationsCount)
+	body := ""
+
+	if lastViolation != nil {
+		bodyBytes, err := libstring.PrettyPrintJSON([]byte(lastViolation.Expressions.String()))
+		if err != nil {
+			return fmt.Errorf("Unable to send email because of malformed check expressions")
+		}
+
+		body = string(bodyBytes)
+	}
+
+	err = mailr.Send(to, subject, body)
+	if err != nil {
+		logrus.WithFields(logrus.Fields{
+			"Method":      "checkRow.RunEmailTrigger",
+			"Transport":   trigger.Action.Transport,
+			"HostAndPort": mailr.HostAndPort,
+			"From":        mailr.From,
+			"To":          to,
+			"Subject":     subject,
+		}).Error(err)
+	}
+
+	return err
+}
+
+func (checkRow *CheckRow) RunSMSTrigger(trigger CheckTrigger, lastViolation *TSCheckRow, violationsCount int, mailr *mailer.Mailer, appConfig config.GeneralConfig) (err error) {
+	carrier := strings.ToLower(trigger.Action.SMSCarrier)
+
+	gateway, ok := appConfig.Checks.SMSEmailGateway[carrier]
+	if !ok {
+		return fmt.Errorf("Unable to lookup SMS Gateway for carrier: %v", carrier)
+	}
+
+	flattenPhone := libstring.FlattenPhone(trigger.Action.SMSPhone)
+	if len(flattenPhone) != 10 {
+		logrus.Warningf("Length of phone number is not 10. Flatten phone number: %v. Length: %v", flattenPhone, len(flattenPhone))
+		return nil
+	}
+
+	to := fmt.Sprintf("%v@%v", flattenPhone, gateway)
+	subject := ""
+	body := fmt.Sprintf(`%v Check(ID: %v): %v, failed %v times`, appConfig.Checks.Email.SubjectPrefix, checkRow.ID, checkRow.Name, violationsCount)
+
+	err = mailr.Send(to, subject, body)
+	if err != nil {
+		logrus.WithFields(logrus.Fields{
+			"Method":      "checkRow.RunSMSTrigger",
+			"Transport":   trigger.Action.Transport,
+			"HostAndPort": mailr.HostAndPort,
+			"From":        mailr.From,
+			"To":          to,
+			"Subject":     subject,
+		}).Error(err)
+	}
+
+	return err
+}
+
+func (checkRow *CheckRow) RunPagerDutyTrigger(trigger CheckTrigger, lastViolation *TSCheckRow) (err error) {
+	// Create a new PD "trigger" event
+	event := pagerduty.NewTriggerEvent(trigger.Action.PagerDutyServiceKey, trigger.Action.PagerDutyDescription)
+
+	// Add details to PD event
+	if lastViolation != nil {
+		err = lastViolation.Expressions.Unmarshal(&event.Details)
+		if err != nil {
+			return err
+		}
+	}
+
+	hostname, _ := os.Hostname()
+
+	// Add Client to PD event
+	event.Client = fmt.Sprintf("ResourceD Master on: %v", hostname)
+
+	// Submit PD event
+	pdResponse, _, err := pagerduty.Submit(event)
+	if err != nil {
+		return err
+	}
+	if pdResponse == nil {
+		return nil
+	}
+
+	// Update incident key into watchers_triggers row
+	trigger.Action.PagerDutyIncidentKey = pdResponse.IncidentKey
+	// TODO: How do I save this?
+
+	return err
 }

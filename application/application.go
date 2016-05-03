@@ -53,12 +53,12 @@ func New(configDir string) (*Application, error) {
 		app.Mailers["GeneralConfig"] = mailer
 	}
 
-	if app.GeneralConfig.Watchers.Email != nil {
-		mailer, err := mailer.New(app.GeneralConfig.Watchers.Email)
+	if app.GeneralConfig.Checks.Email != nil {
+		mailer, err := mailer.New(app.GeneralConfig.Checks.Email)
 		if err != nil {
 			return nil, err
 		}
-		app.Mailers["GeneralConfig.Watchers"] = mailer
+		app.Mailers["GeneralConfig.Checks"] = mailer
 	}
 
 	return app, err
