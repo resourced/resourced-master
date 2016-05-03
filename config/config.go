@@ -77,17 +77,6 @@ type GeneralConfig struct {
 		KeyFile  string
 	}
 
-	Watchers struct {
-		ListFetchInterval string
-
-		Email *EmailConfig
-
-		SMSEmailGateway map[string]string
-
-		DSN           string
-		DataRetention int
-	}
-
 	Metrics struct {
 		DSN           string
 		DataRetention int
@@ -132,12 +121,6 @@ func NewDBConfig(generalConfig GeneralConfig) (*DBConfig, error) {
 	}
 	conf.Core = db
 
-	db, err = sqlx.Connect("postgres", generalConfig.Watchers.DSN)
-	if err != nil {
-		return nil, err
-	}
-	conf.TSWatcher = db
-
 	db, err = sqlx.Connect("postgres", generalConfig.Metrics.DSN)
 	if err != nil {
 		return nil, err
@@ -173,7 +156,6 @@ func NewDBConfig(generalConfig GeneralConfig) (*DBConfig, error) {
 
 type DBConfig struct {
 	Core          *sqlx.DB
-	TSWatcher     *sqlx.DB
 	TSMetric      *sqlx.DB
 	TSEvent       *sqlx.DB
 	TSExecutorLog *sqlx.DB
