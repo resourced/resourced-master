@@ -131,32 +131,6 @@ select {
     margin-right: 14px;
 }
 
-.watchers h3 {
-    margin-top: 0;
-    margin-bottom: 6px;
-    font-size: 21px;
-}
-.watchers .btn-xs {
-    padding: 1px 8px;
-}
-
-.container.watchers .jumbotron h2 {
-    font-size: 46px;
-}
-.container.watchers .page-header {
-    padding-bottom: 0;
-    margin-bottom: 0;
-}
-
-.row.watchers {
-    margin-top: 16px;
-    padding-bottom: 16px;
-    border-bottom: 1px solid #4e5d6c;
-}
-.row.watchers table th {
-    cursor: pointer;
-}
-
 .container.graphs .page-header {
     margin-bottom: 14px;
 }

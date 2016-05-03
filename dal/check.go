@@ -165,8 +165,8 @@ func (a *Check) AllSplitToDaemons(tx *sqlx.Tx, daemons []string) (map[string][]*
 
 	result := make(map[string][]*CheckRow)
 
-	for i, watchersInbucket := range buckets {
-		result[daemons[i]] = watchersInbucket
+	for i, checksInbucket := range buckets {
+		result[daemons[i]] = checksInbucket
 	}
 
 	return result, err
@@ -895,7 +895,8 @@ func (checkRow *CheckRow) RunPagerDutyTrigger(trigger CheckTrigger, lastViolatio
 		return nil
 	}
 
-	// Update incident key into watchers_triggers row
+	// Update incident key into check action JSON
+	// Should we reuse the same incident key? Sounds like we should.
 	trigger.Action.PagerDutyIncidentKey = pdResponse.IncidentKey
 	// TODO: How do I save this?
 
