@@ -529,8 +529,6 @@ func (checkRow *CheckRow) EvalLogDataExpression(tsLogDB *sqlx.DB, hostRows []*Ho
 			continue
 		}
 
-		println(valInt64)
-
 		val := float64(valInt64)
 
 		if val < float64(0) {
@@ -582,11 +580,7 @@ func (checkRow *CheckRow) EvalPingExpression(hostRows []*HostRow, expression Che
 
 	for _, hostname := range hostnames {
 		outputBytes, err := checkRow.CheckPing(hostname)
-
-		println(string(outputBytes))
-
 		if err != nil {
-			println(err.Error())
 			affectedHosts = affectedHosts + 1
 		}
 	}
@@ -641,7 +635,6 @@ func (checkRow *CheckRow) EvalSSHExpression(hostRows []*HostRow, expression Chec
 		outputString := string(outputBytes)
 
 		if err != nil && !strings.Contains(outputString, "Permission denied") && !strings.Contains(outputString, "Host key verification failed") {
-			println(err.Error())
 			affectedHosts = affectedHosts + 1
 		}
 	}
@@ -786,7 +779,6 @@ func (checkRow *CheckRow) RunTriggers(appConfig config.GeneralConfig, tsCheckDB 
 				// Do nothing
 
 			} else if trigger.Action.Transport == "email" {
-				println("I should be here")
 				err = checkRow.RunEmailTrigger(trigger, lastViolation, violationsCount, mailr, appConfig)
 				if err != nil {
 					continue
