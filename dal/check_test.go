@@ -721,7 +721,7 @@ func TestBuildEmailTriggerContent(t *testing.T) {
 		t.Fatalf("Fetching a TSCheck should not fail. Error: %v", err)
 	}
 
-	content, err := checkRow.BuildEmailTriggerContent(lastViolation)
+	content, err := checkRow.BuildEmailTriggerContent(lastViolation, "..")
 	if err != nil {
 		t.Fatalf("Generating the content of email alert should not fail. Error: %v", err)
 	}

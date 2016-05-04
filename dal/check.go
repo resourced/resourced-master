@@ -846,14 +846,14 @@ func (checkRow *CheckRow) RunTriggers(appConfig config.GeneralConfig, tsCheckDB 
 	return nil
 }
 
-func (checkRow *CheckRow) BuildEmailTriggerContent(lastViolation *TSCheckRow) (string, error) {
+func (checkRow *CheckRow) BuildEmailTriggerContent(lastViolation *TSCheckRow, templateRoot string) (string, error) {
 	funcMap := template.FuncMap{
 		"addInt": func(left, right int) int {
 			return left + right
 		},
 	}
 
-	t, err := template.New("email-trigger.txt.tmpl").Funcs(funcMap).ParseFiles("../templates/checks/email-trigger.txt.tmpl")
+	t, err := template.New("email-trigger.txt.tmpl").Funcs(funcMap).ParseFiles(templateRoot + "/templates/checks/email-trigger.txt.tmpl")
 	if err != nil {
 		return "", err
 	}
@@ -886,8 +886,11 @@ func (checkRow *CheckRow) RunEmailTrigger(trigger CheckTrigger, lastViolation *T
 	body := ""
 
 	if lastViolation != nil {
-		body, err = checkRow.BuildEmailTriggerContent(lastViolation)
+		body, err = checkRow.BuildEmailTriggerContent(lastViolation, ".")
 		if err != nil {
+			println("Email Content Fail")
+			println(err.Error())
+
 			return fmt.Errorf("Unable to send email because of malformed email content. Error: %v", err)
 		}
 	}
