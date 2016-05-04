@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"fmt"
 	"html/template"
 	"io/ioutil"
 	"net/http"
@@ -177,6 +178,7 @@ func GetApiHosts(w http.ResponseWriter, r *http.Request) {
 	accessTokenRow := context.Get(r, "accessTokenRow").(*dal.AccessTokenRow)
 
 	query := r.URL.Query().Get("q")
+	count := r.URL.Query().Get("count")
 
 	hosts, err := dal.NewHost(db).AllByClusterIDAndQuery(nil, accessTokenRow.ClusterID, query)
 	if err != nil {
@@ -184,11 +186,16 @@ func GetApiHosts(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	hostRowsJson, err := json.Marshal(hosts)
-	if err != nil {
-		libhttp.HandleErrorJson(w, err)
-		return
-	}
+	if count == "true" {
+		w.Write([]byte(fmt.Sprintf("%v", len(hosts))))
 
-	w.Write(hostRowsJson)
+	} else {
+		hostRowsJson, err := json.Marshal(hosts)
+		if err != nil {
+			libhttp.HandleErrorJson(w, err)
+			return
+		}
+
+		w.Write(hostRowsJson)
+	}
 }

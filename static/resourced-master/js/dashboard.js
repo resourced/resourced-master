@@ -24,6 +24,9 @@ ResourcedMaster.hosts.get = function(accessToken, options) {
     if('query' in options) {
         getParams = getParams + 'q=' + options.query;
     }
+    if('count' in options) {
+        getParams = getParams + '&count=' + options.count;
+    }
 
     return $.ajax({
         url: path + '?' + getParams,

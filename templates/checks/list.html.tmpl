@@ -284,13 +284,13 @@
                 <div class="modal-body">
                     <div class="row form-group">
                         <div class="col-sm-12">
-                            <label class="pull-right" style="color: #5cb85c">Found 0 hosts</label>
+                            <label class="pull-right query-hosts-count" style="color: #5cb85c; display: none">Found <span class="query-hosts-count-number">0</span> hosts</label>
                             <label>Query for Hosts</label>
 
                             <div class="input-group">
                                 <input type="text" class="form-control" name="HostsQuery">
                                 <span class="input-group-btn">
-                                    <button class="btn btn-info" type="button">Search</button>
+                                    <button class="btn btn-info btn-hostquery-search" type="button">Search</button>
                                 </span>
                             </div>
                         </div>
@@ -454,6 +454,8 @@
 </script>
 
 <script>
+ResourcedMaster.globals.AccessToken = '{{ $.AccessToken.Token }}';
+
 function filter(element) {
     var value = $(element).val();
     if(value == '') {
@@ -672,6 +674,18 @@ $(document).on('click', '.btn-add-expression', function() {
     $('.expression-container').append('<div class="modal-body expression">' + $('.expression:first').html() + '</div>');
 });
 
+$(document).on('click', '.btn-hostquery-search', function() {
+    console.log(ResourcedMaster.globals.AccessToken);
+    ResourcedMaster.hosts.get(ResourcedMaster.globals.AccessToken, {
+        count: true,
+        successCallback: function(result) {
+            console.log(result);
+            $('.query-hosts-count').show();
+            $('.query-hosts-count-number').html(result);
+        }
+    })
+});
+
 $('#checks-modal form .btn-primary').click(function() {
     if($('input[name="Name"]').val() == '') {
         return false;
@@ -703,7 +717,7 @@ $('#checks-modal').on('show.bs.modal', function (event) {
     if(hostsQuery) {
         modal.find('input[name="HostsQuery"]').val(hostsQuery);
     }
-    if(hostsList) {
+    if(hostsList && hostsList.length > 0 && hostsList[0] != '') {
         modal.find('textarea[name="HostsList"]').val(hostsList.join('\n'));
     }
     if(expressions) {

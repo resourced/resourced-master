@@ -2,19 +2,20 @@ package handlers
 
 import (
 	"encoding/json"
+	"errors"
 	"html/template"
 	"net/http"
-	"strings"
 	"strconv"
-	"errors"
+	"strings"
 
 	"github.com/gorilla/context"
 	"github.com/gorilla/csrf"
-	"github.com/jmoiron/sqlx"
 	"github.com/gorilla/mux"
+	"github.com/jmoiron/sqlx"
 
 	"github.com/resourced/resourced-master/dal"
 	"github.com/resourced/resourced-master/libhttp"
+	"github.com/resourced/resourced-master/libslice"
 )
 
 func GetChecks(w http.ResponseWriter, r *http.Request) {
@@ -35,6 +36,9 @@ func GetChecks(w http.ResponseWriter, r *http.Request) {
 	metricsChan := make(chan *dal.MetricRowsWithError)
 	defer close(metricsChan)
 
+	accessTokenChan := make(chan *dal.AccessTokenRowWithError)
+	defer close(accessTokenChan)
+
 	// --------------------------
 	// Fetch SQL rows in parallel
 	// --------------------------
@@ -49,6 +53,12 @@ func GetChecks(w http.ResponseWriter, r *http.Request) {
 		metricsWithError.Metrics, metricsWithError.Error = dal.NewMetric(db).AllByClusterID(nil, currentCluster.ID)
 		metricsChan <- metricsWithError
 	}(currentCluster)
+
+	go func(currentUser *dal.UserRow) {
+		accessTokenWithError := &dal.AccessTokenRowWithError{}
+		accessTokenWithError.AccessToken, accessTokenWithError.Error = dal.NewAccessToken(db).GetByUserID(nil, currentUser.ID)
+		accessTokenChan <- accessTokenWithError
+	}(currentUser)
 
 	// -----------------------------------
 	// Wait for channels to return results
@@ -65,10 +75,17 @@ func GetChecks(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	accessTokenWithError := <-accessTokenChan
+	if accessTokenWithError.Error != nil {
+		libhttp.HandleErrorJson(w, accessTokenWithError.Error)
+		return
+	}
+
 	data := struct {
 		CSRFToken          string
 		Addr               string
 		CurrentUser        *dal.UserRow
+		AccessToken        *dal.AccessTokenRow
 		Clusters           []*dal.ClusterRow
 		CurrentClusterJson string
 		Checks             []*dal.CheckRow
@@ -77,6 +94,7 @@ func GetChecks(w http.ResponseWriter, r *http.Request) {
 		csrf.Token(r),
 		context.Get(r, "addr").(string),
 		currentUser,
+		accessTokenWithError.AccessToken,
 		context.Get(r, "clusters").([]*dal.ClusterRow),
 		string(context.Get(r, "currentClusterJson").([]byte)),
 		checksWithError.Checks,
@@ -106,6 +124,7 @@ func PostChecks(w http.ResponseWriter, r *http.Request) {
 
 	hostsListWithNewlines := r.FormValue("HostsList")
 	hostsList := strings.Split(hostsListWithNewlines, "\n")
+	hostsList = libslice.RemoveEmpty(hostsList)
 
 	hostsListJSON, err := json.Marshal(hostsList)
 	if err != nil {
@@ -161,6 +180,7 @@ func PutCheckID(w http.ResponseWriter, r *http.Request) {
 
 	hostsListWithNewlines := r.FormValue("HostsList")
 	hostsList := strings.Split(hostsListWithNewlines, "\n")
+	hostsList = libslice.RemoveEmpty(hostsList)
 
 	hostsListJSON, err := json.Marshal(hostsList)
 	if err != nil {
