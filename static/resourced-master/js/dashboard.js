@@ -16,6 +16,24 @@ ResourcedMaster.users.logout = function() {
     window.location = '/login';
 };
 
+ResourcedMaster.hosts = {};
+ResourcedMaster.hosts.get = function(accessToken, options) {
+    var path = '/api/hosts';
+    var getParams = '';
+
+    if('query' in options) {
+        getParams = getParams + 'q=' + options.query;
+    }
+
+    return $.ajax({
+        url: path + '?' + getParams,
+        beforeSend: function(xhr) {
+            xhr.setRequestHeader("Authorization", "Basic " + window.btoa(accessToken + ':'));
+        },
+        success: options.successCallback || null
+    });
+};
+
 ResourcedMaster.daterange = {};
 ResourcedMaster.daterange.defaultSettings = {
     'timePicker': true,

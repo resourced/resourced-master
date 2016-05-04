@@ -179,6 +179,9 @@ select {
     margin-bottom: 10px;
     width: 100%;
 }
+.expression-container .btn-add-expression, .expression-container .btn-remove-expression {
+    font-weight: bold;
+}
 
 @media(max-width:1200px) {
     .form-group-search-and-save .search-form, .form-group-search-and-save .search-form .input-group {
