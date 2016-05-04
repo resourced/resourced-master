@@ -1,6 +1,7 @@
 package dal
 
 import (
+	"bytes"
 	"database/sql"
 	"encoding/json"
 	"fmt"
@@ -8,6 +9,7 @@ import (
 	"os"
 	"os/exec"
 	"strings"
+	"text/template"
 	"time"
 
 	"github.com/Sirupsen/logrus"
@@ -367,6 +369,9 @@ func (checkRow *CheckRow) EvalRawHostDataExpression(hostRows []*HostRow, express
 	}
 
 	affectedHosts := 0
+	badHostnames := make([]string, 0)
+	goodHostnames := make([]string, 0)
+
 	var perHostResult bool
 
 	for _, hostRow := range hostRows {
@@ -409,10 +414,16 @@ func (checkRow *CheckRow) EvalRawHostDataExpression(hostRows []*HostRow, express
 
 		if perHostResult {
 			affectedHosts = affectedHosts + 1
+			badHostnames = append(badHostnames, hostRow.Hostname)
+
+		} else {
+			goodHostnames = append(goodHostnames, hostRow.Hostname)
 		}
 	}
 
 	expression.Result.Value = affectedHosts >= expression.MinHost
+	expression.Result.BadHostnames = badHostnames
+	expression.Result.GoodHostnames = goodHostnames
 
 	return expression
 }
@@ -425,6 +436,9 @@ func (checkRow *CheckRow) EvalRelativeHostDataExpression(tsMetricDB *sqlx.DB, ho
 	}
 
 	affectedHosts := 0
+	badHostnames := make([]string, 0)
+	goodHostnames := make([]string, 0)
+
 	var perHostResult bool
 
 	for _, hostRow := range hostRows {
@@ -488,10 +502,15 @@ func (checkRow *CheckRow) EvalRelativeHostDataExpression(tsMetricDB *sqlx.DB, ho
 
 		if perHostResult {
 			affectedHosts = affectedHosts + 1
+			badHostnames = append(badHostnames, hostRow.Hostname)
+		} else {
+			goodHostnames = append(goodHostnames, hostRow.Hostname)
 		}
 	}
 
 	expression.Result.Value = affectedHosts >= expression.MinHost
+	expression.Result.BadHostnames = badHostnames
+	expression.Result.GoodHostnames = goodHostnames
 
 	return expression
 }
@@ -517,6 +536,9 @@ func (checkRow *CheckRow) EvalLogDataExpression(tsLogDB *sqlx.DB, hostRows []*Ho
 	}
 
 	affectedHosts := 0
+	badHostnames := make([]string, 0)
+	goodHostnames := make([]string, 0)
+
 	var perHostResult bool
 
 	for _, hostname := range hostnames {
@@ -544,10 +566,15 @@ func (checkRow *CheckRow) EvalLogDataExpression(tsLogDB *sqlx.DB, hostRows []*Ho
 
 		if perHostResult {
 			affectedHosts = affectedHosts + 1
+			badHostnames = append(badHostnames, hostname)
+		} else {
+			goodHostnames = append(goodHostnames, hostname)
 		}
 	}
 
 	expression.Result.Value = affectedHosts >= expression.MinHost
+	expression.Result.BadHostnames = badHostnames
+	expression.Result.GoodHostnames = goodHostnames
 
 	return expression
 }
@@ -577,15 +604,22 @@ func (checkRow *CheckRow) EvalPingExpression(hostRows []*HostRow, expression Che
 	}
 
 	affectedHosts := 0
+	badHostnames := make([]string, 0)
+	goodHostnames := make([]string, 0)
 
 	for _, hostname := range hostnames {
-		outputBytes, err := checkRow.CheckPing(hostname)
+		_, err := checkRow.CheckPing(hostname)
 		if err != nil {
 			affectedHosts = affectedHosts + 1
+			badHostnames = append(badHostnames, hostname)
+		} else {
+			goodHostnames = append(goodHostnames, hostname)
 		}
 	}
 
 	expression.Result.Value = affectedHosts >= expression.MinHost
+	expression.Result.BadHostnames = badHostnames
+	expression.Result.GoodHostnames = goodHostnames
 
 	return expression
 }
@@ -629,6 +663,8 @@ func (checkRow *CheckRow) EvalSSHExpression(hostRows []*HostRow, expression Chec
 	}
 
 	affectedHosts := 0
+	badHostnames := make([]string, 0)
+	goodHostnames := make([]string, 0)
 
 	for _, hostname := range hostnames {
 		outputBytes, err := checkRow.CheckSSH(hostname, expression.Port, expression.Username)
@@ -636,10 +672,15 @@ func (checkRow *CheckRow) EvalSSHExpression(hostRows []*HostRow, expression Chec
 
 		if err != nil && !strings.Contains(outputString, "Permission denied") && !strings.Contains(outputString, "Host key verification failed") {
 			affectedHosts = affectedHosts + 1
+			badHostnames = append(badHostnames, hostname)
+		} else {
+			goodHostnames = append(goodHostnames, hostname)
 		}
 	}
 
 	expression.Result.Value = affectedHosts >= expression.MinHost
+	expression.Result.BadHostnames = badHostnames
+	expression.Result.GoodHostnames = goodHostnames
 
 	return expression
 }
@@ -719,6 +760,8 @@ func (checkRow *CheckRow) EvalHTTPExpression(hostRows []*HostRow, expression Che
 	}
 
 	affectedHosts := 0
+	badHostnames := make([]string, 0)
+	goodHostnames := make([]string, 0)
 
 	for _, hostname := range hostnames {
 		headers := make(map[string]string)
@@ -737,10 +780,15 @@ func (checkRow *CheckRow) EvalHTTPExpression(hostRows []*HostRow, expression Che
 		resp, err := checkRow.CheckHTTP(hostname, expression.Protocol, expression.Port, expression.HTTPMethod, expression.Username, expression.Password, headers, expression.HTTPBody)
 		if err != nil || (resp != nil && resp.StatusCode != 200) {
 			affectedHosts = affectedHosts + 1
+			badHostnames = append(badHostnames, hostname)
+		} else {
+			goodHostnames = append(goodHostnames, hostname)
 		}
 	}
 
 	expression.Result.Value = affectedHosts >= expression.MinHost
+	expression.Result.BadHostnames = badHostnames
+	expression.Result.GoodHostnames = goodHostnames
 
 	return expression
 }
@@ -768,11 +816,6 @@ func (checkRow *CheckRow) RunTriggers(appConfig config.GeneralConfig, tsCheckDB 
 
 		lastViolation := tsCheckRows[0]
 		violationsCount := len(tsCheckRows)
-
-		println("violationsCount")
-		println(violationsCount)
-		println(trigger.LowViolationsCount)
-		println(trigger.HighViolationsCount)
 
 		if int64(violationsCount) >= trigger.LowViolationsCount && int64(violationsCount) <= trigger.HighViolationsCount {
 			if trigger.Action.Transport == "nothing" {
@@ -803,6 +846,36 @@ func (checkRow *CheckRow) RunTriggers(appConfig config.GeneralConfig, tsCheckDB 
 	return nil
 }
 
+func (checkRow *CheckRow) BuildEmailTriggerContent(lastViolation *TSCheckRow) (string, error) {
+	funcMap := template.FuncMap{
+		"addInt": func(left, right int) int {
+			return left + right
+		},
+	}
+
+	t, err := template.New("email-trigger.txt.tmpl").Funcs(funcMap).ParseFiles("../templates/checks/email-trigger.txt.tmpl")
+	if err != nil {
+		return "", err
+	}
+
+	var contentBuffer bytes.Buffer
+
+	vars := struct {
+		Check         *CheckRow
+		LastViolation *TSCheckRow
+	}{
+		checkRow,
+		lastViolation,
+	}
+
+	err = t.Execute(&contentBuffer, vars)
+	if err != nil {
+		return "", err
+	}
+
+	return contentBuffer.String(), nil
+}
+
 func (checkRow *CheckRow) RunEmailTrigger(trigger CheckTrigger, lastViolation *TSCheckRow, violationsCount int, mailr *mailer.Mailer, appConfig config.GeneralConfig) (err error) {
 	if trigger.Action.Email == "" {
 		return fmt.Errorf("Unable to send email because trigger.Action.Email is empty")
@@ -813,12 +886,10 @@ func (checkRow *CheckRow) RunEmailTrigger(trigger CheckTrigger, lastViolation *T
 	body := ""
 
 	if lastViolation != nil {
-		bodyBytes, err := libstring.PrettyPrintJSON([]byte(lastViolation.Expressions.String()))
+		body, err = checkRow.BuildEmailTriggerContent(lastViolation)
 		if err != nil {
-			return fmt.Errorf("Unable to send email because of malformed check expressions")
+			return fmt.Errorf("Unable to send email because of malformed email content. Error: %v", err)
 		}
-
-		body = string(bodyBytes)
 	}
 
 	err = mailr.Send(to, subject, body)
