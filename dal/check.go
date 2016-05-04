@@ -824,12 +824,14 @@ func (checkRow *CheckRow) RunTriggers(appConfig config.GeneralConfig, tsCheckDB 
 			} else if trigger.Action.Transport == "email" {
 				err = checkRow.RunEmailTrigger(trigger, lastViolation, violationsCount, mailr, appConfig)
 				if err != nil {
+					logrus.Error(err)
 					continue
 				}
 
 			} else if trigger.Action.Transport == "sms" {
 				err = checkRow.RunSMSTrigger(trigger, lastViolation, violationsCount, mailr, appConfig)
 				if err != nil {
+					logrus.Error(err)
 					continue
 				}
 
@@ -888,9 +890,6 @@ func (checkRow *CheckRow) RunEmailTrigger(trigger CheckTrigger, lastViolation *T
 	if lastViolation != nil {
 		body, err = checkRow.BuildEmailTriggerContent(lastViolation, ".")
 		if err != nil {
-			println("Email Content Fail")
-			println(err.Error())
-
 			return fmt.Errorf("Unable to send email because of malformed email content. Error: %v", err)
 		}
 	}
