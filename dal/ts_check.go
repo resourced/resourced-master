@@ -27,7 +27,7 @@ type TSCheckRow struct {
 	Expressions sqlx_types.JSONText `db:"expressions"`
 }
 
-func (tsCheckRow *TSCheckRow) GetExpressions() []CheckExpression {
+func (tsCheckRow *TSCheckRow) GetExpressionsWithoutError() []CheckExpression {
 	var expressions []CheckExpression
 
 	json.Unmarshal(tsCheckRow.Expressions, &expressions)

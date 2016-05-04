@@ -4,11 +4,16 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/Sirupsen/logrus"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
 	"github.com/resourced/resourced-master/libunix"
 	"github.com/satori/go.uuid"
 )
+
+func init() {
+	logrus.SetLevel(logrus.ErrorLevel)
+}
 
 func newEmailForTest() string {
 	return fmt.Sprintf("brotato-%v@example.com", uuid.NewV4().String())

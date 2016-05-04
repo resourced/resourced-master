@@ -157,11 +157,6 @@ func (ts *TSLog) CountByClusterIDFromTimestampHostAndQuery(tx *sqlx.Tx, clusterI
 	query := fmt.Sprintf("SELECT count(logline) FROM %v WHERE cluster_id=$1 AND created >= to_timestamp($2) at time zone 'utc' AND hostname=$3 AND %v", ts.table, pgQuery)
 	err := ts.db.Get(&count, query, clusterID, from, hostname)
 
-	println(query)
-	println(clusterID)
-	println(from)
-	println(hostname)
-
 	if err != nil {
 		err = fmt.Errorf("%v. Query: %v, ClusterID: %v, From: %v, Hostname: %v", err.Error(), query, clusterID, from, hostname)
 	}

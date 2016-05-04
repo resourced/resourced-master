@@ -1,10 +1,10 @@
 Check: {{ .Check.Name }} triggered an email alert.
 
 Here are the results of each expression:
-{{ range $i, $expression := .LastViolation.GetExpressions }}
+{{ range $i, $expression := .LastViolation.GetExpressionsWithoutError }}
 {{- if ne $expression.Type "BooleanOperator" -}}
 
-{{ addInt $i 1 }}. Check {{ $expression.Metric }} {{ $expression.Operator }} {{ $expression.Value }} affecting at minimum {{ $expression.MinHost }} hosts is {{ if $expression.Result.Value }}triggered{{ else }}not triggered{{ end }}.
+{{ addInt $i 1 }}. Check {{ $expression.Type }} where {{ $expression.Metric }} {{ $expression.Operator }} {{ $expression.Value }} affecting at minimum {{ $expression.MinHost }} hosts is {{ if $expression.Result.Value }}triggered{{ else }}not triggered{{ end }}.
 
 {{- if gt (len $expression.Result.BadHostnames) 0 }}
     Bad Hostnames:

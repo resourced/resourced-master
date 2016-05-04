@@ -700,6 +700,7 @@ func TestBuildEmailTriggerContent(t *testing.T) {
 	}
 
 	expression := CheckExpression{}
+	expression.Type = "RawHostData"
 	expression.Metric = "/stuff.Score"
 	expression.Operator = ">="
 	expression.MinHost = 1
