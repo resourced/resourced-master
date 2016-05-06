@@ -22,6 +22,19 @@
 {{ end }}
 
 {{define "content"}}
+<div class="container-fluid graphs-metrics-packery">
+    <div class="item"></div>
+    <div class="item"></div>
+    <div class="item"></div>
+    <div class="item"></div>
+    <div class="item"></div>
+    <div class="item"></div>
+    <div class="item"></div>
+    <div class="item"></div>
+    <div class="item"></div>
+    <div class="item"></div>
+</div>
+
 <div class="container-fluid graphs-metrics-container">
     {{ range $metricsContainer := .CurrentGraph.MetricsFromJSONGroupByThree }}
     <div class="row">
@@ -168,6 +181,35 @@ $(window).resize(function() {
 });
 
 $(document).ready(function() {
+    // Packery Stuff
+    var $container = $('.graphs-metrics-packery');
+    $container.packery({
+        itemSelector: '.graphs-metrics-packery .item',
+        percentPosition: true,
+        gutter: 5
+    });
+    // get item elements, jQuery-ify them
+    var $itemElems = $( $container.packery('getItemElements') );
+    // make item elements draggable
+    $itemElems.draggable().resizable();
+    // bind Draggable events to Packery
+    $container.packery( 'bindUIDraggableEvents', $itemElems );
+
+    // handle resizing
+    var resizeTimeout;
+    $itemElems.on( 'resize', function( event, ui ) {
+        // debounce
+        if ( resizeTimeout ) {
+          clearTimeout( resizeTimeout );
+        }
+
+        resizeTimeout = setTimeout( function() {
+            $container.packery( 'fit', ui.element[0] );
+        }, 100 );
+    });
+
+    // -------------------------------------------
+
     var currentGraphRangeSplit = ResourcedMaster.globals.CurrentGraph.Range.split(" ");
     var currentGraphRangeCount = parseInt(currentGraphRangeSplit[0], 10);
     var currentGraphRangeUnit = currentGraphRangeSplit[1];

@@ -143,6 +143,32 @@ select {
     border-bottom: 1px solid #4e5d6c;
 }
 
+.graphs-metrics-packery {
+    margin-top: 20px;
+    background: #FDD;
+    background: hsla(45, 100%, 40%, 0.2);
+}
+.graphs-metrics-packery .item {
+    width: 24.3%;
+    height: 300px;
+    background: #C09;
+    border-color: hsla(0, 0%, 0%, 0.3);
+}
+.graphs-metrics-packery .item:hover {
+
+}
+.graphs-metrics-packery .item:nth-child(1n) { background: #9C0; }
+.graphs-metrics-packery .item:nth-child(2n) { background: #0C9; }
+.graphs-metrics-packery .item:nth-child(3n) { background: #C90; }
+.graphs-metrics-packery .item:nth-child(4n) { background: #ABC; }
+.graphs-metrics-packery .item:nth-child(5n) { background: #A01; }
+.graphs-metrics-packery .item.ui-draggable-dragging,
+.graphs-metrics-packery .item.is-positioning-post-drag {
+    border-color: white;
+    background: #09F;
+    z-index: 2;
+}
+
 .graphs-metrics-container {
     padding-top: 30px;
 }
