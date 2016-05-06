@@ -22,26 +22,10 @@
 {{ end }}
 
 {{define "content"}}
-<div class="container-fluid graphs-metrics-packery-container">
-    <div class="graphs-metrics-packery">
-        <div class="item"></div>
-        <div class="item"></div>
-        <div class="item"></div>
-        <div class="item"></div>
-        <div class="item"></div>
-        <div class="item"></div>
-        <div class="item"></div>
-        <div class="item"></div>
-        <div class="item"></div>
-        <div class="item"></div>
-    </div>
-</div>
-
-<div class="container-fluid graphs-metrics-container">
-    {{ range $metricsContainer := .CurrentGraph.MetricsFromJSONGroupByThree }}
-    <div class="row">
-        {{ range $metric := $metricsContainer }}
-        <div class="col-md-4">
+<div class="container-fluid graphs-metrics-brick-layout-container">
+    <div class="graphs-metrics-brick-layout">
+        {{ range $metric := .CurrentGraph.MetricsFromJSON }}
+        <div class="item">
             <div class="panel panel-default panel-chart" data-id="{{ $metric.ID }}" data-key="{{ $metric.Key }}">
                 <div class="panel-heading" data-id="{{ $metric.ID }}" data-key="{{ $metric.Key }}">
                     <input class="form-control daterange" type="text" data-id="{{ $metric.ID }}" data-key="{{ $metric.Key }}" />
@@ -52,7 +36,6 @@
         </div>
         {{ end }}
     </div>
-    {{ end }}
 </div>
 
 <!-- Add a Chart Modal -->
@@ -164,7 +147,7 @@ function renderChartRange(daterangepicker, from, to) {
 }
 
 function renderAllChart() {
-    $('.graphs-metrics-container .panel-heading').each(function() {
+    $('.graphs-metrics-brick-layout .panel-heading').each(function() {
         var drpElem = $(this).find('.daterange');
         var drp = drpElem.data('daterangepicker');
         var from = drp.startDate.unix();
@@ -175,7 +158,7 @@ function renderAllChart() {
 }
 
 $(window).resize(function() {
-    $('.graphs-metrics-container .panel-body').each(function() {
+    $('.graphs-metrics-brick-layout .panel-body').each(function() {
         $(this).highcharts().setSize(
             $(this).width(), ResourcedMaster.highcharts.defaultHeight, doAnimation = false
         );
@@ -184,9 +167,9 @@ $(window).resize(function() {
 
 $(document).ready(function() {
     // Packery Stuff
-    var $container = $('.graphs-metrics-packery');
+    var $container = $('.graphs-metrics-brick-layout');
     $container.packery({
-        itemSelector: '.graphs-metrics-packery .item',
+        itemSelector: '.graphs-metrics-brick-layout .item',
         percentPosition: true
     });
 
@@ -281,7 +264,7 @@ $('#add-chart-modal').on('shown.bs.modal', function() {
     $(this).find('.chart-keys option').each(function(index) {
         var chartKeyOption = $(this);
 
-        $('.graphs-metrics-container .panel-heading').each(function(index) {
+        $('.graphs-metrics-brick-layout .panel-heading').each(function(index) {
             if(chartKeyOption.data('key') == $(this).data('key')) {
                 chartKeyOption.attr('selected', 'selected');
             }
