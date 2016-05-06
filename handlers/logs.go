@@ -25,19 +25,12 @@ func GetLogs(w http.ResponseWriter, r *http.Request) {
 		toString = qParams.Get("to")
 	}
 	to, err := strconv.ParseInt(toString, 10, 64)
-	if err != nil {
-		to = time.Now().UTC().Unix()
-	}
 
 	fromString := qParams.Get("From")
 	if fromString == "" {
 		fromString = qParams.Get("from")
 	}
 	from, err := strconv.ParseInt(fromString, 10, 64)
-	if err != nil {
-		// default is 15 minutes range
-		from = to - 900
-	}
 
 	query := qParams.Get("q")
 
@@ -47,10 +40,30 @@ func GetLogs(w http.ResponseWriter, r *http.Request) {
 
 	tsLogsDB := context.Get(r, "db.TSLog").(*sqlx.DB)
 
-	tsLogs, err := dal.NewTSLog(tsLogsDB).AllByClusterIDRangeAndQuery(nil, currentCluster.ID, from, to, query)
-	if err != nil {
-		libhttp.HandleErrorJson(w, err)
-		return
+	var tsLogs []*dal.TSLogRow
+
+	if fromString == "" && toString == "" {
+		tsLogs, err = dal.NewTSLog(tsLogsDB).AllByClusterIDLastRowIntervalAndQuery(nil, currentCluster.ID, "15 minute", query)
+		if err != nil {
+			libhttp.HandleErrorJson(w, err)
+			return
+		}
+
+		if len(tsLogs) > 0 {
+			if from == 0 {
+				from = tsLogs[0].Created.UTC().Unix()
+			}
+			if to == 0 {
+				to = tsLogs[len(tsLogs)-1].Created.UTC().Unix()
+			}
+		}
+
+	} else {
+		tsLogs, err = dal.NewTSLog(tsLogsDB).AllByClusterIDRangeAndQuery(nil, currentCluster.ID, from, to, query)
+		if err != nil {
+			libhttp.HandleErrorJson(w, err)
+			return
+		}
 	}
 
 	data := struct {

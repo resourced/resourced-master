@@ -160,6 +160,10 @@ select {
     line-height: 1.0;
 }
 
+.container.logs .label {
+    font-size: 60%;
+}
+
 .row.checks h3 {
     margin-top: 0;
 }
