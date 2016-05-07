@@ -97,6 +97,7 @@ ResourcedMaster.globals.CurrentGraph = {
 function renderChartPreview() {
     var lastMetric = ResourcedMaster.globals.Charts[ResourcedMaster.globals.Charts.length - 1];
     var containerDOM = $('#add-chart-modal').find('.add-chart-modal-container');
+    var nowUnix = moment().utc().unix();
 
     ResourcedMaster.metrics.renderOneChart(
         ResourcedMaster.globals.AccessToken,
@@ -107,8 +108,8 @@ function renderChartPreview() {
         ResourcedMaster.globals.TSEventBandColors,
         ResourcedMaster.globals.TSEventBandTextColors,
         {
-            'from': moment().subtract(15, 'minutes'),
-            'to': moment(),
+            'from': nowUnix - 900,
+            'to': nowUnix,
             'containerDOM': containerDOM,
             'height': ResourcedMaster.highcharts.defaultHeight + 6,
             'title': lastMetric['Key']

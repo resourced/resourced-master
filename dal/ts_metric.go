@@ -239,7 +239,7 @@ func (ts *TSMetric) AllByMetricIDAndRange(tx *sqlx.Tx, clusterID, metricID int64
 	return rows, err
 }
 
-func (ts *TSMetric) AllByMetricIDAndRangeForHighchart(tx *sqlx.Tx, clusterID, metricID int64, from, to int64) ([]*TSMetricHighchartPayload, error) {
+func (ts *TSMetric) AllByMetricIDAndRangeForHighchart(tx *sqlx.Tx, clusterID, metricID, from, to int64) ([]*TSMetricHighchartPayload, error) {
 	tsMetricRows, err := ts.AllByMetricIDAndRange(tx, clusterID, metricID, from, to)
 	if err != nil {
 		return nil, err
