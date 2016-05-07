@@ -149,28 +149,30 @@ select {
 }
 .graphs-metrics-brick-layout {
     padding: 0;
-    background: #FDD;
-    background: hsla(45, 100%, 40%, 0.2);
 }
+.graphs-metrics-brick-layout .sizer,
 .graphs-metrics-brick-layout .item {
+    float: left;
     width: 25%;
-    height: 250px;
-    background: #C09;
     border-color: hsla(0, 0%, 0%, 0.3);
 }
 .graphs-metrics-brick-layout .item:hover {
-
+  border-color: hsla(0, 0%, 100%, 0.5);
+  cursor: move;
 }
-.graphs-metrics-brick-layout .item:nth-child(1n) { background: #9C0; }
-.graphs-metrics-brick-layout .item:nth-child(2n) { background: #0C9; }
-.graphs-metrics-brick-layout .item:nth-child(3n) { background: #C90; }
-.graphs-metrics-brick-layout .item:nth-child(4n) { background: #ABC; }
-.graphs-metrics-brick-layout .item:nth-child(5n) { background: #A01; }
 .graphs-metrics-brick-layout .item.ui-draggable-dragging,
 .graphs-metrics-brick-layout .item.is-positioning-post-drag {
     border-color: white;
     background: #09F;
     z-index: 2;
+}
+
+.packery-drop-placeholder {
+    height: 250px;
+    outline: 3px dashed hsla(0, 0%, 0%, 0.5);
+    outline-offset: -6px;
+    -webkit-transition: -webkit-transform 0.2s;
+    transition: transform 0.2s;
 }
 
 .graphs-metrics-container {

@@ -4,8 +4,6 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	"strconv"
-	"strings"
 
 	"github.com/jmoiron/sqlx"
 	sqlx_types "github.com/jmoiron/sqlx/types"
@@ -71,35 +69,6 @@ func (a *Graph) rowFromSqlResult(tx *sqlx.Tx, sqlResult sql.Result) (*GraphRow, 
 	return a.GetByID(tx, id)
 }
 
-func (a *Graph) BuildMetricsJSONForSave(tx *sqlx.Tx, clusterID int64, idsAndKeys []string) ([]byte, error) {
-	idsAndKeysLen := 0
-	if idsAndKeys != nil {
-		idsAndKeysLen = len(idsAndKeys)
-	}
-
-	metrics := make([]*MetricRow, idsAndKeysLen)
-
-	if idsAndKeys != nil {
-		for i, idAndKey := range idsAndKeys {
-			idAndKeySlice := strings.Split(idAndKey, "-")
-
-			idInt64, err := strconv.ParseInt(idAndKeySlice[0], 10, 64)
-			if err != nil {
-				return nil, err
-			}
-
-			metricRow := &MetricRow{}
-			metricRow.ID = idInt64
-			metricRow.Key = strings.Join(idAndKeySlice[1:], "-")
-			metricRow.ClusterID = clusterID
-
-			metrics[i] = metricRow
-		}
-	}
-
-	return json.Marshal(metrics)
-}
-
 // GetByID returns one record by id.
 func (a *Graph) GetByID(tx *sqlx.Tx, id int64) (*GraphRow, error) {
 	row := &GraphRow{}
@@ -111,12 +80,7 @@ func (a *Graph) GetByID(tx *sqlx.Tx, id int64) (*GraphRow, error) {
 
 func (a *Graph) Create(tx *sqlx.Tx, clusterID int64, data map[string]interface{}) (*GraphRow, error) {
 	data["cluster_id"] = clusterID
-
-	metricsJSONBytes, err := a.BuildMetricsJSONForSave(tx, clusterID, nil)
-	if err != nil {
-		return nil, err
-	}
-	data["metrics"] = metricsJSONBytes
+	data["metrics"] = []byte("[]")
 
 	sqlResult, err := a.InsertIntoTable(tx, data)
 	if err != nil {

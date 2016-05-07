@@ -24,15 +24,16 @@
 {{define "content"}}
 <div class="container-fluid graphs-metrics-brick-layout-container">
     <div class="graphs-metrics-brick-layout">
-        {{ range $metric := .CurrentGraph.MetricsFromJSON }}
-        <div class="item">
-            <div class="panel panel-default panel-chart" data-id="{{ $metric.ID }}" data-key="{{ $metric.Key }}">
-                <div class="panel-heading" data-id="{{ $metric.ID }}" data-key="{{ $metric.Key }}">
-                    <input class="form-control daterange" type="text" data-id="{{ $metric.ID }}" data-key="{{ $metric.Key }}" />
-                </div>
+        <div class="sizer"></div>
+        <div class="gutter-sizer"></div>
 
-                <div class="panel-body"></div>
+        {{ range $metric := .CurrentGraph.MetricsFromJSON }}
+        <div class="item panel panel-default panel-chart" data-cluster-id="{{ $metric.ClusterID }}" data-id="{{ $metric.ID }}" data-key="{{ $metric.Key }}">
+            <div class="panel-heading" data-id="{{ $metric.ID }}" data-key="{{ $metric.Key }}">
+                <input class="form-control daterange" type="text" data-id="{{ $metric.ID }}" data-key="{{ $metric.Key }}" />
             </div>
+
+            <div class="panel-body"></div>
         </div>
         {{ end }}
     </div>
@@ -50,13 +51,14 @@
             <form action="/graphs/{{ $.CurrentGraph.ID }}" method="post">
                 <input type="hidden" name="gorilla.csrf.Token" value="{{ $.CSRFToken }}">
                 <input type="hidden" name="_method" value="put">
+                <input type="hidden" name="MetricsWithOrder" value="">
 
                 <div class="modal-body">
                     <div class="row">
                         <div class="col-md-6">
                             <select class="form-control chart-keys" name="Metrics" multiple size="15">
                             {{ range $metric := .Metrics }}
-                                <option data-graph-id="{{ $.CurrentGraph.ID }}" value="{{ $metric.ID }}-{{ $metric.Key }}" data-key="{{ $metric.Key }}">{{ $metric.Key }}</option>
+                                <option value='{"ID": {{ $metric.ID }}, "Key": "{{ $metric.Key }}", "ClusterID": {{ $.CurrentGraph.ClusterID }}}' data-key="{{ $metric.Key }}">{{ $metric.Key }}</option>
                             {{ end }}
                             </select>
                         </div>
@@ -82,7 +84,7 @@ setInterval(function() {
     window.location.reload();
 }, 5*60000);
 
-ResourcedMaster.globals.ChartKeys = [];
+ResourcedMaster.globals.Charts = [];
 ResourcedMaster.globals.AccessToken = '{{ $.AccessToken.Token }}';
 ResourcedMaster.globals.CurrentGraph = {
     ID: {{ $.CurrentGraph.ID }},
@@ -93,15 +95,12 @@ ResourcedMaster.globals.CurrentGraph = {
 };
 
 function renderChartPreview() {
-    var metrics = ResourcedMaster.globals.ChartKeys;
-    var lastMetricIDAndKey = metrics[metrics.length - 1].split(/\-(.+)?/);
-    var lastMetricID = lastMetricIDAndKey[0];
-    var lastMetricKey = lastMetricIDAndKey[1];
+    var lastMetric = ResourcedMaster.globals.Charts[ResourcedMaster.globals.Charts.length - 1];
     var containerDOM = $('#add-chart-modal').find('.add-chart-modal-container');
 
     ResourcedMaster.metrics.renderOneChart(
         ResourcedMaster.globals.AccessToken,
-        lastMetricID,
+        lastMetric['ID'],
         ResourcedMaster.globals.TSEventLines,
         ResourcedMaster.globals.TSEventLineColors,
         ResourcedMaster.globals.TSEventBands,
@@ -112,7 +111,7 @@ function renderChartPreview() {
             'to': moment(),
             'containerDOM': containerDOM,
             'height': ResourcedMaster.highcharts.defaultHeight + 6,
-            'title': lastMetricKey
+            'title': lastMetric['Key']
         }
     );
 }
@@ -169,29 +168,43 @@ $(document).ready(function() {
     // Packery Stuff
     var $container = $('.graphs-metrics-brick-layout');
     $container.packery({
+        columnWidth: '.graphs-metrics-brick-layout .sizer',
+        rowHeight: '.graphs-metrics-brick-layout .sizer',
         itemSelector: '.graphs-metrics-brick-layout .item',
         percentPosition: true
     });
 
     // get item elements, jQuery-ify them
     var $itemElems = $( $container.packery('getItemElements') );
-    // make item elements draggable
-    $itemElems.draggable().resizable();
-    // bind Draggable events to Packery
-    $container.packery( 'bindUIDraggableEvents', $itemElems );
 
-    // handle resizing
-    var resizeTimeout;
-    $itemElems.on( 'resize', function( event, ui ) {
-        // debounce
-        if ( resizeTimeout ) {
-          clearTimeout( resizeTimeout );
-        }
-
-        resizeTimeout = setTimeout( function() {
-            $container.packery( 'fit', ui.element[0] );
-        }, 100 );
+    $itemElems.each( function( i, gridItem ) {
+        var draggie = new Draggabilly( gridItem );
+        $container.packery( 'bindDraggabillyEvents', draggie );
     });
+
+    function gatherItemsInOrder() {
+        var charts = [];
+
+        var $itemElems = $( $container.packery('getItemElements') );
+
+        $itemElems.each( function( i, itemElem ) {
+            var $itemElem = $(itemElem);
+            var chart = {
+                ID: parseInt($itemElem.data('id'), 10),
+                Key: $itemElem.data('key'),
+                ClusterID: parseInt($itemElem.data('cluster-id'), 10)
+            };
+
+            charts.push(chart);
+        });
+
+        ResourcedMaster.globals.Charts = charts;
+
+        $('#add-chart-modal form input[name="MetricsWithOrder"]').val(JSON.stringify(charts));
+    }
+
+    $container.on( 'layoutComplete', gatherItemsInOrder );
+    $container.on( 'dragItemPositioned', gatherItemsInOrder );
 
     // -------------------------------------------
 
@@ -221,36 +234,29 @@ $(document).ready(function() {
     });
 
     // Gather the ordering of every chart panels on load.
-    ResourcedMaster.globals.ChartKeys = $('.panel-chart').map(function() {
-        return $(this).data('id') + '-' + $(this).data('key');
+    ResourcedMaster.globals.Charts = $('.panel-chart').map(function() {
+        return {
+            ID: $(this).data('id'),
+            Key: $(this).data('key'),
+            ClusterID: ResourcedMaster.globals.CurrentGraph.ClusterID
+        };
     }).get();
 });
 
 // Change the ordering of chart panels based on user clicks.
 $('.chart-keys option').click(function(event) {
     var $option = $(this);
-    var val = $option.val();
-
-    if(!event.ctrlKey && !event.altKey && !event.metaKey) {
-        ResourcedMaster.globals.ChartKeys = [];
-    }
+    var jsonString = $option.val();
+    var val = JSON.parse(jsonString);
 
     if($(this).is(':selected')) {
-        ResourcedMaster.globals.ChartKeys.push(val);
-    } else {
-        var index = ResourcedMaster.globals.ChartKeys.indexOf(val);
+        var index = ResourcedMaster.globals.Charts.indexOf(val);
         if(index > -1) {
-            ResourcedMaster.globals.ChartKeys.splice(index, 1);
+            ResourcedMaster.globals.Charts.push(val);
         }
     }
 
-    // Build form input
-    var form = $('#add-chart-modal form');
-    form.find('input[name="MetricsWithOrder"]').remove();
-
-    $.each(ResourcedMaster.globals.ChartKeys, function(index, value) {
-        $('<input type="hidden" name="MetricsWithOrder" value="' + value + '">').appendTo(form);
-    });
+    $('#add-chart-modal form input[name="MetricsWithOrder"]').val(JSON.stringify(val));
 
     renderChartPreview();
 });
@@ -259,7 +265,7 @@ $('.graphs-select').change(function() {
     window.location = '/graphs/' + $(this).val();
 });
 
-// Highlight charts that are already selected based on ResourcedMaster.globals.ChartKeys.
+// Highlight charts that are already selected based on existing charts.
 $('#add-chart-modal').on('shown.bs.modal', function() {
     $(this).find('.chart-keys option').each(function(index) {
         var chartKeyOption = $(this);

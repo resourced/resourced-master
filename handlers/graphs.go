@@ -201,8 +201,6 @@ func GetGraphsID(w http.ResponseWriter, r *http.Request) {
 func PutGraphsID(w http.ResponseWriter, r *http.Request) {
 	db := context.Get(r, "db.Core").(*sqlx.DB)
 
-	currentCluster := context.Get(r, "currentCluster").(*dal.ClusterRow)
-
 	id, err := getInt64SlugFromPath(w, r, "id")
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
@@ -230,16 +228,11 @@ func PutGraphsID(w http.ResponseWriter, r *http.Request) {
 		data["range"] = range_
 	}
 
-	metrics := r.Form["MetricsWithOrder"]
-
-	if len(metrics) > 0 {
-		metricsJSONBytes, err := dal.NewGraph(db).BuildMetricsJSONForSave(nil, currentCluster.ID, metrics)
-		if err != nil {
-			libhttp.HandleErrorJson(w, err)
-			return
-		}
-
-		data["metrics"] = metricsJSONBytes
+	metricsJSON := r.FormValue("MetricsWithOrder")
+	if metricsJSON == "" {
+		data["metrics"] = []byte("[]")
+	} else {
+		data["metrics"] = []byte(metricsJSON)
 	}
 
 	if len(data) > 0 {
