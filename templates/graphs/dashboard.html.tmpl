@@ -219,7 +219,9 @@ $(document).ready(function() {
             var settings = jQuery.extend(true, {}, ResourcedMaster.daterange.defaultSettings);
             settings.startDate = moment().subtract(currentGraphRangeCount, currentGraphRangeUnit);
 
-            if(index % 3 == 0) {
+            var graphPosition = drpElem.parent().parent().position();
+
+            if(graphPosition.left < 360) {
                 settings.opens = 'right';
             }
 
