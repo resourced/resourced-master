@@ -31,7 +31,7 @@ ResourcedMaster.hosts.get = function(accessToken, options) {
     return $.ajax({
         url: path + '?' + getParams,
         beforeSend: function(xhr) {
-            xhr.setRequestHeader("Authorization", "Basic " + window.btoa(accessToken + ':'));
+            xhr.setRequestHeader('Authorization', 'Basic ' + window.btoa(accessToken + ':'));
         },
         success: options.successCallback || null
     });
@@ -63,7 +63,7 @@ ResourcedMaster.daterange.defaultSettings = {
     'locale': {
         'format': 'YYYY/MM/DD hh:mm:ss A'
     },
-    'opens': "left"
+    'opens': 'left'
 };
 
 

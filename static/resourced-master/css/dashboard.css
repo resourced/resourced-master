@@ -242,6 +242,12 @@ select {
     }
 }
 
+@media(max-width:900px) {
+    .graphs-metrics-brick-layout .item {
+        width: 50%;
+    }
+}
+
 @media(max-width:767px) {
     .form-group-search-and-save .search-form, .form-group-search-and-save .search-form .input-group {
         margin: 0;
@@ -277,6 +283,10 @@ select {
 }
 
 @media(max-width:600px) {
+    .graphs-metrics-brick-layout .item {
+        width: 100%;
+    }
+
     .updated-timestamp {
         display: none;
     }
