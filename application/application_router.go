@@ -70,6 +70,8 @@ func (app *Application) mux() *mux.Router {
 	router.Handle("/api/hosts", alice.New(MustLoginApi).ThenFunc(handlers.GetApiHosts)).Methods("GET")
 	router.Handle("/api/hosts", alice.New(MustLoginApi).ThenFunc(handlers.PostApiHosts)).Methods("POST")
 
+	router.Handle("/api/graphs/{id:[0-9]+}/metrics", alice.New(MustLoginApi).ThenFunc(handlers.PutApiGraphsIDMetrics)).Methods("PUT")
+
 	router.Handle("/api/metrics/{id:[0-9]+}/hosts/{host}", alice.New(MustLoginApi).ThenFunc(handlers.GetApiTSMetricsByHost)).Methods("GET")
 	router.Handle("/api/metrics/{id:[0-9]+}/hosts/{host}/15min", alice.New(MustLoginApi).ThenFunc(handlers.GetApiTSMetricsByHost15Min)).Methods("GET")
 

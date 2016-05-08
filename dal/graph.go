@@ -32,16 +32,16 @@ type GraphRow struct {
 	Metrics     sqlx_types.JSONText `db:"metrics"`
 }
 
-func (g *GraphRow) MetricsFromJSON() []*MetricRow {
+func (gr *GraphRow) MetricsFromJSON() []*MetricRow {
 	metricRows := make([]*MetricRow, 0)
-	g.Metrics.Unmarshal(&metricRows)
+	gr.Metrics.Unmarshal(&metricRows)
 	return metricRows
 }
 
-func (g *GraphRow) MetricsFromJSONGroupByN(n int) [][]*MetricRow {
+func (gr *GraphRow) MetricsFromJSONGroupByN(n int) [][]*MetricRow {
 	container := make([][]*MetricRow, 0)
 
-	for metricIndex, metricRow := range g.MetricsFromJSON() {
+	for metricIndex, metricRow := range gr.MetricsFromJSON() {
 		if metricIndex%n == 0 {
 			container = append(container, make([]*MetricRow, 0))
 		}
@@ -52,65 +52,74 @@ func (g *GraphRow) MetricsFromJSONGroupByN(n int) [][]*MetricRow {
 	return container
 }
 
-func (g *GraphRow) MetricsFromJSONGroupByThree() [][]*MetricRow {
-	return g.MetricsFromJSONGroupByN(3)
+func (gr *GraphRow) MetricsFromJSONGroupByThree() [][]*MetricRow {
+	return gr.MetricsFromJSONGroupByN(3)
 }
 
 type Graph struct {
 	Base
 }
 
-func (a *Graph) rowFromSqlResult(tx *sqlx.Tx, sqlResult sql.Result) (*GraphRow, error) {
+func (g *Graph) rowFromSqlResult(tx *sqlx.Tx, sqlResult sql.Result) (*GraphRow, error) {
 	id, err := sqlResult.LastInsertId()
 	if err != nil {
 		return nil, err
 	}
 
-	return a.GetByID(tx, id)
+	return g.GetByID(tx, id)
 }
 
-// GetByID returns one record by id.
-func (a *Graph) GetByID(tx *sqlx.Tx, id int64) (*GraphRow, error) {
+// GetByClusterIDAndID returns one record by id.
+func (g *Graph) GetByClusterIDAndID(tx *sqlx.Tx, clusterID, id int64) (*GraphRow, error) {
 	row := &GraphRow{}
-	query := fmt.Sprintf("SELECT * FROM %v WHERE id=$1", a.table)
-	err := a.db.Get(row, query, id)
+	query := fmt.Sprintf("SELECT * FROM %v WHERE cluster_id=$1 AND id=$2", g.table)
+	err := g.db.Get(row, query, clusterID, id)
 
 	return row, err
 }
 
-func (a *Graph) Create(tx *sqlx.Tx, clusterID int64, data map[string]interface{}) (*GraphRow, error) {
+// GetByID returns one record by id.
+func (g *Graph) GetByID(tx *sqlx.Tx, id int64) (*GraphRow, error) {
+	row := &GraphRow{}
+	query := fmt.Sprintf("SELECT * FROM %v WHERE id=$1", g.table)
+	err := g.db.Get(row, query, id)
+
+	return row, err
+}
+
+func (g *Graph) Create(tx *sqlx.Tx, clusterID int64, data map[string]interface{}) (*GraphRow, error) {
 	data["cluster_id"] = clusterID
 	data["metrics"] = []byte("[]")
 
-	sqlResult, err := a.InsertIntoTable(tx, data)
+	sqlResult, err := g.InsertIntoTable(tx, data)
 	if err != nil {
 		return nil, err
 	}
 
-	return a.rowFromSqlResult(tx, sqlResult)
+	return g.rowFromSqlResult(tx, sqlResult)
 }
 
 // AllByClusterID returns all rows by cluster_id.
-func (a *Graph) AllByClusterID(tx *sqlx.Tx, clusterID int64) ([]*GraphRow, error) {
+func (g *Graph) AllByClusterID(tx *sqlx.Tx, clusterID int64) ([]*GraphRow, error) {
 	rows := []*GraphRow{}
-	query := fmt.Sprintf("SELECT * FROM %v WHERE cluster_id=$1", a.table)
-	err := a.db.Select(&rows, query, clusterID)
+	query := fmt.Sprintf("SELECT * FROM %v WHERE cluster_id=$1", g.table)
+	err := g.db.Select(&rows, query, clusterID)
 
 	return rows, err
 }
 
 // AllGraphs returns all rows.
-func (a *Graph) AllGraphs(tx *sqlx.Tx) ([]*GraphRow, error) {
+func (g *Graph) AllGraphs(tx *sqlx.Tx) ([]*GraphRow, error) {
 	rows := []*GraphRow{}
-	query := fmt.Sprintf("SELECT * FROM %v", a.table)
-	err := a.db.Select(&rows, query)
+	query := fmt.Sprintf("SELECT * FROM %v", g.table)
+	err := g.db.Select(&rows, query)
 
 	return rows, err
 }
 
 // DeleteMetricFromGraphs deletes a particular metric from all rows by cluster_id.
-func (a *Graph) DeleteMetricFromGraphs(tx *sqlx.Tx, clusterID, metricID int64) error {
-	rows, err := a.AllByClusterID(tx, clusterID)
+func (g *Graph) DeleteMetricFromGraphs(tx *sqlx.Tx, clusterID, metricID int64) error {
+	rows, err := g.AllByClusterID(tx, clusterID)
 	if err != nil {
 		return err
 	}
@@ -133,11 +142,31 @@ func (a *Graph) DeleteMetricFromGraphs(tx *sqlx.Tx, clusterID, metricID int64) e
 		data := make(map[string]interface{})
 		data["metrics"] = newMetricsJSONBytes
 
-		_, err = a.UpdateByID(tx, data, row.ID)
+		_, err = g.UpdateByID(tx, data, row.ID)
 		if err != nil {
 			return err
 		}
 	}
 
 	return nil
+}
+
+// UpdateMetricsByClusterIDAndID updates metrics JSON and then returns record by id.
+func (g *Graph) UpdateMetricsByClusterIDAndID(tx *sqlx.Tx, clusterID, id int64, metricsJSON []byte) (*GraphRow, error) {
+	row, err := g.GetByClusterIDAndID(tx, clusterID, id)
+	if err != nil {
+		println(err.Error())
+		return nil, err
+	}
+
+	data := make(map[string]interface{})
+	data["metrics"] = metricsJSON
+
+	_, err = g.UpdateByID(tx, data, row.ID)
+	if err != nil {
+		println(err.Error())
+		return nil, err
+	}
+
+	return g.GetByClusterIDAndID(tx, clusterID, id)
 }

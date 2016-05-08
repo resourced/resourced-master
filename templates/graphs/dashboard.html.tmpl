@@ -23,7 +23,7 @@
 
 {{define "content"}}
 <div class="container-fluid graphs-metrics-brick-layout-container">
-    <div class="graphs-metrics-brick-layout">
+    <div class="graphs-metrics-brick-layout" data-graph-id="{{ .CurrentGraph.ID }}">
         <div class="sizer"></div>
         <div class="gutter-sizer"></div>
 
@@ -175,11 +175,16 @@ $(document).ready(function() {
         percentPosition: true
     });
 
+    var graphID = $container.data('graph-id');
+
     // get item elements, jQuery-ify them
     var $itemElems = $( $container.packery('getItemElements') );
 
     $itemElems.each( function( i, gridItem ) {
         var draggie = new Draggabilly( gridItem );
+
+        // draggie.on( 'dragEnd', function( event, pointer ) {});
+
         $container.packery( 'bindDraggabillyEvents', draggie );
     });
 
@@ -202,6 +207,15 @@ $(document).ready(function() {
         ResourcedMaster.globals.Charts = charts;
 
         $('#add-chart-modal form input[name="MetricsWithOrder"]').val(JSON.stringify(charts));
+
+        // Update charts ordering on server-side
+        // TODO: This is called multiple times, not cool.
+        ResourcedMaster.graphs.ajax(ResourcedMaster.globals.AccessToken, {
+            method: 'PUT',
+            id: graphID,
+            metrics: true,
+            data: ResourcedMaster.globals.Charts
+        });
     }
 
     $container.on( 'layoutComplete', gatherItemsInOrder );

@@ -1,8 +1,10 @@
 package handlers
 
 import (
+	"encoding/json"
 	"fmt"
 	"html/template"
+	"io/ioutil"
 	"net/http"
 
 	"github.com/gorilla/context"
@@ -264,4 +266,36 @@ func DeleteGraphsID(w http.ResponseWriter, r *http.Request) {
 	}
 
 	http.Redirect(w, r, "/graphs", 301)
+}
+
+func PutApiGraphsIDMetrics(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	db := context.Get(r, "db.Core").(*sqlx.DB)
+
+	accessTokenRow := context.Get(r, "accessTokenRow").(*dal.AccessTokenRow)
+
+	id, err := getInt64SlugFromPath(w, r, "id")
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
+
+	dataJSON, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
+
+	println(string(dataJSON))
+
+	row, err := dal.NewGraph(db).UpdateMetricsByClusterIDAndID(nil, accessTokenRow.ClusterID, id, dataJSON)
+
+	rowJSON, err := json.Marshal(row)
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
+
+	w.Write(rowJSON)
 }

@@ -37,6 +37,38 @@ ResourcedMaster.hosts.get = function(accessToken, options) {
     });
 };
 
+ResourcedMaster.graphs = {};
+ResourcedMaster.graphs.ajax = function(accessToken, options) {
+    var path = '/api/graphs';
+    var getParams = '';
+    var method = 'GET';
+    var dataJSON = '';
+
+    if('method' in options) {
+        method = options.method;
+    }
+    if('id' in options) {
+        path = path + '/' + options.id;
+    }
+    if('metrics' in options) {
+        path = path + '/metrics';
+    }
+    if('data' in options) {
+        dataJSON = JSON.stringify(options.data);
+    }
+
+    return $.ajax({
+        url: path + '?' + getParams,
+        contentType : 'application/json',
+        beforeSend: function(xhr) {
+            xhr.setRequestHeader('Authorization', 'Basic ' + window.btoa(accessToken + ':'));
+        },
+        method: method,
+        data: dataJSON,
+        success: options.successCallback || null
+    });
+};
+
 ResourcedMaster.daterange = {};
 ResourcedMaster.daterange.defaultSettings = {
     'timePicker': true,
