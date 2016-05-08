@@ -99,22 +99,24 @@ function renderChartPreview() {
     var containerDOM = $('#add-chart-modal').find('.add-chart-modal-container');
     var nowUnix = moment().utc().unix();
 
-    ResourcedMaster.metrics.renderOneChart(
-        ResourcedMaster.globals.AccessToken,
-        lastMetric['ID'],
-        ResourcedMaster.globals.TSEventLines,
-        ResourcedMaster.globals.TSEventLineColors,
-        ResourcedMaster.globals.TSEventBands,
-        ResourcedMaster.globals.TSEventBandColors,
-        ResourcedMaster.globals.TSEventBandTextColors,
-        {
-            'from': nowUnix - 900,
-            'to': nowUnix,
-            'containerDOM': containerDOM,
-            'height': ResourcedMaster.highcharts.defaultHeight + 6,
-            'title': lastMetric['Key']
-        }
-    );
+    if(lastMetric) {
+        ResourcedMaster.metrics.renderOneChart(
+            ResourcedMaster.globals.AccessToken,
+            lastMetric['ID'],
+            ResourcedMaster.globals.TSEventLines,
+            ResourcedMaster.globals.TSEventLineColors,
+            ResourcedMaster.globals.TSEventBands,
+            ResourcedMaster.globals.TSEventBandColors,
+            ResourcedMaster.globals.TSEventBandTextColors,
+            {
+                'from': nowUnix - 900,
+                'to': nowUnix,
+                'containerDOM': containerDOM,
+                'height': ResourcedMaster.highcharts.defaultHeight + 6,
+                'title': lastMetric['Key']
+            }
+        );
+    }
 }
 
 function renderChartRange(daterangepicker, from, to) {
@@ -267,13 +269,23 @@ $('.chart-keys option').click(function(event) {
     var val = JSON.parse(jsonString);
 
     if($(this).is(':selected')) {
-        var index = ResourcedMaster.globals.Charts.indexOf(val);
-        if(index > -1) {
+        var exists = false;
+
+        for(var i = 0; i < ResourcedMaster.globals.Charts.length; i++) {
+            if(ResourcedMaster.globals.Charts[i].ID == val.ID) {
+                exists = true;
+                break;
+            }
+        }
+
+        if(!exists) {
             ResourcedMaster.globals.Charts.push(val);
         }
     }
 
-    $('#add-chart-modal form input[name="MetricsWithOrder"]').val(JSON.stringify(val));
+    $('#add-chart-modal form input[name="MetricsWithOrder"]').val(
+        JSON.stringify(ResourcedMaster.globals.Charts)
+    );
 
     renderChartPreview();
 });
