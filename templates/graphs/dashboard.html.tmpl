@@ -84,6 +84,7 @@ setInterval(function() {
     window.location.reload();
 }, 5*60000);
 
+ResourcedMaster.globals.ChartsRendered = [];
 ResourcedMaster.globals.Charts = [];
 ResourcedMaster.globals.AccessToken = '{{ $.AccessToken.Token }}';
 ResourcedMaster.globals.CurrentGraph = {
@@ -119,17 +120,77 @@ function renderChartPreview() {
     }
 }
 
-function renderChartRange(daterangepicker, from, to) {
+function updateChartsOrderServerSide() {
+    var charts = [];
+
+    var $container = $('.graphs-metrics-brick-layout');
+
+    var graphID = $container.data('graph-id');
+
+    $($container.packery('getItemElements')).each( function( i, itemElem ) {
+        var $itemElem = $(itemElem);
+        var chart = {
+            ID: parseInt($itemElem.data('id'), 10),
+            Key: $itemElem.data('key'),
+            ClusterID: parseInt($itemElem.data('cluster-id'), 10)
+        };
+
+        charts.push(chart);
+    });
+
+    ResourcedMaster.globals.Charts = charts;
+
+    $('#add-chart-modal form input[name="MetricsWithOrder"]').val(JSON.stringify(charts));
+
+    ResourcedMaster.graphs.ajax(ResourcedMaster.globals.AccessToken, {
+        method: 'PUT',
+        id: graphID,
+        metrics: true,
+        data: ResourcedMaster.globals.Charts
+    });
+}
+
+function execWhenAllChartsRendered(numCharts) {
+    ResourcedMaster.globals.ChartsRendered.push(true);
+
+    if(ResourcedMaster.globals.ChartsRendered.length >= numCharts) {
+        // Begin Packery Layout and enable Draggabily
+        var $container = $('.graphs-metrics-brick-layout');
+
+        $container.packery({
+            columnWidth: '.graphs-metrics-brick-layout .sizer',
+            rowHeight: '.graphs-metrics-brick-layout .sizer',
+            itemSelector: '.graphs-metrics-brick-layout .item',
+            percentPosition: true
+        });
+
+        // get item elements, jQuery-ify them
+        var $itemElems = $( $container.packery('getItemElements') );
+
+        $itemElems.each( function( i, gridItem ) {
+            var draggie = new Draggabilly( gridItem );
+            $container.packery( 'bindDraggabillyEvents', draggie );
+        });
+
+        $container.off('dragItemPositioned').on('dragItemPositioned', updateChartsOrderServerSide);
+        // -------------------------------------------
+    }
+}
+
+function renderChartRange(numCharts, daterangepicker, from, to) {
     var elem = daterangepicker.closest('.panel-heading');
     var metricID = elem.data('id');
     var metricKey = elem.data('key');
     var containerDOM = elem.siblings('.panel-body');
 
     var renderOptions = {
-        'from': from,
-        'to': to,
-        'containerDOM': containerDOM,
-        'title': metricKey
+        from: from,
+        to: to,
+        containerDOM: containerDOM,
+        title: metricKey,
+        onLoad: function() {
+            execWhenAllChartsRendered(numCharts);
+        }
     };
 
     if((to - from) >= 21600) {
@@ -155,7 +216,7 @@ function renderAllChart() {
         var from = drp.startDate.unix();
         var to = drp.endDate.unix();
 
-        renderChartRange(drpElem, from, to);
+        renderChartRange($('.graphs-metrics-brick-layout .panel-heading').length, drpElem, from, to);
     });
 }
 
@@ -168,63 +229,6 @@ $(window).resize(function() {
 });
 
 $(document).ready(function() {
-    // Packery Stuff
-    var $container = $('.graphs-metrics-brick-layout');
-    $container.packery({
-        columnWidth: '.graphs-metrics-brick-layout .sizer',
-        rowHeight: '.graphs-metrics-brick-layout .sizer',
-        itemSelector: '.graphs-metrics-brick-layout .item',
-        percentPosition: true
-    });
-
-    var graphID = $container.data('graph-id');
-
-    // get item elements, jQuery-ify them
-    var $itemElems = $( $container.packery('getItemElements') );
-
-    $itemElems.each( function( i, gridItem ) {
-        var draggie = new Draggabilly( gridItem );
-
-        // draggie.on( 'dragEnd', function( event, pointer ) {});
-
-        $container.packery( 'bindDraggabillyEvents', draggie );
-    });
-
-    function gatherItemsInOrder() {
-        var charts = [];
-
-        var $itemElems = $( $container.packery('getItemElements') );
-
-        $itemElems.each( function( i, itemElem ) {
-            var $itemElem = $(itemElem);
-            var chart = {
-                ID: parseInt($itemElem.data('id'), 10),
-                Key: $itemElem.data('key'),
-                ClusterID: parseInt($itemElem.data('cluster-id'), 10)
-            };
-
-            charts.push(chart);
-        });
-
-        ResourcedMaster.globals.Charts = charts;
-
-        $('#add-chart-modal form input[name="MetricsWithOrder"]').val(JSON.stringify(charts));
-
-        // Update charts ordering on server-side
-        // TODO: This is called multiple times, not cool.
-        ResourcedMaster.graphs.ajax(ResourcedMaster.globals.AccessToken, {
-            method: 'PUT',
-            id: graphID,
-            metrics: true,
-            data: ResourcedMaster.globals.Charts
-        });
-    }
-
-    $container.on( 'layoutComplete', gatherItemsInOrder );
-    $container.on( 'dragItemPositioned', gatherItemsInOrder );
-
-    // -------------------------------------------
-
     var currentGraphRangeSplit = ResourcedMaster.globals.CurrentGraph.Range.split(" ");
     var currentGraphRangeCount = parseInt(currentGraphRangeSplit[0], 10);
     var currentGraphRangeUnit = currentGraphRangeSplit[1];
@@ -245,7 +249,7 @@ $(document).ready(function() {
             drpElem.daterangepicker(settings, function(start, end, label) {
                 var from = start.unix();
                 var to = end.unix();
-                renderChartRange(drpElem, from, to);
+                renderChartRange($('input.daterange').length, drpElem, from, to);
             });
         });
 
