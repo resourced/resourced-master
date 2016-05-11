@@ -6,7 +6,7 @@ from string import Template
 def create_table_by_month(table_name, table_ts_column, year, index):
 	padded_index = "%02d" % (index)
 	padded_index_plus_one = "%02d" % (index + 1)
-	table_name_with_suffix = "%s_m%s_%s" % (table_name, index, year)
+	table_name_with_suffix = "%s_%s_%s" % (table_name, year, padded_index)
 
 	if index == 12:
 		padded_index_plus_one = "%02d" % (1)
@@ -26,8 +26,6 @@ def create_table_by_day(table_name, table_ts_column, year, month, index):
 	month_range = calendar.monthrange(year, month)
 	if index > month_range[1]:
 		return ""
-
-	table_name_with_suffix = "%s_m%s_d%s_%s" % (table_name, month, index, year)
 
 	next_month = month
 	next_index = index + 1
@@ -49,6 +47,8 @@ def create_table_by_day(table_name, table_ts_column, year, month, index):
 	padded_index = "%02d" % (index)
 	padded_next_index = "%02d" % (next_index)
 
+	table_name_with_suffix = "%s_%s_%s_%s" % (table_name, year, padded_month, padded_index)
+
 	t = Template("create table $table_name_with_suffix (check ($table_ts_column >= TIMESTAMP '$year-$padded_month-$padded_index 00:00:00-00' and $table_ts_column < TIMESTAMP '$year-$padded_next_month-$padded_next_index 00:00:00-00')) inherits ($table_name);")
 	return t.substitute(
 		table_name_with_suffix=table_name_with_suffix,
@@ -61,8 +61,25 @@ def create_table_by_day(table_name, table_ts_column, year, month, index):
 		padded_next_index=padded_next_index
 	)
 
+def create_brin_index_by_day(table_name, year, month, index, *columns):
+	padded_month = "%02d" % (month)
+	padded_index = "%02d" % (index)
+
+	index_name_with_suffix = "idx_%s_%s_%s_%s_%s" % (table_name, year, padded_month, padded_index, '_'.join(columns))
+	table_name_with_suffix = "%s_%s_%s_%s" % (table_name, year, padded_month, padded_index)
+
+	t = Template("create index $index_name_with_suffix on $table_name_with_suffix using brin ($comma_sep_columns);")
+	return t.substitute(
+		index_name_with_suffix=index_name_with_suffix,
+		table_name_with_suffix=table_name_with_suffix,
+		table_name=table_name,
+		year=year,
+		comma_sep_columns=','.join(columns)
+	)
+
 for i in range(12):
-	# print(create_table_by_month('ts_metrics', 'created', 2016, i + 1))
+	print(create_table_by_month('ts_metrics', 'created', 2016, i + 1))
 
 	for j in range(31):
 		print(create_table_by_day('ts_metrics', 'created', 2016, i + 1, j + 1))
+		print(create_brin_index_by_day('ts_metrics', 2016, i + 1, j + 1, 'cluster_id', 'metric_id', 'created'))
