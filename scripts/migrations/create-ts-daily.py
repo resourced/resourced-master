@@ -1,26 +1,8 @@
 #!/usr/bin/env python
 
+import sys
 import calendar
 from string import Template
-
-def create_table_by_month(table_name, table_ts_column, year, index):
-	padded_index = "%02d" % (index)
-	padded_index_plus_one = "%02d" % (index + 1)
-	table_name_with_suffix = "%s_%s_%s" % (table_name, year, padded_index)
-
-	if index == 12:
-		padded_index_plus_one = "%02d" % (1)
-		year = year + 1
-
-	t = Template("create table $table_name_with_suffix (check ($table_ts_column >= TIMESTAMP '$year-$padded_index-01 00:00:00-00' and $table_ts_column < TIMESTAMP '$year-$padded_index_plus_one-01 00:00:00-00')) inherits ($table_name);")
-	return t.substitute(
-		table_name_with_suffix=table_name_with_suffix,
-		table_name=table_name,
-		table_ts_column=table_ts_column,
-		year=year,
-		padded_index=padded_index,
-		padded_index_plus_one=padded_index_plus_one
-	)
 
 def create_table_by_day(table_name, table_ts_column, year, month, index):
 	month_range = calendar.monthrange(year, month)
@@ -147,14 +129,27 @@ create trigger $trigger_name
 		double_dollar=double_dollar
 	)
 
+def create_migration(table_name, table_ts_column, year):
+	create_tables_list = filter(bool, [create_table_by_day(table_name, table_ts_column, year, month, index) for month in range(1,13) for index in range(1,32)])
+	create_brin_indexes_list = [create_brin_index_by_day(table_name, year, month, index, 'cluster_id', 'metric_id', table_ts_column) for month in range(1,13) for index in range(1,32)]
 
-print(create_function_on_insert('ts_checks', 'created', 2016))
+	create_tables = "\n".join(create_tables_list)
+	create_brin_indexes_list = "\n".join(create_brin_indexes_list)
+	trigger_on_insert = create_function_on_insert(table_name, table_ts_column, year)
 
-# for i in range(12):
-# 	print(create_table_by_month('ts_checks', 'created', 2016, i + 1))
+	t = Template("""$create_tables
 
-# 	for j in range(31):
-# 		if i == 11:
-# 			print(create_table_by_day('ts_checks', 'created', 2016, i + 1, j + 1))
-# 			print(create_brin_index_by_day('ts_checks', 2016, i + 1, j + 1, 'cluster_id', 'metric_id', 'created'))
-# 			print(create_function_on_insert_if_clause('ts_checks', 'created', 2016, i + 1, j + 1))
+$create_brin_indexes_list
+
+$trigger_on_insert
+""")
+
+	return t.substitute(
+		create_tables=create_tables,
+		create_brin_indexes_list=create_brin_indexes_list,
+		trigger_on_insert=trigger_on_insert
+	)
+
+
+if __name__ == '__main__':
+	print(create_migration(sys.argv[1], sys.argv[2], int(sys.argv[3])))
