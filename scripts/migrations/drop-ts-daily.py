@@ -1,10 +1,19 @@
 #!/usr/bin/env python
 
+#
+# Documentation:
+# Purpose: This script helps generate migration file for timeseries child tables.
+# Usage: ./scripts/migrations/drop-ts-daily.py ts_checks 2016 > ./migrations/core/0032_add-ts-checks-2016.down.sql
+# Arguments:
+# 1.   Parent table name. Example: ts_checks
+# 2.   The year. Example: 2016
+#
+
 import sys
 import calendar
 from string import Template
 
-def drop_table_by_day(table_name, table_ts_column, year, month, index):
+def drop_table_by_day(table_name, year, month, index):
 	month_range = calendar.monthrange(year, month)
 	if index > month_range[1]:
 		return ""
@@ -14,14 +23,14 @@ def drop_table_by_day(table_name, table_ts_column, year, month, index):
 
 	return "DROP TABLE IF EXISTS %s_%s_%s_%s CASCADE;" % (table_name, year, padded_month, padded_index)
 
-def drop_function_on_insert(table_name, table_ts_column, year):
+def drop_function_on_insert(table_name, year):
 	function_name = "on_%s_insert_%s" % (table_name, year)
 	return "DROP FUNCTION IF EXISTS %s() CASCADE;" % function_name
 
-def create_migration(table_name, table_ts_column, year):
-	drop_tables_list = filter(bool, [drop_table_by_day(table_name, table_ts_column, year, month, index) for month in range(1,13) for index in range(1,32)])
+def create_migration(table_name, year):
+	drop_tables_list = filter(bool, [drop_table_by_day(table_name, year, month, index) for month in range(1,13) for index in range(1,32)])
 	drop_tables = "\n".join(drop_tables_list)
-	drop_func = drop_function_on_insert(table_name, table_ts_column, year)
+	drop_func = drop_function_on_insert(table_name, year)
 
 	t = Template("""$drop_tables
 
@@ -35,4 +44,4 @@ $drop_func
 
 
 if __name__ == '__main__':
-	print(create_migration(sys.argv[1], sys.argv[2], int(sys.argv[3])))
+	print(create_migration(sys.argv[1], int(sys.argv[2])))

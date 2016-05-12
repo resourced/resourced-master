@@ -1,5 +1,15 @@
 #!/usr/bin/env python
 
+#
+# Documentation:
+# Purpose: This script helps generate migration file for timeseries child tables.
+# Usage: ./scripts/migrations/create-ts-daily.py ts_checks 2016 check_id created > ./migrations/core/0032_add-ts-checks-2016.up.sql
+# Arguments:
+# 1.   Parent table name. Example: ts_checks
+# 2.   The year. Example: 2016
+# 3... Columns to create composite indexes. The last column is expected to be TIMESTAMP column where inheritance is based on.
+#
+
 import sys
 import calendar
 from string import Template
@@ -43,6 +53,10 @@ def create_table_by_day(table_name, table_ts_column, year, month, index):
 	)
 
 def create_brin_index_by_day(table_name, year, month, index, *columns):
+	month_range = calendar.monthrange(year, month)
+	if index > month_range[1]:
+		return ""
+
 	padded_month = "%02d" % (month)
 	padded_index = "%02d" % (index)
 
@@ -129,13 +143,13 @@ create trigger $trigger_name
 		double_dollar=double_dollar
 	)
 
-def create_migration(table_name, table_ts_column, year):
-	create_tables_list = filter(bool, [create_table_by_day(table_name, table_ts_column, year, month, index) for month in range(1,13) for index in range(1,32)])
-	create_brin_indexes_list = [create_brin_index_by_day(table_name, year, month, index, 'cluster_id', 'metric_id', table_ts_column) for month in range(1,13) for index in range(1,32)]
+def create_migration(table_name, year, *columns):
+	create_tables_list = filter(bool, [create_table_by_day(table_name, columns[-1], year, month, index) for month in range(1,13) for index in range(1,32)])
+	create_brin_indexes_list = [create_brin_index_by_day(table_name, year, month, index, *(['cluster_id'] + list(columns))) for month in range(1,13) for index in range(1,32)]
 
 	create_tables = "\n".join(create_tables_list)
 	create_brin_indexes_list = "\n".join(create_brin_indexes_list)
-	trigger_on_insert = create_function_on_insert(table_name, table_ts_column, year)
+	trigger_on_insert = create_function_on_insert(table_name, columns[-1], year)
 
 	t = Template("""$create_tables
 
@@ -152,4 +166,4 @@ $trigger_on_insert
 
 
 if __name__ == '__main__':
-	print(create_migration(sys.argv[1], sys.argv[2], int(sys.argv[3])))
+	print(create_migration(sys.argv[1], int(sys.argv[2]), *sys.argv[3:]))
