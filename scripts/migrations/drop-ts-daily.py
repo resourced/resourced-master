@@ -9,6 +9,10 @@
 # 2.   The year. Example: 2016
 #
 # Examples:
+# ./scripts/migrations/drop-ts-daily.py ts_metrics 2016 > ./migrations/core/0005_add-ts-metrics-2016.down.sql
+# ./scripts/migrations/drop-ts-daily.py ts_metrics 2016 > ./migrations/ts-metrics/0005_add-ts-metrics-2016.down.sql
+# ./scripts/migrations/drop-ts-daily.py ts_metrics_aggr_15m 2016 > ./migrations/core/0006_add-ts-metrics-aggr-15m-2016.down.sql
+# ./scripts/migrations/drop-ts-daily.py ts_metrics_aggr_15m 2016 > ./migrations/ts-metrics/0006_add-ts-metrics-aggr-15m-2016.down.sql
 # ./scripts/migrations/drop-ts-daily.py ts_executor_logs 2016 > ./migrations/core/0026_add-ts-executor-logs-2016.down.sql
 # ./scripts/migrations/drop-ts-daily.py ts_executor_logs 2016 > ./migrations/ts-logs/0026_add-ts-executor-logs-2016.down.sql
 # ./scripts/migrations/drop-ts-daily.py ts_logs 2016 > ./migrations/core/0027_add-ts-logs-2016.down.sql

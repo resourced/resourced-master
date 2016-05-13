@@ -10,6 +10,10 @@
 # 3... Columns to create composite indexes. The last column is expected to be TIMESTAMP column where inheritance is based on.
 #
 # Examples:
+# ./scripts/migrations/create-ts-daily.py ts_metrics 2016 metric_id created > ./migrations/core/0005_add-ts-metrics-2016.up.sql
+# ./scripts/migrations/create-ts-daily.py ts_metrics 2016 metric_id created > ./migrations/ts-metrics/0005_add-ts-metrics-2016.up.sql
+# ./scripts/migrations/create-ts-daily.py ts_metrics_aggr_15m 2016 metric_id created > ./migrations/core/0006_add-ts-metrics-aggr-15m-2016.up.sql
+# ./scripts/migrations/create-ts-daily.py ts_metrics_aggr_15m 2016 metric_id created > ./migrations/ts-metrics/0006_add-ts-metrics-aggr-15m-2016.up.sql
 # ./scripts/migrations/create-ts-daily.py ts_executor_logs 2016 created > ./migrations/core/0026_add-ts-executor-logs-2016.up.sql
 # ./scripts/migrations/create-ts-daily.py ts_executor_logs 2016 created > ./migrations/ts-logs/0026_add-ts-executor-logs-2016.up.sql
 # ./scripts/migrations/create-ts-daily.py ts_logs 2016 created > ./migrations/core/0027_add-ts-logs-2016.up.sql
@@ -79,14 +83,13 @@ def create_brin_index_by_day(table_name, year, month, index, *columns):
 		comma_sep_columns=','.join(columns)
 	)
 
-def create_ts_logs_fulltext_index_by_day(year, month, index):
+def create_logs_fulltext_index_by_day(table_name, year, month, index):
 	month_range = calendar.monthrange(year, month)
 	if index > month_range[1]:
 		return ""
 
 	padded_month = "%02d" % (month)
 	padded_index = "%02d" % (index)
-	table_name = "ts_logs"
 	columns = ["cluster_id", "created", "hostname", "tags", "to_tsvector('english', logline)"]
 
 	index_name_with_suffix = "idx_%s_%s_%s_%s_%s" % (table_name, year, padded_month, padded_index, '_'.join(columns[:-1]))
@@ -175,8 +178,8 @@ create trigger $trigger_name
 def create_migration(table_name, year, *columns):
 	create_tables_list = filter(bool, [create_table_by_day(table_name, columns[-1], year, month, index) for month in range(1,13) for index in range(1,32)])
 
-	if table_name == "ts_logs":
-		create_indexes_list = filter(bool, [create_ts_logs_fulltext_index_by_day(year, month, index) for month in range(1,13) for index in range(1,32)])
+	if table_name == "ts_logs" or table_name == "ts_executor_logs":
+		create_indexes_list = filter(bool, [create_logs_fulltext_index_by_day(table_name, year, month, index) for month in range(1,13) for index in range(1,32)])
 	else:
 		create_indexes_list = filter(bool, [create_brin_index_by_day(table_name, year, month, index, *(['cluster_id'] + list(columns))) for month in range(1,13) for index in range(1,32)])
 
