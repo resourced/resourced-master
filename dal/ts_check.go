@@ -57,7 +57,7 @@ func (ts *TSCheck) LastByClusterIDCheckIDAndAffectedHosts(tx *sqlx.Tx, clusterID
 }
 
 // AllViolationsByClusterIDCheckIDAndInterval returns all rows by cluster_id, check_id and created interval.
-func (ts *TSCheck) AllViolationsByClusterIDCheckIDAndInterval(tx *sqlx.Tx, clusterID, CheckID int64, createdInterval string) ([]*TSCheckRow, error) {
+func (ts *TSCheck) AllViolationsByClusterIDCheckIDAndInterval(tx *sqlx.Tx, clusterID, CheckID, createdIntervalMinute int64) ([]*TSCheckRow, error) {
 	lastGoodOne, err := ts.LastByClusterIDCheckIDAndAffectedHosts(tx, clusterID, CheckID, false)
 	if err != nil {
 		if !strings.Contains(err.Error(), "no rows in result set") {
@@ -65,15 +65,18 @@ func (ts *TSCheck) AllViolationsByClusterIDCheckIDAndInterval(tx *sqlx.Tx, clust
 		}
 	}
 
+	now := time.Now().UTC()
+	from := now.Add(-1 * time.Duration(createdIntervalMinute) * time.Minute).UTC().Unix()
+
 	rows := []*TSCheckRow{}
 
 	if lastGoodOne != nil {
-		query := fmt.Sprintf("SELECT * FROM %v WHERE cluster_id=$1 AND check_id=$2 AND created > GREATEST($3, (NOW() at time zone 'utc' - INTERVAL '%v')) AND created <= (NOW() at time zone 'utc') AND result = $4 ORDER BY cluster_id,check_id,created DESC", ts.table, createdInterval)
-		err = ts.db.Select(&rows, query, clusterID, CheckID, lastGoodOne.Created.UTC(), true)
+		query := fmt.Sprintf("SELECT * FROM %v WHERE cluster_id=$1 AND check_id=$2 AND created > GREATEST($3, to_timestamp($4) at time zone 'utc') AND result = $5 ORDER BY cluster_id,check_id,created DESC", ts.table)
+		err = ts.db.Select(&rows, query, clusterID, CheckID, lastGoodOne.Created.UTC(), from, true)
 
 	} else {
-		query := fmt.Sprintf("SELECT * FROM %v WHERE cluster_id=$1 AND check_id=$2 AND created > (NOW() at time zone 'utc' - INTERVAL '%v') AND created <= (NOW() at time zone 'utc') AND result = $3 ORDER BY cluster_id,check_id,created DESC", ts.table, createdInterval)
-		err = ts.db.Select(&rows, query, clusterID, CheckID, true)
+		query := fmt.Sprintf("SELECT * FROM %v WHERE cluster_id=$1 AND check_id=$2 AND created > to_timestamp($3) at time zone 'utc' AND result = $4 ORDER BY cluster_id,check_id,created DESC", ts.table)
+		err = ts.db.Select(&rows, query, clusterID, CheckID, from, true)
 	}
 
 	return rows, err

@@ -75,11 +75,11 @@ type CheckExpression struct {
 }
 
 type CheckTrigger struct {
-	ID                  int64
-	LowViolationsCount  int64
-	HighViolationsCount int64
-	CreatedInterval     string
-	Action              CheckTriggerAction
+	ID                    int64
+	LowViolationsCount    int64
+	HighViolationsCount   int64
+	CreatedIntervalMinute int64
+	Action                CheckTriggerAction
 }
 
 type CheckTriggerAction struct {
@@ -805,7 +805,7 @@ func (checkRow *CheckRow) RunTriggers(appConfig config.GeneralConfig, tsCheckDB 
 	}
 
 	for _, trigger := range triggers {
-		tsCheckRows, err := NewTSCheck(tsCheckDB).AllViolationsByClusterIDCheckIDAndInterval(nil, checkRow.ClusterID, checkRow.ID, trigger.CreatedInterval)
+		tsCheckRows, err := NewTSCheck(tsCheckDB).AllViolationsByClusterIDCheckIDAndInterval(nil, checkRow.ClusterID, checkRow.ID, trigger.CreatedIntervalMinute)
 		if err != nil {
 			return err
 		}

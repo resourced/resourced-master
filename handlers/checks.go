@@ -260,16 +260,21 @@ func newCheckTriggerFromForm(r *http.Request) (dal.CheckTrigger, error) {
 		return dal.CheckTrigger{}, err
 	}
 
-	var highViolationsCount int64
-
+	// Set highViolationsCount arbitrarily high by default.
+	// Because it means that the user does not want to set max value.
+	highViolationsCount := int64(1000000)
 	highViolationsCountString := r.FormValue("HighViolationsCount")
-	if highViolationsCountString == "" {
-		// Set highViolationsCount arbitrarily high when highViolationsCount value is missing.
-		// Because it means that the user does not want to set max value.
-		highViolationsCount = 1000000
-
-	} else {
+	if highViolationsCountString != "" {
 		highViolationsCount, err = strconv.ParseInt(highViolationsCountString, 10, 64)
+		if err != nil {
+			return dal.CheckTrigger{}, err
+		}
+	}
+
+	createdIntervalMinute := int64(1)
+	createdIntervalMinuteString := r.FormValue("CreatedIntervalMinute")
+	if createdIntervalMinuteString != "" {
+		createdIntervalMinute, err = strconv.ParseInt(createdIntervalMinuteString, 10, 64)
 		if err != nil {
 			return dal.CheckTrigger{}, err
 		}
@@ -286,7 +291,7 @@ func newCheckTriggerFromForm(r *http.Request) (dal.CheckTrigger, error) {
 	trigger := dal.CheckTrigger{}
 	trigger.LowViolationsCount = lowViolationsCount
 	trigger.HighViolationsCount = highViolationsCount
-	trigger.CreatedInterval = r.FormValue("CreatedInterval")
+	trigger.CreatedIntervalMinute = createdIntervalMinute
 	trigger.Action = action
 
 	return trigger, nil
