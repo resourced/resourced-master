@@ -8,6 +8,13 @@
 # 1.   Parent table name. Example: ts_checks
 # 2.   The year. Example: 2016
 #
+# Examples:
+# ./scripts/migrations/drop-ts-daily.py ts_executor_logs 2016 > ./migrations/core/0026_add-ts-executor-logs-2016.down.sql
+# ./scripts/migrations/drop-ts-daily.py ts_executor_logs 2016 > ./migrations/ts-logs/0026_add-ts-executor-logs-2016.down.sql
+# ./scripts/migrations/drop-ts-daily.py ts_logs 2016 > ./migrations/core/0027_add-ts-logs-2016.down.sql
+# ./scripts/migrations/drop-ts-daily.py ts_logs 2016 > ./migrations/ts-logs/0027_add-ts-logs-2016.down.sql
+# ./scripts/migrations/drop-ts-daily.py ts_checks 2016 > ./migrations/core/0032_add-ts-checks-2016.down.sql
+# ./scripts/migrations/drop-ts-daily.py ts_checks 2016 > ./migrations/ts-checks/0032_add-ts-checks-2016.down.sql
 
 import sys
 import calendar

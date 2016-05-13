@@ -14,7 +14,7 @@ import (
 func NewTSCheck(db *sqlx.DB) *TSCheck {
 	ts := &TSCheck{}
 	ts.db = db
-	ts.table = "ts_Checks"
+	ts.table = "ts_checks"
 
 	return ts
 }

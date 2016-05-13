@@ -9,6 +9,13 @@
 # 2.   The year. Example: 2016
 # 3... Columns to create composite indexes. The last column is expected to be TIMESTAMP column where inheritance is based on.
 #
+# Examples:
+# ./scripts/migrations/create-ts-daily.py ts_executor_logs 2016 created > ./migrations/core/0026_add-ts-executor-logs-2016.up.sql
+# ./scripts/migrations/create-ts-daily.py ts_executor_logs 2016 created > ./migrations/ts-logs/0026_add-ts-executor-logs-2016.up.sql
+# ./scripts/migrations/create-ts-daily.py ts_logs 2016 created > ./migrations/core/0027_add-ts-logs-2016.up.sql
+# ./scripts/migrations/create-ts-daily.py ts_logs 2016 created > ./migrations/ts-logs/0027_add-ts-logs-2016.up.sql
+# ./scripts/migrations/create-ts-daily.py ts_checks 2016 check_id created > ./migrations/core/0032_add-ts-checks-2016.up.sql
+# ./scripts/migrations/create-ts-daily.py ts_checks 2016 check_id created > ./migrations/ts-checks/0032_add-ts-checks-2016.up.sql
 
 import sys
 import calendar
@@ -64,6 +71,28 @@ def create_brin_index_by_day(table_name, year, month, index, *columns):
 	table_name_with_suffix = "%s_%s_%s_%s" % (table_name, year, padded_month, padded_index)
 
 	t = Template("create index $index_name_with_suffix on $table_name_with_suffix using brin ($comma_sep_columns);")
+	return t.substitute(
+		index_name_with_suffix=index_name_with_suffix,
+		table_name_with_suffix=table_name_with_suffix,
+		table_name=table_name,
+		year=year,
+		comma_sep_columns=','.join(columns)
+	)
+
+def create_ts_logs_fulltext_index_by_day(year, month, index):
+	month_range = calendar.monthrange(year, month)
+	if index > month_range[1]:
+		return ""
+
+	padded_month = "%02d" % (month)
+	padded_index = "%02d" % (index)
+	table_name = "ts_logs"
+	columns = ["cluster_id", "created", "hostname", "tags", "to_tsvector('english', logline)"]
+
+	index_name_with_suffix = "idx_%s_%s_%s_%s_%s" % (table_name, year, padded_month, padded_index, '_'.join(columns[:-1]))
+	table_name_with_suffix = "%s_%s_%s_%s" % (table_name, year, padded_month, padded_index)
+
+	t = Template("create index $index_name_with_suffix on $table_name_with_suffix using gin($comma_sep_columns);")
 	return t.substitute(
 		index_name_with_suffix=index_name_with_suffix,
 		table_name_with_suffix=table_name_with_suffix,
@@ -145,22 +174,26 @@ create trigger $trigger_name
 
 def create_migration(table_name, year, *columns):
 	create_tables_list = filter(bool, [create_table_by_day(table_name, columns[-1], year, month, index) for month in range(1,13) for index in range(1,32)])
-	create_brin_indexes_list = [create_brin_index_by_day(table_name, year, month, index, *(['cluster_id'] + list(columns))) for month in range(1,13) for index in range(1,32)]
+
+	if table_name == "ts_logs":
+		create_indexes_list = filter(bool, [create_ts_logs_fulltext_index_by_day(year, month, index) for month in range(1,13) for index in range(1,32)])
+	else:
+		create_indexes_list = filter(bool, [create_brin_index_by_day(table_name, year, month, index, *(['cluster_id'] + list(columns))) for month in range(1,13) for index in range(1,32)])
 
 	create_tables = "\n".join(create_tables_list)
-	create_brin_indexes_list = "\n".join(create_brin_indexes_list)
+	create_indexes = "\n".join(create_indexes_list)
 	trigger_on_insert = create_function_on_insert(table_name, columns[-1], year)
 
 	t = Template("""$create_tables
 
-$create_brin_indexes_list
+$create_indexes
 
 $trigger_on_insert
 """)
 
 	return t.substitute(
 		create_tables=create_tables,
-		create_brin_indexes_list=create_brin_indexes_list,
+		create_indexes=create_indexes,
 		trigger_on_insert=trigger_on_insert
 	)
 
