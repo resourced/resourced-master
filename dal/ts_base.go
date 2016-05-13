@@ -3,6 +3,7 @@ package dal
 import (
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/jmoiron/sqlx"
 )
@@ -25,9 +26,12 @@ func (ts *TSBase) DeleteByDayInterval(tx *sqlx.Tx, dayInterval int) error {
 		return err
 	}
 
-	query := fmt.Sprintf("DELETE FROM %v WHERE created < (NOW() at time zone 'utc' - INTERVAL '%v day')", ts.table, dayInterval)
+	now := time.Now().UTC()
+	from := now.Add(-24 * time.Hour * time.Duration(dayInterval)).UTC().Unix()
 
-	_, err = tx.Exec(query)
+	query := fmt.Sprintf("DELETE FROM %v WHERE created < to_timestamp($1) at time zone 'utc'", ts.table)
+
+	_, err = tx.Exec(query, from)
 
 	if wrapInSingleTransaction == true {
 		err = tx.Commit()

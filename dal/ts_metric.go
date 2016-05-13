@@ -168,12 +168,13 @@ func (ts *TSMetric) CreateByHostRow(tx *sqlx.Tx, hostRow *HostRow, metricsMap ma
 }
 
 func (ts *TSMetric) AggregateEveryXMinutes(tx *sqlx.Tx, clusterID int64, minutes int) ([]*TSMetricSelectAggregateRow, error) {
-	interval := fmt.Sprintf("%v minute", minutes)
 	seconds := minutes * 60
+	now := time.Now().UTC()
+	from := now.Add(-1 * time.Duration(minutes) * time.Minute).UTC().Unix()
 
 	rows := []*TSMetricSelectAggregateRow{}
-	query := fmt.Sprintf("SELECT cluster_id, cast(CEILING(extract('epoch' from created)/%v)*%v as bigint) AS created_unix, key, avg(value) as avg, max(value) as max, min(value) as min, sum(value) as sum FROM %v WHERE cluster_id=$1 AND created >= (NOW() at time zone 'utc' - INTERVAL '%v') GROUP BY cluster_id, created_unix, key ORDER BY created_unix ASC", seconds, seconds, ts.table, interval)
-	err := ts.db.Select(&rows, query, clusterID)
+	query := fmt.Sprintf("SELECT cluster_id, cast(CEILING(extract('epoch' from created)/%v)*%v as bigint) AS created_unix, key, avg(value) as avg, max(value) as max, min(value) as min, sum(value) as sum FROM %v WHERE cluster_id=$1 AND created >= to_timestamp($2) at time zone 'utc' GROUP BY cluster_id, created_unix, key ORDER BY created_unix ASC", seconds, seconds, ts.table)
+	err := ts.db.Select(&rows, query, clusterID, from)
 
 	if err != nil {
 		err = fmt.Errorf("%v. Query: %v", err.Error(), query)
@@ -182,12 +183,13 @@ func (ts *TSMetric) AggregateEveryXMinutes(tx *sqlx.Tx, clusterID int64, minutes
 }
 
 func (ts *TSMetric) AggregateEveryXMinutesPerHost(tx *sqlx.Tx, clusterID int64, minutes int) ([]*TSMetricSelectAggregateRow, error) {
-	interval := fmt.Sprintf("%v minute", minutes)
 	seconds := minutes * 60
+	now := time.Now().UTC()
+	from := now.Add(-1 * time.Duration(minutes) * time.Minute).UTC().Unix()
 
 	rows := []*TSMetricSelectAggregateRow{}
-	query := fmt.Sprintf("SELECT cluster_id, cast(CEILING(extract('epoch' from created)/%v)*%v as bigint) AS created_unix, host, key, avg(value) as avg, max(value) as max, min(value) as min, sum(value) as sum FROM %v WHERE cluster_id=$1 AND created >= (NOW() at time zone 'utc' - INTERVAL '%v') GROUP BY cluster_id, created_unix, host, key ORDER BY created_unix ASC", seconds, seconds, ts.table, interval)
-	err := ts.db.Select(&rows, query, clusterID)
+	query := fmt.Sprintf("SELECT cluster_id, cast(CEILING(extract('epoch' from created)/%v)*%v as bigint) AS created_unix, host, key, avg(value) as avg, max(value) as max, min(value) as min, sum(value) as sum FROM %v WHERE cluster_id=$1 AND created >= to_timestamp($2) at time zone 'utc' GROUP BY cluster_id, created_unix, host, key ORDER BY created_unix ASC", seconds, seconds, ts.table)
+	err := ts.db.Select(&rows, query, clusterID, from)
 
 	if err != nil {
 		err = fmt.Errorf("%v. Query: %v", err.Error(), query)
@@ -196,11 +198,12 @@ func (ts *TSMetric) AggregateEveryXMinutesPerHost(tx *sqlx.Tx, clusterID int64, 
 }
 
 func (ts *TSMetric) GetAggregateXMinutesByHostnameAndKey(tx *sqlx.Tx, clusterID int64, minutes int, hostname, key string) (*TSMetricSelectAggregateRow, error) {
-	interval := fmt.Sprintf("%v minute", minutes)
+	now := time.Now().UTC()
+	from := now.Add(-1 * time.Duration(minutes) * time.Minute).UTC().Unix()
 
 	row := &TSMetricSelectAggregateRow{}
-	query := fmt.Sprintf("SELECT cluster_id, cast(extract(epoch from now() at time zone 'utc') as bigint) AS created_unix, host, key, avg(value) as avg, max(value) as max, min(value) as min, sum(value) as sum FROM %v WHERE cluster_id=$1 AND created >= (NOW() at time zone 'utc' - INTERVAL '%v') AND host=$2 AND key=$3 GROUP BY cluster_id, host, key", ts.table, interval)
-	err := ts.db.Get(row, query, clusterID, hostname, key)
+	query := fmt.Sprintf("SELECT cluster_id, cast(extract(epoch from now() at time zone 'utc') as bigint) AS created_unix, host, key, avg(value) as avg, max(value) as max, min(value) as min, sum(value) as sum FROM %v WHERE cluster_id=$1 AND created >= to_timestamp($2) at time zone 'utc' AND host=$3 AND key=$4 GROUP BY cluster_id, host, key", ts.table)
+	err := ts.db.Get(row, query, clusterID, from, hostname, key)
 
 	if err != nil {
 		err = fmt.Errorf("%v. Query: %v, ClusterID: %v, Hostname: %v, Key: %v", err.Error(), query, clusterID, hostname, key)
