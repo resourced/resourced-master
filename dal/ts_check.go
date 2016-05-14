@@ -56,17 +56,19 @@ func (ts *TSCheck) LastByClusterIDCheckIDAndAffectedHosts(tx *sqlx.Tx, clusterID
 	return row, err
 }
 
-// AllViolationsByClusterIDCheckIDAndInterval returns all rows by cluster_id, check_id and created interval.
+// AllViolationsByClusterIDCheckIDAndInterval returns all ts_checks rows since last good marker.
 func (ts *TSCheck) AllViolationsByClusterIDCheckIDAndInterval(tx *sqlx.Tx, clusterID, CheckID, createdIntervalMinute int64) ([]*TSCheckRow, error) {
 	lastGoodOne, err := ts.LastByClusterIDCheckIDAndAffectedHosts(tx, clusterID, CheckID, false)
 	if err != nil {
-		if !strings.Contains(err.Error(), "no rows in result set") {
+		if strings.Contains(err.Error(), "no rows in result set") {
+			lastGoodOne = nil
+		} else {
 			return nil, err
 		}
 	}
 
 	now := time.Now().UTC()
-	from := now.Add(-1 * time.Duration(createdIntervalMinute) * time.Minute).UTC().Unix()
+	from := now.Add(-1 * time.Minute * time.Duration(createdIntervalMinute)).UTC().Unix()
 
 	rows := []*TSCheckRow{}
 
