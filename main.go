@@ -9,7 +9,6 @@ import (
 	"github.com/Sirupsen/logrus"
 	"github.com/resourced/resourced-master/application"
 	"github.com/resourced/resourced-master/dal"
-	// "github.com/resourced/resourced-master/migrator"
 	"github.com/stretchr/graceful"
 )
 
@@ -28,37 +27,6 @@ func main() {
 	if err != nil {
 		logrus.Fatal(err)
 	}
-
-	// mgr := migrator.New(app.GeneralConfig)
-
-	// // Generate next year migration
-	// err = mgr.CreateNextYearMigrationFiles()
-	// if err != nil {
-	// 	logrus.Fatal(err)
-	// }
-
-	// // --------------------------------------
-	// // Run migrate up on all databases
-	// //
-	// errs, ok := mgr.CoreMigrateUp()
-	// if !ok {
-	// 	for _, err := range errs {
-	// 		logrus.Fatal(err)
-	// 	}
-	// }
-	// errs, ok = mgr.TSMetricsMigrateUp()
-	// if !ok {
-	// 	for _, err := range errs {
-	// 		logrus.Fatal(err)
-	// 	}
-	// }
-	// errs, ok = mgr.TSEventsMigrateUp()
-	// if !ok {
-	// 	for _, err := range errs {
-	// 		logrus.Fatal(err)
-	// 	}
-	// }
-	// // --------------------------------------
 
 	middle, err := app.MiddlewareStruct()
 	if err != nil {
