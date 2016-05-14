@@ -24,6 +24,7 @@ type SavedQueryRow struct {
 	ID        int64  `db:"id"`
 	UserID    int64  `db:"user_id"`
 	ClusterID int64  `db:"cluster_id"`
+	Type      string `db:"type"`
 	Query     string `db:"query"`
 }
 
@@ -49,6 +50,15 @@ func (sq *SavedQuery) AllByClusterID(tx *sqlx.Tx, clusterID int64) ([]*SavedQuer
 	return savedQueries, err
 }
 
+// AllByClusterIDAndType returns all saved_query rows.
+func (sq *SavedQuery) AllByClusterIDAndType(tx *sqlx.Tx, clusterID int64, savedQueryType string) ([]*SavedQueryRow, error) {
+	savedQueries := []*SavedQueryRow{}
+	query := fmt.Sprintf("SELECT * FROM %v WHERE cluster_id=$1 AND type=$2", sq.table)
+	err := sq.db.Select(&savedQueries, query, clusterID, savedQueryType)
+
+	return savedQueries, err
+}
+
 // GetByID returns record by id.
 func (sq *SavedQuery) GetByID(tx *sqlx.Tx, id int64) (*SavedQueryRow, error) {
 	savedQueryRow := &SavedQueryRow{}
@@ -59,21 +69,22 @@ func (sq *SavedQuery) GetByID(tx *sqlx.Tx, id int64) (*SavedQueryRow, error) {
 }
 
 // GetByAccessTokenAndQuery returns record by savedQuery.
-func (sq *SavedQuery) GetByAccessTokenAndQuery(tx *sqlx.Tx, accessTokenRow *AccessTokenRow, savedQuery string) (*SavedQueryRow, error) {
+func (sq *SavedQuery) GetByAccessTokenAndQuery(tx *sqlx.Tx, accessTokenRow *AccessTokenRow, savedQueryType, savedQuery string) (*SavedQueryRow, error) {
 	savedQueryRow := &SavedQueryRow{}
-	query := fmt.Sprintf("SELECT * FROM %v WHERE cluster_id=$1 AND query=$2", sq.table)
-	err := sq.db.Get(savedQueryRow, query, accessTokenRow.ClusterID, savedQuery)
+	query := fmt.Sprintf("SELECT * FROM %v WHERE cluster_id=$1 AND type=$2 AND query=$3", sq.table)
+	err := sq.db.Get(savedQueryRow, query, accessTokenRow.ClusterID, savedQueryType, savedQuery)
 
 	return savedQueryRow, err
 }
 
 // CreateOrUpdate performs insert/update for one savedQuery data.
-func (sq *SavedQuery) CreateOrUpdate(tx *sqlx.Tx, accessTokenRow *AccessTokenRow, savedQuery string) (*SavedQueryRow, error) {
-	savedQueryRow, err := sq.GetByAccessTokenAndQuery(tx, accessTokenRow, savedQuery)
+func (sq *SavedQuery) CreateOrUpdate(tx *sqlx.Tx, accessTokenRow *AccessTokenRow, savedQueryType, savedQuery string) (*SavedQueryRow, error) {
+	savedQueryRow, err := sq.GetByAccessTokenAndQuery(tx, accessTokenRow, savedQueryType, savedQuery)
 
 	data := make(map[string]interface{})
 	data["user_id"] = accessTokenRow.UserID
 	data["cluster_id"] = accessTokenRow.ClusterID
+	data["type"] = savedQueryType
 	data["query"] = savedQuery
 
 	// Perform INSERT

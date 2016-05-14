@@ -53,7 +53,7 @@ func GetHosts(w http.ResponseWriter, r *http.Request) {
 
 	go func(currentCluster *dal.ClusterRow) {
 		savedQueriesWithError := &dal.SavedQueryRowsWithError{}
-		savedQueriesWithError.SavedQueries, savedQueriesWithError.Error = dal.NewSavedQuery(db).AllByClusterID(nil, currentCluster.ID)
+		savedQueriesWithError.SavedQueries, savedQueriesWithError.Error = dal.NewSavedQuery(db).AllByClusterIDAndType(nil, currentCluster.ID, "hosts")
 		savedQueriesChan <- savedQueriesWithError
 	}(currentCluster)
 

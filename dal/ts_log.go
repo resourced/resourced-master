@@ -32,6 +32,11 @@ type AgentLogPayload struct {
 	}
 }
 
+type TSLogRowsWithError struct {
+	TSLogRows []*TSLogRow
+	Error     error
+}
+
 type TSLogRow struct {
 	ClusterID int64               `db:"cluster_id"`
 	Created   time.Time           `db:"created"`

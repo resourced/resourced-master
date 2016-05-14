@@ -23,15 +23,16 @@ func PostSavedQueries(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	savedQueryType := r.FormValue("Type")
 	savedQuery := r.FormValue("SavedQuery")
 
-	_, err = dal.NewSavedQuery(db).CreateOrUpdate(nil, accessTokenRow, savedQuery)
+	_, err = dal.NewSavedQuery(db).CreateOrUpdate(nil, accessTokenRow, savedQueryType, savedQuery)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
 	}
 
-	http.Redirect(w, r, "/?q="+savedQuery, 301)
+	http.Redirect(w, r, r.Referer(), 301)
 }
 
 func PostPutDeleteSavedQueriesID(w http.ResponseWriter, r *http.Request) {
