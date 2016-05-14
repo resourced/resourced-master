@@ -17,9 +17,9 @@
 
 ## Installation for users
 
-1. Install PostgreSQL 9.4.x
+1. Install PostgreSQL 9.5.x
 
-2. Install Go 1.4.x, git, setup `$GOPATH`, and `PATH=$PATH:$GOPATH/bin`
+2. Install Go 1.6.x, git, setup `$GOPATH`, and `PATH=$PATH:$GOPATH/bin`
 
 3. Create PostgreSQL database.
     ```
@@ -42,28 +42,56 @@ See [INSTALL.md](docs/contributors/INSTALL.md) and [BUILD.md](docs/contributors/
 
 ResourceD Master requires only 1 environment variable to run.
 
-**RESOURCED_CONFIG_DIR:** Path to root config directory. If directory does not exist, it will be created.
-
-In there, you will see the following file:
+**RESOURCED_MASTER_CONFIG_DIR:** Path to root config directory. In there, you will see the following files:
 
 * `general.toml` All default settings are defined in `general.toml`.
+
+* `metrics.toml` All settings related to storing metrics data.
+
+* `events.toml` All settings related to storing events data.
+
+* `logs.toml` All settings related to storing logs data.
+
+* `checks.toml` All settings related to storing checks data.
 
 
 ## RESTful Endpoints
 
 Every HTTP request requires AccessToken passed as user. Example:
 ```
+# Notice the double colon at the end of Access Token.
 curl -u 0b79bab50daca910b000d4f1a2b675d604257e42: https://localhost:55655/api/hosts
 ```
 
-* **GET** `/api/hosts` Displays list of all hosts by access token.
+* **GET** `/api/hosts` Returns list of all hosts by access token.
 
 * **POST** `/api/hosts` Submit JSON data from 1 host. The JSON payload format is defined by `type AgentResourcePayload struct`. See: [/dal/host.go#L25](https://github.com/resourced/resourced-master/blob/master/dal/host.go#L25)
+
+* **GET** `/api/metrics/{id:[0-9]+}` Returns list of all metrics timeseries data.
+
+* **GET** `/api/metrics/{id:[0-9]+}/15min` Returns list of all metrics timeseries data in 15 minutes aggregate.
+
+* **GET** `/api/metrics/{id:[0-9]+}/hosts/{host}` Returns list of all metrics timeseries data per host.
+
+* **GET** `/api/metrics/{id:[0-9]+}/hosts/{host}/15min` Returns list of all metrics timeseries data per host in 15 minutes aggregate.
+
+* **POST** `/api/events` Sends event data to master.
+
+* **POST** `/api/logs` Sends log data to master.
+
+* **GET** `/api/metadata` Returns list of all JSON metadata.
+
+* **GET** `/api/metadata/{key}` Returns a JSON metadata on master.
+
+* **POST** `/api/metadata/{key}` Stores a JSON metadata on master.
+
+* **DELETE** `/api/metadata/{key}` Deletes a JSON metadata on master.
 
 
 ## Querying
 
 ResourceD offers SQL-like language to query your data.
+
 
 ### Host Data
 
@@ -104,6 +132,7 @@ For example, let's say your resourced agent shipped `/free` data:
 ```
 
 You can then query `Swap -> Used` this way: `/free.Swap.Used > 10000000`
+
 
 ### Log Data
 
