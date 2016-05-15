@@ -1,3 +1,4 @@
+// Package libsmtp provides SMTP related library functions.
 package libsmtp
 
 import (

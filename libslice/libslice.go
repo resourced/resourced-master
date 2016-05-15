@@ -1,3 +1,4 @@
+// Package libslice provides slice related library functions.
 package libslice
 
 import (

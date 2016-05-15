@@ -1,3 +1,4 @@
+// Package config provides data structures for Application configurations.
 package config
 
 import (

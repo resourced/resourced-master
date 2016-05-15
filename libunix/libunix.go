@@ -1,3 +1,4 @@
+// Package libunix provides UNIX related library functions.
 package libunix
 
 import (

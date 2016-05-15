@@ -1,3 +1,4 @@
+// Package dal is the Data Access Layer between the Application and PostgreSQL database.
 package dal
 
 import (

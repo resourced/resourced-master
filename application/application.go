@@ -1,3 +1,5 @@
+// Package application allows the creation of Application struct.
+// There's only one Application per main().
 package application
 
 import (
