@@ -51,6 +51,9 @@ func GetLogs(w http.ResponseWriter, r *http.Request) {
 	savedQueriesChan := make(chan *dal.SavedQueryRowsWithError)
 	defer close(savedQueriesChan)
 
+	accessTokenChan := make(chan *dal.AccessTokenRowWithError)
+	defer close(accessTokenChan)
+
 	// --------------------------
 	// Fetch SQL rows in parallel
 	// --------------------------
@@ -86,6 +89,12 @@ func GetLogs(w http.ResponseWriter, r *http.Request) {
 		savedQueriesChan <- savedQueriesWithError
 	}(currentCluster)
 
+	go func(currentUser *dal.UserRow) {
+		accessTokenWithError := &dal.AccessTokenRowWithError{}
+		accessTokenWithError.AccessToken, accessTokenWithError.Error = dal.NewAccessToken(db).GetByUserID(nil, currentUser.ID)
+		accessTokenChan <- accessTokenWithError
+	}(currentUser)
+
 	// -----------------------------------
 	// Wait for channels to return results
 	// -----------------------------------
@@ -101,10 +110,17 @@ func GetLogs(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	accessTokenWithError := <-accessTokenChan
+	if accessTokenWithError.Error != nil {
+		libhttp.HandleErrorJson(w, accessTokenWithError.Error)
+		return
+	}
+
 	data := struct {
 		CSRFToken          string
 		Addr               string
 		CurrentUser        *dal.UserRow
+		AccessToken        *dal.AccessTokenRow
 		Clusters           []*dal.ClusterRow
 		CurrentClusterJson string
 		Logs               []*dal.TSLogRow
@@ -115,6 +131,7 @@ func GetLogs(w http.ResponseWriter, r *http.Request) {
 		csrf.Token(r),
 		context.Get(r, "addr").(string),
 		currentUser,
+		accessTokenWithError.AccessToken,
 		context.Get(r, "clusters").([]*dal.ClusterRow),
 		string(context.Get(r, "currentClusterJson").([]byte)),
 		tsLogsWithError.TSLogRows,
@@ -137,24 +154,28 @@ func GetLogsExecutors(w http.ResponseWriter, r *http.Request) {
 
 	qParams := r.URL.Query()
 
-	toString := qParams.Get("To")
-	if toString == "" {
-		toString = qParams.Get("to")
-	}
-	to, err := strconv.ParseInt(toString, 10, 64)
-	if err != nil {
-		to = time.Now().UTC().Unix()
-	}
+	// toString := qParams.Get("To")
+	// if toString == "" {
+	// 	toString = qParams.Get("to")
+	// }
+	// to, err := strconv.ParseInt(toString, 10, 64)
+	// if err != nil {
+	// 	to = time.Now().UTC().Unix()
+	// }
 
-	fromString := qParams.Get("From")
-	if fromString == "" {
-		fromString = qParams.Get("from")
-	}
-	from, err := strconv.ParseInt(fromString, 10, 64)
-	if err != nil {
-		// default is 15 minutes range
-		from = to - 900
-	}
+	// fromString := qParams.Get("From")
+	// if fromString == "" {
+	// 	fromString = qParams.Get("from")
+	// }
+	// from, err := strconv.ParseInt(fromString, 10, 64)
+	// if err != nil {
+	// 	// default is 15 minutes range
+	// 	from = to - 900
+	// }
+
+	to := time.Now().UTC().Unix()
+	from := to - 900
+	var err error
 
 	query := qParams.Get("q")
 
@@ -187,7 +208,7 @@ func GetLogsExecutors(w http.ResponseWriter, r *http.Request) {
 
 	go func(currentCluster *dal.ClusterRow) {
 		savedQueriesWithError := &dal.SavedQueryRowsWithError{}
-		savedQueriesWithError.SavedQueries, savedQueriesWithError.Error = dal.NewSavedQuery(db).AllByClusterIDAndType(nil, currentCluster.ID, "hosts")
+		savedQueriesWithError.SavedQueries, savedQueriesWithError.Error = dal.NewSavedQuery(db).AllByClusterIDAndType(nil, currentCluster.ID, "executor_logs")
 		savedQueriesChan <- savedQueriesWithError
 	}(currentCluster)
 
@@ -228,7 +249,7 @@ func GetLogsExecutors(w http.ResponseWriter, r *http.Request) {
 		to,
 	}
 
-	tmpl, err := template.ParseFiles("templates/dashboard.html.tmpl", "templates/logs/list.html.tmpl")
+	tmpl, err := template.ParseFiles("templates/dashboard.html.tmpl", "templates/logs/executor-list.html.tmpl")
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return

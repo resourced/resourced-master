@@ -27,6 +27,13 @@ type TSExecutorLogRow struct {
 	Logline   string              `db:"logline"`
 }
 
+func (tsr *TSExecutorLogRow) GetTags() map[string]string {
+	tags := make(map[string]string)
+	tsr.Tags.Unmarshal(&tags)
+
+	return tags
+}
+
 type TSExecutorLogRowsWithError struct {
 	TSExecutorLogRows []*TSExecutorLogRow
 	Error             error

@@ -82,7 +82,7 @@ $('#search-input').bind("input propertychange", function(e) {
                         <span class="glyphicon glyphicon-search" aria-hidden="true"></span>
                     </a>
 
-                    <a href="//{{ $.AccessToken.Token }}:@{{ $.Addr }}/api/logs?q={{ $savedQuery.Query }}" type="submit" class="btn btn-success">
+                    <a href="//{{ $.AccessToken.Token }}:@{{ $.Addr }}/api/logs/executors?q={{ $savedQuery.Query }}" type="submit" class="btn btn-success">
                        JSON
                     </a>
 
@@ -162,9 +162,6 @@ $('#search-input').bind("input propertychange", function(e) {
                 <div class="col-lg-4 col-md-4">
                     {{ $log.Hostname }}
                 </div>
-                <div class="col-lg-4 col-md-4">
-                    {{ $log.Filename }}
-                </div>
             </div>
 
             <div class="row" style="padding-bottom: 6px">
@@ -243,7 +240,7 @@ function setupPrevAndNextArrows(range, rangeText, from, to, _rev) {
 }
 
 $(document).ready(function() {
-    if(window.location.pathname.indexOf('/executors') != -1) {
+    if(window.location.pathname.indexOf('/executors') >= 0) {
         $('.tabs').removeClass('active');
         $('.executor-logs-tab').addClass('active');
     } else {
