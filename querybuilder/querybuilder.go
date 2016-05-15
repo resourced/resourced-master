@@ -55,7 +55,7 @@ func parseFullTextSearchField(statement, field, operator string) string {
 	searchQuery = strings.TrimSpace(searchQuery)
 	searchQuery = libstring.StripChars(searchQuery, `"'`)
 
-	return fmt.Sprintf("to_tsvector('english', %v) @@ to_tsquery('%v')", field, searchQuery)
+	return fmt.Sprintf("to_tsvector('english', %v) @@ plainto_tsquery('%v')", field, searchQuery)
 }
 
 // parseStatement parses ResourceD statement and turns it into postgres statement.
