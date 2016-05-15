@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"encoding/json"
 	"html/template"
 	"io/ioutil"
 	"net/http"
@@ -299,4 +300,51 @@ func PostApiLogs(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Write([]byte(`{"Message": "Success"}`))
+}
+
+func GetApiLogs(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	var err error
+
+	tsLogsDB := context.Get(r, "db.TSLog").(*sqlx.DB)
+
+	accessTokenRow := context.Get(r, "accessTokenRow").(*dal.AccessTokenRow)
+
+	qParams := r.URL.Query()
+
+	toString := qParams.Get("To")
+	if toString == "" {
+		toString = qParams.Get("to")
+	}
+	to, err := strconv.ParseInt(toString, 10, 64)
+
+	fromString := qParams.Get("From")
+	if fromString == "" {
+		fromString = qParams.Get("from")
+	}
+	from, err := strconv.ParseInt(fromString, 10, 64)
+
+	query := qParams.Get("q")
+
+	var tsLogs []*dal.TSLogRow
+
+	if fromString == "" && toString == "" {
+		tsLogs, err = dal.NewTSLog(tsLogsDB).AllByClusterIDLastRowIntervalAndQuery(nil, accessTokenRow.ClusterID, "15 minute", query)
+	} else {
+		tsLogs, err = dal.NewTSLog(tsLogsDB).AllByClusterIDRangeAndQuery(nil, accessTokenRow.ClusterID, from, to, query)
+	}
+
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
+
+	rowsJSON, err := json.Marshal(tsLogs)
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
+
+	w.Write(rowsJSON)
 }

@@ -77,6 +77,8 @@ curl -u 0b79bab50daca910b000d4f1a2b675d604257e42: https://localhost:55655/api/ho
 
 * **POST** `/api/events` Sends event data to master.
 
+* **GET** `/api/logs` Returns list of log data.
+
 * **POST** `/api/logs` Sends log data to master.
 
 * **GET** `/api/metadata` Returns list of all JSON metadata.
