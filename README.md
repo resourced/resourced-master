@@ -63,7 +63,7 @@ Every HTTP request requires AccessToken passed as user. Example:
 curl -u 0b79bab50daca910b000d4f1a2b675d604257e42: https://localhost:55655/api/hosts
 ```
 
-* **GET** `/api/hosts` Returns list of all hosts by access token.
+* **GET** `/api/hosts` Returns list of all hosts data.
 
 * **POST** `/api/hosts` Submit JSON data from 1 host. The JSON payload format is defined by `type AgentResourcePayload struct`. See: [/dal/host.go#L25](https://github.com/resourced/resourced-master/blob/master/dal/host.go#L25)
 
