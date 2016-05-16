@@ -26,14 +26,14 @@ func NewHost(db *sqlx.DB) *Host {
 
 type AgentResourcePayload struct {
 	Data     map[string]interface{}
-	GoStruct string
+	GoStruct string `json:",omitempty"`
 	Host     struct {
 		Name string
 		Tags map[string]string
 	}
-	Interval string
+	Interval string `json:",omitempty"`
 	Path     string
-	UnixNano float64
+	UnixNano float64 `json:",omitempty"`
 }
 
 type HostRowsWithError struct {
