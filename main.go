@@ -39,7 +39,7 @@ func main() {
 		logrus.Fatal("Path to config directory is required. You must set RESOURCED_MASTER_CONFIG_DIR environment variable or -c flag.")
 	}
 
-	configDir = appConfDirFromEnv
+	configDir := appConfDirFromEnv
 	if configDir == "" {
 		configDir = *appConfDirFromFlag
 	}
