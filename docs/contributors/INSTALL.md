@@ -17,7 +17,10 @@
 5. Run the PostgreSQL migration.
     ```
     cd $GOPATH/src/github.com/resourced/resourced-master
-    ./scripts/migrations/all.sh up
+    RESOURCED_MASTER_CONFIG_DIR=tests/config-files go run main.go migrate up
+
+    # This is only for debugging during development
+    # ./scripts/migrations/all.sh up
     ```
 
 6. Run the server
