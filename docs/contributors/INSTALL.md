@@ -7,6 +7,11 @@
 3. Create PostgreSQL database.
     ```
     createdb resourced-master
+    createdb resourced-master-ts-checks
+    createdb resourced-master-ts-events
+    createdb resourced-master-ts-executor-logs
+    createdb resourced-master-ts-logs
+    createdb resourced-master-ts-metrics
     ```
 
 4. Get the source code.
@@ -19,7 +24,7 @@
     cd $GOPATH/src/github.com/resourced/resourced-master
     RESOURCED_MASTER_CONFIG_DIR=tests/config-files go run main.go migrate up
 
-    # This is only for debugging during development
+    # This is only for debugging and running tests during development
     # ./scripts/migrations/all.sh up
     ```
 

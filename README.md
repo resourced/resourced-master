@@ -19,18 +19,25 @@
 
 1. Install PostgreSQL 9.5.x
 
-2. Install Go 1.6.x, git, setup `$GOPATH`, and `PATH=$PATH:$GOPATH/bin`
+2. Install git
 
-3. Create PostgreSQL database.
+3. Install Go 1.6.x, setup `$GOPATH`, and `PATH=$PATH:$GOPATH/bin`
+
+4. Create PostgreSQL databases.
     ```
+    # This example shows you how to create databases under resourced user.
+    # Make sure user, password, and pg_hba.conf are configured correctly.
     sudo su - postgres
     createuser -P -e resourced
     createdb --owner=resourced resourced-master
-
-    # Make sure user, password, and pg_hba.conf are configured correctly.
+    createdb --owner=resourced resourced-master-ts-checks
+    createdb --owner=resourced resourced-master-ts-events
+    createdb --owner=resourced resourced-master-ts-executor-logs
+    createdb --owner=resourced resourced-master-ts-logs
+    createdb --owner=resourced resourced-master-ts-metrics
     ```
 
-4. [Download the tar.gz](https://github.com/resourced/resourced-master/releases), unpack it, and run the binary using init/systemd/supervisord. You can follow the examples of init scripts [here](https://github.com/resourced/resourced-master/tree/master/scripts/init).
+5. [Download the tar.gz](https://github.com/resourced/resourced-master/releases), unpack it, and run the binary using init/systemd/supervisord. You can follow the examples of init scripts [here](https://github.com/resourced/resourced-master/tree/master/scripts/init).
 
 
 ## Installation for developers/contributors
@@ -40,9 +47,11 @@ See [INSTALL.md](docs/contributors/INSTALL.md) and [BUILD.md](docs/contributors/
 
 ## Configuration
 
-ResourceD Master requires only 1 environment variable to run.
+ResourceD Master needs to know path to its configuration directory.
 
-**RESOURCED_MASTER_CONFIG_DIR:** Path to root config directory. In there, you will see the following files:
+You can set it via `-c` flag or `RESOURCED_MASTER_CONFIG_DIR` environment variable.
+
+The `.tar.gz` file provides you with a default config directory. In there, you will see the following files:
 
 * `general.toml` All default settings are defined in `general.toml`.
 
