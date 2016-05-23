@@ -1,5 +1,4 @@
 [Checks]
-ListFetchInterval = "60s"
 DSN = "postgres://localhost:5432/resourced-master-ts-checks?sslmode=disable"
 
 

@@ -99,8 +99,6 @@ type GeneralConfig struct {
 	}
 
 	Checks struct {
-		ListFetchInterval string
-
 		Email *EmailConfig
 
 		SMSEmailGateway map[string]string

@@ -8,12 +8,14 @@ import (
 
 	"github.com/Sirupsen/logrus"
 	"github.com/alecthomas/kingpin"
+	"github.com/lib/pq"
 	_ "github.com/mattes/migrate/driver/postgres"
 	"github.com/mattes/migrate/migrate"
 	"github.com/stretchr/graceful"
 
 	"github.com/resourced/resourced-master/application"
 	"github.com/resourced/resourced-master/dal"
+	"github.com/resourced/resourced-master/libtime"
 )
 
 var (
@@ -61,12 +63,6 @@ func main() {
 			logrus.Fatal(err)
 		}
 
-		// Register daemon before launching
-		_, err = dal.NewDaemon(app.DBConfig.Core).CreateOrUpdate(nil, app.Hostname)
-		if err != nil {
-			logrus.Fatal(err)
-		}
-
 		// Create a database listener
 		pgListener, pgNotificationChan, err := app.NewPGListener(app.GeneralConfig)
 		if err != nil {
@@ -79,11 +75,40 @@ func main() {
 			logrus.Fatal(err)
 		}
 
+		peersChangedChan := make(chan bool)
+
 		// Handle all database notification
-		go app.HandleAllPGNotifications(pgNotificationChan)
+		go func(notificationChan <-chan *pq.Notification) {
+			select {
+			case notification := <-notificationChan:
+				if notification != nil {
+					err := app.HandlePGNotificationPeersAdd(notification)
+					if err != nil {
+						logrus.Error(err)
+					}
+
+					err = app.HandlePGNotificationPeersRemove(notification)
+					if err != nil {
+						logrus.Error(err)
+					}
+
+					peersChangedChan <- true
+				}
+			}
+		}(pgNotificationChan)
+
+		// Register self
+		go func() {
+			libtime.SleepString("10s")
+
+			err := app.PGNotifyPeersAdd()
+			if err != nil {
+				logrus.Error(err)
+			}
+		}()
 
 		// Run all checks
-		app.CheckAndRunTriggers()
+		app.CheckAndRunTriggers(peersChangedChan)
 
 		srv := &graceful.Server{
 			Timeout: requestTimeout,

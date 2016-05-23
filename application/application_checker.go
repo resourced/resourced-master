@@ -9,17 +9,25 @@ import (
 
 // CheckAndRunTriggers pulls list of all checks, distributed evenly across N master daemons,
 // evaluates the checks and run triggers when conditions are met.
-func (app *Application) CheckAndRunTriggers() {
+func (app *Application) CheckAndRunTriggers(peersChangedChan <-chan bool) {
 	checkRowsChan := make(chan []*dal.CheckRow)
 
-	// Fetch daemons and checks data every 5 minutes
+	// Fetch Checks data, split by number of daemons, every time there's a value in peersChangedChan
 	go func() {
-		for {
-			daemonHostnames, _ := dal.NewDaemon(app.DBConfig.Core).AllHostnames(nil)
-			groupedCheckRows, _ := dal.NewCheck(app.DBConfig.Core).AllSplitToDaemons(nil, daemonHostnames)
-			checkRowsChan <- groupedCheckRows[app.Hostname]
+		select {
+		case peersChanged := <-peersChangedChan:
+			if peersChanged {
+				println("AM I HERE?")
 
-			libtime.SleepString(app.GeneralConfig.Checks.ListFetchInterval)
+				daemons := make([]string, 0)
+
+				for hostAndPort, _ := range app.Peers.All() {
+					daemons = append(daemons, hostAndPort)
+				}
+
+				groupedCheckRows, _ := dal.NewCheck(app.DBConfig.Core).AllSplitToDaemons(nil, daemons)
+				checkRowsChan <- groupedCheckRows[app.Hostname]
+			}
 		}
 	}()
 

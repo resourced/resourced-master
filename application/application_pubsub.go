@@ -1,7 +1,9 @@
 package application
 
 import (
-	"github.com/Sirupsen/logrus"
+	"fmt"
+	"strings"
+
 	"github.com/lib/pq"
 
 	"github.com/resourced/resourced-master/config"
@@ -26,27 +28,12 @@ func (app *Application) ListenAllPGChannels(listener *pq.ListenerConn) (bool, er
 	return ok, err
 }
 
-func (app *Application) HandleAllPGNotifications(notificationChan <-chan *pq.Notification) {
-	select {
-	case notification := <-notificationChan:
-		if notification != nil {
-			err := app.HandlePGNotificationPeersAdd(notification)
-			if err != nil {
-				logrus.Error(err)
-			}
-
-			err = app.HandlePGNotificationPeersRemove(notification)
-			if err != nil {
-				logrus.Error(err)
-			}
-		}
-	}
-}
-
 func (app *Application) HandlePGNotificationPeersAdd(notification *pq.Notification) error {
 	if notification.Channel == "peers_add" {
 		hostAndPort := notification.Extra
-		println(hostAndPort)
+		app.Peers.Set(hostAndPort, hostAndPort)
+
+		println("Added " + hostAndPort)
 	}
 
 	return nil
@@ -55,8 +42,30 @@ func (app *Application) HandlePGNotificationPeersAdd(notification *pq.Notificati
 func (app *Application) HandlePGNotificationPeersRemove(notification *pq.Notification) error {
 	if notification.Channel == "peers_remove" {
 		hostAndPort := notification.Extra
-		println(hostAndPort)
+		app.Peers.Delete(hostAndPort)
+
+		println("Removed " + hostAndPort)
 	}
 
 	return nil
+}
+
+func (app *Application) PGNotifyPeersAdd() error {
+	addr := app.GeneralConfig.Addr
+	if strings.HasPrefix(addr, ":") {
+		addr = app.Hostname + addr
+	}
+
+	_, err := app.DBConfig.Core.Exec(fmt.Sprintf("NOTIFY peers_add, '%v'", addr))
+	return err
+}
+
+func (app *Application) PGNotifyPeersRemove() error {
+	addr := app.GeneralConfig.Addr
+	if strings.HasPrefix(addr, ":") {
+		addr = app.Hostname + addr
+	}
+
+	_, err := app.DBConfig.Core.Exec(fmt.Sprintf("NOTIFY peers_remove, '%v'", addr))
+	return err
 }

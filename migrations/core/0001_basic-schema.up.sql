@@ -69,15 +69,6 @@ CREATE TABLE metadata (
 
 CREATE INDEX idx_metadata_key on metadata (key);
 
-CREATE TABLE daemons (
-    id BIGSERIAL PRIMARY KEY NOT NULL,
-    hostname TEXT NOT NULL,
-    updated TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT (NOW() at time zone 'utc')
-);
-
-CREATE INDEX idx_daemons_hostname on daemons (hostname);
-CREATE INDEX idx_daemons_updated on daemons (updated);
-
 CREATE TABLE metrics (
     id BIGSERIAL PRIMARY KEY NOT NULL,
     cluster_id bigint REFERENCES clusters (id),
