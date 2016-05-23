@@ -6,7 +6,6 @@ import (
 	"github.com/gorilla/csrf"
 	"github.com/gorilla/mux"
 	"github.com/justinas/alice"
-	_ "github.com/lib/pq"
 
 	"github.com/resourced/resourced-master/handlers"
 	"github.com/resourced/resourced-master/middlewares"

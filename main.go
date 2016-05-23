@@ -67,6 +67,21 @@ func main() {
 			logrus.Fatal(err)
 		}
 
+		// Create a database listener
+		pgListener, pgNotificationChan, err := app.NewPGListener(app.GeneralConfig)
+		if err != nil {
+			logrus.Fatal(err)
+		}
+
+		// Listen on all database channels
+		_, err = app.ListenAllPGChannels(pgListener)
+		if err != nil {
+			logrus.Fatal(err)
+		}
+
+		// Handle all database notification
+		go app.HandleAllPGNotifications(pgNotificationChan)
+
 		// Run all checks
 		app.CheckAndRunTriggers()
 

@@ -12,6 +12,7 @@ import (
 
 	"github.com/resourced/resourced-master/config"
 	"github.com/resourced/resourced-master/dal"
+	"github.com/resourced/resourced-master/libmap"
 	"github.com/resourced/resourced-master/libtime"
 	"github.com/resourced/resourced-master/mailer"
 	"github.com/resourced/resourced-master/middlewares"
@@ -39,6 +40,7 @@ func New(configDir string) (*Application, error) {
 	app.GeneralConfig = generalConfig
 	app.DBConfig = dbConfig
 	app.cookieStore = sessions.NewCookieStore([]byte(app.GeneralConfig.CookieSecret))
+	app.Peers = libmap.NewTSafeMapString(nil)
 	app.Mailers = make(map[string]*mailer.Mailer)
 
 	if app.GeneralConfig.Email != nil {
@@ -67,6 +69,7 @@ type Application struct {
 	DBConfig      *config.DBConfig
 	cookieStore   *sessions.CookieStore
 	Mailers       map[string]*mailer.Mailer
+	Peers         *libmap.TSafeMapString // Peers include self
 }
 
 func (app *Application) MiddlewareStruct() (*interpose.Middleware, error) {
