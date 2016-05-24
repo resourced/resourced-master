@@ -24,6 +24,14 @@ func (app *Application) ListenAllPGChannels(listener *pq.ListenerConn) (bool, er
 	}
 
 	ok, err = listener.Listen("peers_remove")
+	if err != nil {
+		return ok, err
+	}
+
+	ok, err = listener.Listen("checks_refetch")
+	if err != nil {
+		return ok, err
+	}
 
 	return ok, err
 }
@@ -63,5 +71,10 @@ func (app *Application) PGNotifyPeersRemove() error {
 	}
 
 	_, err := app.DBConfig.Core.Exec(fmt.Sprintf("NOTIFY peers_remove, '%v'", addr))
+	return err
+}
+
+func (app *Application) PGNotifyChecksRefetch() error {
+	_, err := app.DBConfig.Core.Exec("NOTIFY checks_refetch")
 	return err
 }

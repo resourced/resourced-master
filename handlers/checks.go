@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/Sirupsen/logrus"
 	"github.com/gorilla/context"
 	"github.com/gorilla/csrf"
 	"github.com/gorilla/mux"
@@ -148,6 +149,13 @@ func PostChecks(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	go func() {
+		_, err := db.Exec("NOTIFY checks_refetch")
+		if err != nil {
+			logrus.Error(err)
+		}
+	}()
+
 	http.Redirect(w, r, "/checks", 301)
 }
 
@@ -156,6 +164,15 @@ func PostPutDeleteCheckID(w http.ResponseWriter, r *http.Request) {
 	if method == "" {
 		method = "put"
 	}
+
+	go func() {
+		db := context.Get(r, "db.Core").(*sqlx.DB)
+
+		_, err := db.Exec("NOTIFY checks_refetch")
+		if err != nil {
+			logrus.Error(err)
+		}
+	}()
 
 	if method == "post" || method == "put" {
 		PutCheckID(w, r)
@@ -336,6 +353,13 @@ func PostChecksTriggers(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	go func() {
+		_, err := db.Exec("NOTIFY checks_refetch")
+		if err != nil {
+			logrus.Error(err)
+		}
+	}()
+
 	http.Redirect(w, r, r.Referer(), 301)
 }
 
@@ -344,6 +368,15 @@ func PostPutDeleteCheckTriggerID(w http.ResponseWriter, r *http.Request) {
 	if method == "" {
 		method = "put"
 	}
+
+	go func() {
+		db := context.Get(r, "db.Core").(*sqlx.DB)
+
+		_, err := db.Exec("NOTIFY checks_refetch")
+		if err != nil {
+			logrus.Error(err)
+		}
+	}()
 
 	if method == "post" || method == "put" {
 		PutCheckTriggerID(w, r)
