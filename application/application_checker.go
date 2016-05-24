@@ -9,14 +9,14 @@ import (
 
 // CheckAndRunTriggers pulls list of all checks, distributed evenly across N master daemons,
 // evaluates the checks and run triggers when conditions are met.
-func (app *Application) CheckAndRunTriggers(peersChangedChan <-chan bool) {
+func (app *Application) CheckAndRunTriggers(refetchChecksChan <-chan bool) {
 	checkRowsChan := make(chan []*dal.CheckRow)
 
-	// Fetch Checks data, split by number of daemons, every time there's a value in peersChangedChan
+	// Fetch Checks data, split by number of daemons, every time there's a value in refetchChecksChan
 	go func() {
 		select {
-		case peersChanged := <-peersChangedChan:
-			if peersChanged {
+		case refetchChecks := <-refetchChecksChan:
+			if refetchChecks {
 				println("AM I HERE?")
 
 				daemons := make([]string, 0)

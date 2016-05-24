@@ -62,7 +62,7 @@ func main() {
 			logrus.Fatal(err)
 		}
 
-		peersChangedChan := make(chan bool)
+		refetchChecksChan := make(chan bool)
 
 		// Handle all database notification
 		go func(notificationChan <-chan *pq.Notification) {
@@ -79,7 +79,7 @@ func main() {
 						logrus.Error(err)
 					}
 
-					peersChangedChan <- true
+					refetchChecksChan <- true
 				}
 			}
 		}(pgNotificationChan)
@@ -95,7 +95,7 @@ func main() {
 		}()
 
 		// Run all checks
-		app.CheckAndRunTriggers(peersChangedChan)
+		app.CheckAndRunTriggers(refetchChecksChan)
 
 		// Handle OS signals
 		sigChan := make(chan os.Signal, 1)
