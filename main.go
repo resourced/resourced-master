@@ -2,16 +2,13 @@ package main
 
 import (
 	"encoding/gob"
-	"net/http"
 	"os"
-	"time"
+	"os/signal"
+	"syscall"
 
 	"github.com/Sirupsen/logrus"
 	"github.com/alecthomas/kingpin"
 	"github.com/lib/pq"
-	_ "github.com/mattes/migrate/driver/postgres"
-	"github.com/mattes/migrate/migrate"
-	"github.com/stretchr/graceful"
 
 	"github.com/resourced/resourced-master/application"
 	"github.com/resourced/resourced-master/dal"
@@ -53,16 +50,6 @@ func main() {
 
 	switch parsedCLIArgs {
 	case "server":
-		middle, err := app.MiddlewareStruct()
-		if err != nil {
-			logrus.Fatal(err)
-		}
-
-		requestTimeout, err := time.ParseDuration(app.GeneralConfig.RequestTimeout)
-		if err != nil {
-			logrus.Fatal(err)
-		}
-
 		// Create a database listener
 		pgListener, pgNotificationChan, err := app.NewPGListener(app.GeneralConfig)
 		if err != nil {
@@ -99,7 +86,7 @@ func main() {
 
 		// Register self
 		go func() {
-			libtime.SleepString("10s")
+			libtime.SleepString("5s")
 
 			err := app.PGNotifyPeersAdd()
 			if err != nil {
@@ -110,9 +97,48 @@ func main() {
 		// Run all checks
 		app.CheckAndRunTriggers(peersChangedChan)
 
-		srv := &graceful.Server{
-			Timeout: requestTimeout,
-			Server:  &http.Server{Addr: app.GeneralConfig.Addr, Handler: middle},
+		// Handle OS signals
+		sigChan := make(chan os.Signal, 1)
+		signal.Notify(sigChan,
+			syscall.SIGHUP,
+			syscall.SIGINT,
+			syscall.SIGTERM,
+			syscall.SIGQUIT)
+
+		go func() {
+			for {
+				s := <-sigChan
+				switch s {
+				case syscall.SIGHUP:
+
+				case syscall.SIGINT:
+					println("SIGINT")
+					err := app.PGNotifyPeersRemove()
+					if err != nil {
+						logrus.Error(err)
+					}
+
+				case syscall.SIGTERM:
+					println("SIGTERM")
+					err := app.PGNotifyPeersRemove()
+					if err != nil {
+						logrus.Error(err)
+					}
+
+				case syscall.SIGQUIT:
+					println("SIGQUIT")
+					err := app.PGNotifyPeersRemove()
+					if err != nil {
+						logrus.Error(err)
+					}
+				}
+			}
+		}()
+
+		// Create HTTP server
+		srv, err := app.NewHTTPServer()
+		if err != nil {
+			logrus.Fatal(err)
 		}
 
 		if app.GeneralConfig.HTTPS.CertFile != "" && app.GeneralConfig.HTTPS.KeyFile != "" {
@@ -124,34 +150,9 @@ func main() {
 		}
 
 	case "migrate up":
-		errs, ok := migrate.UpSync(app.GeneralConfig.DSN, "./migrations/core")
-		if !ok {
-			logrus.Fatal(errs[0])
-		}
-
-		errs, ok = migrate.UpSync(app.GeneralConfig.Checks.DSN, "./migrations/ts-checks")
-		if !ok {
-			logrus.Fatal(errs[0])
-		}
-
-		errs, ok = migrate.UpSync(app.GeneralConfig.Events.DSN, "./migrations/ts-events")
-		if !ok {
-			logrus.Fatal(errs[0])
-		}
-
-		errs, ok = migrate.UpSync(app.GeneralConfig.ExecutorLogs.DSN, "./migrations/ts-executor-logs")
-		if !ok {
-			logrus.Fatal(errs[0])
-		}
-
-		errs, ok = migrate.UpSync(app.GeneralConfig.Logs.DSN, "./migrations/ts-logs")
-		if !ok {
-			logrus.Fatal(errs[0])
-		}
-
-		errs, ok = migrate.UpSync(app.GeneralConfig.Metrics.DSN, "./migrations/ts-metrics")
-		if !ok {
-			logrus.Fatal(errs[0])
+		err := app.MigrateUpAll()
+		if err != nil {
+			logrus.Fatal(err)
 		}
 	}
 }

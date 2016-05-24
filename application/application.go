@@ -3,12 +3,17 @@
 package application
 
 import (
+	"net/http"
 	"os"
+	"time"
 
 	"github.com/Sirupsen/logrus"
 	"github.com/carbocation/interpose"
 	"github.com/gorilla/sessions"
 	_ "github.com/lib/pq"
+	_ "github.com/mattes/migrate/driver/postgres"
+	"github.com/mattes/migrate/migrate"
+	"github.com/stretchr/graceful"
 
 	"github.com/resourced/resourced-master/config"
 	"github.com/resourced/resourced-master/dal"
@@ -84,6 +89,61 @@ func (app *Application) MiddlewareStruct() (*interpose.Middleware, error) {
 	middle.UseHandler(app.mux())
 
 	return middle, nil
+}
+
+func (app *Application) NewHTTPServer() (*graceful.Server, error) {
+	// Create HTTP middlewares
+	middle, err := app.MiddlewareStruct()
+	if err != nil {
+		return nil, err
+	}
+
+	requestTimeout, err := time.ParseDuration(app.GeneralConfig.RequestTimeout)
+	if err != nil {
+		return nil, err
+	}
+
+	// Create HTTP server
+	srv := &graceful.Server{
+		Timeout: requestTimeout,
+		Server:  &http.Server{Addr: app.GeneralConfig.Addr, Handler: middle},
+	}
+
+	return srv, nil
+}
+
+func (app *Application) MigrateUpAll() error {
+	errs, ok := migrate.UpSync(app.GeneralConfig.DSN, "./migrations/core")
+	if !ok {
+		return errs[0]
+	}
+
+	errs, ok = migrate.UpSync(app.GeneralConfig.Checks.DSN, "./migrations/ts-checks")
+	if !ok {
+		return errs[0]
+	}
+
+	errs, ok = migrate.UpSync(app.GeneralConfig.Events.DSN, "./migrations/ts-events")
+	if !ok {
+		return errs[0]
+	}
+
+	errs, ok = migrate.UpSync(app.GeneralConfig.ExecutorLogs.DSN, "./migrations/ts-executor-logs")
+	if !ok {
+		return errs[0]
+	}
+
+	errs, ok = migrate.UpSync(app.GeneralConfig.Logs.DSN, "./migrations/ts-logs")
+	if !ok {
+		return errs[0]
+	}
+
+	errs, ok = migrate.UpSync(app.GeneralConfig.Metrics.DSN, "./migrations/ts-metrics")
+	if !ok {
+		return errs[0]
+	}
+
+	return nil
 }
 
 func (app *Application) PruneAll() {
