@@ -112,21 +112,18 @@ func main() {
 				case syscall.SIGHUP:
 
 				case syscall.SIGINT:
-					println("SIGINT")
 					err := app.PGNotifyPeersRemove()
 					if err != nil {
 						logrus.Error(err)
 					}
 
 				case syscall.SIGTERM:
-					println("SIGTERM")
 					err := app.PGNotifyPeersRemove()
 					if err != nil {
 						logrus.Error(err)
 					}
 
 				case syscall.SIGQUIT:
-					println("SIGQUIT")
 					err := app.PGNotifyPeersRemove()
 					if err != nil {
 						logrus.Error(err)

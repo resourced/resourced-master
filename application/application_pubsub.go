@@ -32,8 +32,6 @@ func (app *Application) HandlePGNotificationPeersAdd(notification *pq.Notificati
 	if notification.Channel == "peers_add" {
 		hostAndPort := notification.Extra
 		app.Peers.Set(hostAndPort, hostAndPort)
-
-		println("Added " + hostAndPort)
 	}
 
 	return nil
@@ -43,8 +41,6 @@ func (app *Application) HandlePGNotificationPeersRemove(notification *pq.Notific
 	if notification.Channel == "peers_remove" {
 		hostAndPort := notification.Extra
 		app.Peers.Delete(hostAndPort)
-
-		println("Removed " + hostAndPort)
 	}
 
 	return nil
