@@ -102,6 +102,7 @@
                                     data-check-interval="{{ $check.Interval }}"
                                     data-low-violations-count="{{ $trigger.LowViolationsCount }}"
                                     data-high-violations-count="{{ $trigger.HighViolationsCount }}"
+                                    data-created-interval-minute="{{ $trigger.CreatedIntervalMinute }}"
                                     data-action-transport="{{ $action.Transport }}"
                                     data-action-email="{{ $action.Email }}"
                                     data-action-sms-carrier="{{ $action.SMSCarrier }}"
@@ -168,7 +169,7 @@
                                 <span class="input-group-addon">the last</span>
 
                                 <div class="input-group">
-                                    <input type="number" class="form-control" name="CreatedIntervalMinute" value="1">
+                                    <input type="number" class="form-control" name="CreatedIntervalMinute" value="3">
                                     <span class="input-group-addon">minutes</span>
                                 </div>
                             </div>
@@ -742,6 +743,7 @@ $('#trigger-modal').on('show.bs.modal', function (event) {
     var checkCheckInterval = button.data('check-interval');
     var lowViolationsCount = button.data('low-violations-count');
     var highViolationsCount = button.data('high-violations-count');
+    var createdIntervalMinute = button.data('created-interval-minute');
     var actionTransport = button.data('action-transport');
     var actionEmail = button.data('action-email');
     var actionSMSCarrier = button.data('action-sms-carrier');
@@ -750,10 +752,6 @@ $('#trigger-modal').on('show.bs.modal', function (event) {
     var actionPagerDutyServiceDescription = button.data('action-pd-service-description');
 
     var modal = $(this);
-
-    // Wipe form first
-    modal.find('input[type="text"]').val('');
-    modal.find('input[type="number"]').val('');
 
     modal.find('input[name="Name"]').val(name);
 
@@ -764,6 +762,9 @@ $('#trigger-modal').on('show.bs.modal', function (event) {
     }
     if(highViolationsCount) {
         modal.find('input[name="HighViolationsCount"]').val(highViolationsCount);
+    }
+    if(createdIntervalMinute) {
+        modal.find('input[name="HighViolationsCount"]').val(createdIntervalMinute);
     }
     if(actionTransport) {
         $('select[name="ActionTransport"] option[value="' + actionTransport + '"]').attr('selected', 'selected');
