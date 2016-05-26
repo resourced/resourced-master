@@ -66,25 +66,27 @@ func main() {
 
 		// Handle all database notification
 		go func(notificationChan <-chan *pq.Notification) {
-			select {
-			case notification := <-notificationChan:
-				if notification != nil {
-					if notification.Channel == "checks_refetch" {
-						refetchChecksChan <- true
-					} else {
-						err := app.HandlePGNotificationPeersAdd(notification)
-						if err != nil {
-							logrus.Error(err)
-						}
+			for {
+				select {
+				case notification := <-notificationChan:
+					if notification != nil {
+						if notification.Channel == "checks_refetch" {
+							refetchChecksChan <- true
+						} else {
+							err := app.HandlePGNotificationPeersAdd(notification)
+							if err != nil {
+								logrus.Error(err)
+							}
 
-						err = app.HandlePGNotificationPeersRemove(notification)
-						if err != nil {
-							logrus.Error(err)
-						}
+							err = app.HandlePGNotificationPeersRemove(notification)
+							if err != nil {
+								logrus.Error(err)
+							}
 
-						err = app.PGNotifyChecksRefetch()
-						if err != nil {
-							logrus.Error(err)
+							err = app.PGNotifyChecksRefetch()
+							if err != nil {
+								logrus.Error(err)
+							}
 						}
 					}
 				}

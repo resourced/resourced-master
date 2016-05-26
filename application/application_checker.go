@@ -17,8 +17,6 @@ func (app *Application) CheckAndRunTriggers(refetchChecksChan <-chan bool) {
 		select {
 		case refetchChecks := <-refetchChecksChan:
 			if refetchChecks {
-				println("AM I HERE?")
-
 				daemons := make([]string, 0)
 
 				for hostAndPort, _ := range app.Peers.All() {
@@ -26,7 +24,7 @@ func (app *Application) CheckAndRunTriggers(refetchChecksChan <-chan bool) {
 				}
 
 				groupedCheckRows, _ := dal.NewCheck(app.DBConfig.Core).AllSplitToDaemons(nil, daemons)
-				checkRowsChan <- groupedCheckRows[app.Hostname]
+				checkRowsChan <- groupedCheckRows[app.FullAddr()]
 			}
 		}
 	}()

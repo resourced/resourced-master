@@ -5,6 +5,7 @@ package application
 import (
 	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/Sirupsen/logrus"
@@ -75,6 +76,24 @@ type Application struct {
 	cookieStore   *sessions.CookieStore
 	Mailers       map[string]*mailer.Mailer
 	Peers         *libmap.TSafeMapString // Peers include self
+}
+
+func (app *Application) FullAddr() string {
+	addr := app.GeneralConfig.Addr
+	if strings.HasPrefix(addr, ":") {
+		addr = app.Hostname + addr
+	}
+	if strings.HasPrefix(addr, "localhost") {
+		addr = strings.Replace(addr, "localhost", app.Hostname, 1)
+	}
+	if strings.HasPrefix(addr, "127.0.0.1") {
+		addr = strings.Replace(addr, "127.0.0.1", app.Hostname, 1)
+	}
+	if strings.HasPrefix(addr, "0.0.0.0") {
+		addr = strings.Replace(addr, "0.0.0.0", app.Hostname, 1)
+	}
+
+	return addr
 }
 
 func (app *Application) MiddlewareStruct() (*interpose.Middleware, error) {

@@ -2,7 +2,6 @@ package application
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/lib/pq"
 
@@ -55,22 +54,12 @@ func (app *Application) HandlePGNotificationPeersRemove(notification *pq.Notific
 }
 
 func (app *Application) PGNotifyPeersAdd() error {
-	addr := app.GeneralConfig.Addr
-	if strings.HasPrefix(addr, ":") {
-		addr = app.Hostname + addr
-	}
-
-	_, err := app.DBConfig.Core.Exec(fmt.Sprintf("NOTIFY peers_add, '%v'", addr))
+	_, err := app.DBConfig.Core.Exec(fmt.Sprintf("NOTIFY peers_add, '%v'", app.FullAddr()))
 	return err
 }
 
 func (app *Application) PGNotifyPeersRemove() error {
-	addr := app.GeneralConfig.Addr
-	if strings.HasPrefix(addr, ":") {
-		addr = app.Hostname + addr
-	}
-
-	_, err := app.DBConfig.Core.Exec(fmt.Sprintf("NOTIFY peers_remove, '%v'", addr))
+	_, err := app.DBConfig.Core.Exec(fmt.Sprintf("NOTIFY peers_remove, '%v'", app.FullAddr()))
 	return err
 }
 
