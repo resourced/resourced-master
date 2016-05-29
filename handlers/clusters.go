@@ -38,16 +38,16 @@ func GetClusters(w http.ResponseWriter, r *http.Request) {
 	}
 
 	data := struct {
-		CSRFToken          string
-		CurrentUser        *dal.UserRow
-		Clusters           []*dal.ClusterRow
-		CurrentClusterJson string
-		AccessTokens       map[int64][]*dal.AccessTokenRow
+		CSRFToken      string
+		CurrentUser    *dal.UserRow
+		Clusters       []*dal.ClusterRow
+		CurrentCluster *dal.ClusterRow
+		AccessTokens   map[int64][]*dal.AccessTokenRow
 	}{
 		csrf.Token(r),
 		currentUser,
 		clusters,
-		string(context.Get(r, "currentClusterJson").([]byte)),
+		context.Get(r, "currentCluster").(*dal.ClusterRow),
 		accessTokens,
 	}
 
@@ -160,7 +160,7 @@ func DeleteClusterID(w http.ResponseWriter, r *http.Request) {
 
 	cluster := dal.NewCluster(db)
 
-	clustersByUser, err := cluster.AllClustersByUserID(nil, id)
+	clustersByUser, err := cluster.AllByUserID(nil, id)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return

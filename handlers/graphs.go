@@ -31,18 +31,18 @@ func GetGraphs(w http.ResponseWriter, r *http.Request) {
 	}
 
 	data := struct {
-		CSRFToken          string
-		Addr               string
-		CurrentUser        *dal.UserRow
-		Clusters           []*dal.ClusterRow
-		CurrentClusterJson string
-		Graphs             []*dal.GraphRow
+		CSRFToken      string
+		Addr           string
+		CurrentUser    *dal.UserRow
+		Clusters       []*dal.ClusterRow
+		CurrentCluster *dal.ClusterRow
+		Graphs         []*dal.GraphRow
 	}{
 		csrf.Token(r),
 		context.Get(r, "addr").(string),
 		currentUser,
 		context.Get(r, "clusters").([]*dal.ClusterRow),
-		string(context.Get(r, "currentClusterJson").([]byte)),
+		context.Get(r, "currentCluster").(*dal.ClusterRow),
 		graphs,
 	}
 
@@ -170,22 +170,22 @@ func GetGraphsID(w http.ResponseWriter, r *http.Request) {
 	}
 
 	data := struct {
-		CSRFToken          string
-		Addr               string
-		CurrentUser        *dal.UserRow
-		AccessToken        *dal.AccessTokenRow
-		Clusters           []*dal.ClusterRow
-		CurrentClusterJson string
-		CurrentGraph       *dal.GraphRow
-		Graphs             []*dal.GraphRow
-		Metrics            []*dal.MetricRow
+		CSRFToken      string
+		Addr           string
+		CurrentUser    *dal.UserRow
+		AccessToken    *dal.AccessTokenRow
+		Clusters       []*dal.ClusterRow
+		CurrentCluster *dal.ClusterRow
+		CurrentGraph   *dal.GraphRow
+		Graphs         []*dal.GraphRow
+		Metrics        []*dal.MetricRow
 	}{
 		csrf.Token(r),
 		context.Get(r, "addr").(string),
 		currentUser,
 		accessTokenWithError.AccessToken,
 		context.Get(r, "clusters").([]*dal.ClusterRow),
-		string(context.Get(r, "currentClusterJson").([]byte)),
+		context.Get(r, "currentCluster").(*dal.ClusterRow),
 		currentGraph,
 		graphsWithError.Graphs,
 		metricsWithError.Metrics,

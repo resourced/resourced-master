@@ -31,7 +31,7 @@ type TSMetricAggr15mRow struct {
 }
 
 type TSMetricAggr15m struct {
-	Base
+	TSBase
 }
 
 func (ts *TSMetricAggr15m) metricRowsForHighchart(tx *sqlx.Tx, host string, tsMetricAggrRows []*TSMetricAggr15mRow) (*TSMetricHighchartPayload, error) {

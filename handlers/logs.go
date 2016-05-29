@@ -248,23 +248,23 @@ func GetLogsExecutors(w http.ResponseWriter, r *http.Request) {
 	}
 
 	data := struct {
-		CSRFToken          string
-		Addr               string
-		CurrentUser        *dal.UserRow
-		AccessToken        *dal.AccessTokenRow
-		Clusters           []*dal.ClusterRow
-		CurrentClusterJson string
-		Logs               []*dal.TSExecutorLogRow
-		SavedQueries       []*dal.SavedQueryRow
-		From               int64
-		To                 int64
+		CSRFToken      string
+		Addr           string
+		CurrentUser    *dal.UserRow
+		AccessToken    *dal.AccessTokenRow
+		Clusters       []*dal.ClusterRow
+		CurrentCluster *dal.ClusterRow
+		Logs           []*dal.TSExecutorLogRow
+		SavedQueries   []*dal.SavedQueryRow
+		From           int64
+		To             int64
 	}{
 		csrf.Token(r),
 		context.Get(r, "addr").(string),
 		currentUser,
 		accessTokenWithError.AccessToken,
 		context.Get(r, "clusters").([]*dal.ClusterRow),
-		string(context.Get(r, "currentClusterJson").([]byte)),
+		context.Get(r, "currentCluster").(*dal.ClusterRow),
 		tsLogsWithError.TSExecutorLogRows,
 		savedQueriesWithError.SavedQueries,
 		from,

@@ -11,7 +11,8 @@ CREATE INDEX idx_users_email_verified on users (email_verified);
 
 CREATE TABLE clusters (
     id BIGSERIAL PRIMARY KEY NOT NULL,
-    name TEXT NOT NULL
+    name TEXT NOT NULL,
+    data_retention JSONB NOT NULL DEFAULT '{}'
 );
 
 CREATE INDEX idx_clusters_name on clusters (name);

@@ -19,8 +19,10 @@
             {{ range $cluster := .Clusters }}
                 <div class="page-header">
                     <div class="btn-group pull-right" role="group">
-                        <button class="new-cluster-button btn btn-xs btn-default" type="button" data-toggle="modal" data-target="#cluster-modal"
-                            data-cluster-id="{{ $cluster.ID }}" data-cluster-name="{{ $cluster.Name }}" style="padding: 1px 8px">
+                        <button class="new-cluster-button btn btn-xs btn-default" style="padding: 1px 8px" type="button" data-toggle="modal" data-target="#cluster-modal"
+                            data-cluster-id="{{ $cluster.ID }}"
+                            data-cluster-name="{{ $cluster.Name }}"
+                            data-cluster-data-retention="{{ $cluster.DataRetention.String }}">
                             Edit
                         </button>
                         <button class="btn btn-xs btn-info" type="button" data-toggle="modal" data-target="#new-access-token-modal"
@@ -148,6 +150,7 @@ $('#cluster-modal').on('show.bs.modal', function (event) {
     var button = $(event.relatedTarget);
     var clusterID = button.data('cluster-id');
     var clusterName = button.data('cluster-name');
+    var clusterDataRetention = JSON.parse(button.data('cluster-data-retention'));
     var modal = $(this);
 
     if(clusterName) {

@@ -2,7 +2,6 @@
 package middlewares
 
 import (
-	"encoding/json"
 	"net/http"
 	"strings"
 
@@ -104,7 +103,7 @@ func SetClusters(next http.Handler) http.Handler {
 
 		db := context.Get(r, "db.Core").(*sqlx.DB)
 
-		clusterRows, err := dal.NewCluster(db).AllClustersByUserID(nil, userRow.ID)
+		clusterRows, err := dal.NewCluster(db).AllByUserID(nil, userRow.ID)
 		if err != nil {
 			libhttp.HandleErrorJson(w, err)
 			return
@@ -126,21 +125,10 @@ func SetClusters(next http.Handler) http.Handler {
 			}
 		}
 
-		// Set currentClusterJson
 		currentClusterInterface := session.Values["currentCluster"]
 		if currentClusterInterface != nil {
 			currentClusterRow := currentClusterInterface.(*dal.ClusterRow)
 			context.Set(r, "currentCluster", currentClusterRow)
-
-			currentClusterJson, err := json.Marshal(currentClusterRow)
-			if err != nil {
-				libhttp.HandleErrorJson(w, err)
-				return
-			}
-			context.Set(r, "currentClusterJson", currentClusterJson)
-
-		} else {
-			context.Set(r, "currentClusterJson", []byte("{}"))
 		}
 
 		next.ServeHTTP(w, r)

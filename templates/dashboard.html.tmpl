@@ -32,7 +32,8 @@
 
         <script>
         ResourcedMaster.globals.CSRFToken = '{{ $.CSRFToken }}';
-        ResourcedMaster.globals.currentCluster = JSON.parse('{{ .CurrentClusterJson }}');
+        ResourcedMaster.globals.currentCluster.ID = {{ $.CurrentCluster.ID }};
+        ResourcedMaster.globals.currentCluster.Name = {{ $.CurrentCluster.Name }};
         </script>
     </head>
 

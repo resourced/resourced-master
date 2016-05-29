@@ -97,22 +97,22 @@ func GetHosts(w http.ResponseWriter, r *http.Request) {
 	}
 
 	data := struct {
-		CSRFToken          string
-		Addr               string
-		CurrentUser        *dal.UserRow
-		AccessToken        *dal.AccessTokenRow
-		Clusters           []*dal.ClusterRow
-		CurrentClusterJson string
-		Hosts              []*dal.HostRow
-		SavedQueries       []*dal.SavedQueryRow
-		MetricsMap         map[string]int64
+		CSRFToken      string
+		Addr           string
+		CurrentUser    *dal.UserRow
+		AccessToken    *dal.AccessTokenRow
+		Clusters       []*dal.ClusterRow
+		CurrentCluster *dal.ClusterRow
+		Hosts          []*dal.HostRow
+		SavedQueries   []*dal.SavedQueryRow
+		MetricsMap     map[string]int64
 	}{
 		csrf.Token(r),
 		context.Get(r, "addr").(string),
 		currentUser,
 		accessTokenWithError.AccessToken,
 		context.Get(r, "clusters").([]*dal.ClusterRow),
-		string(context.Get(r, "currentClusterJson").([]byte)),
+		context.Get(r, "currentCluster").(*dal.ClusterRow),
 		hostsWithError.Hosts,
 		savedQueriesWithError.SavedQueries,
 		metricsMapWithError.MetricsMap,

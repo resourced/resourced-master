@@ -2,9 +2,11 @@ package dal
 
 import (
 	"database/sql"
+	"encoding/json"
 	"fmt"
 
 	"github.com/jmoiron/sqlx"
+	sqlx_types "github.com/jmoiron/sqlx/types"
 )
 
 func NewCluster(db *sqlx.DB) *Cluster {
@@ -17,37 +19,58 @@ func NewCluster(db *sqlx.DB) *Cluster {
 }
 
 type ClusterRow struct {
-	ID   int64  `db:"id"`
-	Name string `db:"name"`
+	ID            int64               `db:"id"`
+	Name          string              `db:"name"`
+	DataRetention sqlx_types.JSONText `db:"data_retention"`
+}
+
+func (cr *ClusterRow) GetDataRetention() map[string]int {
+	retentions := make(map[string]int)
+	cr.DataRetention.Unmarshal(&retentions)
+
+	return retentions
 }
 
 type Cluster struct {
 	Base
 }
 
-func (a *Cluster) clusterRowFromSqlResult(tx *sqlx.Tx, sqlResult sql.Result) (*ClusterRow, error) {
+func (c *Cluster) clusterRowFromSqlResult(tx *sqlx.Tx, sqlResult sql.Result) (*ClusterRow, error) {
 	id, err := sqlResult.LastInsertId()
 	if err != nil {
 		return nil, err
 	}
 
-	return a.GetByID(tx, id)
+	return c.GetByID(tx, id)
 }
 
 // GetByID returns one record by id.
-func (a *Cluster) GetByID(tx *sqlx.Tx, id int64) (*ClusterRow, error) {
+func (c *Cluster) GetByID(tx *sqlx.Tx, id int64) (*ClusterRow, error) {
 	row := &ClusterRow{}
-	query := fmt.Sprintf("SELECT * FROM %v WHERE id=$1", a.table)
-	err := a.db.Get(row, query, id)
+	query := fmt.Sprintf("SELECT * FROM %v WHERE id=$1", c.table)
+	err := c.db.Get(row, query, id)
 
 	return row, err
 }
 
-func (a *Cluster) Create(tx *sqlx.Tx, userId int64, name string) (*ClusterRow, error) {
+func (c *Cluster) Create(tx *sqlx.Tx, userId int64, name string) (*ClusterRow, error) {
+	dataRetention := make(map[string]int)
+	dataRetention["ts_checks"] = 1
+	dataRetention["ts_metrics"] = 1
+	dataRetention["ts_events"] = 1
+	dataRetention["ts_executor_logs"] = 1
+	dataRetention["ts_logs"] = 1
+
+	dataRetentionJSON, err := json.Marshal(dataRetention)
+	if err != nil {
+		return nil, err
+	}
+
 	data := make(map[string]interface{})
 	data["name"] = name
+	data["data_retention"] = dataRetentionJSON
 
-	sqlResult, err := a.InsertIntoTable(tx, data)
+	sqlResult, err := c.InsertIntoTable(tx, data)
 	if err != nil {
 		return nil, err
 	}
@@ -63,25 +86,25 @@ func (a *Cluster) Create(tx *sqlx.Tx, userId int64, name string) (*ClusterRow, e
 
 	query := `INSERT INTO clusters_users (cluster_id,user_id) VALUES (:cluster_id,:user_id)`
 
-	_, err = a.db.NamedExec(query, joinTableData)
+	_, err = c.db.NamedExec(query, joinTableData)
 
-	return a.clusterRowFromSqlResult(tx, sqlResult)
+	return c.clusterRowFromSqlResult(tx, sqlResult)
 }
 
-// AllClustersByUserID returns all clusters rows by user ID.
-func (a *Cluster) AllClustersByUserID(tx *sqlx.Tx, userId int64) ([]*ClusterRow, error) {
+// AllByUserID returns all clusters rows by user ID.
+func (c *Cluster) AllByUserID(tx *sqlx.Tx, userId int64) ([]*ClusterRow, error) {
 	rows := []*ClusterRow{}
-	query := fmt.Sprintf("SELECT id, name FROM %v JOIN clusters_users ON %v.id = clusters_users.cluster_id WHERE user_id=$1", a.table, a.table)
-	err := a.db.Select(&rows, query, userId)
+	query := fmt.Sprintf("SELECT id, name FROM %v JOIN clusters_users ON %v.id = clusters_users.cluster_id WHERE user_id=$1", c.table, c.table)
+	err := c.db.Select(&rows, query, userId)
 
 	return rows, err
 }
 
-// AllClusters returns all clusters rows.
-func (a *Cluster) AllClusters(tx *sqlx.Tx) ([]*ClusterRow, error) {
+// All returns all clusters rows.
+func (c *Cluster) All(tx *sqlx.Tx) ([]*ClusterRow, error) {
 	rows := []*ClusterRow{}
-	query := fmt.Sprintf("SELECT * FROM %v", a.table)
-	err := a.db.Select(&rows, query)
+	query := fmt.Sprintf("SELECT * FROM %v", c.table)
+	err := c.db.Select(&rows, query)
 
 	return rows, err
 }

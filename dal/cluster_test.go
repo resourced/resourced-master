@@ -39,7 +39,7 @@ func TestClusterCRUD(t *testing.T) {
 	}
 
 	// SELECT * FROM clusters
-	_, err = NewCluster(u.db).AllClustersByUserID(nil, userRow.ID)
+	_, err = NewCluster(u.db).AllByUserID(nil, userRow.ID)
 	if err != nil {
 		t.Fatalf("Selecting all clusters should not fail. Error: %v, userRow.ID: %v", err, userRow.ID)
 	}
