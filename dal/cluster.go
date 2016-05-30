@@ -109,3 +109,34 @@ func (c *Cluster) All(tx *sqlx.Tx) ([]*ClusterRow, error) {
 
 	return rows, err
 }
+
+// AllSplitToDaemons returns all rows divided into daemons equally.
+func (c *Cluster) AllSplitToDaemons(tx *sqlx.Tx, daemons []string) (map[string][]*ClusterRow, error) {
+	rows, err := c.All(tx)
+	if err != nil {
+		return nil, err
+	}
+
+	buckets := make([][]*ClusterRow, len(daemons))
+	for i, _ := range daemons {
+		buckets[i] = make([]*ClusterRow, 0)
+	}
+
+	bucketsPointer := 0
+	for _, row := range rows {
+		buckets[bucketsPointer] = append(buckets[bucketsPointer], row)
+		bucketsPointer = bucketsPointer + 1
+
+		if bucketsPointer >= len(buckets) {
+			bucketsPointer = 0
+		}
+	}
+
+	result := make(map[string][]*ClusterRow)
+
+	for i, checksInbucket := range buckets {
+		result[daemons[i]] = checksInbucket
+	}
+
+	return result, err
+}

@@ -11,7 +11,33 @@ import (
 
 func (app *Application) PruneAll() {
 	for {
-		clusters, err := dal.NewCluster(app.DBConfig.Core).All(nil)
+		var clusters []*dal.ClusterRow
+		var err error
+
+		daemons := make([]string, 0)
+		allPeers := app.Peers.All()
+
+		if len(allPeers) > 0 {
+			for hostAndPort, _ := range allPeers {
+				daemons = append(daemons, hostAndPort)
+			}
+
+			groupedClustersByDaemon, err := dal.NewCluster(app.DBConfig.Core).AllSplitToDaemons(nil, daemons)
+			if err != nil {
+				logrus.WithFields(logrus.Fields{
+					"Method": "Cluster.AllSplitToDaemons",
+				}).Error(err)
+
+				libtime.SleepString("24h")
+				continue
+			}
+
+			clusters = groupedClustersByDaemon[app.FullAddr()]
+
+		} else {
+			clusters, err = dal.NewCluster(app.DBConfig.Core).All(nil)
+		}
+
 		if err != nil {
 			logrus.WithFields(logrus.Fields{
 				"Method": "Application.PruneAll",
