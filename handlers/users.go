@@ -45,7 +45,7 @@ func PostSignup(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Create a default cluster
-	clusterRow, err := dal.NewCluster(db).Create(nil, userRow.ID, "Default")
+	clusterRow, err := dal.NewCluster(db).Create(nil, userRow, "Default")
 	if err != nil {
 		libhttp.HandleErrorHTML(w, err, 500)
 		return

@@ -66,7 +66,7 @@ func PostClusters(w http.ResponseWriter, r *http.Request) {
 
 	currentUser := context.Get(r, "currentUser").(*dal.UserRow)
 
-	_, err := dal.NewCluster(db).Create(nil, currentUser.ID, r.FormValue("Name"))
+	_, err := dal.NewCluster(db).Create(nil, currentUser, r.FormValue("Name"))
 	if err != nil {
 		libhttp.HandleErrorHTML(w, err, 500)
 		return

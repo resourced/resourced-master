@@ -12,17 +12,16 @@ CREATE INDEX idx_users_email_verified on users (email_verified);
 CREATE TABLE clusters (
     id BIGSERIAL PRIMARY KEY NOT NULL,
     name TEXT NOT NULL,
-    data_retention JSONB NOT NULL DEFAULT '{}'
+    creator_id BIGSERIAL NOT NULL,
+    creator_email TEXT NOT NULL,
+    data_retention JSONB NOT NULL DEFAULT '{}',
+    members JSONB DEFAULT '[]'
 );
 
 CREATE INDEX idx_clusters_name on clusters (name);
-
-CREATE TABLE clusters_users (
-    cluster_id bigint REFERENCES clusters (id) ON UPDATE CASCADE ON DELETE CASCADE,
-    user_id bigint REFERENCES users (id) ON UPDATE CASCADE ON DELETE CASCADE,
-    -- explicit pk
-    CONSTRAINT idx_clusters_users_primary PRIMARY KEY (cluster_id,user_id)
-);
+CREATE INDEX idx_clusters_creator_id on clusters (creator_id);
+CREATE INDEX idx_clusters_creator_email on clusters (creator_email);
+CREATE INDEX idx_clusters_members ON clusters USING gin(members);
 
 CREATE TABLE access_tokens (
     id BIGSERIAL PRIMARY KEY NOT NULL,
