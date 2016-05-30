@@ -150,11 +150,16 @@ $('#cluster-modal').on('show.bs.modal', function (event) {
     var button = $(event.relatedTarget);
     var clusterID = button.data('cluster-id');
     var clusterName = button.data('cluster-name');
-    var clusterDataRetention = JSON.parse(button.data('cluster-data-retention'));
+    var clusterDataRetention = button.data('cluster-data-retention');
     var modal = $(this);
 
     if(clusterName) {
         modal.find('input[name="Name"]').val(clusterName);
+    }
+    if(clusterDataRetention) {
+        for(var key in clusterDataRetention) {
+
+        }
     }
 
     if(clusterID) {

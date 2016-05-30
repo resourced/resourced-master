@@ -83,21 +83,21 @@ func GetChecks(w http.ResponseWriter, r *http.Request) {
 	}
 
 	data := struct {
-		CSRFToken          string
-		Addr               string
-		CurrentUser        *dal.UserRow
-		AccessToken        *dal.AccessTokenRow
-		Clusters           []*dal.ClusterRow
-		CurrentClusterJson string
-		Checks             []*dal.CheckRow
-		Metrics            []*dal.MetricRow
+		CSRFToken      string
+		Addr           string
+		CurrentUser    *dal.UserRow
+		AccessToken    *dal.AccessTokenRow
+		Clusters       []*dal.ClusterRow
+		CurrentCluster *dal.ClusterRow
+		Checks         []*dal.CheckRow
+		Metrics        []*dal.MetricRow
 	}{
 		csrf.Token(r),
 		context.Get(r, "addr").(string),
 		currentUser,
 		accessTokenWithError.AccessToken,
 		context.Get(r, "clusters").([]*dal.ClusterRow),
-		string(context.Get(r, "currentClusterJson").([]byte)),
+		context.Get(r, "currentCluster").(*dal.ClusterRow),
 		checksWithError.Checks,
 		metricsWithError.Metrics,
 	}

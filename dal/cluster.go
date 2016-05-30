@@ -94,7 +94,7 @@ func (c *Cluster) Create(tx *sqlx.Tx, userId int64, name string) (*ClusterRow, e
 // AllByUserID returns all clusters rows by user ID.
 func (c *Cluster) AllByUserID(tx *sqlx.Tx, userId int64) ([]*ClusterRow, error) {
 	rows := []*ClusterRow{}
-	query := fmt.Sprintf("SELECT id, name FROM %v JOIN clusters_users ON %v.id = clusters_users.cluster_id WHERE user_id=$1", c.table, c.table)
+	query := fmt.Sprintf("SELECT id, name, data_retention FROM %v JOIN clusters_users ON %v.id = clusters_users.cluster_id WHERE user_id=$1", c.table, c.table)
 	err := c.db.Select(&rows, query, userId)
 
 	return rows, err
