@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"encoding/json"
 	"errors"
 	"html/template"
 	"net/http"
@@ -134,8 +135,24 @@ func PutClusterID(w http.ResponseWriter, r *http.Request) {
 
 	name := r.FormValue("Name")
 
+	dataRetention := make(map[string]int)
+	for _, table := range []string{"ts_checks", "ts_events", "ts_executor_logs", "ts_logs", "ts_metrics"} {
+		dataRetentionValue, err := strconv.ParseInt(r.FormValue("Table:"+table), 10, 64)
+		if err != nil {
+			dataRetentionValue = int64(1)
+		}
+		dataRetention[table] = int(dataRetentionValue)
+	}
+
+	dataRetentionJSON, err := json.Marshal(dataRetention)
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
+
 	data := make(map[string]interface{})
 	data["name"] = name
+	data["data_retention"] = dataRetentionJSON
 
 	_, err = dal.NewCluster(db).UpdateByID(nil, data, id)
 	if err != nil {
