@@ -219,6 +219,12 @@ select {
     font-weight: bold;
 }
 
+.data-retention-label {
+    padding-left: 0;
+    width: 258px;
+    text-align: left;
+}
+
 @media(max-width:1200px) {
     .form-group-search-and-save .search-form, .form-group-search-and-save .search-form .input-group {
         width: 832px;

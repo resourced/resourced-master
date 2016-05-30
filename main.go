@@ -106,6 +106,9 @@ func main() {
 		// Run all checks
 		app.CheckAndRunTriggers(refetchChecksChan)
 
+		// Prune old timeseries data
+		go app.PruneAll()
+
 		// Handle OS signals
 		sigChan := make(chan os.Signal, 1)
 		signal.Notify(sigChan,

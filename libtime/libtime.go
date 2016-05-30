@@ -16,6 +16,7 @@ func SleepString(definition string) error {
 	return nil
 }
 
+// IsLeapYear check if given year is a leap year.
 func IsLeapYear(y int) bool {
 	year := time.Date(y, time.December, 31, 0, 0, 0, 0, time.Local)
 	days := year.YearDay()
