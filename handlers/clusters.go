@@ -228,6 +228,7 @@ func PutClusterIDUsers(w http.ResponseWriter, r *http.Request) {
 
 	userRow, err := dal.NewUser(db).GetByEmail(nil, email)
 	if err != nil && strings.Contains(err.Error(), "no rows in result set") {
+
 		// 1. Create a user with temporary password
 		userRow, err = dal.NewUser(db).SignupRandomPassword(nil, email)
 		if err != nil {

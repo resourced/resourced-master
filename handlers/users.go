@@ -54,7 +54,30 @@ func PostSignup(w http.ResponseWriter, r *http.Request) {
 	emailValidated := false
 
 	userRow, err := dal.NewUser(db).GetByEmail(nil, email)
-	if userRow != nil {
+
+	if err != nil && err.Error() == "sql: no rows in result set" {
+		// There's no existing user in the database, create a new one.
+		userRow, err = dal.NewUser(db).Signup(nil, email, password, passwordAgain)
+		if err != nil {
+			libhttp.HandleErrorJson(w, err)
+			return
+		}
+
+		// Create a default cluster
+		clusterRow, err := dal.NewCluster(db).Create(nil, userRow, "Default")
+		if err != nil {
+			libhttp.HandleErrorHTML(w, err, 500)
+			return
+		}
+
+		// Create a default access-token
+		_, err = dal.NewAccessToken(db).Create(nil, userRow.ID, clusterRow.ID, "execute")
+		if err != nil {
+			libhttp.HandleErrorHTML(w, err, 500)
+			return
+		}
+
+	} else if userRow != nil {
 		if userRow.EmailVerificationToken.String != emailVerificationToken {
 			libhttp.HandleErrorHTML(w, errors.New("Mismatch token"), 500)
 			return
@@ -76,26 +99,27 @@ func PostSignup(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-	} else {
-		// There's no existing user in the database, create a new one.
-		userRow, err = dal.NewUser(db).Signup(nil, email, password, passwordAgain)
-		if err != nil {
-			libhttp.HandleErrorJson(w, err)
-			return
-		}
-
-		// Create a default cluster
-		clusterRow, err := dal.NewCluster(db).Create(nil, userRow, "Default")
+		// For every clusters this person is in, create an access token
+		clusterRows, err := dal.NewCluster(db).AllByUserID(nil, userRow.ID)
 		if err != nil {
 			libhttp.HandleErrorHTML(w, err, 500)
 			return
 		}
 
-		// Create a default access-token
-		_, err = dal.NewAccessToken(db).Create(nil, userRow.ID, clusterRow.ID, "execute")
-		if err != nil {
-			libhttp.HandleErrorJson(w, err)
-			return
+		for _, clusterRow := range clusterRows {
+			permission := "read"
+
+			member := clusterRow.GetMemberByUserID(userRow.ID)
+			if member != nil && member["Permission"] != nil {
+				permission = member["Permission"].(string)
+			}
+
+			// Create a default access-token
+			_, err = dal.NewAccessToken(db).Create(nil, userRow.ID, clusterRow.ID, permission)
+			if err != nil {
+				libhttp.HandleErrorHTML(w, err, 500)
+				return
+			}
 		}
 	}
 

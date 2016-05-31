@@ -28,11 +28,32 @@ type ClusterRow struct {
 	Members       sqlx_types.JSONText `db:"members"`
 }
 
+// GetDataRetention returns DataRetention in map
 func (cr *ClusterRow) GetDataRetention() map[string]int {
 	retentions := make(map[string]int)
 	cr.DataRetention.Unmarshal(&retentions)
 
 	return retentions
+}
+
+// GetMembers returns Members in map
+func (cr *ClusterRow) GetMembers() []map[string]interface{} {
+	members := make([]map[string]interface{}, 0)
+	cr.Members.Unmarshal(&members)
+
+	return members
+}
+
+// GetMemberByUserID returns a specific cluster member keyed by user id.
+func (cr *ClusterRow) GetMemberByUserID(id int64) map[string]interface{} {
+	members := cr.GetMembers()
+	for _, member := range members {
+		if int64(member["ID"].(float64)) == id {
+			return member
+		}
+	}
+
+	return nil
 }
 
 type Cluster struct {
@@ -57,6 +78,7 @@ func (c *Cluster) GetByID(tx *sqlx.Tx, id int64) (*ClusterRow, error) {
 	return row, err
 }
 
+// Create a cluster row record with default settings.
 func (c *Cluster) Create(tx *sqlx.Tx, creator *UserRow, name string) (*ClusterRow, error) {
 	dataRetention := make(map[string]int)
 	dataRetention["ts_checks"] = 1
@@ -150,6 +172,7 @@ func (c *Cluster) AllSplitToDaemons(tx *sqlx.Tx, daemons []string) (map[string][
 	return result, err
 }
 
+// UpdateMember adds or updates cluster member information.
 func (c *Cluster) UpdateMember(tx *sqlx.Tx, id int64, user *UserRow, permission string) error {
 	clusterRow, err := c.GetByID(tx, id)
 	if err != nil {
@@ -196,6 +219,7 @@ func (c *Cluster) UpdateMember(tx *sqlx.Tx, id int64, user *UserRow, permission 
 	return err
 }
 
+// RemoveMember from a cluster.
 func (c *Cluster) RemoveMember(tx *sqlx.Tx, id int64, user *UserRow) error {
 	clusterRow, err := c.GetByID(tx, id)
 	if err != nil {
