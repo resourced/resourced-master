@@ -73,7 +73,7 @@ func PostClusters(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	http.Redirect(w, r, "/clusters", 301)
+	http.Redirect(w, r, r.Referer(), 301)
 }
 
 // PostClustersCurrent sets a cluster to be the current one on the UI.
@@ -161,7 +161,7 @@ func PutClusterID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	http.Redirect(w, r, "/clusters", 301)
+	http.Redirect(w, r, r.Referer(), 301)
 }
 
 // DeleteClusterID deletes a cluster.
@@ -193,7 +193,7 @@ func DeleteClusterID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	http.Redirect(w, r, "/clusters", 301)
+	http.Redirect(w, r, r.Referer(), 301)
 }
 
 // PostPutDeleteClusterIDUsers is a subrouter that handles user membership to a cluster.
@@ -223,23 +223,26 @@ func PutClusterIDUsers(w http.ResponseWriter, r *http.Request) {
 	email := r.FormValue("Email")
 	permission := r.FormValue("Permission")
 
-	existingUser, _ := dal.NewUser(db).GetByEmail(nil, email)
-	if existingUser != nil {
-		err := dal.NewCluster(db).UpdateMember(nil, id, existingUser, permission)
+	user, _ := dal.NewUser(db).GetByEmail(nil, email)
+	if user == nil {
+		// 1. Create a user with temporary password
+		user, err = dal.NewUser(db).SignupRandomPassword(nil, email)
 		if err != nil {
 			libhttp.HandleErrorJson(w, err)
 			return
 		}
 
-	} else {
-		// 1. Create a user with temporary password
-
 		// 2. Send email invite to user
-
-		// 3. Add newly created user as a member to this cluster
 	}
 
-	http.Redirect(w, r, "/clusters", 301)
+	// Add user as a member to this cluster
+	err = dal.NewCluster(db).UpdateMember(nil, id, user, permission)
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
+
+	http.Redirect(w, r, r.Referer(), 301)
 }
 
 // DeleteClusterIDUsers removes user's membership from a particular cluster.
@@ -263,5 +266,5 @@ func DeleteClusterIDUsers(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	http.Redirect(w, r, "/clusters", 301)
+	http.Redirect(w, r, r.Referer(), 301)
 }

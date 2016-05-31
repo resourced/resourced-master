@@ -92,6 +92,14 @@ func (u *User) GetUserByEmailAndPassword(tx *sqlx.Tx, email, password string) (*
 	return user, err
 }
 
+// SignupRandomPassword create a new record of user with random password.
+func (u *User) SignupRandomPassword(tx *sqlx.Tx, email string) (*UserRow, error) {
+	password, _ := libstring.GeneratePassword(32)
+	passwordAgain := password
+
+	return u.Signup(tx, email, password, passwordAgain)
+}
+
 // Signup create a new record of user.
 func (u *User) Signup(tx *sqlx.Tx, email, password, passwordAgain string) (*UserRow, error) {
 	if email == "" {
