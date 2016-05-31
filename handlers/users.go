@@ -20,13 +20,25 @@ import (
 func GetSignup(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html")
 
+	qParams := r.URL.Query()
+	email := qParams.Get("email")
+	token := qParams.Get("token")
+
+	data := struct {
+		Email                  string
+		EmailVerificationToken string
+	}{
+		email,
+		token,
+	}
+
 	tmpl, err := template.ParseFiles("templates/users/login-signup.html.tmpl", "templates/users/signup.html.tmpl")
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
 	}
 
-	tmpl.Execute(w, nil)
+	tmpl.Execute(w, data)
 }
 
 func PostSignup(w http.ResponseWriter, r *http.Request) {
@@ -37,41 +49,73 @@ func PostSignup(w http.ResponseWriter, r *http.Request) {
 	email := r.FormValue("Email")
 	password := r.FormValue("Password")
 	passwordAgain := r.FormValue("PasswordAgain")
+	emailVerificationToken := r.FormValue("EmailVerificationToken")
 
-	userRow, err := dal.NewUser(db).Signup(nil, email, password, passwordAgain)
-	if err != nil {
-		libhttp.HandleErrorJson(w, err)
-		return
-	}
+	emailValidated := false
 
-	// Create a default cluster
-	clusterRow, err := dal.NewCluster(db).Create(nil, userRow, "Default")
-	if err != nil {
-		libhttp.HandleErrorHTML(w, err, 500)
-		return
-	}
-
-	// Create a default access-token
-	_, err = dal.NewAccessToken(db).Create(nil, userRow.ID, clusterRow.ID, "execute")
-	if err != nil {
-		libhttp.HandleErrorJson(w, err)
-		return
-	}
-
-	go func(userRow *dal.UserRow) {
-		if userRow.EmailVerificationToken.String != "" {
-			mailer := context.Get(r, "mailer.GeneralConfig").(*mailer.Mailer)
-
-			vipAddr := context.Get(r, "vipAddr").(string)
-			vipProtocol := context.Get(r, "vipProtocol").(string)
-
-			url := fmt.Sprintf("%v://%v/users/email-verification/%v", vipProtocol, vipAddr, userRow.EmailVerificationToken.String)
-
-			body := fmt.Sprintf("Click the following link to verify your email address:\n\n%v", url)
-
-			mailer.Send(userRow.Email, "Email Verification", body)
+	userRow, err := dal.NewUser(db).GetByEmail(nil, email)
+	if userRow != nil {
+		if userRow.EmailVerificationToken.String != emailVerificationToken {
+			libhttp.HandleErrorHTML(w, errors.New("Mismatch token"), 500)
+			return
 		}
-	}(userRow)
+
+		emailValidated = true
+
+		// There's an existing user in the database, update email and password info.
+		userRow, err = dal.NewUser(db).UpdateEmailAndPasswordById(nil, userRow.ID, email, password, passwordAgain)
+		if err != nil {
+			libhttp.HandleErrorHTML(w, err, 500)
+			return
+		}
+
+		// Verified that emailVerificationToken works.
+		_, err = dal.NewUser(db).UpdateEmailVerification(nil, emailVerificationToken)
+		if err != nil {
+			libhttp.HandleErrorHTML(w, err, 500)
+			return
+		}
+
+	} else {
+		// There's no existing user in the database, create a new one.
+		userRow, err = dal.NewUser(db).Signup(nil, email, password, passwordAgain)
+		if err != nil {
+			libhttp.HandleErrorJson(w, err)
+			return
+		}
+
+		// Create a default cluster
+		clusterRow, err := dal.NewCluster(db).Create(nil, userRow, "Default")
+		if err != nil {
+			libhttp.HandleErrorHTML(w, err, 500)
+			return
+		}
+
+		// Create a default access-token
+		_, err = dal.NewAccessToken(db).Create(nil, userRow.ID, clusterRow.ID, "execute")
+		if err != nil {
+			libhttp.HandleErrorJson(w, err)
+			return
+		}
+	}
+
+	// Send email verification if needed
+	if !emailValidated {
+		go func(userRow *dal.UserRow) {
+			if userRow.EmailVerificationToken.String != "" {
+				mailer := context.Get(r, "mailer.GeneralConfig").(*mailer.Mailer)
+
+				vipAddr := context.Get(r, "vipAddr").(string)
+				vipProtocol := context.Get(r, "vipProtocol").(string)
+
+				url := fmt.Sprintf("%v://%v/users/email-verification/%v", vipProtocol, vipAddr, userRow.EmailVerificationToken.String)
+
+				body := fmt.Sprintf("Click the following link to verify your email address:\n\n%v", url)
+
+				mailer.Send(userRow.Email, "Email Verification", body)
+			}
+		}(userRow)
+	}
 
 	// Perform login
 	PostLogin(w, r)

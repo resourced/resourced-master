@@ -287,8 +287,6 @@ func PutApiGraphsIDMetrics(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	println(string(dataJSON))
-
 	row, err := dal.NewGraph(db).UpdateMetricsByClusterIDAndID(nil, accessTokenRow.ClusterID, id, dataJSON)
 
 	rowJSON, err := json.Marshal(row)

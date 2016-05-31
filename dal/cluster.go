@@ -165,7 +165,7 @@ func (c *Cluster) UpdateMember(tx *sqlx.Tx, id int64, user *UserRow, permission 
 	foundExisting := false
 
 	for _, member := range members {
-		if member["ID"].(int64) == user.ID {
+		if int64(member["ID"].(float64)) == user.ID {
 			member["Email"] = user.Email
 			member["Permission"] = permission
 
@@ -176,7 +176,7 @@ func (c *Cluster) UpdateMember(tx *sqlx.Tx, id int64, user *UserRow, permission 
 
 	if !foundExisting {
 		member := make(map[string]interface{})
-		member["ID"] = user.ID
+		member["ID"] = int64(user.ID)
 		member["Email"] = user.Email
 		member["Permission"] = permission
 

@@ -4,7 +4,9 @@
   <h4 class="text-center">create an account</h4>
 
   <form class="form-signup-login form-signup" method="post" action="/signup">
-    <input name="Email" type="text" class="form-control" placeholder="Email" required autofocus>
+    <input name="EmailVerificationToken" type="hidden" value="{{ .EmailVerificationToken }}">
+
+    <input name="Email" type="text" class="form-control" placeholder="Email" required autofocus value="{{ .Email }}">
     <input name="Password" type="password" class="form-control password" placeholder="Password" required>
     <input name="PasswordAgain" type="password" class="form-control password-again" placeholder="Password Again" required>
     <button class="btn btn-lg btn-primary btn-block" type="submit">Sign Up</button>

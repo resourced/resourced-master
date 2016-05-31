@@ -3,9 +3,11 @@ package handlers
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"html/template"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/gorilla/context"
 	"github.com/gorilla/csrf"
@@ -14,6 +16,7 @@ import (
 
 	"github.com/resourced/resourced-master/dal"
 	"github.com/resourced/resourced-master/libhttp"
+	"github.com/resourced/resourced-master/mailer"
 )
 
 // GetClusters displays the /clusters UI.
@@ -223,20 +226,42 @@ func PutClusterIDUsers(w http.ResponseWriter, r *http.Request) {
 	email := r.FormValue("Email")
 	permission := r.FormValue("Permission")
 
-	user, _ := dal.NewUser(db).GetByEmail(nil, email)
-	if user == nil {
+	userRow, err := dal.NewUser(db).GetByEmail(nil, email)
+	if err != nil && strings.Contains(err.Error(), "no rows in result set") {
 		// 1. Create a user with temporary password
-		user, err = dal.NewUser(db).SignupRandomPassword(nil, email)
+		userRow, err = dal.NewUser(db).SignupRandomPassword(nil, email)
 		if err != nil {
 			libhttp.HandleErrorJson(w, err)
 			return
 		}
 
 		// 2. Send email invite to user
+		if userRow.EmailVerificationToken.String != "" {
+			clusterRow, err := dal.NewCluster(db).GetByID(nil, id)
+			if err != nil {
+				libhttp.HandleErrorJson(w, err)
+				return
+			}
+
+			mailer := context.Get(r, "mailer.GeneralConfig").(*mailer.Mailer)
+
+			vipAddr := context.Get(r, "vipAddr").(string)
+			vipProtocol := context.Get(r, "vipProtocol").(string)
+
+			url := fmt.Sprintf("%v://%v/signup?email=%v&token=%v", vipProtocol, vipAddr, email, userRow.EmailVerificationToken.String)
+
+			body := fmt.Sprintf(`ResourceD is a monitoring and alerting service.
+
+Your coleague has invited you to join cluster: %v. Click the following link to signup:
+
+%v`, clusterRow.Name, url)
+
+			mailer.Send(email, fmt.Sprintf("You have been invited to join ResourceD on %v", vipAddr), body)
+		}
 	}
 
 	// Add user as a member to this cluster
-	err = dal.NewCluster(db).UpdateMember(nil, id, user, permission)
+	err = dal.NewCluster(db).UpdateMember(nil, id, userRow, permission)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
