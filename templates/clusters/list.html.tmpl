@@ -19,15 +19,21 @@
             {{ range $cluster := .Clusters }}
                 <div class="page-header">
                     <div class="btn-group pull-right" role="group">
-                        <button class="new-cluster-button btn btn-xs btn-default" style="padding: 1px 8px" type="button" data-toggle="modal" data-target="#cluster-modal"
+                        <button class="new-cluster-button btn btn-xs btn-info" style="padding: 1px 8px" type="button" data-toggle="modal" data-target="#cluster-modal"
                             data-cluster-id="{{ $cluster.ID }}"
                             data-cluster-name="{{ $cluster.Name }}"
                             data-cluster-data-retention="{{ $cluster.DataRetention.String }}">
                             Edit
                         </button>
-                        <button class="btn btn-xs btn-info" type="button" data-toggle="modal" data-target="#new-access-token-modal"
+
+                        <button class="btn btn-xs btn-default" type="button" data-toggle="modal" data-target="#new-access-token-modal"
                             data-cluster-id="{{ $cluster.ID }}" style="padding: 1px 8px">
                             New Access Token
+                        </button>
+
+                        <button class="btn btn-xs btn-default" type="button" data-toggle="modal" data-target="#cluster-membership-modal"
+                            data-cluster-id="{{ $cluster.ID }}" style="padding: 1px 8px">
+                            Add User to Cluster
                         </button>
                     </div>
 
@@ -174,6 +180,45 @@
     </div>
 </div>
 
+<!-- Cluster Membership Modal -->
+<div class="modal fade" id="cluster-membership-modal" tabindex="-1" role="dialog" aria-labelledby="new-cluster-label" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                <h4 class="modal-title" id="new-cluster-label">Add a user to this cluster</h4>
+            </div>
+
+            <form method="post" action="/clusters/users">
+                <input type="hidden" name="gorilla.csrf.Token" value="{{ $.CSRFToken }}">
+                <input type="hidden" name="_method" value="post">
+
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label class="control-label" for="email">Email:</label>
+                        <input type="text" name="Email" id="email" class="form-control" placeholder="bob@example.com">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="control-label" for="level">Permission:</label>
+
+                        <select id="level" class="form-control" name="Permission">
+                            <option value="read">Read</option>
+                            <option value="write">Write</option>
+                            <option value="execute">Execute</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary" onclick="$(this).closest('form').submit()">Save</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 <script>
 $('#new-access-token-modal').on('show.bs.modal', function (event) {
     var button = $(event.relatedTarget);           // Button that triggered the modal
@@ -207,6 +252,14 @@ $('#cluster-modal').on('show.bs.modal', function (event) {
         modal.find('.btn-danger').hide();
         modal.find('.modal-title').text('New Cluster');
     }
+});
+
+$('#cluster-membership-modal').on('show.bs.modal', function (event) {
+    var button = $(event.relatedTarget);
+    var clusterID = button.data('cluster-id');
+    var modal = $(this);
+
+    modal.find('form').attr('action', '/clusters/' + clusterID + '/users');
 });
 
 $(document).ready(function() {

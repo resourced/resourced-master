@@ -59,6 +59,7 @@ func (app *Application) mux() *mux.Router {
 
 	router.Handle("/clusters/current", alice.New(MustLogin, SetClusters).ThenFunc(handlers.PostClustersCurrent)).Methods("POST")
 	router.Handle("/clusters/{id:[0-9]+}/access-tokens", alice.New(CSRF, MustLogin).ThenFunc(handlers.PostAccessTokens)).Methods("POST")
+	router.Handle("/clusters/{id:[0-9]+}/users", alice.New(CSRF, MustLogin).ThenFunc(handlers.PostPutDeleteClusterIDUsers)).Methods("POST", "PUT", "DELETE")
 
 	router.Handle("/clusters/{clusterid:[0-9]+}/metrics", alice.New(CSRF, MustLogin).ThenFunc(handlers.PostMetrics)).Methods("POST")
 	router.Handle("/clusters/{clusterid:[0-9]+}/metrics/{id:[0-9]+}", alice.New(CSRF, MustLogin).ThenFunc(handlers.PostPutDeleteMetricID)).Methods("POST", "PUT", "DELETE")

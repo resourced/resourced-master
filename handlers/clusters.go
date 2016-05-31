@@ -9,7 +9,6 @@ import (
 
 	"github.com/gorilla/context"
 	"github.com/gorilla/csrf"
-	"github.com/gorilla/mux"
 	"github.com/gorilla/sessions"
 	"github.com/jmoiron/sqlx"
 
@@ -17,6 +16,7 @@ import (
 	"github.com/resourced/resourced-master/libhttp"
 )
 
+// GetClusters displays the /clusters UI.
 func GetClusters(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html")
 
@@ -61,6 +61,7 @@ func GetClusters(w http.ResponseWriter, r *http.Request) {
 	tmpl.Execute(w, data)
 }
 
+// PostClusters creates a new cluster.
 func PostClusters(w http.ResponseWriter, r *http.Request) {
 	db := context.Get(r, "db.Core").(*sqlx.DB)
 
@@ -75,6 +76,7 @@ func PostClusters(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/clusters", 301)
 }
 
+// PostClustersCurrent sets a cluster to be the current one on the UI.
 func PostClustersCurrent(w http.ResponseWriter, r *http.Request) {
 	cookieStore := context.Get(r, "cookieStore").(*sessions.CookieStore)
 
@@ -108,6 +110,7 @@ func PostClustersCurrent(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// PostPutDeleteClusterIDUsers is a subrouter that modify cluster information.
 func PostPutDeleteClusterID(w http.ResponseWriter, r *http.Request) {
 	method := r.FormValue("_method")
 	if method == "" {
@@ -121,13 +124,11 @@ func PostPutDeleteClusterID(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// PutClusterID updates a cluster's information.
 func PutClusterID(w http.ResponseWriter, r *http.Request) {
 	db := context.Get(r, "db.Core").(*sqlx.DB)
 
-	vars := mux.Vars(r)
-
-	idString := vars["id"]
-	id, err := strconv.ParseInt(idString, 10, 64)
+	id, err := getInt64SlugFromPath(w, r, "id")
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
@@ -163,13 +164,11 @@ func PutClusterID(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/clusters", 301)
 }
 
+// DeleteClusterID deletes a cluster.
 func DeleteClusterID(w http.ResponseWriter, r *http.Request) {
 	db := context.Get(r, "db.Core").(*sqlx.DB)
 
-	vars := mux.Vars(r)
-
-	idString := vars["id"]
-	id, err := strconv.ParseInt(idString, 10, 64)
+	id, err := getInt64SlugFromPath(w, r, "id")
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
@@ -192,6 +191,76 @@ func DeleteClusterID(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
+	}
+
+	http.Redirect(w, r, "/clusters", 301)
+}
+
+// PostPutDeleteClusterIDUsers is a subrouter that handles user membership to a cluster.
+func PostPutDeleteClusterIDUsers(w http.ResponseWriter, r *http.Request) {
+	method := r.FormValue("_method")
+	if method == "" {
+		method = "put"
+	}
+
+	if method == "post" || method == "put" {
+		PutClusterIDUsers(w, r)
+	} else if method == "delete" {
+		DeleteClusterIDUsers(w, r)
+	}
+}
+
+// PutClusterIDUsers adds a user as a member to a particular cluster.
+func PutClusterIDUsers(w http.ResponseWriter, r *http.Request) {
+	db := context.Get(r, "db.Core").(*sqlx.DB)
+
+	id, err := getInt64SlugFromPath(w, r, "id")
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
+
+	email := r.FormValue("Email")
+	permission := r.FormValue("Permission")
+
+	existingUser, _ := dal.NewUser(db).GetByEmail(nil, email)
+	if existingUser != nil {
+		err := dal.NewCluster(db).UpdateMember(nil, id, existingUser, permission)
+		if err != nil {
+			libhttp.HandleErrorJson(w, err)
+			return
+		}
+
+	} else {
+		// 1. Create a user with temporary password
+
+		// 2. Send email invite to user
+
+		// 3. Add newly created user as a member to this cluster
+	}
+
+	http.Redirect(w, r, "/clusters", 301)
+}
+
+// DeleteClusterIDUsers removes user's membership from a particular cluster.
+func DeleteClusterIDUsers(w http.ResponseWriter, r *http.Request) {
+	db := context.Get(r, "db.Core").(*sqlx.DB)
+
+	id, err := getInt64SlugFromPath(w, r, "id")
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
+
+	email := r.FormValue("Email")
+
+	existingUser, _ := dal.NewUser(db).GetByEmail(nil, email)
+	if existingUser != nil {
+		err := dal.NewCluster(db).RemoveMember(nil, id, existingUser)
+		if err != nil {
+			libhttp.HandleErrorJson(w, err)
+			return
+		}
 	}
 
 	http.Redirect(w, r, "/clusters", 301)
