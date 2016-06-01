@@ -2,6 +2,7 @@
 package middlewares
 
 import (
+	"errors"
 	"net/http"
 	"strings"
 
@@ -135,6 +136,29 @@ func SetClusters(next http.Handler) http.Handler {
 	})
 }
 
+// SetAccessTokens sets clusters data in context based on logged in user ID.
+func SetAccessTokens(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		db := context.Get(r, "db.Core").(*sqlx.DB)
+
+		currentClusterInterface := context.Get(r, "currentCluster")
+		if currentClusterInterface == nil {
+			libhttp.HandleErrorJson(w, errors.New("Unable to get access tokens because current cluster is nil."))
+			return
+		}
+
+		accessTokenRows, err := dal.NewAccessToken(db).AllByClusterID(nil, currentClusterInterface.(*dal.ClusterRow).ID)
+		if err != nil {
+			libhttp.HandleErrorJson(w, err)
+			return
+		}
+
+		context.Set(r, "accessTokens", accessTokenRows)
+
+		next.ServeHTTP(w, r)
+	})
+}
+
 // MustLogin is a middleware that checks existence of current user.
 func MustLogin(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -199,7 +223,7 @@ func MustLoginApi(next http.Handler) http.Handler {
 			return
 		}
 
-		context.Set(r, "accessTokenRow", accessTokenRow)
+		context.Set(r, "accessToken", accessTokenRow)
 
 		next.ServeHTTP(w, r)
 	})

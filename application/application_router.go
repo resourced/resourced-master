@@ -15,6 +15,7 @@ func (app *Application) mux() *mux.Router {
 	MustLogin := middlewares.MustLogin
 	MustLoginApi := middlewares.MustLoginApi
 	SetClusters := middlewares.SetClusters
+	SetAccessTokens := middlewares.SetAccessTokens
 
 	CSRFOptions := csrf.Secure(false)
 	if app.GeneralConfig.HTTPS.CertFile != "" {
@@ -29,19 +30,19 @@ func (app *Application) mux() *mux.Router {
 	router.HandleFunc("/login", handlers.GetLogin).Methods("GET")
 	router.HandleFunc("/login", handlers.PostLogin).Methods("POST")
 
-	router.Handle("/", alice.New(CSRF, MustLogin, SetClusters).ThenFunc(handlers.GetHosts)).Methods("GET")
+	router.Handle("/", alice.New(CSRF, MustLogin, SetClusters, SetAccessTokens).ThenFunc(handlers.GetHosts)).Methods("GET")
 
 	router.Handle("/saved-queries", alice.New(CSRF, MustLogin, SetClusters).ThenFunc(handlers.PostSavedQueries)).Methods("POST")
 	router.Handle("/saved-queries/{id:[0-9]+}", alice.New(CSRF, MustLogin, SetClusters).ThenFunc(handlers.PostPutDeleteSavedQueriesID)).Methods("POST", "PUT", "DELETE")
 
-	router.Handle("/graphs", alice.New(CSRF, MustLogin, SetClusters).ThenFunc(handlers.GetGraphs)).Methods("GET")
+	router.Handle("/graphs", alice.New(CSRF, MustLogin, SetClusters, SetAccessTokens).ThenFunc(handlers.GetGraphs)).Methods("GET")
 	router.Handle("/graphs", alice.New(CSRF, MustLogin, SetClusters).ThenFunc(handlers.PostGraphs)).Methods("POST")
 	router.Handle("/graphs/{id:[0-9]+}", alice.New(CSRF, MustLogin, SetClusters).ThenFunc(handlers.GetPostPutDeleteGraphsID)).Methods("GET", "POST", "PUT", "DELETE")
 
-	router.Handle("/logs", alice.New(CSRF, MustLogin, SetClusters).ThenFunc(handlers.GetLogs)).Methods("GET")
-	router.Handle("/logs/executors", alice.New(CSRF, MustLogin, SetClusters).ThenFunc(handlers.GetLogsExecutors)).Methods("GET")
+	router.Handle("/logs", alice.New(CSRF, MustLogin, SetClusters, SetAccessTokens).ThenFunc(handlers.GetLogs)).Methods("GET")
+	router.Handle("/logs/executors", alice.New(CSRF, MustLogin, SetClusters, SetAccessTokens).ThenFunc(handlers.GetLogsExecutors)).Methods("GET")
 
-	router.Handle("/checks", alice.New(CSRF, MustLogin, SetClusters).ThenFunc(handlers.GetChecks)).Methods("GET")
+	router.Handle("/checks", alice.New(CSRF, MustLogin, SetClusters, SetAccessTokens).ThenFunc(handlers.GetChecks)).Methods("GET")
 	router.Handle("/checks", alice.New(CSRF, MustLogin, SetClusters).ThenFunc(handlers.PostChecks)).Methods("POST")
 	router.Handle("/checks/{id:[0-9]+}", alice.New(CSRF, MustLogin, SetClusters).ThenFunc(handlers.PostPutDeleteCheckID)).Methods("POST", "PUT", "DELETE")
 	router.Handle("/checks/{id:[0-9]+}/silence", alice.New(CSRF, MustLogin, SetClusters).ThenFunc(handlers.PostCheckIDSilence)).Methods("POST")

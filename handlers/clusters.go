@@ -32,7 +32,7 @@ func GetClusters(w http.ResponseWriter, r *http.Request) {
 	accessTokens := make(map[int64][]*dal.AccessTokenRow)
 
 	for _, cluster := range clusters {
-		accessTokensSlice, err := dal.NewAccessToken(db).AllAccessTokensByClusterID(nil, cluster.ID)
+		accessTokensSlice, err := dal.NewAccessToken(db).AllByClusterID(nil, cluster.ID)
 		if err != nil {
 			libhttp.HandleErrorHTML(w, err, 500)
 			return

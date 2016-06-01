@@ -18,7 +18,7 @@ import (
 func GetApiEventsLine(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	accessTokenRow := context.Get(r, "accessTokenRow").(*dal.AccessTokenRow)
+	accessTokenRow := context.Get(r, "accessToken").(*dal.AccessTokenRow)
 
 	qParams := r.URL.Query()
 
@@ -65,7 +65,7 @@ func GetApiEventsLine(w http.ResponseWriter, r *http.Request) {
 func GetApiEventsBand(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	accessTokenRow := context.Get(r, "accessTokenRow").(*dal.AccessTokenRow)
+	accessTokenRow := context.Get(r, "accessToken").(*dal.AccessTokenRow)
 
 	qParams := r.URL.Query()
 
@@ -114,7 +114,7 @@ func PostApiEvents(w http.ResponseWriter, r *http.Request) {
 
 	db := context.Get(r, "db.Core").(*sqlx.DB)
 
-	accessTokenRow := context.Get(r, "accessTokenRow").(*dal.AccessTokenRow)
+	accessTokenRow := context.Get(r, "accessToken").(*dal.AccessTokenRow)
 
 	dataJson, err := ioutil.ReadAll(r.Body)
 	if err != nil {
@@ -146,7 +146,7 @@ func PostApiEvents(w http.ResponseWriter, r *http.Request) {
 func DeleteApiEventsID(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	accessTokenRow := context.Get(r, "accessTokenRow").(*dal.AccessTokenRow)
+	accessTokenRow := context.Get(r, "accessToken").(*dal.AccessTokenRow)
 
 	id, err := getInt64SlugFromPath(w, r, "id")
 	if err != nil {

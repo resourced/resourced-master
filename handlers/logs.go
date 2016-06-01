@@ -52,9 +52,6 @@ func GetLogs(w http.ResponseWriter, r *http.Request) {
 	savedQueriesChan := make(chan *dal.SavedQueryRowsWithError)
 	defer close(savedQueriesChan)
 
-	accessTokenChan := make(chan *dal.AccessTokenRowWithError)
-	defer close(accessTokenChan)
-
 	// --------------------------
 	// Fetch SQL rows in parallel
 	// --------------------------
@@ -90,12 +87,6 @@ func GetLogs(w http.ResponseWriter, r *http.Request) {
 		savedQueriesChan <- savedQueriesWithError
 	}(currentCluster)
 
-	go func(currentUser *dal.UserRow) {
-		accessTokenWithError := &dal.AccessTokenRowWithError{}
-		accessTokenWithError.AccessToken, accessTokenWithError.Error = dal.NewAccessToken(db).GetByUserID(nil, currentUser.ID)
-		accessTokenChan <- accessTokenWithError
-	}(currentUser)
-
 	// -----------------------------------
 	// Wait for channels to return results
 	// -----------------------------------
@@ -111,9 +102,9 @@ func GetLogs(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	accessTokenWithError := <-accessTokenChan
-	if accessTokenWithError.Error != nil {
-		libhttp.HandleErrorJson(w, accessTokenWithError.Error)
+	accessToken, err := getAccessToken(w, r, "read")
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
 		return
 	}
 
@@ -132,7 +123,7 @@ func GetLogs(w http.ResponseWriter, r *http.Request) {
 		csrf.Token(r),
 		context.Get(r, "addr").(string),
 		currentUser,
-		accessTokenWithError.AccessToken,
+		accessToken,
 		context.Get(r, "clusters").([]*dal.ClusterRow),
 		context.Get(r, "currentCluster").(*dal.ClusterRow),
 		tsLogsWithError.TSLogRows,
@@ -201,9 +192,6 @@ func GetLogsExecutors(w http.ResponseWriter, r *http.Request) {
 	savedQueriesChan := make(chan *dal.SavedQueryRowsWithError)
 	defer close(savedQueriesChan)
 
-	accessTokenChan := make(chan *dal.AccessTokenRowWithError)
-	defer close(accessTokenChan)
-
 	// --------------------------
 	// Fetch SQL rows in parallel
 	// --------------------------
@@ -220,12 +208,6 @@ func GetLogsExecutors(w http.ResponseWriter, r *http.Request) {
 		savedQueriesChan <- savedQueriesWithError
 	}(currentCluster)
 
-	go func(currentUser *dal.UserRow) {
-		accessTokenWithError := &dal.AccessTokenRowWithError{}
-		accessTokenWithError.AccessToken, accessTokenWithError.Error = dal.NewAccessToken(db).GetByUserID(nil, currentUser.ID)
-		accessTokenChan <- accessTokenWithError
-	}(currentUser)
-
 	// -----------------------------------
 	// Wait for channels to return results
 	// -----------------------------------
@@ -241,9 +223,9 @@ func GetLogsExecutors(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	accessTokenWithError := <-accessTokenChan
-	if accessTokenWithError.Error != nil {
-		libhttp.HandleErrorJson(w, accessTokenWithError.Error)
+	accessToken, err := getAccessToken(w, r, "read")
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
 		return
 	}
 
@@ -262,7 +244,7 @@ func GetLogsExecutors(w http.ResponseWriter, r *http.Request) {
 		csrf.Token(r),
 		context.Get(r, "addr").(string),
 		currentUser,
-		accessTokenWithError.AccessToken,
+		accessToken,
 		context.Get(r, "clusters").([]*dal.ClusterRow),
 		context.Get(r, "currentCluster").(*dal.ClusterRow),
 		tsLogsWithError.TSExecutorLogRows,
@@ -283,7 +265,7 @@ func GetLogsExecutors(w http.ResponseWriter, r *http.Request) {
 func PostApiLogs(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	accessTokenRow := context.Get(r, "accessTokenRow").(*dal.AccessTokenRow)
+	accessTokenRow := context.Get(r, "accessToken").(*dal.AccessTokenRow)
 
 	dataJson, err := ioutil.ReadAll(r.Body)
 	if err != nil {
@@ -309,7 +291,7 @@ func GetApiLogs(w http.ResponseWriter, r *http.Request) {
 
 	tsLogsDB := context.Get(r, "db.TSLog").(*sqlx.DB)
 
-	accessTokenRow := context.Get(r, "accessTokenRow").(*dal.AccessTokenRow)
+	accessTokenRow := context.Get(r, "accessToken").(*dal.AccessTokenRow)
 
 	qParams := r.URL.Query()
 

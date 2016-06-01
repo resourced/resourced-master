@@ -36,9 +36,6 @@ func GetHosts(w http.ResponseWriter, r *http.Request) {
 	savedQueriesChan := make(chan *dal.SavedQueryRowsWithError)
 	defer close(savedQueriesChan)
 
-	accessTokenChan := make(chan *dal.AccessTokenRowWithError)
-	defer close(accessTokenChan)
-
 	metricsMapChan := make(chan *dal.MetricsMapWithError)
 	defer close(metricsMapChan)
 
@@ -56,12 +53,6 @@ func GetHosts(w http.ResponseWriter, r *http.Request) {
 		savedQueriesWithError.SavedQueries, savedQueriesWithError.Error = dal.NewSavedQuery(db).AllByClusterIDAndType(nil, currentCluster.ID, "hosts")
 		savedQueriesChan <- savedQueriesWithError
 	}(currentCluster)
-
-	go func(currentUser *dal.UserRow) {
-		accessTokenWithError := &dal.AccessTokenRowWithError{}
-		accessTokenWithError.AccessToken, accessTokenWithError.Error = dal.NewAccessToken(db).GetByUserID(nil, currentUser.ID)
-		accessTokenChan <- accessTokenWithError
-	}(currentUser)
 
 	go func(currentCluster *dal.ClusterRow) {
 		metricsMapWithError := &dal.MetricsMapWithError{}
@@ -84,15 +75,15 @@ func GetHosts(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	accessTokenWithError := <-accessTokenChan
-	if accessTokenWithError.Error != nil {
-		libhttp.HandleErrorJson(w, accessTokenWithError.Error)
-		return
-	}
-
 	metricsMapWithError := <-metricsMapChan
 	if metricsMapWithError.Error != nil {
 		libhttp.HandleErrorJson(w, metricsMapWithError.Error)
+		return
+	}
+
+	accessToken, err := getAccessToken(w, r, "read")
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
 		return
 	}
 
@@ -110,7 +101,7 @@ func GetHosts(w http.ResponseWriter, r *http.Request) {
 		csrf.Token(r),
 		context.Get(r, "addr").(string),
 		currentUser,
-		accessTokenWithError.AccessToken,
+		accessToken,
 		context.Get(r, "clusters").([]*dal.ClusterRow),
 		context.Get(r, "currentCluster").(*dal.ClusterRow),
 		hostsWithError.Hosts,
@@ -132,7 +123,7 @@ func PostApiHosts(w http.ResponseWriter, r *http.Request) {
 
 	db := context.Get(r, "db.Core").(*sqlx.DB)
 
-	accessTokenRow := context.Get(r, "accessTokenRow").(*dal.AccessTokenRow)
+	accessTokenRow := context.Get(r, "accessToken").(*dal.AccessTokenRow)
 
 	dataJson, err := ioutil.ReadAll(r.Body)
 	if err != nil {
@@ -175,7 +166,7 @@ func GetApiHosts(w http.ResponseWriter, r *http.Request) {
 
 	db := context.Get(r, "db.Core").(*sqlx.DB)
 
-	accessTokenRow := context.Get(r, "accessTokenRow").(*dal.AccessTokenRow)
+	accessTokenRow := context.Get(r, "accessToken").(*dal.AccessTokenRow)
 
 	query := r.URL.Query().Get("q")
 	count := r.URL.Query().Get("count")

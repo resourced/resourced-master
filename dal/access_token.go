@@ -18,11 +18,6 @@ func NewAccessToken(db *sqlx.DB) *AccessToken {
 	return token
 }
 
-type AccessTokenRowWithError struct {
-	AccessToken *AccessTokenRow
-	Error       error
-}
-
 type AccessTokenRow struct {
 	ID        int64  `db:"id"`
 	UserID    int64  `db:"user_id"`
@@ -112,7 +107,7 @@ func (t *AccessToken) AllAccessTokens(tx *sqlx.Tx) ([]*AccessTokenRow, error) {
 }
 
 // AllAccessTokens returns all access tokens by cluster id.
-func (t *AccessToken) AllAccessTokensByClusterID(tx *sqlx.Tx, clusterID int64) ([]*AccessTokenRow, error) {
+func (t *AccessToken) AllByClusterID(tx *sqlx.Tx, clusterID int64) ([]*AccessTokenRow, error) {
 	accessTokens := []*AccessTokenRow{}
 	query := fmt.Sprintf("SELECT * FROM %v WHERE cluster_id=$1", t.table)
 	err := t.db.Select(&accessTokens, query, clusterID)

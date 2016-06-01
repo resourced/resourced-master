@@ -18,7 +18,7 @@ func GetApiMetadata(w http.ResponseWriter, r *http.Request) {
 
 	db := context.Get(r, "db.Core").(*sqlx.DB)
 
-	accessTokenRow := context.Get(r, "accessTokenRow").(*dal.AccessTokenRow)
+	accessTokenRow := context.Get(r, "accessToken").(*dal.AccessTokenRow)
 
 	metadataRows, err := dal.NewMetadata(db).AllByClusterID(nil, accessTokenRow.ClusterID)
 	if err != nil {
@@ -40,7 +40,7 @@ func PostApiMetadataKey(w http.ResponseWriter, r *http.Request) {
 
 	db := context.Get(r, "db.Core").(*sqlx.DB)
 
-	accessTokenRow := context.Get(r, "accessTokenRow").(*dal.AccessTokenRow)
+	accessTokenRow := context.Get(r, "accessToken").(*dal.AccessTokenRow)
 
 	dataJson, err := ioutil.ReadAll(r.Body)
 	if err != nil {
@@ -71,7 +71,7 @@ func DeleteApiMetadataKey(w http.ResponseWriter, r *http.Request) {
 
 	db := context.Get(r, "db.Core").(*sqlx.DB)
 
-	accessTokenRow := context.Get(r, "accessTokenRow").(*dal.AccessTokenRow)
+	accessTokenRow := context.Get(r, "accessToken").(*dal.AccessTokenRow)
 
 	vars := mux.Vars(r)
 	key := vars["key"]
@@ -96,7 +96,7 @@ func GetApiMetadataKey(w http.ResponseWriter, r *http.Request) {
 
 	db := context.Get(r, "db.Core").(*sqlx.DB)
 
-	accessTokenRow := context.Get(r, "accessTokenRow").(*dal.AccessTokenRow)
+	accessTokenRow := context.Get(r, "accessToken").(*dal.AccessTokenRow)
 
 	vars := mux.Vars(r)
 	key := vars["key"]

@@ -110,9 +110,6 @@ func GetGraphsID(w http.ResponseWriter, r *http.Request) {
 	// -----------------------------------
 	// Create channels to receive SQL rows
 	// -----------------------------------
-	accessTokenChan := make(chan *dal.AccessTokenRowWithError)
-	defer close(accessTokenChan)
-
 	metricsChan := make(chan *dal.MetricRowsWithError)
 	defer close(metricsChan)
 
@@ -122,12 +119,6 @@ func GetGraphsID(w http.ResponseWriter, r *http.Request) {
 	// --------------------------
 	// Fetch SQL rows in parallel
 	// --------------------------
-	go func(currentUser *dal.UserRow) {
-		accessTokenWithError := &dal.AccessTokenRowWithError{}
-		accessTokenWithError.AccessToken, accessTokenWithError.Error = dal.NewAccessToken(db).GetByUserID(nil, currentUser.ID)
-		accessTokenChan <- accessTokenWithError
-	}(currentUser)
-
 	go func(currentCluster *dal.ClusterRow, id int64) {
 		graphsWithError := &dal.GraphRowsWithError{}
 		graphsWithError.Graphs, graphsWithError.Error = dal.NewGraph(db).AllByClusterID(nil, currentCluster.ID)
@@ -143,12 +134,6 @@ func GetGraphsID(w http.ResponseWriter, r *http.Request) {
 	// -----------------------------------
 	// Wait for channels to return results
 	// -----------------------------------
-	accessTokenWithError := <-accessTokenChan
-	if accessTokenWithError.Error != nil {
-		libhttp.HandleErrorJson(w, accessTokenWithError.Error)
-		return
-	}
-
 	metricsWithError := <-metricsChan
 	if metricsWithError.Error != nil {
 		libhttp.HandleErrorJson(w, metricsWithError.Error)
@@ -169,6 +154,12 @@ func GetGraphsID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	accessToken, err := getAccessToken(w, r, "read")
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
+
 	data := struct {
 		CSRFToken      string
 		Addr           string
@@ -183,7 +174,7 @@ func GetGraphsID(w http.ResponseWriter, r *http.Request) {
 		csrf.Token(r),
 		context.Get(r, "addr").(string),
 		currentUser,
-		accessTokenWithError.AccessToken,
+		accessToken,
 		context.Get(r, "clusters").([]*dal.ClusterRow),
 		context.Get(r, "currentCluster").(*dal.ClusterRow),
 		currentGraph,
@@ -273,7 +264,7 @@ func PutApiGraphsIDMetrics(w http.ResponseWriter, r *http.Request) {
 
 	db := context.Get(r, "db.Core").(*sqlx.DB)
 
-	accessTokenRow := context.Get(r, "accessTokenRow").(*dal.AccessTokenRow)
+	accessTokenRow := context.Get(r, "accessToken").(*dal.AccessTokenRow)
 
 	id, err := getInt64SlugFromPath(w, r, "id")
 	if err != nil {
