@@ -1,0 +1,220 @@
+{{define "second-navbar"}}{{ end }}
+
+{{define "content"}}
+<div class="container">
+    <div class="row">
+        <div class="col-lg-12">
+            <div class="page-header">
+                <h2>Clusters</h2>
+            </div>
+
+            {{ if eq (len .Clusters) 0 }}
+            <div class="jumbotron">
+                <h2>Welcome to ResourceD Master</h2>
+                <p>To begin, you need to create a cluster for your servers. Press the "New Cluster" button on the upper right corner.</p>
+            </div>
+            {{ end }}
+
+            {{ range $cluster := .Clusters }}
+                <div class="page-header">
+                    <div class="btn-group pull-right" role="group">
+                        <button class="new-cluster-button btn btn-xs btn-info" style="padding: 1px 8px" type="button" data-toggle="modal" data-target="#cluster-modal"
+                            data-cluster-id="{{ $cluster.ID }}"
+                            data-cluster-name="{{ $cluster.Name }}"
+                            data-cluster-data-retention="{{ $cluster.DataRetention.String }}">
+                            View
+                        </button>
+                    </div>
+
+                    <h4>{{ $cluster.Name }}</h4>
+                </div>
+
+                <!-- Access Tokens -->
+                <div class="row access-tokens" style="display: none">
+                    <div class="col-lg-12">
+                        <table class="table table-condensed table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Access Token</th>
+                                    <th>Level</th>
+                                    <th>Enabled</th>
+                                </tr>
+                            </thead>
+
+                            <tbody>
+                            {{ range $accessToken := index $.AccessTokens $cluster.ID }}
+                                <tr>
+                                    <td>{{ $accessToken.Token }}</td>
+                                    <td>
+                                        <form method="post" action="/access-tokens/{{ $accessToken.ID }}/level">
+                                            <input type="hidden" name="gorilla.csrf.Token" value="{{ $.CSRFToken }}">
+                                            <select name="Level" onchange="$(this).closest('form').submit();" style="color: #000" disabled>
+                                                <option value="read" {{if eq $accessToken.Level "read"}} selected {{end}}>Read</option>
+                                                <option value="write" {{if eq $accessToken.Level "write"}} selected {{end}}>Write</option>
+                                                <option value="execute" {{if eq $accessToken.Level "execute"}} selected {{end}}>Execute</option>
+                                            </select>
+                                        </form>
+                                    </td>
+                                    <td>
+                                        <form method="post" action="/access-tokens/{{ $accessToken.ID }}/enabled">
+                                            <input type="hidden" name="gorilla.csrf.Token" value="{{ $.CSRFToken }}">
+                                            <input type="checkbox" name="Enabled" disabled onclick="$(this).closest('form').submit();" {{ if $accessToken.Enabled }} checked {{end}}>
+                                        </form>
+                                    </td>
+                                </tr>
+                            {{ end }}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            {{ end }}
+        </div>
+    </div>
+</div>
+
+<!-- Cluster Modal -->
+<div class="modal fade" id="cluster-modal" tabindex="-1" role="dialog" aria-labelledby="new-cluster-label" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                <h4 class="modal-title" id="new-cluster-label">New Cluster</h4>
+            </div>
+
+            <form method="post" action="/clusters">
+                <input type="hidden" name="gorilla.csrf.Token" value="{{ $.CSRFToken }}">
+                <input type="hidden" name="_method" value="post">
+
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label class="control-label" for="name">Name:</label>
+                        <input type="text" name="Name" id="name" class="form-control" placeholder="My Cluster">
+                    </div>
+
+                    <div class="input-group">
+                        <span class="input-group-addon data-retention-label">ts_checks data retention: </span>
+                        <input type="number" class="form-control" name="Table:ts_checks" value="1">
+                        <span class="input-group-addon">days</span>
+                    </div>
+
+                    <div class="input-group">
+                        <span class="input-group-addon data-retention-label">ts_events data retention: </span>
+                        <input type="number" class="form-control" name="Table:ts_events" value="1">
+                        <span class="input-group-addon">days</span>
+                    </div>
+
+                    <div class="input-group">
+                        <span class="input-group-addon data-retention-label">ts_executor_logs data retention: </span>
+                        <input type="number" class="form-control" name="Table:ts_executor_logs" value="1">
+                        <span class="input-group-addon">days</span>
+                    </div>
+
+                    <div class="input-group">
+                        <span class="input-group-addon data-retention-label">ts_logs data retention: </span>
+                        <input type="number" class="form-control" name="Table:ts_logs" value="1">
+                        <span class="input-group-addon">days</span>
+                    </div>
+
+                    <div class="input-group">
+                        <span class="input-group-addon data-retention-label">ts_metrics data retention: </span>
+                        <input type="number" class="form-control" name="Table:ts_metrics" value="1">
+                        <span class="input-group-addon">days</span>
+                    </div>
+
+                    <div class="input-group">
+                        <span class="input-group-addon data-retention-label">ts_metrics_aggr_15m data retention: </span>
+                        <input type="number" class="form-control" name="Table:ts_metrics_aggr_15m" value="1">
+                        <span class="input-group-addon">days</span>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Cluster Membership Modal -->
+<div class="modal fade" id="cluster-membership-modal" tabindex="-1" role="dialog" aria-labelledby="new-cluster-label" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                <h4 class="modal-title" id="new-cluster-label">Add a user to this cluster</h4>
+            </div>
+
+            <form method="post" action="/clusters/users">
+                <input type="hidden" name="gorilla.csrf.Token" value="{{ $.CSRFToken }}">
+                <input type="hidden" name="_method" value="post">
+
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label class="control-label" for="email">Email:</label>
+                        <input type="text" name="Email" id="email" class="form-control" placeholder="bob@example.com">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="control-label" for="level">Permission:</label>
+
+                        <select id="level" class="form-control" name="Permission">
+                            <option value="read">Read</option>
+                            <option value="write">Write</option>
+                            <option value="execute">Execute</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary" onclick="$(this).closest('form').submit()">Save</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+$('#cluster-modal').on('show.bs.modal', function (event) {
+    var button = $(event.relatedTarget);
+    var clusterID = button.data('cluster-id');
+    var clusterName = button.data('cluster-name');
+    var clusterDataRetention = button.data('cluster-data-retention');
+    var modal = $(this);
+
+    if(clusterName) {
+        modal.find('input[name="Name"]').val(clusterName);
+    }
+    if(clusterDataRetention) {
+        for(var key in clusterDataRetention) {
+            modal.find('input[name="Table:' + key + '"]').val(clusterDataRetention[key]);
+        }
+    }
+
+    if(clusterID) {
+        modal.find('form').attr('action', '/clusters/' + clusterID);
+        modal.find('.btn-danger').show();
+        modal.find('.modal-title').text('Update Cluster');
+    } else {
+        modal.find('form').attr('action', '/clusters');
+        modal.find('.btn-danger').hide();
+        modal.find('.modal-title').text('New Cluster');
+    }
+});
+
+$('#cluster-membership-modal').on('show.bs.modal', function (event) {
+    var button = $(event.relatedTarget);
+    var clusterID = button.data('cluster-id');
+    var modal = $(this);
+
+    modal.find('form').attr('action', '/clusters/' + clusterID + '/users');
+});
+
+$(document).ready(function() {
+    if($('.access-tokens tr').length > 1) {
+        $('.access-tokens').show();
+    }
+});
+</script>
+{{end}}

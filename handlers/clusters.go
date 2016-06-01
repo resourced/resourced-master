@@ -29,6 +29,8 @@ func GetClusters(w http.ResponseWriter, r *http.Request) {
 
 	clusters := context.Get(r, "clusters").([]*dal.ClusterRow)
 
+	currentCluster := context.Get(r, "currentCluster").(*dal.ClusterRow)
+
 	accessTokens := make(map[int64][]*dal.AccessTokenRow)
 
 	for _, cluster := range clusters {
@@ -51,11 +53,19 @@ func GetClusters(w http.ResponseWriter, r *http.Request) {
 		csrf.Token(r),
 		currentUser,
 		clusters,
-		context.Get(r, "currentCluster").(*dal.ClusterRow),
+		currentCluster,
 		accessTokens,
 	}
 
-	tmpl, err := template.ParseFiles("templates/dashboard.html.tmpl", "templates/clusters/list.html.tmpl")
+	var tmpl *template.Template
+	var err error
+
+	currentUserPermission := currentCluster.GetPermissionByUserID(currentUser.ID)
+	if currentUserPermission == "read" {
+		tmpl, err = template.ParseFiles("templates/dashboard.html.tmpl", "templates/clusters/list-readonly.html.tmpl")
+	} else {
+		tmpl, err = template.ParseFiles("templates/dashboard.html.tmpl", "templates/clusters/list.html.tmpl")
+	}
 	if err != nil {
 		libhttp.HandleErrorHTML(w, err, 500)
 		return
