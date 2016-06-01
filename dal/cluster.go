@@ -56,6 +56,18 @@ func (cr *ClusterRow) GetMemberByUserID(id int64) map[string]interface{} {
 	return nil
 }
 
+// GetPermissionByUserID returns a specific cluster member permission keyed by user id.
+func (cr *ClusterRow) GetPermissionByUserID(id int64) string {
+	members := cr.GetMembers()
+	for _, member := range members {
+		if int64(member["ID"].(float64)) == id {
+			return member["Permission"].(string)
+		}
+	}
+
+	return "read"
+}
+
 type Cluster struct {
 	Base
 }

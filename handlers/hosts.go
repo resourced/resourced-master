@@ -65,25 +65,25 @@ func GetHosts(w http.ResponseWriter, r *http.Request) {
 	// -----------------------------------
 	hostsWithError := <-hostsChan
 	if hostsWithError.Error != nil && hostsWithError.Error.Error() != "sql: no rows in result set" {
-		libhttp.HandleErrorJson(w, hostsWithError.Error)
+		libhttp.HandleErrorHTML(w, hostsWithError.Error, 500)
 		return
 	}
 
 	savedQueriesWithError := <-savedQueriesChan
 	if savedQueriesWithError.Error != nil && savedQueriesWithError.Error.Error() != "sql: no rows in result set" {
-		libhttp.HandleErrorJson(w, savedQueriesWithError.Error)
+		libhttp.HandleErrorHTML(w, savedQueriesWithError.Error, 500)
 		return
 	}
 
 	metricsMapWithError := <-metricsMapChan
 	if metricsMapWithError.Error != nil {
-		libhttp.HandleErrorJson(w, metricsMapWithError.Error)
+		libhttp.HandleErrorHTML(w, metricsMapWithError.Error, 500)
 		return
 	}
 
 	accessToken, err := getAccessToken(w, r, "read")
 	if err != nil {
-		libhttp.HandleErrorJson(w, err)
+		libhttp.HandleErrorHTML(w, err, 500)
 		return
 	}
 
@@ -103,15 +103,22 @@ func GetHosts(w http.ResponseWriter, r *http.Request) {
 		currentUser,
 		accessToken,
 		context.Get(r, "clusters").([]*dal.ClusterRow),
-		context.Get(r, "currentCluster").(*dal.ClusterRow),
+		currentCluster,
 		hostsWithError.Hosts,
 		savedQueriesWithError.SavedQueries,
 		metricsMapWithError.MetricsMap,
 	}
 
-	tmpl, err := template.ParseFiles("templates/dashboard.html.tmpl", "templates/hosts/list.html.tmpl")
+	var tmpl *template.Template
+
+	currentUserPermission := currentCluster.GetPermissionByUserID(currentUser.ID)
+	if currentUserPermission == "read" {
+		tmpl, err = template.ParseFiles("templates/dashboard.html.tmpl", "templates/hosts/list-readonly.html.tmpl")
+	} else {
+		tmpl, err = template.ParseFiles("templates/dashboard.html.tmpl", "templates/hosts/list.html.tmpl")
+	}
 	if err != nil {
-		libhttp.HandleErrorJson(w, err)
+		libhttp.HandleErrorHTML(w, err, 500)
 		return
 	}
 

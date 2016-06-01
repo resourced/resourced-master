@@ -32,6 +32,9 @@ select {
 .form-group-search-and-save .search-form, .form-group-search-and-save .search-form .input-group {
     width: 1030px;
 }
+.form-group-search-and-save.readonly .search-form, .form-group-search-and-save.readonly .search-form .input-group {
+    width: 100%;
+}
 
 .form-group-new-task .new-task-form {
     width: 100%;
