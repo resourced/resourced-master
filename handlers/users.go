@@ -98,29 +98,6 @@ func PostSignup(w http.ResponseWriter, r *http.Request) {
 			libhttp.HandleErrorHTML(w, err, 500)
 			return
 		}
-
-		// For every clusters this person is in, create an access token
-		clusterRows, err := dal.NewCluster(db).AllByUserID(nil, userRow.ID)
-		if err != nil {
-			libhttp.HandleErrorHTML(w, err, 500)
-			return
-		}
-
-		for _, clusterRow := range clusterRows {
-			permission := "read"
-
-			member := clusterRow.GetMemberByUserID(userRow.ID)
-			if member != nil && member["Permission"] != nil {
-				permission = member["Permission"].(string)
-			}
-
-			// Create a default access-token
-			_, err = dal.NewAccessToken(db).Create(nil, userRow.ID, clusterRow.ID, permission)
-			if err != nil {
-				libhttp.HandleErrorHTML(w, err, 500)
-				return
-			}
-		}
 	}
 
 	// Send email verification if needed
