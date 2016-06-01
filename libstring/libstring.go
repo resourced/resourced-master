@@ -56,7 +56,7 @@ func StripChars(str, chr string) string {
 	}, str)
 }
 
-// PrettyPrintJSON indents JSON nicely
+// PrettyPrintJSON indents JSON nicely.
 func PrettyPrintJSON(jsonBytes []byte) ([]byte, error) {
 	var out bytes.Buffer
 
@@ -68,6 +68,7 @@ func PrettyPrintJSON(jsonBytes []byte) ([]byte, error) {
 	return out.Bytes(), err
 }
 
+// FlattenPhone removes non-number characters from phone number.
 func FlattenPhone(phone string) string {
 	result := strings.Replace(phone, "-", "", -1)
 	result = strings.Replace(result, "(", "", -1)

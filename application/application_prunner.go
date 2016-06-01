@@ -9,6 +9,7 @@ import (
 	"github.com/resourced/resourced-master/libtime"
 )
 
+// PruneAll runs background job to prune all old timeseries data.
 func (app *Application) PruneAll() {
 	for {
 		var clusters []*dal.ClusterRow
@@ -113,6 +114,7 @@ func (app *Application) PruneAll() {
 	}
 }
 
+// PruneTSCheckOnce deletes old ts_checks data.
 func (app *Application) PruneTSCheckOnce(cluster *dal.ClusterRow) error {
 	clusterRetention, ok := cluster.GetDataRetention()["ts_checks"]
 	if !ok {
@@ -125,6 +127,7 @@ func (app *Application) PruneTSCheckOnce(cluster *dal.ClusterRow) error {
 	)
 }
 
+// PruneTSMetricOnce deletes old ts_metrics data.
 func (app *Application) PruneTSMetricOnce(cluster *dal.ClusterRow) error {
 	clusterRetention, ok := cluster.GetDataRetention()["ts_metrics"]
 	if !ok {
@@ -137,6 +140,7 @@ func (app *Application) PruneTSMetricOnce(cluster *dal.ClusterRow) error {
 	)
 }
 
+// PruneTSMetricAggr15mOnce deletes old ts_metrics_aggr_15m data.
 func (app *Application) PruneTSMetricAggr15mOnce(cluster *dal.ClusterRow) error {
 	clusterRetention, ok := cluster.GetDataRetention()["ts_metrics_aggr_15m"]
 	if !ok {
@@ -149,6 +153,7 @@ func (app *Application) PruneTSMetricAggr15mOnce(cluster *dal.ClusterRow) error 
 	)
 }
 
+// PruneTSEventOnce deletes old ts_events data.
 func (app *Application) PruneTSEventOnce(cluster *dal.ClusterRow) error {
 	clusterRetention, ok := cluster.GetDataRetention()["ts_events"]
 	if !ok {
@@ -161,6 +166,7 @@ func (app *Application) PruneTSEventOnce(cluster *dal.ClusterRow) error {
 	)
 }
 
+// PruneTSExecutorLogOnce deletes old ts_executor_logs data.
 func (app *Application) PruneTSExecutorLogOnce(cluster *dal.ClusterRow) error {
 	clusterRetention, ok := cluster.GetDataRetention()["ts_executor_logs"]
 	if !ok {
@@ -173,6 +179,7 @@ func (app *Application) PruneTSExecutorLogOnce(cluster *dal.ClusterRow) error {
 	)
 }
 
+// PruneTSLogOnce deletes old ts_logs data.
 func (app *Application) PruneTSLogOnce(cluster *dal.ClusterRow) error {
 	clusterRetention, ok := cluster.GetDataRetention()["ts_logs"]
 	if !ok {

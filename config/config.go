@@ -53,6 +53,7 @@ func NewGeneralConfig(configDir string) (config GeneralConfig, err error) {
 	return config, err
 }
 
+// EmailConfig stores all email configuration data.
 type EmailConfig struct {
 	From          string
 	SubjectPrefix string
@@ -110,7 +111,7 @@ type GeneralConfig struct {
 	Email *EmailConfig
 }
 
-// NewDBConfig is the constructor for DBConfig.
+// NewDBConfig connects to all the databases and returns them in DBConfig instance.
 func NewDBConfig(generalConfig GeneralConfig) (*DBConfig, error) {
 	conf := &DBConfig{}
 
@@ -153,6 +154,7 @@ func NewDBConfig(generalConfig GeneralConfig) (*DBConfig, error) {
 	return conf, nil
 }
 
+// DBConfig stores all database configuration data.
 type DBConfig struct {
 	Core          *sqlx.DB
 	TSMetric      *sqlx.DB

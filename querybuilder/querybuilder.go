@@ -13,6 +13,7 @@ func Parse(input string) string {
 	return parseAnd(input)
 }
 
+// parseAnd parses and conjunctive operator.
 func parseAnd(input string) string {
 	pgQueryParts := make([]string, 0)
 

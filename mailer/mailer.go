@@ -9,6 +9,7 @@ import (
 	"github.com/resourced/resourced-master/libsmtp"
 )
 
+// New returns an instance of Mailer struct.
 func New(conf *config.EmailConfig) (*Mailer, error) {
 	mailer := &Mailer{}
 	if conf == nil {
@@ -29,6 +30,7 @@ func New(conf *config.EmailConfig) (*Mailer, error) {
 	return mailer, nil
 }
 
+// Mailer is a convenience struct for sending email.
 type Mailer struct {
 	Auth          smtp.Auth
 	HostAndPort   string
@@ -36,6 +38,7 @@ type Mailer struct {
 	SubjectPrefix string
 }
 
+// Send email.
 func (m *Mailer) Send(to, subject, body string) error {
 	subject = m.SubjectPrefix + " " + subject
 	message := libsmtp.BuildMessage(m.From, to, subject, body)

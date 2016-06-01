@@ -93,6 +93,7 @@ func (app *Application) FullAddr() string {
 	return addr
 }
 
+// MiddlewareStruct configures all the middlewares that are in-use for all request handlers.
 func (app *Application) MiddlewareStruct() (*interpose.Middleware, error) {
 	middle := interpose.New()
 	middle.Use(middlewares.SetAddr(app.GeneralConfig.Addr))
@@ -107,6 +108,7 @@ func (app *Application) MiddlewareStruct() (*interpose.Middleware, error) {
 	return middle, nil
 }
 
+// NewHTTPServer returns an instance of HTTP server.
 func (app *Application) NewHTTPServer() (*graceful.Server, error) {
 	// Create HTTP middlewares
 	middle, err := app.MiddlewareStruct()
@@ -128,6 +130,7 @@ func (app *Application) NewHTTPServer() (*graceful.Server, error) {
 	return srv, nil
 }
 
+// MigrateUpAll runs all migration files to be up-to-date.
 func (app *Application) MigrateUpAll() error {
 	errs, ok := migrate.UpSync(app.GeneralConfig.DSN, "./migrations/core")
 	if !ok {

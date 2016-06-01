@@ -6,6 +6,7 @@ import (
 	"fmt"
 )
 
+// BuildMessage is a helper function to build email message.
 func BuildMessage(from, to, subject, body string) string {
 	headers := make(map[string]string)
 	headers["Return-Path"] = from

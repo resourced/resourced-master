@@ -5,6 +5,7 @@ import (
 	"strings"
 )
 
+// RemoveEmpty string in a slice.
 func RemoveEmpty(s []string) []string {
 	result := make([]string, 0)
 

@@ -8,6 +8,7 @@ import (
 	"strings"
 )
 
+// CurrentUser returns the current unix user.
 func CurrentUser() (string, error) {
 	var stdout bytes.Buffer
 	cmd := exec.Command("sh", "-c", "eval echo $USER")

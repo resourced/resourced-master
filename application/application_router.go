@@ -11,6 +11,7 @@ import (
 	"github.com/resourced/resourced-master/middlewares"
 )
 
+// mux returns an instance of HTTP router with all the predefined rules.
 func (app *Application) mux() *mux.Router {
 	MustLogin := middlewares.MustLogin
 	MustLoginApi := middlewares.MustLoginApi
