@@ -37,7 +37,7 @@ func (app *Application) mux() *mux.Router {
 
 	router.Handle("/graphs", alice.New(CSRF, MustLogin, SetClusters, SetAccessTokens).ThenFunc(handlers.GetGraphs)).Methods("GET")
 	router.Handle("/graphs", alice.New(CSRF, MustLogin, SetClusters).ThenFunc(handlers.PostGraphs)).Methods("POST")
-	router.Handle("/graphs/{id:[0-9]+}", alice.New(CSRF, MustLogin, SetClusters).ThenFunc(handlers.GetPostPutDeleteGraphsID)).Methods("GET", "POST", "PUT", "DELETE")
+	router.Handle("/graphs/{id:[0-9]+}", alice.New(CSRF, MustLogin, SetClusters, SetAccessTokens).ThenFunc(handlers.GetPostPutDeleteGraphsID)).Methods("GET", "POST", "PUT", "DELETE")
 
 	router.Handle("/logs", alice.New(CSRF, MustLogin, SetClusters, SetAccessTokens).ThenFunc(handlers.GetLogs)).Methods("GET")
 	router.Handle("/logs/executors", alice.New(CSRF, MustLogin, SetClusters, SetAccessTokens).ThenFunc(handlers.GetLogsExecutors)).Methods("GET")
