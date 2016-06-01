@@ -34,7 +34,7 @@ func GetSignup(w http.ResponseWriter, r *http.Request) {
 
 	tmpl, err := template.ParseFiles("templates/users/login-signup.html.tmpl", "templates/users/signup.html.tmpl")
 	if err != nil {
-		libhttp.HandleErrorJson(w, err)
+		libhttp.HandleErrorHTML(w, err, 500)
 		return
 	}
 
@@ -59,7 +59,7 @@ func PostSignup(w http.ResponseWriter, r *http.Request) {
 		// There's no existing user in the database, create a new one.
 		userRow, err = dal.NewUser(db).Signup(nil, email, password, passwordAgain)
 		if err != nil {
-			libhttp.HandleErrorJson(w, err)
+			libhttp.HandleErrorHTML(w, err, 500)
 			return
 		}
 
@@ -127,7 +127,7 @@ func GetLoginWithoutSession(w http.ResponseWriter, r *http.Request) {
 
 	tmpl, err := template.ParseFiles("templates/users/login-signup.html.tmpl", "templates/users/login.html.tmpl")
 	if err != nil {
-		libhttp.HandleErrorJson(w, err)
+		libhttp.HandleErrorHTML(w, err, 500)
 		return
 	}
 
@@ -174,7 +174,7 @@ func PostLogin(w http.ResponseWriter, r *http.Request) {
 
 	err = session.Save(r, w)
 	if err != nil {
-		libhttp.HandleErrorJson(w, err)
+		libhttp.HandleErrorHTML(w, err, 500)
 		return
 	}
 
@@ -252,7 +252,7 @@ func GetUsersEmailVerificationToken(w http.ResponseWriter, r *http.Request) {
 
 	_, err := dal.NewUser(db).UpdateEmailVerification(nil, emailVerificationToken)
 	if err != nil {
-		libhttp.HandleErrorJson(w, err)
+		libhttp.HandleErrorHTML(w, err, 500)
 		return
 	}
 
