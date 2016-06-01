@@ -125,16 +125,23 @@ func GetLogs(w http.ResponseWriter, r *http.Request) {
 		currentUser,
 		accessToken,
 		context.Get(r, "clusters").([]*dal.ClusterRow),
-		context.Get(r, "currentCluster").(*dal.ClusterRow),
+		currentCluster,
 		tsLogsWithError.TSLogRows,
 		savedQueriesWithError.SavedQueries,
 		from,
 		to,
 	}
 
-	tmpl, err := template.ParseFiles("templates/dashboard.html.tmpl", "templates/logs/list.html.tmpl")
+	var tmpl *template.Template
+
+	currentUserPermission := currentCluster.GetPermissionByUserID(currentUser.ID)
+	if currentUserPermission == "read" {
+		tmpl, err = template.ParseFiles("templates/dashboard.html.tmpl", "templates/logs/list-readonly.html.tmpl")
+	} else {
+		tmpl, err = template.ParseFiles("templates/dashboard.html.tmpl", "templates/logs/list.html.tmpl")
+	}
 	if err != nil {
-		libhttp.HandleErrorJson(w, err)
+		libhttp.HandleErrorHTML(w, err, 500)
 		return
 	}
 
@@ -246,16 +253,23 @@ func GetLogsExecutors(w http.ResponseWriter, r *http.Request) {
 		currentUser,
 		accessToken,
 		context.Get(r, "clusters").([]*dal.ClusterRow),
-		context.Get(r, "currentCluster").(*dal.ClusterRow),
+		currentCluster,
 		tsLogsWithError.TSExecutorLogRows,
 		savedQueriesWithError.SavedQueries,
 		from,
 		to,
 	}
 
-	tmpl, err := template.ParseFiles("templates/dashboard.html.tmpl", "templates/logs/executor-list.html.tmpl")
+	var tmpl *template.Template
+
+	currentUserPermission := currentCluster.GetPermissionByUserID(currentUser.ID)
+	if currentUserPermission == "read" {
+		tmpl, err = template.ParseFiles("templates/dashboard.html.tmpl", "templates/logs/executor-list-readonly.html.tmpl")
+	} else {
+		tmpl, err = template.ParseFiles("templates/dashboard.html.tmpl", "templates/logs/executor-list.html.tmpl")
+	}
 	if err != nil {
-		libhttp.HandleErrorJson(w, err)
+		libhttp.HandleErrorHTML(w, err, 500)
 		return
 	}
 

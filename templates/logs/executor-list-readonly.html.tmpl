@@ -1,0 +1,334 @@
+{{define "second-navbar"}}
+<nav class="navbar navbar-default">
+    <div class="container">
+        <div class="form-group form-group-search-and-save">
+            <form class="navbar-form navbar-left search-form" role="search" action="/logs" style="width: 100%">
+                <div class="input-group" style="width: 100%">
+                    <input id="search-input" name="q" type="text" class="form-control" placeholder="Syntax: logline search 'keyword1 & keyword2 | keyword3'. Press enter to search">
+                    <input type="hidden" name="from" value="{{ $.From }}">
+                    <input type="hidden" name="to" value="{{ $.To }}">
+                </div>
+            </form>
+        </div>
+    </div>
+</nav>
+
+<script>
+$(window).load(function() {
+    var key = "q";
+    var value = "";
+    var sPageURL = window.location.search.substring(1);
+    var sURLVariables = sPageURL.split('&');
+
+    for (var i = 0; i < sURLVariables.length; i++) {
+        var sParameterName = sURLVariables[i].split('=');
+        if (sParameterName[0] == key) {
+            value = sParameterName[1];
+        }
+    }
+
+    value = value.replace(/\+/g, " ");
+
+    if(value != "") {
+        $('[name="q"]').val(decodeURIComponent(value));
+    }
+
+    // On load, cp search input to saved-queries input.
+    $('#saved-queries-input').val($('#search-input').val());
+});
+
+// This catches keyup, onchange, and paste events.
+// cp search input to saved-queries input
+$('#search-input').bind("input propertychange", function(e) {
+    $('#saved-queries-input').val($(this).val());
+});
+</script>
+{{ end }}
+
+{{define "content"}}
+<!-- Saved Queries -->
+<div class="container saved-queries">
+    <div class="row">
+        <div class="col-lg-12">
+            <div class="page-header">
+                <div class="pull-right">
+                    <small class="updated-queries-toggle">Show All</small>
+                    <input type="checkbox" class="toggler toggler-header pull-right" data-size="mini">
+                </div>
+
+                <h2>Saved Queries</h2>
+            </div>
+        </div>
+    </div>
+
+    {{ range $i, $savedQuery := .SavedQueries }}
+    <div class="row saved-queries" style="{{ if lt $i 5 }}display: block{{ else }}display: none{{ end }}">
+        <div class="col-xs-12 col-lg-12">
+            <div>
+                <div class="pull-right">
+                    <a href="?q={{ $savedQuery.Query }}" type="submit" class="btn btn-default">
+                        <span class="glyphicon glyphicon-search" aria-hidden="true"></span>
+                    </a>
+
+                    <a href="//{{ $.AccessToken.Token }}:@{{ $.Addr }}/api/logs/executors?q={{ $savedQuery.Query }}" type="submit" class="btn btn-success">
+                       JSON
+                    </a>
+
+                    <form action="/saved-queries/{{ $savedQuery.ID }}" method="post">
+                        <input type="hidden" name="gorilla.csrf.Token" value="{{ $.CSRFToken }}">
+                        <input type="hidden" name="_method" value="delete">
+                        <button type="submit" class="btn btn-danger">Delete</button>
+                    </form>
+                </div>
+
+                <h3>{{ $savedQuery.Query }}</h3>
+            </div>
+        </div>
+    </div>
+    {{ end }}
+</div>
+
+<!-- Logs -->
+<div class="container logs">
+    <div class="row">
+        <div class="col-lg-12">
+            <div class="page-header" style="padding-bottom: 0">
+                <div class="btn-group btn-group-sm pull-right" role="group" style="margin-top: 4px">
+                    <a type="button" class="btn btn-primary btn-pagination-prev" href=""><span aria-hidden="true" class="glyphicon glyphicon-arrow-left"></span></a>
+
+                    <div class="btn-group btn-group-sm" role="group">
+                        <button type="button" class="btn btn-primary dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                            <span class="pagination-range-display">15 Minutes</span>&nbsp;<span class="caret"></span>
+                        </button>
+                        <ul class="dropdown-menu">
+                            <li><a class="pagination-range" href="javascript:void(0)" data-seconds="300">5 Minutes</a></li>
+                            <li><a class="pagination-range" href="javascript:void(0)" data-seconds="600">10 Minutes</a></li>
+                            <li><a class="pagination-range" href="javascript:void(0)" data-seconds="900">15 Minutes</a></li>
+                            <li><a class="pagination-range" href="javascript:void(0)" data-seconds="1800">30 Minutes</a></li>
+                            <li><a class="pagination-range" href="javascript:void(0)" data-seconds="3600">60 minutes</a></li>
+                            <li><a class="pagination-range" href="javascript:void(0)" data-seconds="7200">2 hours</a></li>
+                            <li><a class="pagination-range" href="javascript:void(0)" data-seconds="10800">3 hours</a></li>
+                            <li><a class="pagination-range" href="javascript:void(0)" data-seconds="14400">4 hours</a></li>
+                        </ul>
+                    </div>
+
+                    <a type="button" class="btn btn-primary btn-pagination-next" href=""><span aria-hidden="true" class="glyphicon glyphicon-arrow-right"></span></a>
+                </div>
+
+                <ul class="nav nav-tabs">
+                    <li role="presentation" class="tabs logs-tab"><a href="/logs">Logs</a></li>
+                    <li role="presentation" class="tabs executor-logs-tab"><a href="/logs/executors">Executor Logs</a></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    {{ if eq (len .Logs) 0 }}
+    <div class="jumbotron" style="margin-bottom: 16px">
+        <h2 style="margin-top: 0">No logs available in the given date range.</h2>
+        <small class="time-unix-to-local">{{ $.From }}</small> - <small class="time-unix-to-local">{{ $.To }}</small>
+        <ul style="margin-top: 6px">
+            <li>Make sure that the agents are configured correctly.</li>
+            <li>The 1st page of pagination starts from current time and looks back N range. Make sure your date range is set correctly.</li>
+            <li>You can use the URL GET param to change the date range. Simply set <code>from=</code> and <code>to=</code>.</li>
+        </ul>
+    </div>
+    {{ else }}
+    <div class="pull-right" style="margin-top: -14px; margin-bottom: 10px; font-size: 11px">
+        <small class="time-unix-to-local">{{ $.From }}</small> - <small class="time-unix-to-local">{{ $.To }}</small>
+    </div>
+
+    {{ end }}
+
+    {{ range $log := .Logs }}
+    <div class="row" style="margin-bottom: 16px">
+        <div class="col-lg-12">
+            <div class="row">
+                <div class="col-lg-4 col-md-4 time-unix-to-local">
+                    {{ $log.Created.Unix }}
+                </div>
+                <div class="col-lg-4 col-md-4">
+                    {{ $log.Hostname }}
+                </div>
+            </div>
+
+            <div class="row" style="padding-bottom: 6px">
+                <div class="col-lg-12">
+                    {{ range $tagKey, $tagValue := $log.GetTags }}
+                    <a class="label label-default" href="/logs?q=tags.{{ $tagKey }} %3D {{ $tagValue }}">{{ $tagKey }} : {{ $tagValue }}</a>
+                    {{ end }}
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-lg-12" style="font-size: 11px">
+                    {{ $log.Logline }}
+                </div>
+            </div>
+        </div>
+    </div>
+    {{ end }}
+
+    <div class="row" style="padding-top: 8px; padding-bottom: 8px; margin-bottom: 16px; border-top: 1px solid #4e5d6c">
+        <div class="col-lg-4 col-md-6 col-sm-6 col-xs-6">
+            <input id="search-input" name="q" type="text" class="form-control input-sm" placeholder="Press enter to search" onkeyup="filter(this)">
+        </div>
+
+        <div class="col-lg-8 col-md-6 col-sm-6 col-xs-6">
+            <div class="btn-group btn-group-sm pull-right" role="group">
+                <a type="button" class="btn btn-primary btn-pagination-prev" href=""><span aria-hidden="true" class="glyphicon glyphicon-arrow-left"></span></a>
+
+                <div class="btn-group btn-group-sm" role="group">
+                    <button type="button" class="btn btn-primary dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                        <span class="pagination-range-display">15 Minutes</span>&nbsp;<span class="caret"></span>
+                    </button>
+                    <ul class="dropdown-menu">
+                        <li><a class="pagination-range" href="javascript:void(0)" data-seconds="900">15 Minutes</a></li>
+                        <li><a class="pagination-range" href="javascript:void(0)" data-seconds="1800">30 Minutes</a></li>
+                        <li><a class="pagination-range" href="javascript:void(0)" data-seconds="3600">60 minutes</a></li>
+                        <li><a class="pagination-range" href="javascript:void(0)" data-seconds="7200">2 hours</a></li>
+                        <li><a class="pagination-range" href="javascript:void(0)" data-seconds="10800">3 hours</a></li>
+                        <li><a class="pagination-range" href="javascript:void(0)" data-seconds="14400">4 hours</a></li>
+                    </ul>
+                </div>
+
+                <a type="button" class="btn btn-primary btn-pagination-next" href=""><span aria-hidden="true" class="glyphicon glyphicon-arrow-right"></span></a>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+function setupPrevAndNextArrows(range, rangeText, from, to, _rev) {
+    var doc = {
+        _id: 'ResourcedMaster.logs.pagination',
+        from: from,
+        to, to,
+        text: rangeText,
+        range: range
+    };
+    if(_rev) {
+        doc._rev = _rev;
+    }
+
+    var promise = ResourcedMaster.UIStore.put(doc);
+
+    var getParams={};window.location.search.replace(/[?&]+([^=&]+)=([^&]*)/gi,function(str,key,value){getParams[key] = value;});
+
+    $('.pagination-range-display').text(rangeText);
+
+    $('.btn-pagination-prev').attr('href', '/logs?from=' + (from - range) + '&to=' + from + '&q=' + (getParams['q'] || ''));
+    $('.btn-pagination-next').attr('href', '/logs?from=' + to + '&to=' + (to + range) + '&q=' + (getParams['q'] || ''));
+
+    $('.search-form input[name="from"]').val(from);
+    $('.search-form input[name="to"]').val(to);
+
+    return promise;
+}
+
+$(document).ready(function() {
+    if(window.location.pathname.indexOf('/executors') >= 0) {
+        $('.tabs').removeClass('active');
+        $('.executor-logs-tab').addClass('active');
+    } else {
+        $('.tabs').removeClass('active');
+        $('.logs-tab').addClass('active');
+    }
+
+    // ----------------------------------------
+    // Saved Queries
+
+    $('.toggler').bootstrapSwitch();
+
+    // Hide Saved Queries container if there are no save queries.
+    if($('.row.saved-queries').length == 0) {
+        $('.container.saved-queries').hide();
+    }
+
+    // Show all saved-queries if toggler is set to on.
+    $('.container.saved-queries .toggler-header').each(function() {
+        var elem = $(this);
+
+        ResourcedMaster.UIStore.get('.container.saved-queries .toggler-header').then(function(doc) {
+            if (doc && doc.state) {
+                elem.bootstrapSwitch('state', true, true);
+                elem.closest('.container.saved-queries').find('.row.saved-queries').show();
+            }
+        });
+    });
+
+    // ----------------------------------------
+
+    var to = {{ .To }};
+    var from = {{ .From }};
+    var range = to - from;
+
+    var text = $('.pagination-range[data-seconds="' + range + '"]').first().text();
+    if(text == '') {
+        text = 'Custom';
+    }
+
+    ResourcedMaster.UIStore.get('ResourcedMaster.logs.pagination').then(function(doc) {
+        if (doc) {
+            setupPrevAndNextArrows(range, text, from, to, doc._rev);
+        }
+
+    }).catch(function (err) {
+        if(err.name == 'not_found') {
+            // Default is 15 minutes
+            setupPrevAndNextArrows(range, text, from, to);
+        }
+    });
+});
+
+$('.container.saved-queries .toggler-header').on('switchChange.bootstrapSwitch', function(event, state) {
+    if(state) {
+        $(this).closest('.container.saved-queries').find('.row.saved-queries').show();
+    } else {
+        $(this).closest('.container.saved-queries').find('.row.saved-queries:gt(4)').hide();
+    }
+
+    var uiStoreID = '.container.saved-queries .toggler-header';
+    var uiStoreData = {
+        _id: uiStoreID,
+        state: state
+    };
+
+    ResourcedMaster.UIStore.get(uiStoreID).then(function(doc) {
+        if(doc) { uiStoreData._rev = doc._rev; }
+        return ResourcedMaster.UIStore.put(uiStoreData);
+    }).catch(function (err) {
+        if(err.name == 'not_found') {
+            return ResourcedMaster.UIStore.put(uiStoreData);
+        }
+    });
+});
+
+$('.pagination-range').click(function() {
+    var range = $(this).data('seconds');
+    var text = $(this).text();
+    var getParams={};window.location.search.replace(/[?&]+([^=&]+)=([^&]*)/gi,function(str,key,value){getParams[key] = value;});
+
+    ResourcedMaster.UIStore.get('ResourcedMaster.logs.pagination').then(function(doc) {
+        if (doc && doc.from && doc.to) {
+            var to = doc.to;
+            var from = doc.to - range;
+
+            setupPrevAndNextArrows(range, text, from, to, doc._rev).then(function(doc) {
+                window.location = '/logs?from=' + from + '&to=' + to + '&q=' + (getParams['q'] || '');
+            });
+        }
+    }).catch(function (err) {
+        var to = {{ .To }};
+        var from = to - range;
+
+        if(err.name == 'not_found') {
+            setupPrevAndNextArrows(range, text, from, to).then(function(doc) {
+                window.location = '/logs?from=' + from + '&to=' + to + '&q=' + (getParams['q'] || '');
+            });
+        }
+    });
+});
+</script>
+{{end}}
