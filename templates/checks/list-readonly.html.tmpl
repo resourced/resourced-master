@@ -1,0 +1,708 @@
+{{define "second-navbar"}}
+{{ end }}
+
+{{define "content"}}
+<!-- Checks -->
+<div class="container checks">
+    {{ if eq (len .Metrics) 0 }}
+    <div class="jumbotron" style="margin-top: 40px">
+        <h2>Unable to create a check without metrics data</h2>
+        <p>You can start collecting metrics by pressing <a class="btn btn-success btn-sm" href="/">Chart Metric?</a> button under Hosts tab.</p>
+    </div>
+
+    {{ else }}
+
+    <div class="row">
+        <div class="col-lg-12">
+            <div class="page-header">
+                <input id="search-input" name="q" type="text" class="form-control pull-right check-search-input" placeholder="Type to search" style="width: 400px" onkeyup="filter(this)">
+
+                <h2>Checks</h2>
+            </div>
+        </div>
+    </div>
+
+    {{ range $check := .Checks }}
+    <div class="row checks">
+        <div class="col-xs-12 col-lg-12">
+            <div class="pull-right" style="margin-top: 5px">
+                <div class="btn-group" role="group">
+                    <form action="/checks/{{ $check.ID }}/silence" method="post" style="display: inline-block; float: left">
+                        <input type="hidden" name="gorilla.csrf.Token" value="{{ $.CSRFToken }}">
+                    {{ if eq $check.IsSilenced true }}
+                        <button type="submit" class="btn btn-danger btn-xs active" style="vertical-align: top">Unmute</button>
+                    {{ else }}
+                        <button type="submit" class="btn btn-danger btn-xs" style="vertical-align: top">Mute!</button>
+                    {{ end }}
+                    </form>
+
+                    <button class="btn btn-default btn-xs" data-toggle="modal" data-target="#checks-modal"
+                        data-id="{{ $check.ID }}"
+                        data-name="{{ $check.Name }}"
+                        data-interval="{{ $check.Interval }}"
+                        data-hosts-query="{{ $check.HostsQuery }}"
+                        data-hosts-list="{{ $check.HostsList }}"
+                        data-expressions="{{ $check.Expressions }}">
+                        Details
+                    </button>
+
+                    <button class="btn btn-default btn-xs" data-toggle="modal" data-target="#triggers-modal"
+                        data-check-id="{{ $check.ID }}">
+                        Show Triggers
+                    </button>
+                </div>
+            </div>
+
+            <h3>{{ $check.Name }}</h3>
+
+            <table id="check-{{ $check.ID }}-triggers" class="table table-striped" style="display: none">
+                <thead>
+                    <tr>
+                        <th>Min Violations Reached</th>
+                        <th>Max Violations Reached</th>
+                        <th>Actions</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                {{ range $trigger := $check.GetTriggers }}
+                    <tr>
+                        <td>{{ $trigger.LowViolationsCount }}</td>
+                        <td>{{ $trigger.HighViolationsCount }}</td>
+
+                        {{ with $action := $trigger.Action }}
+
+                        {{ if eq $action.Transport "nothing" }}
+                        <td>Do {{ $action.Transport }}</td>
+                        {{ else }}
+                        <td>Send {{ $action.Transport }} to {{ $action.Email }}{{ $action.SMSPhone }}{{ $action.PagerDutyServiceKey }}</td>
+                        {{ end }}
+
+                        <td>
+                            <div class="btn-group pull-right" role="group">
+                                <form action="/checks/{{ $check.ID }}/triggers/{{ $trigger.ID }}" method="post" onsubmit="return confirm('Are you sure you want to delete?');" style="display: inline-block">
+                                    <input type="hidden" name="gorilla.csrf.Token" value="{{ $.CSRFToken }}">
+                                    <input type="hidden" name="_method" value="delete">
+                                    <button type="submit" class="btn btn-danger btn-xs">Delete</button>
+                                </form>
+
+                                <button class="btn btn-success btn-xs pull-right" data-toggle="modal" data-target="#trigger-modal"
+                                    data-id="{{ $trigger.ID }}"
+                                    data-check-id="{{ $check.ID }}"
+                                    data-check-interval="{{ $check.Interval }}"
+                                    data-low-violations-count="{{ $trigger.LowViolationsCount }}"
+                                    data-high-violations-count="{{ $trigger.HighViolationsCount }}"
+                                    data-created-interval-minute="{{ $trigger.CreatedIntervalMinute }}"
+                                    data-action-transport="{{ $action.Transport }}"
+                                    data-action-email="{{ $action.Email }}"
+                                    data-action-sms-carrier="{{ $action.SMSCarrier }}"
+                                    data-action-sms-phone="{{ $action.SMSPhone }}"
+                                    data-action-pd-service-key="{{ $action.PagerDutyServiceKey }}"
+                                    data-action-pd-service-description="{{ $action.PagerDutyDescription }}">
+                                    Edit
+                                </button>
+                            </div>
+                        </td>
+
+                        {{ end }}
+                    </tr>
+                {{ end }}
+            </tbody>
+            </table>
+        </div>
+    </div>
+    {{ end }}
+
+    {{ end }}
+</div>
+
+<!-- Triggers Modal -->
+<div class="modal fade" id="triggers-modal" tabindex="-1" role="dialog" aria-labelledby="triggers-details-label" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                <h4 class="modal-title" id="triggers-details-label">Triggers</h4>
+            </div>
+
+            <div class="modal-body table-responsive table-condensed">
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Checks Modal -->
+<div class="modal fade" id="checks-modal" tabindex="-1" role="dialog" aria-labelledby="checks-details-label" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post" action="/checks">
+                <input type="hidden" name="gorilla.csrf.Token" value="{{ $.CSRFToken }}">
+                <input type="hidden" name="_method" value="post">
+
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                    <h4 class="modal-title" id="checks-details-label">1. Basic Check Info</h4>
+                </div>
+
+                <div class="modal-body">
+                    <div class="row form-group">
+                        <div class="col-sm-6">
+                            <label>Name</label>
+                            <input type="text" class="form-control" name="Name" value="">
+                        </div>
+
+                        <div class="col-sm-6">
+                            <label>Interval</label>
+
+                            <div class="input-group">
+                                <input type="text" class="form-control" name="IntervalInSeconds" value="60">
+                                <span class="input-group-addon">seconds</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-header">
+                    <h4 class="modal-title" id="checks-details-label">2. Hosts to Check</h4>
+                </div>
+
+                <div class="modal-body">
+                    <div class="row form-group">
+                        <div class="col-sm-12">
+                            <label class="pull-right query-hosts-count" style="color: #5cb85c; display: none">Found <span class="query-hosts-count-number">0</span> hosts</label>
+                            <label>Query for Hosts</label>
+
+                            <div class="input-group">
+                                <input type="text" class="form-control" name="HostsQuery">
+                                <span class="input-group-btn">
+                                    <button class="btn btn-info btn-hostquery-search" type="button">Search</button>
+                                </span>
+                            </div>
+                        </div>
+
+                        <div class="col-sm-12">
+                            <label>or, provide explicit hosts</label>
+                            <textarea class="form-control" name="HostsList" row="10" placeholder="One host, one line"></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-header">
+                    <h4 class="modal-title" id="checks-details-label">3. Check Expressions</h4>
+                </div>
+
+                <input type="hidden" name="Expressions" value="[]">
+
+                <div class="expression-container">
+                    <div class="modal-body expression">
+                        <div class="row form-group">
+                            <div class="col-sm-12">
+                                Check
+
+                                <select class="expression-type" name="ExpressionType">
+                                    <option value="RawHostData">raw host data</option>
+                                    <option value="RelativeHostData">relative host data</option>
+                                    <option value="LogData">log data</option>
+                                    <option value="Ping">ping</option>
+                                    <option value="SSH">SSH</option>
+                                    <option value="HTTP">HTTP</option>
+                                    <option value="HTTPS">HTTPS</option>
+                                </select>
+
+                                <br>
+
+                                <span class="expression-where">where</span>
+
+                                <select class="expression-part expression-part-host-metrics">
+                                    {{ range $metric := .Metrics }}
+                                    <option value="{{ $metric.Key }}">{{ $metric.Key }}</option>
+                                    {{ end }}
+                                </select>
+
+                                <span class="expression-part expression-part-raw-host">
+                                    <select name="ExpressionOperator">
+                                        <option value=">">></option>
+                                        <option value=">">>=</option>
+                                        <option value="=">=</option>
+                                        <option value="<"><</option>
+                                        <option value="<="><=</option>
+                                    </select>
+
+                                    <input name="ExpressionValue" type="number" style="width: 70px" value="1">
+                                </span>
+
+                                <span class="expression-part expression-part-relative-host" style="display: none">
+                                    is <input name="ExpressionValue" type="number" style="width: 70px" value="200"> percent
+
+                                    <select name="ExpressionOperator">
+                                        <option value=">">greater than</option>
+                                        <option value="<">less than</option>
+                                    </select>
+
+                                    <br>
+
+                                    the previous <input name="ExpressionPrevRange" type="number" style="width: 70px" value="15"> minutes of
+
+                                    <select name="ExpressionPrevAggr">
+                                        <option value="avg">average</option>
+                                        <option value="max">maximum</option>
+                                        <option value="min">minimum</option>
+                                        <option value="sum">sum</option>
+                                    </select>
+
+                                    host data
+                                </span>
+
+                                <span class="expression-part expression-part-log" style="display: none">
+                                    the count of logline containing <input name="ExpressionSearch" type="text" placeholder="error">
+
+                                    <br>
+
+                                    is
+
+                                    <select name="ExpressionOperator">
+                                        <option value=">">greater than</option>
+                                        <option value="<">less than</option>
+                                    </select>
+
+                                    <input name="ExpressionValue" type="number" style="width: 70px" value="1">
+
+                                    <br>
+
+                                    the last <input name="ExpressionPrevRange" type="number" style="width: 70px" value="15"> minutes
+                                </span>
+
+                                <span class="expression-part expression-part-ssh" style="display: none">
+                                    the port is <input name="ExpressionPort" type="number" value="22"> and
+                                </span>
+
+                                <span class="expression-part expression-part-http" style="display: none">
+                                    method is
+
+                                    <select name="ExpressionHTTPMethod">
+                                        <option value="GET">GET</option>
+                                        <option value="POST">POST</option>
+                                        <option value="PUT">PUT</option>
+                                        <option value="DELETE">DELETE</option>
+                                    </select>
+
+                                    on port <input name="ExpressionPort" type="number" style="width: 70px" value="80">
+
+                                    <br>
+
+                                    using the following headers:
+                                    <textarea class="form-control" name="ExpressionHeaders" row="10" placeholder="key1=value1,key2=value2" style="margin-bottom: 10px"></textarea>
+
+                                    and body:
+                                    <textarea class="form-control" name="ExpressionHTTPBody" row="10" placeholder="content of HTTP body (optional)"></textarea>
+
+                                    <br>
+
+                                    with username: <input name="ExpressionUsername" type="text">
+
+                                    &nbsp;&nbsp;and password:&nbsp;&nbsp;<input name="ExpressionPassword" type="text">
+                                </span>
+
+                                <br class="expression-where">
+
+                                affecting at minimum <input name="ExpressionMinHost" type="number" style="width: 70px" value="1"> hosts.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script type="text/template" id="expression-boolean-operator-tmpl">
+    <div class="modal-header expression-boolean-operator">
+        <select name="BooleanOperator">
+            <option value="and">AND</option>
+            <option value="or">OR</option>
+        </select>
+    </div>
+</script>
+
+<script>
+ResourcedMaster.globals.AccessToken = '{{ $.AccessToken.Token }}';
+
+function filter(element) {
+    var value = $(element).val();
+    if(value == '') {
+        $('.row.checks').show();
+    }
+    else {
+        value = value.toLowerCase();
+
+        $('.row.checks').each(function() {
+            var title = $(this).find('h3').text().toLowerCase().trim();
+
+            if(title.search(value) > -1) {
+                $(this).show();
+            }
+            else {
+                $(this).hide();
+            }
+        });
+    }
+};
+
+function showOrHideExpressionParts(expressionType, expressionElem) {
+    if(expressionType == 'RawHostData') {
+        $(expressionElem).find('.expression-part').hide();
+        $(expressionElem).find('.expression-where').show();
+        $(expressionElem).find('.expression-part-host-metrics').show();
+        $(expressionElem).find('.expression-part-raw-host').show();
+
+    } else if(expressionType == 'RelativeHostData') {
+        $(expressionElem).find('.expression-part').hide();
+        $(expressionElem).find('.expression-where').show();
+        $(expressionElem).find('.expression-part-host-metrics').show();
+        $(expressionElem).find('.expression-part-relative-host').show();
+
+    } else if(expressionType == 'LogData') {
+        $(expressionElem).find('.expression-part').hide();
+        $(expressionElem).find('.expression-where').show();
+        $(expressionElem).find('.expression-part-log').show();
+
+    } else if(expressionType == 'Ping') {
+        $(expressionElem).find('.expression-part').hide();
+        $(expressionElem).find('.expression-where').hide();
+
+    } else if(expressionType == 'SSH') {
+        $(expressionElem).find('.expression-part').hide();
+        $(expressionElem).find('.expression-where').show();
+        $(expressionElem).find('.expression-part-ssh').show();
+
+    } else if(expressionType == 'HTTP' || expressionType == 'HTTPS') {
+        $(expressionElem).find('.expression-part').hide();
+        $(expressionElem).find('.expression-where').show();
+        $(expressionElem).find('.expression-part-http').show();
+    }
+}
+
+function buildExpressions() {
+    var output = [];
+
+    $('.expression-container').children().each(function() {
+        var elem = $(this);
+        var expression = {};
+
+        if(elem.hasClass('expression')) {
+            expression['Type'] = elem.find('select.expression-type').val();
+            expression['MinHost'] = parseInt(elem.find('input[name="ExpressionMinHost"]').val(), 10);
+
+            if(expression['Type'] == 'RawHostData') {
+                expression['Metric'] = elem.find('select.expression-part-host-metrics').val();
+                expression['Operator'] = elem.find('.expression-part-raw-host select[name="ExpressionOperator"]').val();
+                expression['Value'] = parseInt(elem.find('.expression-part-raw-host input[name="ExpressionValue"]').val(), 10);
+
+            } else if(expression['Type'] == 'RelativeHostData') {
+                expression['Metric'] = elem.find('select.expression-part-host-metrics').val();
+                expression['Operator'] = elem.find('.expression-part-relative-host select[name="ExpressionOperator"]').val();
+                expression['Value'] = parseInt(elem.find('.expression-part-relative-host input[name="ExpressionValue"]').val(), 10);
+                expression['PrevRange'] = parseInt(elem.find('.expression-part-relative-host input[name="ExpressionPrevRange"]').val(), 10);
+                expression['PrevAggr'] = elem.find('.expression-part-relative-host select[name="ExpressionPrevAggr"]').val();
+
+            } else if(expression['Type'] == 'LogData') {
+                expression['Search'] = elem.find('.expression-part-log input[name="ExpressionSearch"]').val();
+                expression['Operator'] = elem.find('.expression-part-log select[name="ExpressionOperator"]').val();
+                expression['Value'] = parseInt(elem.find('.expression-part-log input[name="ExpressionValue"]').val(), 10);
+                expression['PrevRange'] = parseInt(elem.find('.expression-part-log input[name="ExpressionPrevRange"]').val(), 10);
+
+            } else if(expression['Type'] == 'Ping') {
+
+            } else if(expression['Type'] == 'SSH') {
+                expression['Port'] = elem.find('.expression-part-ssh input[name="ExpressionPort"]').val();
+
+            } else if(expression['Type'] == 'HTTP' || expression['Type'] == 'HTTPS') {
+                expression['Protocol'] = expression['Type'].toLowerCase();
+                expression['Port'] = elem.find('.expression-part-http input[name="ExpressionPort"]').val();
+                expression['Headers'] = elem.find('.expression-part-http textarea[name="ExpressionHeaders"]').val();
+                expression['Username'] = elem.find('.expression-part-http input[name="ExpressionUsername"]').val();
+                expression['Password'] = elem.find('.expression-part-http input[name="ExpressionPassword"]').val();
+                expression['HTTPMethod'] = elem.find('.expression-part-http select[name="ExpressionHTTPMethod"]').val();
+                expression['HTTPBody'] = elem.find('.expression-part-http textarea[name="ExpressionHTTPBody"]').val();
+            }
+
+        } else if(elem.hasClass('expression-boolean-operator')) {
+            expression['Type'] = 'BooleanOperator';
+            expression['Operator'] = elem.find('select[name="BooleanOperator"]').val();
+        }
+
+        output.push(expression);
+    });
+
+    return output;
+}
+
+function renderNewExpressionsHTML() {
+    var container = $('.expression-container');
+    var firstExpressionHTML = '<div class="modal-body expression">' + $('.expression-container > .modal-body.expression:first').html() + '</div>';
+
+    container.html('');
+    container.append(firstExpressionHTML);
+}
+
+function renderEditExpressionsHTML(expressions) {
+    var container = $('.expression-container');
+    var firstExpressionHTML = '<div class="modal-body expression">' + $('.expression-container > .modal-body.expression:first').html() + '</div>';
+
+    container.html('');
+
+    for(var i = 0; i < expressions.length; i++) {
+        var expression = expressions[i];
+
+        if(expression['Type'] != 'BooleanOperator') {
+            container.append(firstExpressionHTML);
+
+            showOrHideExpressionParts(expression['Type'], container.find('.expression:last'));
+
+            container.find('.expression:last select.expression-type').val(expression['Type']);
+            container.find('.expression:last input[name="ExpressionMinHost"]').val(expression['MinHost']);
+        }
+
+        if(expression['Type'] == 'RawHostData') {
+            container.find('.expression:last select.expression-part-host-metrics').val(expression['Metric']);
+            container.find('.expression:last .expression-part-raw-host select[name="ExpressionOperator"]').val(expression['Operator']);
+            container.find('.expression:last .expression-part-raw-host input[name="ExpressionValue"]').val(expression['Value']);
+
+        } else if(expression['Type'] == 'RelativeHostData') {
+            container.find('.expression:last select.expression-part-host-metrics').val(expression['Metric']);
+            container.find('.expression:last .expression-part-relative-host select[name="ExpressionOperator"]').val(expression['Operator']);
+            container.find('.expression:last .expression-part-relative-host input[name="ExpressionValue"]').val(expression['Value']);
+            container.find('.expression:last .expression-part-relative-host input[name="ExpressionPrevRange"]').val(expression['PrevRange']);
+            container.find('.expression:last .expression-part-relative-host select[name="ExpressionPrevAggr"]').val(expression['PrevAggr']);
+
+        } else if(expression['Type'] == 'LogData') {
+            container.find('.expression:last .expression-part-log input[name="ExpressionSearch"]').val(expression['Search']);
+            container.find('.expression:last .expression-part-log select[name="ExpressionOperator"]').val(expression['Operator']);
+            container.find('.expression:last .expression-part-log input[name="ExpressionValue"]').val(expression['Value']);
+            container.find('.expression:last .expression-part-log input[name="ExpressionPrevRange"]').val(expression['PrevRange']);
+
+        } else if(expression['Type'] == 'Ping') {
+
+        } else if(expression['Type'] == 'SSH') {
+            container.find('.expression:last .expression-part-ssh input[name="ExpressionPort"]').val(expression['Port']);
+
+        } else if(expression['Type'] == 'HTTP' || expression['Type'] == 'HTTPS') {
+            container.find('.expression:last .expression-part-http input[name="ExpressionPort"]').val(expression['Port']);
+            container.find('.expression:last .expression-part-http textarea[name="ExpressionHeaders"]').val(expression['Headers']);
+            container.find('.expression:last .expression-part-http input[name="ExpressionUsername"]').val(expression['Username']);
+            container.find('.expression:last .expression-part-http input[name="ExpressionPassword"]').val(expression['Password']);
+            container.find('.expression:last .expression-part-http select[name="ExpressionHTTPMethod"]').val(expression['HTTPMethod']);
+            container.find('.expression:last .expression-part-http textarea[name="ExpressionHTTPBody"]').val(expression['HTTPBody']);
+
+        } else if(expression['Type'] == 'BooleanOperator') {
+            container.append($('#expression-boolean-operator-tmpl').html());
+            container.find('.expression-boolean-operator:last select[name="BooleanOperator"]').val(expression['Operator']);
+        }
+    }
+}
+
+var changeActionTransport = function() {
+    var transportVal = $('select[name="ActionTransport"] option:selected').val();
+
+    if(transportVal == "nothing") {
+        $('.actions-selector-wrapper').removeClass('col-sm-3');
+        $('.actions-selector-wrapper').addClass('col-sm-12');
+    } else {
+        $('.actions-selector-wrapper').removeClass('col-sm-12');
+        $('.actions-selector-wrapper').addClass('col-sm-3');
+    }
+
+    $('.payload').hide();
+    $('.payload-' + transportVal).show();
+};
+
+$(document).ready(function() {
+    if($('.row.checks').length == 0) {
+        $('#search-input').hide();
+    }
+});
+
+// Show or hide expression part appropriately
+$(document).on('change', 'select.expression-type', function() {
+    var expressionType = $(this).val();
+    var expressionElem = $(this).closest('.expression');
+
+    showOrHideExpressionParts(expressionType, expressionElem);
+});
+
+$(document).on('click', '.btn-remove-expression', function() {
+    var expressionElem = $(this).closest('.expression');
+    var booleanExpressionElem = expressionElem.prev('.expression-boolean-operator');
+
+    if($('.expression').length > 1) {
+        booleanExpressionElem.remove();
+        expressionElem.remove();
+    }
+});
+
+$(document).on('click', '.btn-add-expression', function() {
+    $('.expression-container').append($('#expression-boolean-operator-tmpl').html());
+    $('.expression-container').append('<div class="modal-body expression">' + $('.expression:first').html() + '</div>');
+});
+
+$(document).on('click', '.btn-hostquery-search', function() {
+    console.log(ResourcedMaster.globals.AccessToken);
+    ResourcedMaster.hosts.get(ResourcedMaster.globals.AccessToken, {
+        count: true,
+        successCallback: function(result) {
+            console.log(result);
+            $('.query-hosts-count').show();
+            $('.query-hosts-count-number').html(result);
+        }
+    })
+});
+
+$('#checks-modal form .btn-primary').click(function() {
+    if($('input[name="Name"]').val() == '') {
+        return false;
+    }
+    var expressions = buildExpressions();
+
+    $(this).closest('form').find('input[name="Expressions"]').val(JSON.stringify(expressions));
+
+    $(this).closest('form').submit();
+});
+
+$('#checks-modal').on('show.bs.modal', function (event) {
+    var button = $(event.relatedTarget);   // Button that triggered the modal
+    var id = button.data('id');
+    var name = button.data('name');
+    var interval = button.data('interval');
+    var hostsQuery = button.data('hosts-query');
+    var hostsList = button.data('hosts-list');
+    var expressions = button.data('expressions');
+
+    var modal = $(this);
+
+    if(name) {
+        modal.find('input[name="Name"]').val(name);
+    }
+    if(interval) {
+        modal.find('input[name="IntervalInSeconds"]').val(parseInt(interval, 10));
+    }
+    if(hostsQuery) {
+        modal.find('input[name="HostsQuery"]').val(hostsQuery);
+    }
+    if(hostsList && hostsList.length > 0 && hostsList[0] != '') {
+        modal.find('textarea[name="HostsList"]').val(hostsList.join('\n'));
+    }
+    if(expressions) {
+        modal.find('input[name="Expressions"]').val(JSON.stringify(expressions));
+    }
+
+    if(id) {
+        modal.find('form').attr('action', '/checks/' + id);
+        modal.find('form input[name="_method"]').val('put');
+        modal.find('.btn-danger').show();
+
+        renderEditExpressionsHTML(expressions);
+
+    } else {
+        modal.find('input[name="Name"]').val('');
+        modal.find('textarea').val('');
+
+        modal.find('form').attr('action', '/checks');
+        modal.find('.btn-danger').hide();
+
+        renderNewExpressionsHTML();
+    }
+});
+
+$('select[name="ActionTransport"]').change(changeActionTransport);
+
+$('#trigger-modal form .btn-primary').click(function() {
+    $(this).closest('form').submit();
+});
+
+$('#trigger-modal').on('show.bs.modal', function (event) {
+    var button = $(event.relatedTarget);   // Button that triggered the modal
+    var id = button.data('id');
+    var checkID = button.data('check-id');
+    var checkCheckInterval = button.data('check-interval');
+    var lowViolationsCount = button.data('low-violations-count');
+    var highViolationsCount = button.data('high-violations-count');
+    var createdIntervalMinute = button.data('created-interval-minute');
+    var actionTransport = button.data('action-transport');
+    var actionEmail = button.data('action-email');
+    var actionSMSCarrier = button.data('action-sms-carrier');
+    var actionSMSPhone = button.data('action-sms-phone');
+    var actionPagerDutyServiceKey = button.data('action-pd-service-key');
+    var actionPagerDutyServiceDescription = button.data('action-pd-service-description');
+
+    var modal = $(this);
+
+    modal.find('input[name="Name"]').val(name);
+
+    if(lowViolationsCount) {
+        modal.find('input[name="LowViolationsCount"]').val(lowViolationsCount);
+    } else {
+        modal.find('input[name="LowViolationsCount"]').val(1);
+    }
+    if(highViolationsCount) {
+        modal.find('input[name="HighViolationsCount"]').val(highViolationsCount);
+    }
+    if(createdIntervalMinute) {
+        modal.find('input[name="HighViolationsCount"]').val(createdIntervalMinute);
+    }
+    if(actionTransport) {
+        $('select[name="ActionTransport"] option[value="' + actionTransport + '"]').attr('selected', 'selected');
+    }
+    if(actionEmail) {
+        modal.find('input[name="ActionEmail"]').val(actionEmail);
+    }
+    if(actionSMSCarrier) {
+        modal.find('input[name="ActionSMSCarrier"]').val(actionSMSCarrier);
+    }
+    if(actionSMSPhone) {
+        modal.find('input[name="ActionSMSPhone"]').val(actionSMSPhone);
+    }
+    if(actionPagerDutyServiceKey) {
+        modal.find('input[name="ActionPagerDutyServiceKey"]').val(actionPagerDutyServiceKey);
+    }
+    if(actionPagerDutyServiceDescription) {
+        modal.find('input[name="ActionPagerDutyDescription"]').val(actionPagerDutyServiceDescription);
+    }
+
+    if(id) {
+        modal.find('form').attr('action', '/checks/' + checkID + '/triggers/' + id);
+        modal.find('form input[name="_method"]').val('put');
+        modal.find('.btn-danger').show();
+        modal.find('.modal-title').text('Update Trigger (checked every ' + checkCheckInterval + ')');
+    } else {
+        modal.find('form').attr('action', '/checks/' + checkID + '/triggers');
+        modal.find('.btn-danger').hide();
+        modal.find('.modal-title').text('New Trigger (checked every ' + checkCheckInterval + ')');
+    }
+
+    // -----------------------------------------------
+
+    changeActionTransport();
+});
+
+$('#trigger-modal form .btn-primary').click(function() {
+    $(this).closest('form').submit();
+});
+
+$('#triggers-modal').on('show.bs.modal', function (event) {
+    var button = $(event.relatedTarget);   // Button that triggered the modal
+    var id = button.data('id');
+    var checkID = button.data('check-id');
+
+    $(this).find('.modal-body').html('<table class="table table-striped">' + $('#check-' + checkID + '-triggers').html() + '</table>');
+
+    $(this).find('table').tablesorter({
+        sortList: [[0,0], [1,0]]
+    });
+});
+
+</script>
+{{end}}
