@@ -1,0 +1,269 @@
+{{define "second-navbar"}}
+<!-- Graphs Nav -->
+<nav class="navbar navbar-default">
+    <div class="container graphs">
+        <div class="row">
+            <select class="form-control graphs-select" data-width="100%" data-size="10">
+            {{ range $graph := .Graphs }}
+                <option value="{{ $graph.ID }}" {{if eq $graph.ID $.CurrentGraph.ID }}selected="selected"{{ end }}>{{ $graph.Name }}</option>
+            {{ end }}
+            </select>
+        </div>
+    </div>
+</nav>
+{{ end }}
+
+{{define "content"}}
+<div class="container-fluid graphs-metrics-brick-layout-container">
+    <div class="graphs-metrics-brick-layout" data-graph-id="{{ .CurrentGraph.ID }}">
+        <div class="sizer"></div>
+        <div class="gutter-sizer"></div>
+
+        {{ range $metric := .CurrentGraph.MetricsFromJSON }}
+        <div class="item panel panel-default panel-chart" data-cluster-id="{{ $metric.ClusterID }}" data-id="{{ $metric.ID }}" data-key="{{ $metric.Key }}">
+            <div class="panel-heading" data-id="{{ $metric.ID }}" data-key="{{ $metric.Key }}">
+                <input class="form-control daterange" type="text" data-id="{{ $metric.ID }}" data-key="{{ $metric.Key }}" />
+            </div>
+
+            <div class="panel-body"></div>
+        </div>
+        {{ end }}
+    </div>
+</div>
+
+<script>
+// Refresh page every 5 minutes
+setInterval(function() {
+    window.location.reload();
+}, 5*60000);
+
+ResourcedMaster.globals.ChartsRendered = [];
+ResourcedMaster.globals.Charts = [];
+ResourcedMaster.globals.AccessToken = '{{ $.AccessToken.Token }}';
+ResourcedMaster.globals.CurrentGraph = {
+    ID: {{ $.CurrentGraph.ID }},
+    ClusterID: {{ $.CurrentGraph.ClusterID }},
+    Name: '{{ $.CurrentGraph.Name }}',
+    Description: '{{ $.CurrentGraph.Description }}',
+    Range: '{{ $.CurrentGraph.Range }}'
+};
+
+function renderChartPreview() {
+    var lastMetric = ResourcedMaster.globals.Charts[ResourcedMaster.globals.Charts.length - 1];
+    var containerDOM = $('#add-chart-modal').find('.add-chart-modal-container');
+    var nowUnix = moment().utc().unix();
+
+    if(lastMetric) {
+        ResourcedMaster.metrics.renderOneChart(
+            ResourcedMaster.globals.AccessToken,
+            lastMetric['ID'],
+            ResourcedMaster.globals.TSEventLines,
+            ResourcedMaster.globals.TSEventLineColors,
+            ResourcedMaster.globals.TSEventBands,
+            ResourcedMaster.globals.TSEventBandColors,
+            ResourcedMaster.globals.TSEventBandTextColors,
+            {
+                'from': nowUnix - 900,
+                'to': nowUnix,
+                'containerDOM': containerDOM,
+                'height': ResourcedMaster.highcharts.defaultHeight + 6,
+                'title': lastMetric['Key']
+            }
+        );
+    }
+}
+
+function updateChartsOrderServerSide() {
+    var charts = [];
+
+    var $container = $('.graphs-metrics-brick-layout');
+
+    var graphID = $container.data('graph-id');
+
+    $($container.packery('getItemElements')).each( function( i, itemElem ) {
+        var $itemElem = $(itemElem);
+        var chart = {
+            ID: parseInt($itemElem.data('id'), 10),
+            Key: $itemElem.data('key'),
+            ClusterID: parseInt($itemElem.data('cluster-id'), 10)
+        };
+
+        charts.push(chart);
+    });
+
+    ResourcedMaster.globals.Charts = charts;
+
+    $('#add-chart-modal form input[name="MetricsWithOrder"]').val(JSON.stringify(charts));
+
+    ResourcedMaster.graphs.ajax(ResourcedMaster.globals.AccessToken, {
+        method: 'PUT',
+        id: graphID,
+        metrics: true,
+        data: ResourcedMaster.globals.Charts
+    });
+}
+
+function execWhenAllChartsRendered(numCharts) {
+    ResourcedMaster.globals.ChartsRendered.push(true);
+
+    if(ResourcedMaster.globals.ChartsRendered.length >= numCharts) {
+        // Begin Packery Layout and enable Draggabily
+        var $container = $('.graphs-metrics-brick-layout');
+
+        $container.packery({
+            columnWidth: '.graphs-metrics-brick-layout .sizer',
+            rowHeight: '.graphs-metrics-brick-layout .sizer',
+            itemSelector: '.graphs-metrics-brick-layout .item',
+            percentPosition: true
+        });
+
+        // get item elements, jQuery-ify them
+        var $itemElems = $( $container.packery('getItemElements') );
+
+        $itemElems.each( function( i, gridItem ) {
+            var draggie = new Draggabilly( gridItem );
+            $container.packery( 'bindDraggabillyEvents', draggie );
+        });
+
+        $container.off('dragItemPositioned').on('dragItemPositioned', updateChartsOrderServerSide);
+        // -------------------------------------------
+    }
+}
+
+function renderChartRange(numCharts, daterangepicker, from, to) {
+    var elem = daterangepicker.closest('.panel-heading');
+    var metricID = elem.data('id');
+    var metricKey = elem.data('key');
+    var containerDOM = elem.siblings('.panel-body');
+
+    var renderOptions = {
+        from: from,
+        to: to,
+        containerDOM: containerDOM,
+        title: metricKey,
+        onLoad: function() {
+            execWhenAllChartsRendered(numCharts);
+        }
+    };
+
+    if((to - from) >= 21600) {
+        renderOptions.shortAggrInterval = '15min';
+    }
+
+    ResourcedMaster.metrics.renderOneChart(
+        ResourcedMaster.globals.AccessToken,
+        metricID,
+        ResourcedMaster.globals.TSEventLines,
+        ResourcedMaster.globals.TSEventLineColors,
+        ResourcedMaster.globals.TSEventBands,
+        ResourcedMaster.globals.TSEventBandColors,
+        ResourcedMaster.globals.TSEventBandTextColors,
+        renderOptions
+    );
+}
+
+function renderAllChart() {
+    $('.graphs-metrics-brick-layout .panel-heading').each(function() {
+        var drpElem = $(this).find('.daterange');
+        var drp = drpElem.data('daterangepicker');
+        var from = drp.startDate.unix();
+        var to = drp.endDate.unix();
+
+        renderChartRange($('.graphs-metrics-brick-layout .panel-heading').length, drpElem, from, to);
+    });
+}
+
+$(window).resize(function() {
+    $('.graphs-metrics-brick-layout .panel-body').each(function() {
+        $(this).highcharts().setSize(
+            $(this).width(), ResourcedMaster.highcharts.defaultHeight, doAnimation = false
+        );
+    });
+});
+
+$(document).ready(function() {
+    var currentGraphRangeSplit = ResourcedMaster.globals.CurrentGraph.Range.split(" ");
+    var currentGraphRangeCount = parseInt(currentGraphRangeSplit[0], 10);
+    var currentGraphRangeUnit = currentGraphRangeSplit[1];
+
+    ResourcedMaster.metrics.getEventsLastXRange(currentGraphRangeCount, currentGraphRangeUnit, function(a1, a2) {
+        $('input.daterange').each(function(index) {
+            var drpElem = $(this);
+
+            var settings = jQuery.extend(true, {}, ResourcedMaster.daterange.defaultSettings);
+            settings.startDate = moment().subtract(currentGraphRangeCount, currentGraphRangeUnit);
+
+            var graphPosition = drpElem.parent().parent().position();
+
+            if(graphPosition.left < 360) {
+                settings.opens = 'right';
+            }
+
+            drpElem.daterangepicker(settings, function(start, end, label) {
+                var from = start.unix();
+                var to = end.unix();
+                renderChartRange($('input.daterange').length, drpElem, from, to);
+            });
+        });
+
+        renderAllChart();
+    });
+
+    // Gather the ordering of every chart panels on load.
+    ResourcedMaster.globals.Charts = $('.panel-chart').map(function() {
+        return {
+            ID: $(this).data('id'),
+            Key: $(this).data('key'),
+            ClusterID: ResourcedMaster.globals.CurrentGraph.ClusterID
+        };
+    }).get();
+});
+
+// Change the ordering of chart panels based on user clicks.
+$('.chart-keys option').click(function(event) {
+    var $option = $(this);
+    var jsonString = $option.val();
+    var val = JSON.parse(jsonString);
+
+    if($(this).is(':selected')) {
+        var exists = false;
+
+        for(var i = 0; i < ResourcedMaster.globals.Charts.length; i++) {
+            if(ResourcedMaster.globals.Charts[i].ID == val.ID) {
+                exists = true;
+                break;
+            }
+        }
+
+        if(!exists) {
+            ResourcedMaster.globals.Charts.push(val);
+        }
+    }
+
+    $('#add-chart-modal form input[name="MetricsWithOrder"]').val(
+        JSON.stringify(ResourcedMaster.globals.Charts)
+    );
+
+    renderChartPreview();
+});
+
+$('.graphs-select').change(function() {
+    window.location = '/graphs/' + $(this).val();
+});
+
+// Highlight charts that are already selected based on existing charts.
+$('#add-chart-modal').on('shown.bs.modal', function() {
+    $(this).find('.chart-keys option').each(function(index) {
+        var chartKeyOption = $(this);
+
+        $('.graphs-metrics-brick-layout .panel-heading').each(function(index) {
+            if(chartKeyOption.data('key') == $(this).data('key')) {
+                chartKeyOption.attr('selected', 'selected');
+            }
+        });
+    });
+
+    renderChartPreview();
+});
+</script>
+{{end}}

@@ -26,7 +26,7 @@ func GetGraphs(w http.ResponseWriter, r *http.Request) {
 
 	graphs, err := dal.NewGraph(db).AllByClusterID(nil, currentCluster.ID)
 	if err != nil {
-		libhttp.HandleErrorJson(w, err)
+		libhttp.HandleErrorHTML(w, err, 500)
 		return
 	}
 
@@ -42,13 +42,20 @@ func GetGraphs(w http.ResponseWriter, r *http.Request) {
 		context.Get(r, "addr").(string),
 		currentUser,
 		context.Get(r, "clusters").([]*dal.ClusterRow),
-		context.Get(r, "currentCluster").(*dal.ClusterRow),
+		currentCluster,
 		graphs,
 	}
 
-	tmpl, err := template.ParseFiles("templates/dashboard.html.tmpl", "templates/graphs/list.html.tmpl")
+	var tmpl *template.Template
+
+	currentUserPermission := currentCluster.GetPermissionByUserID(currentUser.ID)
+	if currentUserPermission == "read" {
+		tmpl, err = template.ParseFiles("templates/dashboard.html.tmpl", "templates/graphs/list-readonly.html.tmpl")
+	} else {
+		tmpl, err = template.ParseFiles("templates/dashboard.html.tmpl", "templates/graphs/list.html.tmpl")
+	}
 	if err != nil {
-		libhttp.HandleErrorJson(w, err)
+		libhttp.HandleErrorHTML(w, err, 500)
 		return
 	}
 
@@ -176,15 +183,22 @@ func GetGraphsID(w http.ResponseWriter, r *http.Request) {
 		currentUser,
 		accessToken,
 		context.Get(r, "clusters").([]*dal.ClusterRow),
-		context.Get(r, "currentCluster").(*dal.ClusterRow),
+		currentCluster,
 		currentGraph,
 		graphsWithError.Graphs,
 		metricsWithError.Metrics,
 	}
 
-	tmpl, err := template.ParseFiles("templates/dashboard.html.tmpl", "templates/graphs/dashboard.html.tmpl")
+	var tmpl *template.Template
+
+	currentUserPermission := currentCluster.GetPermissionByUserID(currentUser.ID)
+	if currentUserPermission == "read" {
+		tmpl, err = template.ParseFiles("templates/dashboard.html.tmpl", "templates/graphs/dashboard-readonly.html.tmpl")
+	} else {
+		tmpl, err = template.ParseFiles("templates/dashboard.html.tmpl", "templates/graphs/dashboard.html.tmpl")
+	}
 	if err != nil {
-		libhttp.HandleErrorJson(w, err)
+		libhttp.HandleErrorHTML(w, err, 500)
 		return
 	}
 
