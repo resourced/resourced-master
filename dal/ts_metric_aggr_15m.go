@@ -34,15 +34,24 @@ type TSMetricAggr15m struct {
 	TSBase
 }
 
-func (ts *TSMetricAggr15m) metricRowsForHighchart(tx *sqlx.Tx, host string, tsMetricAggrRows []*TSMetricAggr15mRow) (*TSMetricHighchartPayload, error) {
+func (ts *TSMetricAggr15m) metricRowsForHighchart(tx *sqlx.Tx, host string, tsMetricAggrRows []*TSMetricAggr15mRow, aggr string) (*TSMetricHighchartPayload, error) {
 	hcPayload := &TSMetricHighchartPayload{}
 	hcPayload.Name = host
 	hcPayload.Data = make([][]interface{}, len(tsMetricAggrRows))
 
 	for i, tsMetricAggrRow := range tsMetricAggrRows {
 		row := make([]interface{}, 2)
-		row[0] = tsMetricAggrRow.Created.UnixNano() / 1000000
-		row[1] = tsMetricAggrRow.Avg
+		row[0] = tsMetricAggrRow.Created.UnixNano() / 1000000 // in seconds
+
+		if aggr == "max" || aggr == "Max" {
+			row[1] = tsMetricAggrRow.Max
+		} else if aggr == "min" || aggr == "Min" {
+			row[1] = tsMetricAggrRow.Min
+		} else if aggr == "sum" || aggr == "Sum" {
+			row[1] = tsMetricAggrRow.Sum
+		} else {
+			row[1] = tsMetricAggrRow.Avg
+		}
 
 		hcPayload.Data[i] = row
 	}
@@ -162,7 +171,7 @@ func (ts *TSMetricAggr15m) AllByMetricIDAndRange(tx *sqlx.Tx, clusterID, metricI
 	return rows, err
 }
 
-func (ts *TSMetricAggr15m) TransformForHighchart(tx *sqlx.Tx, tsMetricRows []*TSMetricAggr15mRow) ([]*TSMetricHighchartPayload, error) {
+func (ts *TSMetricAggr15m) TransformForHighchart(tx *sqlx.Tx, tsMetricRows []*TSMetricAggr15mRow, aggr string) ([]*TSMetricHighchartPayload, error) {
 	// Group all TSMetricAggr15mRows per host
 	mapHostsAndMetrics := make(map[string][]*TSMetricAggr15mRow)
 
@@ -180,7 +189,7 @@ func (ts *TSMetricAggr15m) TransformForHighchart(tx *sqlx.Tx, tsMetricRows []*TS
 	highChartPayloads := make([]*TSMetricHighchartPayload, 0)
 
 	for host, tsMetricRows := range mapHostsAndMetrics {
-		highChartPayload, err := ts.metricRowsForHighchart(tx, host, tsMetricRows)
+		highChartPayload, err := ts.metricRowsForHighchart(tx, host, tsMetricRows, aggr)
 		if err != nil {
 			return nil, err
 		}
@@ -190,20 +199,26 @@ func (ts *TSMetricAggr15m) TransformForHighchart(tx *sqlx.Tx, tsMetricRows []*TS
 	return highChartPayloads, nil
 }
 
-func (ts *TSMetricAggr15m) AllByMetricIDHostAndRangeForHighchart(tx *sqlx.Tx, clusterID, metricID int64, host string, from, to int64) ([]*TSMetricHighchartPayload, error) {
+func (ts *TSMetricAggr15m) AllByMetricIDHostAndRangeForHighchart(tx *sqlx.Tx, clusterID, metricID int64, host string, from, to int64, aggr string) ([]*TSMetricHighchartPayload, error) {
+	if aggr == "" {
+		aggr = "avg"
+	}
 	tsMetricRows, err := ts.AllByMetricIDHostAndRange(tx, clusterID, metricID, host, from, to)
 	if err != nil {
 		return nil, err
 	}
 
-	return ts.TransformForHighchart(tx, tsMetricRows)
+	return ts.TransformForHighchart(tx, tsMetricRows, aggr)
 }
 
-func (ts *TSMetricAggr15m) AllByMetricIDAndRangeForHighchart(tx *sqlx.Tx, clusterID, metricID, from, to int64) ([]*TSMetricHighchartPayload, error) {
+func (ts *TSMetricAggr15m) AllByMetricIDAndRangeForHighchart(tx *sqlx.Tx, clusterID, metricID, from, to int64, aggr string) ([]*TSMetricHighchartPayload, error) {
+	if aggr == "" {
+		aggr = "avg"
+	}
 	tsMetricRows, err := ts.AllByMetricIDAndRange(tx, clusterID, metricID, from, to)
 	if err != nil {
 		return nil, err
 	}
 
-	return ts.TransformForHighchart(tx, tsMetricRows)
+	return ts.TransformForHighchart(tx, tsMetricRows, aggr)
 }

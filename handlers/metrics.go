@@ -111,6 +111,11 @@ func GetApiTSMetricsByHost15Min(w http.ResponseWriter, r *http.Request) {
 
 	qParams := r.URL.Query()
 
+	aggr := qParams.Get("Aggr")
+	if aggr == "" {
+		aggr = qParams.Get("aggr")
+	}
+
 	fromString := qParams.Get("From")
 	if fromString == "" {
 		fromString = qParams.Get("from")
@@ -144,7 +149,7 @@ func GetApiTSMetricsByHost15Min(w http.ResponseWriter, r *http.Request) {
 
 	tsMetricDB := context.Get(r, "db.TSMetric").(*sqlx.DB)
 
-	hcMetrics, err := dal.NewTSMetricAggr15m(tsMetricDB).AllByMetricIDHostAndRangeForHighchart(nil, metricRow.ClusterID, id, host, from, to)
+	hcMetrics, err := dal.NewTSMetricAggr15m(tsMetricDB).AllByMetricIDHostAndRangeForHighchart(nil, metricRow.ClusterID, id, host, from, to, aggr)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
@@ -225,6 +230,11 @@ func GetApiTSMetrics15Min(w http.ResponseWriter, r *http.Request) {
 
 	qParams := r.URL.Query()
 
+	aggr := qParams.Get("Aggr")
+	if aggr == "" {
+		aggr = qParams.Get("aggr")
+	}
+
 	fromString := qParams.Get("From")
 	if fromString == "" {
 		fromString = qParams.Get("from")
@@ -262,7 +272,7 @@ func GetApiTSMetrics15Min(w http.ResponseWriter, r *http.Request) {
 
 	tsMetricDB := context.Get(r, "db.TSMetric").(*sqlx.DB)
 
-	hcMetrics, err := dal.NewTSMetricAggr15m(tsMetricDB).AllByMetricIDAndRangeForHighchart(nil, metricRow.ClusterID, id, from, to)
+	hcMetrics, err := dal.NewTSMetricAggr15m(tsMetricDB).AllByMetricIDAndRangeForHighchart(nil, metricRow.ClusterID, id, from, to, aggr)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
