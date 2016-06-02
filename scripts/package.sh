@@ -1,11 +1,27 @@
 #!/bin/bash
+set -e
 set -x
 
 #
-# Call this script from the root of resourced-master.
+# This script helps a contributor to cut a new release of resourced-master.
+#
+# Prerequisites:
+# - Ensure you(contributor) has Go 1.6.x or newer.
+# - Ensure godep is installed.
+#
 # Arguments:
-# $1: architecture
-# $2: semantic version number
+# $VERSION: semantic version number
+#
 
-GOOS=$1 godep go build
-tar cvzf resourced-master-$1-$2.tar.gz resourced-master static/ templates/ migrations/
+CURRENT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+ROOT_DIR=$(dirname $CURRENT_DIR)
+
+cd $ROOT_DIR
+
+GOOS=darwin godep go build
+tar cvzf resourced-master-darwin-$VERSION.tar.gz resourced-master static/ templates/ migrations/
+
+GOOS=linux godep go build
+tar cvzf resourced-master-linux-$VERSION.tar.gz resourced-master static/ templates/ migrations/
+
+rm -f $ROOT_DIR/resourced-master
