@@ -73,12 +73,6 @@ $('#search-input').bind("input propertychange", function(e) {
                     <a href="//{{ $.AccessToken.Token }}:@{{ $.Addr }}/api/logs?q={{ $savedQuery.Query }}" type="submit" class="btn btn-success">
                        JSON
                     </a>
-
-                    <form action="/saved-queries/{{ $savedQuery.ID }}" method="post">
-                        <input type="hidden" name="gorilla.csrf.Token" value="{{ $.CSRFToken }}">
-                        <input type="hidden" name="_method" value="delete">
-                        <button type="submit" class="btn btn-danger">Delete</button>
-                    </form>
                 </div>
 
                 <h3>{{ $savedQuery.Query }}</h3>
