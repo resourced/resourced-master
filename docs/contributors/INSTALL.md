@@ -1,5 +1,7 @@
 ## Development environment installation
 
+**Note:** Godep dependencies are provided, so feel free to use `godep`.
+
 1. Install PostgreSQL 9.5.x
 
 2. Install Go 1.6.x, git, setup $GOPATH, and PATH=$PATH:$GOPATH/bin
@@ -31,5 +33,5 @@
 6. Run the server
     ```
     cd $GOPATH/src/github.com/resourced/resourced-master
-    RESOURCED_MASTER_CONFIG_DIR=tests/config-files go run main.go
+    go run main.go -c tests/config-files   # or you can use env: RESOURCED_MASTER_CONFIG_DIR=tests/config-files
     ```
