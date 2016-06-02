@@ -2,15 +2,15 @@
 <nav class="navbar navbar-default">
     <div class="container">
         <div class="form-group form-group-search-and-save">
-            <form class="navbar-form navbar-left search-form" role="search" action="/logs" style="width: 100%">
-                <div class="input-group" style="width: 100%">
+            <form class="navbar-form navbar-left search-form" role="search" action="/logs/executors">
+                <div class="input-group">
                     <input id="search-input" name="q" type="text" class="form-control" placeholder="Syntax: logline search 'keyword1 & keyword2 | keyword3'. Press enter to search">
                     <input type="hidden" name="from" value="{{ $.From }}">
                     <input type="hidden" name="to" value="{{ $.To }}">
                 </div>
             </form>
 
-<!--             <form class="navbar-form navbar-left saved-queries-form" action="/saved-queries" method="post">
+            <form class="navbar-form navbar-left saved-queries-form" action="/saved-queries" method="post">
                 <input type="hidden" name="gorilla.csrf.Token" value="{{ $.CSRFToken }}">
                 <input id="saved-queries-input" name="SavedQuery" type="hidden">
                 <input name="Type" type="hidden" value="executor_logs">
@@ -21,7 +21,6 @@
                     </span>
                 </div>
             </form>
- -->
         </div>
     </div>
 </nav>

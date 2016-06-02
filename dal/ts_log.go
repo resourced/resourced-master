@@ -114,6 +114,7 @@ func (ts *TSLog) Create(tx *sqlx.Tx, clusterID int64, hostname string, tags map[
 	return tx.Commit()
 }
 
+// LastByClusterID returns the last row by cluster id.
 func (ts *TSLog) LastByClusterID(tx *sqlx.Tx, clusterID int64) (*TSLogRow, error) {
 	row := &TSLogRow{}
 	query := fmt.Sprintf("SELECT * FROM %v WHERE cluster_id=$1 ORDER BY created DESC limit 1", ts.table)

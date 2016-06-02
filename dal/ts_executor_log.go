@@ -76,6 +76,15 @@ func (ts *TSExecutorLog) Create(tx *sqlx.Tx, clusterID int64, hostname string, t
 	return nil
 }
 
+// LastByClusterID returns the last row by cluster id.
+func (ts *TSExecutorLog) LastByClusterID(tx *sqlx.Tx, clusterID int64) (*TSExecutorLogRow, error) {
+	row := &TSExecutorLogRow{}
+	query := fmt.Sprintf("SELECT * FROM %v WHERE cluster_id=$1 ORDER BY created DESC limit 1", ts.table)
+	err := ts.db.Get(row, query, clusterID)
+
+	return row, err
+}
+
 // AllByClusterIDAndRange returns all logs withing time range.
 func (ts *TSExecutorLog) AllByClusterIDAndRange(tx *sqlx.Tx, clusterID int64, from, to int64) ([]*TSExecutorLogRow, error) {
 	// Default is 15 minutes range
@@ -106,6 +115,29 @@ func (ts *TSExecutorLog) AllByClusterIDRangeAndQuery(tx *sqlx.Tx, clusterID int6
 	rows := []*TSExecutorLogRow{}
 	query := fmt.Sprintf("SELECT * FROM %v WHERE cluster_id=$1 AND created >= to_timestamp($2) at time zone 'utc' AND created <= to_timestamp($3) at time zone 'utc' AND %v ORDER BY created DESC", ts.table, pgQuery)
 	err := ts.db.Select(&rows, query, clusterID, from, to)
+
+	if err != nil {
+		err = fmt.Errorf("%v. Query: %v", err.Error(), query)
+	}
+	return rows, err
+}
+
+// AllByClusterIDLastRowIntervalAndQuery returns all rows by cluster id, unix timestamp range since last row, and resourced query.
+func (ts *TSExecutorLog) AllByClusterIDLastRowIntervalAndQuery(tx *sqlx.Tx, clusterID int64, createdInterval, resourcedQuery string) ([]*TSExecutorLogRow, error) {
+	lastRow, err := ts.LastByClusterID(tx, clusterID)
+	if err != nil {
+		return nil, err
+	}
+
+	pgQuery := querybuilder.Parse(resourcedQuery)
+	rows := []*TSExecutorLogRow{}
+
+	query := fmt.Sprintf("SELECT * FROM %v WHERE cluster_id=$1 AND created >= ($2 at time zone 'utc' - INTERVAL '%v')", ts.table, createdInterval)
+	if pgQuery != "" {
+		query = fmt.Sprintf("%v AND %v ORDER BY created DESC", query, pgQuery)
+	}
+
+	err = ts.db.Select(&rows, query, clusterID, lastRow.Created)
 
 	if err != nil {
 		err = fmt.Errorf("%v. Query: %v", err.Error(), query)

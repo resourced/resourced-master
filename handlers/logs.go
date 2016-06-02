@@ -344,3 +344,50 @@ func GetApiLogs(w http.ResponseWriter, r *http.Request) {
 
 	w.Write(rowsJSON)
 }
+
+func GetApiLogsExecutors(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	var err error
+
+	tsExecutorLogsDB := context.Get(r, "db.TSExecutorLog").(*sqlx.DB)
+
+	accessTokenRow := context.Get(r, "accessToken").(*dal.AccessTokenRow)
+
+	qParams := r.URL.Query()
+
+	toString := qParams.Get("To")
+	if toString == "" {
+		toString = qParams.Get("to")
+	}
+	to, err := strconv.ParseInt(toString, 10, 64)
+
+	fromString := qParams.Get("From")
+	if fromString == "" {
+		fromString = qParams.Get("from")
+	}
+	from, err := strconv.ParseInt(fromString, 10, 64)
+
+	query := qParams.Get("q")
+
+	var tsExecutorLogs []*dal.TSExecutorLogRow
+
+	if fromString == "" && toString == "" {
+		tsExecutorLogs, err = dal.NewTSExecutorLog(tsExecutorLogsDB).AllByClusterIDLastRowIntervalAndQuery(nil, accessTokenRow.ClusterID, "15 minute", query)
+	} else {
+		tsExecutorLogs, err = dal.NewTSExecutorLog(tsExecutorLogsDB).AllByClusterIDRangeAndQuery(nil, accessTokenRow.ClusterID, from, to, query)
+	}
+
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
+
+	rowsJSON, err := json.Marshal(tsExecutorLogs)
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
+
+	w.Write(rowsJSON)
+}

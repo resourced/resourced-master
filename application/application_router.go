@@ -90,6 +90,8 @@ func (app *Application) mux() *mux.Router {
 	router.Handle(`/api/logs`, alice.New(MustLoginApi).ThenFunc(handlers.GetApiLogs)).Methods("GET")
 	router.Handle(`/api/logs`, alice.New(MustLoginApi).ThenFunc(handlers.PostApiLogs)).Methods("POST")
 
+	router.Handle(`/api/logs/executors`, alice.New(MustLoginApi).ThenFunc(handlers.GetApiLogsExecutors)).Methods("GET")
+
 	router.Handle("/api/metadata", alice.New(MustLoginApi).ThenFunc(handlers.GetApiMetadata)).Methods("GET")
 	router.Handle(`/api/metadata/{key}`, alice.New(MustLoginApi).ThenFunc(handlers.PostApiMetadataKey)).Methods("POST")
 	router.Handle(`/api/metadata/{key}`, alice.New(MustLoginApi).ThenFunc(handlers.DeleteApiMetadataKey)).Methods("DELETE")
