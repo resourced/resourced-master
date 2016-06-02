@@ -23,6 +23,8 @@ var (
 	appMigrateArg = kingpin.Command("migrate", "CLI interface for resourced-master database migration.")
 
 	appMigrateUpArg = appMigrateArg.Command("up", "Run all migrations to the most current.").Default()
+
+	appVersion = "4.0.0"
 )
 
 func init() {
@@ -31,7 +33,7 @@ func init() {
 }
 
 func main() {
-	kingpin.UsageTemplate(kingpin.CompactUsageTemplate).Version("1.0").Author("Didip Kerabat")
+	kingpin.UsageTemplate(kingpin.CompactUsageTemplate).Version(appVersion).Author("Didip Kerabat")
 	parsedCLIArgs := kingpin.Parse()
 
 	if appConfDirFromEnv == "" && *appConfDirFromFlag == "" {
