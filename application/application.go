@@ -116,7 +116,7 @@ func (app *Application) NewHTTPServer() (*graceful.Server, error) {
 		return nil, err
 	}
 
-	requestTimeout, err := time.ParseDuration(app.GeneralConfig.RequestTimeout)
+	requestTimeout, err := time.ParseDuration(app.GeneralConfig.RequestShutdownTimeout)
 	if err != nil {
 		return nil, err
 	}

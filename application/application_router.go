@@ -2,7 +2,9 @@ package application
 
 import (
 	"net/http"
+	"time"
 
+	"github.com/didip/tollbooth"
 	"github.com/gorilla/csrf"
 	"github.com/gorilla/mux"
 	"github.com/justinas/alice"
@@ -24,10 +26,13 @@ func (app *Application) mux() *mux.Router {
 	}
 	CSRF := csrf.Protect([]byte(app.GeneralConfig.CookieSecret), CSRFOptions)
 
+	signupLimiter := tollbooth.NewLimiter(int64(app.GeneralConfig.RateLimiters.PostSignup), time.Second)
+
 	router := mux.NewRouter()
 
 	router.HandleFunc("/signup", handlers.GetSignup).Methods("GET")
-	router.HandleFunc("/signup", handlers.PostSignup).Methods("POST")
+	router.Handle("/signup", tollbooth.LimitFuncHandler(signupLimiter, handlers.PostSignup)).Methods("POST")
+
 	router.HandleFunc("/login", handlers.GetLogin).Methods("GET")
 	router.HandleFunc("/login", handlers.PostLogin).Methods("POST")
 

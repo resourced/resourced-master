@@ -7,7 +7,8 @@ LogLevel = "info"
 # DSN to core PostgreSQL database
 DSN = "postgres://localhost:5432/resourced-master?sslmode=disable"
 
-RequestTimeout = "1s"
+# How long the HTTP server will wait for requests to drain before shutdown
+RequestShutdownTimeout = "1s"
 
 # Change this!
 CookieSecret = "T0PS3CR3T"
@@ -16,6 +17,10 @@ CookieSecret = "T0PS3CR3T"
 VIPAddr = "localhost:55655"
 
 VIPProtocol = "http"
+
+# RateLimiters configures how many requests are allowed per second
+[RateLimiters]
+PostSignup = 10
 
 [HTTPS]
 # Path to HTTPS cert file
