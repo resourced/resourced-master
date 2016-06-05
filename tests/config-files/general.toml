@@ -20,6 +20,7 @@ VIPProtocol = "http"
 
 # RateLimiters configures how many requests are allowed per second
 [RateLimiters]
+GeneralAPI = 10000
 PostSignup = 10
 
 [HTTPS]

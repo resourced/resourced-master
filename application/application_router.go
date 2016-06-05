@@ -26,6 +26,7 @@ func (app *Application) mux() *mux.Router {
 	}
 	CSRF := csrf.Protect([]byte(app.GeneralConfig.CookieSecret), CSRFOptions)
 
+	generalAPILimiter := tollbooth.NewLimiter(int64(app.GeneralConfig.RateLimiters.GeneralAPI), time.Second)
 	signupLimiter := tollbooth.NewLimiter(int64(app.GeneralConfig.RateLimiters.PostSignup), time.Second)
 
 	router := mux.NewRouter()
@@ -74,33 +75,33 @@ func (app *Application) mux() *mux.Router {
 	router.Handle("/access-tokens/{id:[0-9]+}/level", alice.New(CSRF, MustLogin).ThenFunc(handlers.PostAccessTokensLevel)).Methods("POST")
 	router.Handle("/access-tokens/{id:[0-9]+}/enabled", alice.New(CSRF, MustLogin).ThenFunc(handlers.PostAccessTokensEnabled)).Methods("POST")
 
-	router.Handle("/api/hosts", alice.New(MustLoginApi).ThenFunc(handlers.GetApiHosts)).Methods("GET")
+	router.Handle("/api/hosts", alice.New(MustLoginApi).Then(tollbooth.LimitFuncHandler(generalAPILimiter, handlers.GetApiHosts))).Methods("GET")
 	router.Handle("/api/hosts", alice.New(MustLoginApi).ThenFunc(handlers.PostApiHosts)).Methods("POST")
 
-	router.Handle("/api/graphs/{id:[0-9]+}/metrics", alice.New(MustLoginApi).ThenFunc(handlers.PutApiGraphsIDMetrics)).Methods("PUT")
+	router.Handle("/api/graphs/{id:[0-9]+}/metrics", alice.New(MustLoginApi).Then(tollbooth.LimitFuncHandler(generalAPILimiter, handlers.PutApiGraphsIDMetrics))).Methods("PUT")
 
-	router.Handle("/api/metrics/{id:[0-9]+}/hosts/{host}", alice.New(MustLoginApi).ThenFunc(handlers.GetApiTSMetricsByHost)).Methods("GET")
-	router.Handle("/api/metrics/{id:[0-9]+}/hosts/{host}/15min", alice.New(MustLoginApi).ThenFunc(handlers.GetApiTSMetricsByHost15Min)).Methods("GET")
+	router.Handle("/api/metrics/{id:[0-9]+}/hosts/{host}", alice.New(MustLoginApi).Then(tollbooth.LimitFuncHandler(generalAPILimiter, handlers.GetApiTSMetricsByHost))).Methods("GET")
+	router.Handle("/api/metrics/{id:[0-9]+}/hosts/{host}/15min", alice.New(MustLoginApi).Then(tollbooth.LimitFuncHandler(generalAPILimiter, handlers.GetApiTSMetricsByHost15Min))).Methods("GET")
 
-	router.Handle("/api/metrics/{id:[0-9]+}", alice.New(MustLoginApi).ThenFunc(handlers.GetApiTSMetrics)).Methods("GET")
-	router.Handle("/api/metrics/{id:[0-9]+}/15min", alice.New(MustLoginApi).ThenFunc(handlers.GetApiTSMetrics15Min)).Methods("GET")
+	router.Handle("/api/metrics/{id:[0-9]+}", alice.New(MustLoginApi).Then(tollbooth.LimitFuncHandler(generalAPILimiter, handlers.GetApiTSMetrics))).Methods("GET")
+	router.Handle("/api/metrics/{id:[0-9]+}/15min", alice.New(MustLoginApi).Then(tollbooth.LimitFuncHandler(generalAPILimiter, handlers.GetApiTSMetrics15Min))).Methods("GET")
 
-	router.Handle(`/api/events`, alice.New(MustLoginApi).ThenFunc(handlers.PostApiEvents)).Methods("POST")
-	router.Handle(`/api/events/{id:[0-9]+}`, alice.New(MustLoginApi).ThenFunc(handlers.DeleteApiEventsID)).Methods("DELETE")
-	router.Handle(`/api/events/line`, alice.New(MustLoginApi).ThenFunc(handlers.GetApiEventsLine)).Methods("GET")
-	router.Handle(`/api/events/band`, alice.New(MustLoginApi).ThenFunc(handlers.GetApiEventsBand)).Methods("GET")
+	router.Handle(`/api/events`, alice.New(MustLoginApi).Then(tollbooth.LimitFuncHandler(generalAPILimiter, handlers.PostApiEvents))).Methods("POST")
+	router.Handle(`/api/events/{id:[0-9]+}`, alice.New(MustLoginApi).Then(tollbooth.LimitFuncHandler(generalAPILimiter, handlers.DeleteApiEventsID))).Methods("DELETE")
+	router.Handle(`/api/events/line`, alice.New(MustLoginApi).Then(tollbooth.LimitFuncHandler(generalAPILimiter, handlers.GetApiEventsLine))).Methods("GET")
+	router.Handle(`/api/events/band`, alice.New(MustLoginApi).Then(tollbooth.LimitFuncHandler(generalAPILimiter, handlers.GetApiEventsBand))).Methods("GET")
 
 	router.Handle(`/api/executors`, alice.New(MustLoginApi).ThenFunc(handlers.PostApiExecutors)).Methods("POST")
 
-	router.Handle(`/api/logs`, alice.New(MustLoginApi).ThenFunc(handlers.GetApiLogs)).Methods("GET")
+	router.Handle(`/api/logs`, alice.New(MustLoginApi).Then(tollbooth.LimitFuncHandler(generalAPILimiter, handlers.GetApiLogs))).Methods("GET")
 	router.Handle(`/api/logs`, alice.New(MustLoginApi).ThenFunc(handlers.PostApiLogs)).Methods("POST")
 
-	router.Handle(`/api/logs/executors`, alice.New(MustLoginApi).ThenFunc(handlers.GetApiLogsExecutors)).Methods("GET")
+	router.Handle(`/api/logs/executors`, alice.New(MustLoginApi).Then(tollbooth.LimitFuncHandler(generalAPILimiter, handlers.GetApiLogsExecutors))).Methods("GET")
 
-	router.Handle("/api/metadata", alice.New(MustLoginApi).ThenFunc(handlers.GetApiMetadata)).Methods("GET")
-	router.Handle(`/api/metadata/{key}`, alice.New(MustLoginApi).ThenFunc(handlers.PostApiMetadataKey)).Methods("POST")
-	router.Handle(`/api/metadata/{key}`, alice.New(MustLoginApi).ThenFunc(handlers.DeleteApiMetadataKey)).Methods("DELETE")
-	router.Handle(`/api/metadata/{key}`, alice.New(MustLoginApi).ThenFunc(handlers.GetApiMetadataKey)).Methods("GET")
+	router.Handle("/api/metadata", alice.New(MustLoginApi).Then(tollbooth.LimitFuncHandler(generalAPILimiter, handlers.GetApiMetadata))).Methods("GET")
+	router.Handle(`/api/metadata/{key}`, alice.New(MustLoginApi).Then(tollbooth.LimitFuncHandler(generalAPILimiter, handlers.PostApiMetadataKey))).Methods("POST")
+	router.Handle(`/api/metadata/{key}`, alice.New(MustLoginApi).Then(tollbooth.LimitFuncHandler(generalAPILimiter, handlers.DeleteApiMetadataKey))).Methods("DELETE")
+	router.Handle(`/api/metadata/{key}`, alice.New(MustLoginApi).Then(tollbooth.LimitFuncHandler(generalAPILimiter, handlers.GetApiMetadataKey))).Methods("GET")
 
 	// Path of static files must be last!
 	router.PathPrefix("/").Handler(http.FileServer(http.Dir("static")))

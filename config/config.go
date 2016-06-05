@@ -76,6 +76,7 @@ type GeneralConfig struct {
 
 	RateLimiters struct {
 		PostSignup int
+		GeneralAPI int
 	}
 
 	HTTPS struct {
