@@ -18,6 +18,14 @@ VIPAddr = "localhost:55655"
 
 VIPProtocol = "http"
 
+[LocalAgent]
+# Master will report its own metrics to localhost:{GraphiteTCPPort}
+GraphiteTCPPort = "55556"
+
+# How frequently will master report its own metrics
+ReportMetricsInterval = "60s"
+
+
 # RateLimiters configures how many requests are allowed per second
 [RateLimiters]
 GeneralAPI = 10000

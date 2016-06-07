@@ -74,6 +74,11 @@ type GeneralConfig struct {
 	VIPAddr                string
 	VIPProtocol            string
 
+	LocalAgent struct {
+		GraphiteTCPPort       string
+		ReportMetricsInterval string
+	}
+
 	RateLimiters struct {
 		PostSignup int
 		GeneralAPI int

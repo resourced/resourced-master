@@ -2,12 +2,15 @@ package main
 
 import (
 	"encoding/gob"
+	"net"
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"github.com/Sirupsen/logrus"
 	"github.com/alecthomas/kingpin"
+	metrics_graphite "github.com/cyberdelia/go-metrics-graphite"
 	"github.com/lib/pq"
 
 	"github.com/resourced/resourced-master/application"
@@ -145,6 +148,17 @@ func main() {
 				}
 			}
 		}()
+
+		// Publish metrics to local graphite endpoint.
+		addr, err := net.ResolveTCPAddr("tcp", "localhost:"+app.GeneralConfig.LocalAgent.GraphiteTCPPort)
+		if err != nil {
+			logrus.Fatal(err)
+		}
+		statsInterval, err := time.ParseDuration(app.GeneralConfig.LocalAgent.ReportMetricsInterval)
+		if err != nil {
+			logrus.Fatal(err)
+		}
+		go metrics_graphite.Graphite(app.NewMetricsRegistry(), statsInterval, "resourced_master", addr)
 
 		// Create HTTP server
 		srv, err := app.NewHTTPServer()
