@@ -13,6 +13,7 @@ import (
 	_ "github.com/lib/pq"
 	_ "github.com/mattes/migrate/driver/postgres"
 	"github.com/mattes/migrate/migrate"
+	"github.com/rcrowley/go-metrics"
 	"github.com/stretchr/graceful"
 
 	"github.com/resourced/resourced-master/config"
@@ -45,6 +46,7 @@ func New(configDir string) (*Application, error) {
 	app.cookieStore = sessions.NewCookieStore([]byte(app.GeneralConfig.CookieSecret))
 	app.Peers = libmap.NewTSafeMapString(nil)
 	app.Mailers = make(map[string]*mailer.Mailer)
+	app.SelfMetrics = app.NewMetricsRegistry()
 
 	if app.GeneralConfig.Email != nil {
 		mailer, err := mailer.New(app.GeneralConfig.Email)
@@ -73,6 +75,7 @@ type Application struct {
 	cookieStore   *sessions.CookieStore
 	Mailers       map[string]*mailer.Mailer
 	Peers         *libmap.TSafeMapString // Peers include self
+	SelfMetrics   metrics.Registry
 }
 
 func (app *Application) FullAddr() string {
