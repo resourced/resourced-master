@@ -134,6 +134,7 @@ func (app *Application) PruneTSCheckOnce(cluster *dal.ClusterRow) (err error) {
 	logrus.WithFields(logrus.Fields{
 		"Method":              "Application.PruneTSCheckOnce",
 		"DataRetention":       clusterRetention,
+		"ClusterID":           cluster.ID,
 		"LatencyNanoSeconds":  latency,
 		"LatencyMicroSeconds": latency / 1000,
 		"LatencyMilliSeconds": latency / 1000 / 1000,
@@ -161,6 +162,7 @@ func (app *Application) PruneTSMetricOnce(cluster *dal.ClusterRow) (err error) {
 	logrus.WithFields(logrus.Fields{
 		"Method":              "Application.PruneTSMetricOnce",
 		"DataRetention":       clusterRetention,
+		"ClusterID":           cluster.ID,
 		"LatencyNanoSeconds":  latency,
 		"LatencyMicroSeconds": latency / 1000,
 		"LatencyMilliSeconds": latency / 1000 / 1000,
@@ -188,6 +190,7 @@ func (app *Application) PruneTSMetricAggr15mOnce(cluster *dal.ClusterRow) (err e
 	logrus.WithFields(logrus.Fields{
 		"Method":              "Application.PruneTSMetricAggr15mOnce",
 		"DataRetention":       clusterRetention,
+		"ClusterID":           cluster.ID,
 		"LatencyNanoSeconds":  latency,
 		"LatencyMicroSeconds": latency / 1000,
 		"LatencyMilliSeconds": latency / 1000 / 1000,
@@ -215,6 +218,7 @@ func (app *Application) PruneTSEventOnce(cluster *dal.ClusterRow) (err error) {
 	logrus.WithFields(logrus.Fields{
 		"Method":              "Application.PruneTSEventOnce",
 		"DataRetention":       clusterRetention,
+		"ClusterID":           cluster.ID,
 		"LatencyNanoSeconds":  latency,
 		"LatencyMicroSeconds": latency / 1000,
 		"LatencyMilliSeconds": latency / 1000 / 1000,
@@ -242,6 +246,7 @@ func (app *Application) PruneTSExecutorLogOnce(cluster *dal.ClusterRow) (err err
 	logrus.WithFields(logrus.Fields{
 		"Method":              "Application.PruneTSExecutorLogOnce",
 		"DataRetention":       clusterRetention,
+		"ClusterID":           cluster.ID,
 		"LatencyNanoSeconds":  latency,
 		"LatencyMicroSeconds": latency / 1000,
 		"LatencyMilliSeconds": latency / 1000 / 1000,
@@ -269,6 +274,7 @@ func (app *Application) PruneTSLogOnce(cluster *dal.ClusterRow) (err error) {
 	logrus.WithFields(logrus.Fields{
 		"Method":              "Application.PruneTSLogOnce",
 		"DataRetention":       clusterRetention,
+		"ClusterID":           cluster.ID,
 		"LatencyNanoSeconds":  latency,
 		"LatencyMicroSeconds": latency / 1000,
 		"LatencyMilliSeconds": latency / 1000 / 1000,
