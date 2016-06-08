@@ -158,7 +158,7 @@ func main() {
 		if err != nil {
 			logrus.Fatal(err)
 		}
-		go metrics_graphite.Graphite(app.NewMetricsRegistry(), statsInterval, "resourced_master", addr)
+		go metrics_graphite.Graphite(app.NewMetricsRegistry(), statsInterval, "ResourcedMaster", addr)
 
 		// Create HTTP server
 		srv, err := app.NewHTTPServer()
