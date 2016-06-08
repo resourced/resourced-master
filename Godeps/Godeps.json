@@ -1,6 +1,7 @@
 {
 	"ImportPath": "github.com/resourced/resourced-master",
-	"GoVersion": "go1.6",
+	"GoVersion": "go1.7",
+	"GodepVersion": "v74",
 	"Deps": [
 		{
 			"ImportPath": "github.com/BurntSushi/toml",
@@ -32,6 +33,30 @@
 		{
 			"ImportPath": "github.com/carbocation/interpose",
 			"Rev": "50c09d12f8624ab10532f931cb630d0bf5f7c2c7"
+		},
+		{
+			"ImportPath": "github.com/cyberdelia/go-metrics-graphite",
+			"Rev": "7e54b5c2aa6eaff4286c44129c3def899dff528c"
+		},
+		{
+			"ImportPath": "github.com/didip/stopwatch",
+			"Rev": "94eb0675617f4e903eec5b23d713db535d47f4f8"
+		},
+		{
+			"ImportPath": "github.com/didip/tollbooth",
+			"Rev": "9adc32f5171e833befc340a64b63602529fc0373"
+		},
+		{
+			"ImportPath": "github.com/didip/tollbooth/config",
+			"Rev": "9adc32f5171e833befc340a64b63602529fc0373"
+		},
+		{
+			"ImportPath": "github.com/didip/tollbooth/errors",
+			"Rev": "9adc32f5171e833befc340a64b63602529fc0373"
+		},
+		{
+			"ImportPath": "github.com/didip/tollbooth/libstring",
+			"Rev": "9adc32f5171e833befc340a64b63602529fc0373"
 		},
 		{
 			"ImportPath": "github.com/gorilla/context",
@@ -71,6 +96,10 @@
 			"ImportPath": "github.com/jmoiron/sqlx/types",
 			"Comment": "sqlx-v1.1-65-ga7f971f",
 			"Rev": "a7f971fe8ea891a1a74ddb40c623f5722e28e8a8"
+		},
+		{
+			"ImportPath": "github.com/juju/ratelimit",
+			"Rev": "aa5bb718d4d435629821789cb90970319f57bfe5"
 		},
 		{
 			"ImportPath": "github.com/justinas/alice",
@@ -128,6 +157,10 @@
 		{
 			"ImportPath": "github.com/nytlabs/gojsonexplode",
 			"Rev": "0f3fe6bb573f445e686ebae5579d064484ec1819"
+		},
+		{
+			"ImportPath": "github.com/rcrowley/go-metrics",
+			"Rev": "eeba7bd0dd01ace6e690fa833b3f22aaec29af43"
 		},
 		{
 			"ImportPath": "github.com/resourced/resourced/libstring",
