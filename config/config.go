@@ -50,6 +50,15 @@ func NewGeneralConfig(configDir string) (config GeneralConfig, err error) {
 		config.LogLevel = "info"
 	}
 
+	if config.Metrics.DataRetentions == nil {
+		config.Metrics.DataRetentions = make(map[string]int)
+	}
+	if len(config.Metrics.DataRetentions) == 0 {
+		// Set defaults
+		config.Metrics.DataRetentions["ts_metrics"] = 1
+		config.Metrics.DataRetentions["ts_metrics_aggr_15m"] = 1
+	}
+
 	return config, err
 }
 
@@ -90,8 +99,8 @@ type GeneralConfig struct {
 	}
 
 	Metrics struct {
-		DSN           string
-		DataRetention int
+		DSN            string
+		DataRetentions map[string]int
 	}
 
 	Events struct {
