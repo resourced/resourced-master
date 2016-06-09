@@ -16,7 +16,9 @@ import (
 
 func (app *Application) NewHandlerInstruments() map[string]chan int64 {
 	instruments := make(map[string]chan int64)
-	instruments["GetHosts"] = make(chan int64)
+	for _, key := range []string{"GetHosts", "GetLogs", "GetLogsExecutors"} {
+		instruments[key] = make(chan int64)
+	}
 	return instruments
 }
 
@@ -55,8 +57,13 @@ func (app *Application) mux() *mux.Router {
 	router.Handle("/graphs", alice.New(CSRF, MustLogin, SetClusters).ThenFunc(handlers.PostGraphs)).Methods("POST")
 	router.Handle("/graphs/{id:[0-9]+}", alice.New(CSRF, MustLogin, SetClusters, SetAccessTokens).ThenFunc(handlers.GetPostPutDeleteGraphsID)).Methods("GET", "POST", "PUT", "DELETE")
 
-	router.Handle("/logs", alice.New(CSRF, MustLogin, SetClusters, SetAccessTokens).ThenFunc(handlers.GetLogs)).Methods("GET")
-	router.Handle("/logs/executors", alice.New(CSRF, MustLogin, SetClusters, SetAccessTokens).ThenFunc(handlers.GetLogsExecutors)).Methods("GET")
+	router.Handle("/logs", alice.New(CSRF, MustLogin, SetClusters, SetAccessTokens).Then(
+		stopwatch.LatencyFuncHandler(app.HandlerInstruments["GetLogs"], []string{"GET"}, handlers.GetLogs),
+	)).Methods("GET")
+
+	router.Handle("/logs/executors", alice.New(CSRF, MustLogin, SetClusters, SetAccessTokens).Then(
+		stopwatch.LatencyFuncHandler(app.HandlerInstruments["GetLogsExecutors"], []string{"GET"}, handlers.GetLogsExecutors),
+	)).Methods("GET")
 
 	router.Handle("/checks", alice.New(CSRF, MustLogin, SetClusters, SetAccessTokens).ThenFunc(handlers.GetChecks)).Methods("GET")
 	router.Handle("/checks", alice.New(CSRF, MustLogin, SetClusters).ThenFunc(handlers.PostChecks)).Methods("POST")
