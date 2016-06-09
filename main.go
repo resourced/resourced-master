@@ -149,7 +149,7 @@ func main() {
 			}
 		}()
 
-		// Publish metrics to local graphite endpoint.
+		// Publish metrics to local agent, which is a graphite endpoint.
 		addr, err := net.ResolveTCPAddr("tcp", "localhost:"+app.GeneralConfig.LocalAgent.GraphiteTCPPort)
 		if err != nil {
 			logrus.Fatal(err)
@@ -159,6 +159,9 @@ func main() {
 			logrus.Fatal(err)
 		}
 		go metrics_graphite.Graphite(app.NewMetricsRegistry(), statsInterval, "ResourcedMaster", addr)
+
+		// Report latency data to local agent, which is a graphite endpoint.
+		app.ReportHandlerLatenciesToGraphite(addr, "ResourcedMaster")
 
 		// Create HTTP server
 		srv, err := app.NewHTTPServer()

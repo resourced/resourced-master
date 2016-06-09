@@ -1,9 +1,14 @@
 package application
 
 import (
+	"bufio"
+	"fmt"
+	"net"
 	"net/http"
 	"time"
 
+	"github.com/Sirupsen/logrus"
+	"github.com/didip/stopwatch"
 	"github.com/didip/tollbooth"
 	"github.com/gorilla/csrf"
 	"github.com/gorilla/mux"
@@ -12,6 +17,43 @@ import (
 	"github.com/resourced/resourced-master/handlers"
 	"github.com/resourced/resourced-master/middlewares"
 )
+
+func (app *Application) InitHandlerInstruments() {
+	app.HandlerInstruments = make(map[string]chan int64)
+	app.HandlerInstruments["GetHosts"] = make(chan int64)
+}
+
+func (app *Application) ReportHandlerLatenciesToGraphite(addr *net.TCPAddr, prefix string) error {
+	conn, err := net.DialTCP("tcp", nil, addr)
+	if err != nil {
+		return err
+	}
+	defer conn.Close()
+
+	writer := bufio.NewWriter(conn)
+
+	for handlerName, latencyChan := range app.HandlerInstruments {
+		go func(handlerName string, latencyChan chan int64) {
+			for {
+				for latency := range latencyChan {
+					payload := fmt.Sprintf("%s.requests.%s %d %d\n", prefix, handlerName, latency, time.Now().Unix())
+
+					logrus.WithFields(logrus.Fields{
+						"Endpoint": conn.RemoteAddr().String(),
+						"Handler":  handlerName,
+						"Payload":  payload,
+						"Latency":  latency,
+					}).Info("Sending latency data to Graphite")
+
+					fmt.Fprintf(writer, payload)
+					writer.Flush()
+				}
+			}
+		}(handlerName, latencyChan)
+	}
+
+	return nil
+}
 
 // mux returns an instance of HTTP router with all the predefined rules.
 func (app *Application) mux() *mux.Router {
@@ -37,7 +79,9 @@ func (app *Application) mux() *mux.Router {
 	router.HandleFunc("/login", handlers.GetLogin).Methods("GET")
 	router.HandleFunc("/login", handlers.PostLogin).Methods("POST")
 
-	router.Handle("/", alice.New(CSRF, MustLogin, SetClusters, SetAccessTokens).ThenFunc(handlers.GetHosts)).Methods("GET")
+	router.Handle("/", alice.New(CSRF, MustLogin, SetClusters, SetAccessTokens).Then(
+		stopwatch.LatencyFuncHandler(app.HandlerInstruments["GetHosts"], []string{"GET"}, handlers.GetHosts),
+	)).Methods("GET")
 
 	router.Handle("/saved-queries", alice.New(CSRF, MustLogin, SetClusters).ThenFunc(handlers.PostSavedQueries)).Methods("POST")
 	router.Handle("/saved-queries/{id:[0-9]+}", alice.New(CSRF, MustLogin, SetClusters).ThenFunc(handlers.PostPutDeleteSavedQueriesID)).Methods("POST", "PUT", "DELETE")

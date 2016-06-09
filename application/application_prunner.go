@@ -51,63 +51,27 @@ func (app *Application) PruneAll() {
 
 		for _, cluster := range clusters {
 			go func(cluster *dal.ClusterRow) {
-				err := app.PruneTSCheckOnce(cluster)
-				if err != nil {
-					logrus.WithFields(logrus.Fields{
-						"Method":               "Application.PruneTSCheckOnce",
-						"DefaultDataRetention": app.GeneralConfig.Checks.DataRetention,
-					}).Error(err)
-				}
+				app.PruneTSCheckOnce(cluster)
 			}(cluster)
 
 			go func(cluster *dal.ClusterRow) {
-				err := app.PruneTSMetricOnce(cluster)
-				if err != nil {
-					logrus.WithFields(logrus.Fields{
-						"Method":               "Application.PruneTSMetricOnce",
-						"DefaultDataRetention": app.GeneralConfig.Metrics.DataRetentions["ts_metrics"],
-					}).Error(err)
-				}
+				app.PruneTSMetricOnce(cluster)
 			}(cluster)
 
 			go func(cluster *dal.ClusterRow) {
-				err := app.PruneTSMetricAggr15mOnce(cluster)
-				if err != nil {
-					logrus.WithFields(logrus.Fields{
-						"Method":               "Application.PruneTSMetricAggr15mOnce",
-						"DefaultDataRetention": app.GeneralConfig.Metrics.DataRetentions["ts_metrics_aggr_15m"],
-					}).Error(err)
-				}
+				app.PruneTSMetricAggr15mOnce(cluster)
 			}(cluster)
 
 			go func(cluster *dal.ClusterRow) {
-				err := app.PruneTSEventOnce(cluster)
-				if err != nil {
-					logrus.WithFields(logrus.Fields{
-						"Method":               "Application.PruneTSEventOnce",
-						"DefaultDataRetention": app.GeneralConfig.Events.DataRetention,
-					}).Error(err)
-				}
+				app.PruneTSEventOnce(cluster)
 			}(cluster)
 
 			go func(cluster *dal.ClusterRow) {
-				err := app.PruneTSExecutorLogOnce(cluster)
-				if err != nil {
-					logrus.WithFields(logrus.Fields{
-						"Method":               "Application.PruneTSExecutorLogOnce",
-						"DefaultDataRetention": app.GeneralConfig.ExecutorLogs.DataRetention,
-					}).Error(err)
-				}
+				app.PruneTSExecutorLogOnce(cluster)
 			}(cluster)
 
 			go func(cluster *dal.ClusterRow) {
-				err := app.PruneTSLogOnce(cluster)
-				if err != nil {
-					logrus.WithFields(logrus.Fields{
-						"Method":               "Application.PruneTSLogOnce",
-						"DefaultDataRetention": app.GeneralConfig.Logs.DataRetention,
-					}).Error(err)
-				}
+				app.PruneTSLogOnce(cluster)
 			}(cluster)
 		}
 
@@ -131,14 +95,19 @@ func (app *Application) PruneTSCheckOnce(cluster *dal.ClusterRow) (err error) {
 
 	latency := stopwatch.Measure(f)
 
-	logrus.WithFields(logrus.Fields{
+	logrusEntry := logrus.WithFields(logrus.Fields{
 		"Method":              "Application.PruneTSCheckOnce",
 		"DataRetention":       clusterRetention,
 		"ClusterID":           cluster.ID,
 		"LatencyNanoSeconds":  latency,
 		"LatencyMicroSeconds": latency / 1000,
 		"LatencyMilliSeconds": latency / 1000 / 1000,
-	}).Info("Latency measurement")
+	})
+	if err != nil {
+		logrusEntry.Error(err)
+	} else {
+		logrusEntry.Info("Latency measurement")
+	}
 
 	return err
 }
@@ -159,14 +128,19 @@ func (app *Application) PruneTSMetricOnce(cluster *dal.ClusterRow) (err error) {
 
 	latency := stopwatch.Measure(f)
 
-	logrus.WithFields(logrus.Fields{
+	logrusEntry := logrus.WithFields(logrus.Fields{
 		"Method":              "Application.PruneTSMetricOnce",
 		"DataRetention":       clusterRetention,
 		"ClusterID":           cluster.ID,
 		"LatencyNanoSeconds":  latency,
 		"LatencyMicroSeconds": latency / 1000,
 		"LatencyMilliSeconds": latency / 1000 / 1000,
-	}).Info("Latency measurement")
+	})
+	if err != nil {
+		logrusEntry.Error(err)
+	} else {
+		logrusEntry.Info("Latency measurement")
+	}
 
 	return err
 }
@@ -187,14 +161,19 @@ func (app *Application) PruneTSMetricAggr15mOnce(cluster *dal.ClusterRow) (err e
 
 	latency := stopwatch.Measure(f)
 
-	logrus.WithFields(logrus.Fields{
+	logrusEntry := logrus.WithFields(logrus.Fields{
 		"Method":              "Application.PruneTSMetricAggr15mOnce",
 		"DataRetention":       clusterRetention,
 		"ClusterID":           cluster.ID,
 		"LatencyNanoSeconds":  latency,
 		"LatencyMicroSeconds": latency / 1000,
 		"LatencyMilliSeconds": latency / 1000 / 1000,
-	}).Info("Latency measurement")
+	})
+	if err != nil {
+		logrusEntry.Error(err)
+	} else {
+		logrusEntry.Info("Latency measurement")
+	}
 
 	return err
 }
@@ -215,14 +194,19 @@ func (app *Application) PruneTSEventOnce(cluster *dal.ClusterRow) (err error) {
 
 	latency := stopwatch.Measure(f)
 
-	logrus.WithFields(logrus.Fields{
+	logrusEntry := logrus.WithFields(logrus.Fields{
 		"Method":              "Application.PruneTSEventOnce",
 		"DataRetention":       clusterRetention,
 		"ClusterID":           cluster.ID,
 		"LatencyNanoSeconds":  latency,
 		"LatencyMicroSeconds": latency / 1000,
 		"LatencyMilliSeconds": latency / 1000 / 1000,
-	}).Info("Latency measurement")
+	})
+	if err != nil {
+		logrusEntry.Error(err)
+	} else {
+		logrusEntry.Info("Latency measurement")
+	}
 
 	return err
 }
@@ -243,14 +227,19 @@ func (app *Application) PruneTSExecutorLogOnce(cluster *dal.ClusterRow) (err err
 
 	latency := stopwatch.Measure(f)
 
-	logrus.WithFields(logrus.Fields{
+	logrusEntry := logrus.WithFields(logrus.Fields{
 		"Method":              "Application.PruneTSExecutorLogOnce",
 		"DataRetention":       clusterRetention,
 		"ClusterID":           cluster.ID,
 		"LatencyNanoSeconds":  latency,
 		"LatencyMicroSeconds": latency / 1000,
 		"LatencyMilliSeconds": latency / 1000 / 1000,
-	}).Info("Latency measurement")
+	})
+	if err != nil {
+		logrusEntry.Error(err)
+	} else {
+		logrusEntry.Info("Latency measurement")
+	}
 
 	return err
 }
@@ -271,14 +260,19 @@ func (app *Application) PruneTSLogOnce(cluster *dal.ClusterRow) (err error) {
 
 	latency := stopwatch.Measure(f)
 
-	logrus.WithFields(logrus.Fields{
+	logrusEntry := logrus.WithFields(logrus.Fields{
 		"Method":              "Application.PruneTSLogOnce",
 		"DataRetention":       clusterRetention,
 		"ClusterID":           cluster.ID,
 		"LatencyNanoSeconds":  latency,
 		"LatencyMicroSeconds": latency / 1000,
 		"LatencyMilliSeconds": latency / 1000 / 1000,
-	}).Info("Latency measurement")
+	})
+	if err != nil {
+		logrusEntry.Error(err)
+	} else {
+		logrusEntry.Info("Latency measurement")
+	}
 
 	return err
 }

@@ -64,18 +64,21 @@ func New(configDir string) (*Application, error) {
 		app.Mailers["GeneralConfig.Checks"] = mailer
 	}
 
+	app.InitHandlerInstruments()
+
 	return app, err
 }
 
 // Application is the application object that runs HTTP server.
 type Application struct {
-	Hostname      string
-	GeneralConfig config.GeneralConfig
-	DBConfig      *config.DBConfig
-	cookieStore   *sessions.CookieStore
-	Mailers       map[string]*mailer.Mailer
-	Peers         *libmap.TSafeMapString // Peers include self
-	SelfMetrics   metrics.Registry
+	Hostname           string
+	GeneralConfig      config.GeneralConfig
+	DBConfig           *config.DBConfig
+	cookieStore        *sessions.CookieStore
+	Mailers            map[string]*mailer.Mailer
+	Peers              *libmap.TSafeMapString // Peers include self
+	SelfMetrics        metrics.Registry
+	HandlerInstruments map[string]chan int64
 }
 
 func (app *Application) FullAddr() string {
