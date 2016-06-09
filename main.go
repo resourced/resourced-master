@@ -158,10 +158,7 @@ func main() {
 		if err != nil {
 			logrus.Fatal(err)
 		}
-		go metrics_graphite.Graphite(app.NewMetricsRegistry(), statsInterval, "ResourcedMaster", addr)
-
-		// Report latency data to local agent, which is a graphite endpoint.
-		app.ReportHandlerLatenciesToGraphite(addr, "ResourcedMaster")
+		go metrics_graphite.Graphite(app.MetricsRegistry, statsInterval, "ResourcedMaster", addr)
 
 		// Create HTTP server
 		srv, err := app.NewHTTPServer()

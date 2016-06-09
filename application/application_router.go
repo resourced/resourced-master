@@ -1,13 +1,9 @@
 package application
 
 import (
-	"bufio"
-	"fmt"
-	"net"
 	"net/http"
 	"time"
 
-	"github.com/Sirupsen/logrus"
 	"github.com/didip/stopwatch"
 	"github.com/didip/tollbooth"
 	"github.com/gorilla/csrf"
@@ -18,41 +14,10 @@ import (
 	"github.com/resourced/resourced-master/middlewares"
 )
 
-func (app *Application) InitHandlerInstruments() {
-	app.HandlerInstruments = make(map[string]chan int64)
-	app.HandlerInstruments["GetHosts"] = make(chan int64)
-}
-
-func (app *Application) ReportHandlerLatenciesToGraphite(addr *net.TCPAddr, prefix string) error {
-	conn, err := net.DialTCP("tcp", nil, addr)
-	if err != nil {
-		return err
-	}
-	defer conn.Close()
-
-	writer := bufio.NewWriter(conn)
-
-	for handlerName, latencyChan := range app.HandlerInstruments {
-		go func(handlerName string, latencyChan chan int64) {
-			for {
-				for latency := range latencyChan {
-					payload := fmt.Sprintf("%s.requests.%s %d %d\n", prefix, handlerName, latency, time.Now().Unix())
-
-					logrus.WithFields(logrus.Fields{
-						"Endpoint": conn.RemoteAddr().String(),
-						"Handler":  handlerName,
-						"Payload":  payload,
-						"Latency":  latency,
-					}).Info("Sending latency data to Graphite")
-
-					fmt.Fprintf(writer, payload)
-					writer.Flush()
-				}
-			}
-		}(handlerName, latencyChan)
-	}
-
-	return nil
+func (app *Application) NewHandlerInstruments() map[string]chan int64 {
+	instruments := make(map[string]chan int64)
+	instruments["GetHosts"] = make(chan int64)
+	return instruments
 }
 
 // mux returns an instance of HTTP router with all the predefined rules.

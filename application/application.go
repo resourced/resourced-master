@@ -46,7 +46,9 @@ func New(configDir string) (*Application, error) {
 	app.cookieStore = sessions.NewCookieStore([]byte(app.GeneralConfig.CookieSecret))
 	app.Peers = libmap.NewTSafeMapString(nil)
 	app.Mailers = make(map[string]*mailer.Mailer)
-	app.SelfMetrics = app.NewMetricsRegistry()
+	app.HandlerInstruments = app.NewHandlerInstruments()
+	app.LatencyGauges = make(map[string]metrics.Gauge)
+	app.MetricsRegistry = app.NewMetricsRegistry(app.HandlerInstruments, app.LatencyGauges)
 
 	if app.GeneralConfig.Email != nil {
 		mailer, err := mailer.New(app.GeneralConfig.Email)
@@ -64,8 +66,6 @@ func New(configDir string) (*Application, error) {
 		app.Mailers["GeneralConfig.Checks"] = mailer
 	}
 
-	app.InitHandlerInstruments()
-
 	return app, err
 }
 
@@ -77,8 +77,9 @@ type Application struct {
 	cookieStore        *sessions.CookieStore
 	Mailers            map[string]*mailer.Mailer
 	Peers              *libmap.TSafeMapString // Peers include self
-	SelfMetrics        metrics.Registry
 	HandlerInstruments map[string]chan int64
+	LatencyGauges      map[string]metrics.Gauge
+	MetricsRegistry    metrics.Registry
 }
 
 func (app *Application) FullAddr() string {
