@@ -22,6 +22,7 @@ type TSMetricAggr15mRow struct {
 	ClusterID int64          `db:"cluster_id"`
 	MetricID  int64          `db:"metric_id"`
 	Created   time.Time      `db:"created"`
+	Deleted   time.Time      `db:"deleted"`
 	Key       string         `db:"key"`
 	Host      sql.NullString `db:"host"`
 	Avg       float64        `db:"avg"`

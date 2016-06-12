@@ -23,6 +23,7 @@ type TSCheckRow struct {
 	ClusterID   int64               `db:"cluster_id"`
 	CheckID     int64               `db:"check_id"`
 	Created     time.Time           `db:"created"`
+	Deleted     time.Time           `db:"deleted"`
 	Result      bool                `db:"result"`
 	Expressions sqlx_types.JSONText `db:"expressions"`
 }

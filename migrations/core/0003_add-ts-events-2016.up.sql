@@ -46,18 +46,18 @@ create table ts_events_m12_2016
     (check (created_from >= TIMESTAMP '2016-12-01 00:00:00-00' and created_from < TIMESTAMP '2017-01-01 00:00:00-00'))
     inherits (ts_events);
 
-create index idx_ts_events_m1_2016_simple_select on ts_events_m1_2016 using brin (cluster_id, created_from, created_to);
-create index idx_ts_events_m2_2016_simple_select on ts_events_m2_2016 using brin (cluster_id, created_from, created_to);
-create index idx_ts_events_m3_2016_simple_select on ts_events_m3_2016 using brin (cluster_id, created_from, created_to);
-create index idx_ts_events_m4_2016_simple_select on ts_events_m4_2016 using brin (cluster_id, created_from, created_to);
-create index idx_ts_events_m5_2016_simple_select on ts_events_m5_2016 using brin (cluster_id, created_from, created_to);
-create index idx_ts_events_m6_2016_simple_select on ts_events_m6_2016 using brin (cluster_id, created_from, created_to);
-create index idx_ts_events_m7_2016_simple_select on ts_events_m7_2016 using brin (cluster_id, created_from, created_to);
-create index idx_ts_events_m8_2016_simple_select on ts_events_m8_2016 using brin (cluster_id, created_from, created_to);
-create index idx_ts_events_m9_2016_simple_select on ts_events_m9_2016 using brin (cluster_id, created_from, created_to);
-create index idx_ts_events_m10_2016_simple_select on ts_events_m10_2016 using brin (cluster_id, created_from, created_to);
-create index idx_ts_events_m11_2016_simple_select on ts_events_m11_2016 using brin (cluster_id, created_from, created_to);
-create index idx_ts_events_m12_2016_simple_select on ts_events_m12_2016 using brin (cluster_id, created_from, created_to);
+create index idx_ts_events_m1_2016_simple_select on ts_events_m1_2016 using brin (cluster_id, created_from, created_to, deleted);
+create index idx_ts_events_m2_2016_simple_select on ts_events_m2_2016 using brin (cluster_id, created_from, created_to, deleted);
+create index idx_ts_events_m3_2016_simple_select on ts_events_m3_2016 using brin (cluster_id, created_from, created_to, deleted);
+create index idx_ts_events_m4_2016_simple_select on ts_events_m4_2016 using brin (cluster_id, created_from, created_to, deleted);
+create index idx_ts_events_m5_2016_simple_select on ts_events_m5_2016 using brin (cluster_id, created_from, created_to, deleted);
+create index idx_ts_events_m6_2016_simple_select on ts_events_m6_2016 using brin (cluster_id, created_from, created_to, deleted);
+create index idx_ts_events_m7_2016_simple_select on ts_events_m7_2016 using brin (cluster_id, created_from, created_to, deleted);
+create index idx_ts_events_m8_2016_simple_select on ts_events_m8_2016 using brin (cluster_id, created_from, created_to, deleted);
+create index idx_ts_events_m9_2016_simple_select on ts_events_m9_2016 using brin (cluster_id, created_from, created_to, deleted);
+create index idx_ts_events_m10_2016_simple_select on ts_events_m10_2016 using brin (cluster_id, created_from, created_to, deleted);
+create index idx_ts_events_m11_2016_simple_select on ts_events_m11_2016 using brin (cluster_id, created_from, created_to, deleted);
+create index idx_ts_events_m12_2016_simple_select on ts_events_m12_2016 using brin (cluster_id, created_from, created_to, deleted);
 
 create index idx_ts_events_m1_2016_id on ts_events_m1_2016 (id);
 create index idx_ts_events_m2_2016_id on ts_events_m2_2016 (id);

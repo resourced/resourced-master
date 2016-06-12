@@ -22,6 +22,7 @@ func NewTSExecutorLog(db *sqlx.DB) *TSExecutorLog {
 type TSExecutorLogRow struct {
 	ClusterID int64               `db:"cluster_id"`
 	Created   time.Time           `db:"created"`
+	Deleted   time.Time           `db:"deleted"`
 	Hostname  string              `db:"hostname"`
 	Tags      sqlx_types.JSONText `db:"tags"`
 	Logline   string              `db:"logline"`

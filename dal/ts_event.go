@@ -35,6 +35,7 @@ type TSEventRow struct {
 	ClusterID   int64     `db:"cluster_id"`
 	CreatedFrom time.Time `db:"created_from"`
 	CreatedTo   time.Time `db:"created_to"`
+	Deleted     time.Time `db:"deleted"`
 	Description string    `db:"description"`
 }
 

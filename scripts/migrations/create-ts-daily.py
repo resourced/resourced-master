@@ -8,19 +8,19 @@
 # Arguments:
 # 1.   Parent table name. Example: ts_checks
 # 2.   The year. Example: 2016
-# 3... Columns to create composite indexes. The last column is expected to be TIMESTAMP column where inheritance is based on.
+# 3... Columns to create composite indexes. The first 'created*' column is expected to be TIMESTAMP column where inheritance is based on.
 #
 # Examples:
-# ./scripts/migrations/create-ts-daily.py ts_metrics 2016 metric_id created > ./migrations/core/0005_add-ts-metrics-2016.up.sql
-# ./scripts/migrations/create-ts-daily.py ts_metrics 2016 metric_id created > ./migrations/ts-metrics/0005_add-ts-metrics-2016.up.sql
-# ./scripts/migrations/create-ts-daily.py ts_metrics_aggr_15m 2016 metric_id created > ./migrations/core/0006_add-ts-metrics-aggr-15m-2016.up.sql
-# ./scripts/migrations/create-ts-daily.py ts_metrics_aggr_15m 2016 metric_id created > ./migrations/ts-metrics/0006_add-ts-metrics-aggr-15m-2016.up.sql
-# ./scripts/migrations/create-ts-daily.py ts_executor_logs 2016 created > ./migrations/core/0026_add-ts-executor-logs-2016.up.sql
-# ./scripts/migrations/create-ts-daily.py ts_executor_logs 2016 created > ./migrations/ts-logs/0026_add-ts-executor-logs-2016.up.sql
-# ./scripts/migrations/create-ts-daily.py ts_logs 2016 created > ./migrations/core/0027_add-ts-logs-2016.up.sql
-# ./scripts/migrations/create-ts-daily.py ts_logs 2016 created > ./migrations/ts-logs/0027_add-ts-logs-2016.up.sql
-# ./scripts/migrations/create-ts-daily.py ts_checks 2016 check_id created > ./migrations/core/0032_add-ts-checks-2016.up.sql
-# ./scripts/migrations/create-ts-daily.py ts_checks 2016 check_id created > ./migrations/ts-checks/0032_add-ts-checks-2016.up.sql
+# ./scripts/migrations/create-ts-daily.py ts_metrics 2016 metric_id created deleted > ./migrations/core/0005_add-ts-metrics-2016.up.sql
+# ./scripts/migrations/create-ts-daily.py ts_metrics 2016 metric_id created deleted > ./migrations/ts-metrics/0005_add-ts-metrics-2016.up.sql
+# ./scripts/migrations/create-ts-daily.py ts_metrics_aggr_15m 2016 metric_id created deleted > ./migrations/core/0006_add-ts-metrics-aggr-15m-2016.up.sql
+# ./scripts/migrations/create-ts-daily.py ts_metrics_aggr_15m 2016 metric_id created deleted > ./migrations/ts-metrics/0006_add-ts-metrics-aggr-15m-2016.up.sql
+# ./scripts/migrations/create-ts-daily.py ts_executor_logs 2016 created deleted > ./migrations/core/0026_add-ts-executor-logs-2016.up.sql
+# ./scripts/migrations/create-ts-daily.py ts_executor_logs 2016 created deleted > ./migrations/ts-logs/0026_add-ts-executor-logs-2016.up.sql
+# ./scripts/migrations/create-ts-daily.py ts_logs 2016 created deleted > ./migrations/core/0027_add-ts-logs-2016.up.sql
+# ./scripts/migrations/create-ts-daily.py ts_logs 2016 created deleted > ./migrations/ts-logs/0027_add-ts-logs-2016.up.sql
+# ./scripts/migrations/create-ts-daily.py ts_checks 2016 check_id created deleted > ./migrations/core/0032_add-ts-checks-2016.up.sql
+# ./scripts/migrations/create-ts-daily.py ts_checks 2016 check_id created deleted > ./migrations/ts-checks/0032_add-ts-checks-2016.up.sql
 
 import sys
 import calendar
@@ -177,7 +177,9 @@ create trigger $trigger_name
 	)
 
 def create_migration(table_name, year, *columns):
-	create_tables_list = filter(bool, [create_table_by_day(table_name, columns[-1], year, month, index) for month in range(1,13) for index in range(1,32)])
+	created_columns = [c for c in columns if c.startswith('created')]
+
+	create_tables_list = filter(bool, [create_table_by_day(table_name, created_columns[0], year, month, index) for month in range(1,13) for index in range(1,32)])
 
 	if table_name == "ts_logs" or table_name == "ts_executor_logs":
 		create_indexes_list = filter(bool, [create_logs_fulltext_index_by_day(table_name, year, month, index) for month in range(1,13) for index in range(1,32)])
@@ -186,7 +188,7 @@ def create_migration(table_name, year, *columns):
 
 	create_tables = "\n".join(create_tables_list)
 	create_indexes = "\n".join(create_indexes_list)
-	trigger_on_insert = create_function_on_insert(table_name, columns[-1], year)
+	trigger_on_insert = create_function_on_insert(table_name, created_columns[0], year)
 
 	t = Template("""$create_tables
 

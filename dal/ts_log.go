@@ -40,6 +40,7 @@ type TSLogRowsWithError struct {
 type TSLogRow struct {
 	ClusterID int64               `db:"cluster_id"`
 	Created   time.Time           `db:"created"`
+	Deleted   time.Time           `db:"deleted"`
 	Hostname  string              `db:"hostname"`
 	Tags      sqlx_types.JSONText `db:"tags"`
 	Filename  string              `db:"filename"`
