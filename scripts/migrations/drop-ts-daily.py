@@ -3,6 +3,7 @@
 #
 # Documentation:
 # Purpose: This script helps generate migration file for timeseries child tables.
+#          Do not use this script for ts_events, use drop-ts-events.py instead.
 # Usage: ./scripts/migrations/drop-ts-daily.py ts_checks 2016 > ./migrations/core/0032_add-ts-checks-2016.down.sql
 # Arguments:
 # 1.   Parent table name. Example: ts_checks
