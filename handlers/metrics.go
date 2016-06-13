@@ -87,7 +87,7 @@ func GetApiTSMetricsByHost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	deletedFrom := clusterRow.GetDeletedFromUNIXTimestamp("ts_metrics")
+	deletedFrom := clusterRow.GetDeletedFromUNIXTimestampForSelect("ts_metrics")
 
 	tsMetricDB := context.Get(r, "db.TSMetric").(*sqlx.DB)
 
@@ -161,7 +161,7 @@ func GetApiTSMetricsByHost15Min(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	deletedFrom := clusterRow.GetDeletedFromUNIXTimestamp("ts_metrics_aggr_15m")
+	deletedFrom := clusterRow.GetDeletedFromUNIXTimestampForSelect("ts_metrics_aggr_15m")
 
 	tsMetricAggr15mDB := context.Get(r, "db.TSMetricAggr15m").(*sqlx.DB)
 
@@ -228,7 +228,7 @@ func GetApiTSMetrics(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	deletedFrom := clusterRow.GetDeletedFromUNIXTimestamp("ts_metrics")
+	deletedFrom := clusterRow.GetDeletedFromUNIXTimestampForSelect("ts_metrics")
 
 	tsMetricDB := context.Get(r, "db.TSMetric").(*sqlx.DB)
 
@@ -300,7 +300,7 @@ func GetApiTSMetrics15Min(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	deletedFrom := clusterRow.GetDeletedFromUNIXTimestamp("ts_metrics")
+	deletedFrom := clusterRow.GetDeletedFromUNIXTimestampForSelect("ts_metrics")
 
 	tsMetricAggr15mDB := context.Get(r, "db.TSMetricAggr15m").(*sqlx.DB)
 

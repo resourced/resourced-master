@@ -129,6 +129,8 @@ func PostApiHosts(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	db := context.Get(r, "db.Core").(*sqlx.DB)
+	tsMetricDB := context.Get(r, "db.TSMetric").(*sqlx.DB)
+	tsMetricAggr15mDB := context.Get(r, "db.TSMetricAggr15m").(*sqlx.DB)
 
 	accessTokenRow := context.Get(r, "accessToken").(*dal.AccessTokenRow)
 
@@ -144,16 +146,13 @@ func PostApiHosts(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	metricsMap, err := dal.NewMetric(db).AllByClusterIDAsMap(nil, hostRow.ClusterID)
-	if err != nil {
-		libhttp.HandleErrorJson(w, err)
-		return
-	}
-
-	tsMetricDB := context.Get(r, "db.TSMetric").(*sqlx.DB)
 	// Asynchronously write time series data to ts_metrics
 	go func() {
-		tsMetricAggr15mDB := context.Get(r, "db.TSMetricAggr15m").(*sqlx.DB)
+		metricsMap, err := dal.NewMetric(db).AllByClusterIDAsMap(nil, hostRow.ClusterID)
+		if err != nil {
+			libhttp.HandleErrorJson(w, err)
+			return
+		}
 
 		clusterRow, err := dal.NewCluster(db).GetByID(nil, accessTokenRow.ClusterID)
 		if err != nil {
@@ -161,8 +160,8 @@ func PostApiHosts(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		tsMetricsDeletedFrom := clusterRow.GetDeletedFromUNIXTimestamp("ts_metrics")
-		tsMetricsAggr15mDeletedFrom := clusterRow.GetDeletedFromUNIXTimestamp("ts_metrics_aggr_15m")
+		tsMetricsDeletedFrom := clusterRow.GetDeletedFromUNIXTimestampForInsert("ts_metrics")
+		tsMetricsAggr15mDeletedFrom := clusterRow.GetDeletedFromUNIXTimestampForInsert("ts_metrics_aggr_15m")
 
 		err = dal.NewTSMetric(tsMetricDB).CreateByHostRow(nil, tsMetricAggr15mDB, hostRow, metricsMap, tsMetricsDeletedFrom, tsMetricsAggr15mDeletedFrom)
 		if err != nil {

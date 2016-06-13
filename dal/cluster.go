@@ -37,10 +37,16 @@ func (cr *ClusterRow) GetDataRetention() map[string]int {
 	return retentions
 }
 
-// GetDeletedFromUNIXTimestamp returns UNIX timestamp from which data should be queried.
-func (cr *ClusterRow) GetDeletedFromUNIXTimestamp(tableName string) int64 {
+// GetDeletedFromUNIXTimestampForSelect returns UNIX timestamp from which data should be queried.
+func (cr *ClusterRow) GetDeletedFromUNIXTimestampForSelect(tableName string) int64 {
 	retention := cr.GetDataRetention()[tableName]
-	return time.Now().Unix() - int64(retention*86400)
+	return time.Now().Unix() - int64(retention*86400) // 1 day = 86400 seconds
+}
+
+// GetDeletedFromUNIXTimestampForInsert returns UNIX timestamp for timeseries data on insert.
+func (cr *ClusterRow) GetDeletedFromUNIXTimestampForInsert(tableName string) int64 {
+	retention := cr.GetDataRetention()[tableName]
+	return time.Now().Unix() + int64(retention*86400) // 1 day = 86400 seconds
 }
 
 // GetMembers returns Members in map
