@@ -153,7 +153,18 @@ func PostApiHosts(w http.ResponseWriter, r *http.Request) {
 	tsMetricDB := context.Get(r, "db.TSMetric").(*sqlx.DB)
 	// Asynchronously write time series data to ts_metrics
 	go func() {
-		err := dal.NewTSMetric(tsMetricDB).CreateByHostRow(nil, hostRow, metricsMap)
+		tsMetricAggr15mDB := context.Get(r, "db.TSMetricAggr15m").(*sqlx.DB)
+
+		clusterRow, err := dal.NewCluster(db).GetByID(nil, accessTokenRow.ClusterID)
+		if err != nil {
+			logrus.Error(err)
+			return
+		}
+
+		tsMetricsDeletedFrom := clusterRow.GetDeletedFromUNIXTimestamp("ts_metrics")
+		tsMetricsAggr15mDeletedFrom := clusterRow.GetDeletedFromUNIXTimestamp("ts_metrics_aggr_15m")
+
+		err = dal.NewTSMetric(tsMetricDB).CreateByHostRow(nil, tsMetricAggr15mDB, hostRow, metricsMap, tsMetricsDeletedFrom, tsMetricsAggr15mDeletedFrom)
 		if err != nil {
 			logrus.Error(err)
 		}

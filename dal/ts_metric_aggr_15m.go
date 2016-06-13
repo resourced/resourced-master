@@ -61,7 +61,7 @@ func (ts *TSMetricAggr15m) metricRowsForHighchart(tx *sqlx.Tx, host string, tsMe
 }
 
 // InsertOrUpdate a new record.
-func (ts *TSMetricAggr15m) InsertOrUpdate(tx *sqlx.Tx, clusterID, metricID int64, metricKey string, selectAggrRow *TSMetricSelectAggregateRow) (err error) {
+func (ts *TSMetricAggr15m) InsertOrUpdate(tx *sqlx.Tx, clusterID, metricID int64, metricKey string, selectAggrRow *TSMetricSelectAggregateRow, deletedFrom int64) (err error) {
 	// Check if metricKey is correct, if not don't do anything
 	if metricKey != selectAggrRow.Key {
 		return nil
@@ -81,6 +81,7 @@ func (ts *TSMetricAggr15m) InsertOrUpdate(tx *sqlx.Tx, clusterID, metricID int64
 	data["max"] = selectAggrRow.Max
 	data["min"] = selectAggrRow.Min
 	data["sum"] = selectAggrRow.Sum
+	data["deleted"] = deletedFrom
 
 	if selectAggrRow.Host != "" {
 		data["host"] = selectAggrRow.Host

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"testing"
+	"time"
 
 	_ "github.com/lib/pq"
 )
@@ -31,7 +32,7 @@ func checkHostExpressionSetupForTest(t *testing.T) map[string]interface{} {
 	c := newClusterForTest(t)
 	defer c.db.Close()
 
-	clusterRow, err := c.Create(nil, userRow.ID, "cluster-name")
+	clusterRow, err := c.Create(nil, userRow, "cluster-name")
 	if err != nil {
 		t.Fatalf("Creating a cluster for user should work. Error: %v", err)
 	}
@@ -71,7 +72,7 @@ func checkHostExpressionSetupForTest(t *testing.T) map[string]interface{} {
 	tsm := newTSMetricForTest(t)
 	defer tsm.db.Close()
 
-	err = tsm.Create(nil, clusterRow.ID, metricRow.ID, hostname, "/stuff.Score", float64(100))
+	err = tsm.Create(nil, clusterRow.ID, metricRow.ID, hostname, "/stuff.Score", float64(100), time.Now().Unix()+int64(900))
 	if err != nil {
 		t.Fatalf("Creating a TSMetric should work. Error: %v", err)
 	}
@@ -146,7 +147,7 @@ func TestCheckCRUD(t *testing.T) {
 	c := newClusterForTest(t)
 	defer c.db.Close()
 
-	clusterRow, err := c.Create(nil, userRow.ID, "cluster-name")
+	clusterRow, err := c.Create(nil, userRow, "cluster-name")
 	if err != nil {
 		t.Fatalf("Creating a cluster for user should work. Error: %v", err)
 	}
@@ -389,7 +390,7 @@ func TestCheckEvalRelativeHostDataExpression(t *testing.T) {
 	tsm := newTSMetricForTest(t)
 	defer tsm.db.Close()
 
-	err = tsm.Create(nil, setupRows["clusterRow"].(*ClusterRow).ID, setupRows["metricRow"].(*MetricRow).ID, hostname, "/stuff.Score", float64(10))
+	err = tsm.Create(nil, setupRows["clusterRow"].(*ClusterRow).ID, setupRows["metricRow"].(*MetricRow).ID, hostname, "/stuff.Score", float64(10), time.Now().Unix()+int64(900))
 	if err != nil {
 		t.Fatalf("Creating a TSMetric should work. Error: %v", err)
 	}

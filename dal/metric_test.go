@@ -30,7 +30,7 @@ func TestMetricCRUD(t *testing.T) {
 	defer cl.db.Close()
 
 	// Create cluster for user
-	clusterRow, err := cl.Create(nil, userRow.ID, "cluster-name")
+	clusterRow, err := cl.Create(nil, userRow, "cluster-name")
 	if err != nil {
 		t.Fatalf("Creating a cluster for user should work. Error: %v", err)
 	}

@@ -28,7 +28,7 @@ func TestTSLogCreateValue(t *testing.T) {
 	}
 
 	// Create cluster for user
-	clusterRow, err := newClusterForTest(t).Create(nil, userRow.ID, "cluster-name")
+	clusterRow, err := newClusterForTest(t).Create(nil, userRow, "cluster-name")
 	if err != nil {
 		t.Fatalf("Creating a cluster for user should work. Error: %v", err)
 	}

@@ -63,20 +63,21 @@ func (ts *TSMetric) metricRowsForHighchart(tx *sqlx.Tx, host string, tsMetricRow
 }
 
 // Create a new record.
-func (ts *TSMetric) Create(tx *sqlx.Tx, clusterID, metricID int64, host, key string, value float64) error {
+func (ts *TSMetric) Create(tx *sqlx.Tx, clusterID, metricID int64, host, key string, value float64, deletedFrom int64) error {
 	insertData := make(map[string]interface{})
 	insertData["cluster_id"] = clusterID
 	insertData["metric_id"] = metricID
 	insertData["key"] = key
 	insertData["host"] = host
 	insertData["value"] = value
+	insertData["deleted"] = deletedFrom
 
 	_, err := ts.InsertIntoTable(tx, insertData)
 	return err
 }
 
-func (ts *TSMetric) CreateByHostRow(tx *sqlx.Tx, hostRow *HostRow, metricsMap map[string]int64) error {
-	tsAggr15m := NewTSMetricAggr15m(ts.db)
+func (ts *TSMetric) CreateByHostRow(tx *sqlx.Tx, tsMetricAggr15mDB *sqlx.DB, hostRow *HostRow, metricsMap map[string]int64, tsMetricDeletedFrom, tsMetricAggr15mDeletedFrom int64) error {
+	tsMetricAggr15m := NewTSMetricAggr15m(tsMetricAggr15mDB)
 
 	// Loop through every host's data and see if they are part of graph metrics.
 	// If they are, insert a record in ts_metrics.
@@ -88,7 +89,7 @@ func (ts *TSMetric) CreateByHostRow(tx *sqlx.Tx, hostRow *HostRow, metricsMap ma
 				// Deserialized JSON number -> interface{} always have float64 as type.
 				if trueValueFloat64, ok := value.(float64); ok {
 					// Ignore error for now, there's no need to break the entire loop when one insert fails.
-					err := ts.Create(tx, hostRow.ClusterID, metricID, hostRow.Hostname, metricKey, trueValueFloat64)
+					err := ts.Create(tx, hostRow.ClusterID, metricID, hostRow.Hostname, metricKey, trueValueFloat64, tsMetricDeletedFrom)
 					if err != nil {
 						logrus.WithFields(logrus.Fields{
 							"Method":    "TSMetric.Create",
@@ -113,10 +114,10 @@ func (ts *TSMetric) CreateByHostRow(tx *sqlx.Tx, hostRow *HostRow, metricsMap ma
 
 							// Store those 15 minutes aggregation values
 							for _, selectAggrRow := range selectAggrRows {
-								err = tsAggr15m.InsertOrUpdate(aggrTx, hostRow.ClusterID, metricID, metricKey, selectAggrRow)
+								err = tsMetricAggr15m.InsertOrUpdate(aggrTx, hostRow.ClusterID, metricID, metricKey, selectAggrRow, tsMetricAggr15mDeletedFrom)
 								if err != nil {
 									logrus.WithFields(logrus.Fields{
-										"Method":    "tsAggr15m.InsertOrUpdate",
+										"Method":    "tsMetricAggr15m.InsertOrUpdate",
 										"ClusterID": hostRow.ClusterID,
 										"MetricID":  metricID,
 										"MetricKey": metricKey,
@@ -144,10 +145,10 @@ func (ts *TSMetric) CreateByHostRow(tx *sqlx.Tx, hostRow *HostRow, metricsMap ma
 
 							// Store those 15 minutes aggregation values per host
 							for _, selectAggrRow := range selectAggrRows {
-								err = tsAggr15m.InsertOrUpdate(aggrTx, hostRow.ClusterID, metricID, metricKey, selectAggrRow)
+								err = tsMetricAggr15m.InsertOrUpdate(aggrTx, hostRow.ClusterID, metricID, metricKey, selectAggrRow, tsMetricAggr15mDeletedFrom)
 								if err != nil {
 									logrus.WithFields(logrus.Fields{
-										"Method":    "tsAggr15m.InsertOrUpdate",
+										"Method":    "tsMetricAggr15m.InsertOrUpdate",
 										"ClusterID": hostRow.ClusterID,
 										"MetricID":  metricID,
 										"MetricKey": metricKey,

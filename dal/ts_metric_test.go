@@ -27,7 +27,7 @@ func TestTSMetricCreateValue(t *testing.T) {
 	}
 
 	// Create cluster for user
-	clusterRow, err := newClusterForTest(t).Create(nil, userRow.ID, "cluster-name")
+	clusterRow, err := newClusterForTest(t).Create(nil, userRow, "cluster-name")
 	if err != nil {
 		t.Fatalf("Creating a cluster for user should work. Error: %v", err)
 	}
@@ -46,13 +46,13 @@ func TestTSMetricCreateValue(t *testing.T) {
 
 	// Create TSMetric
 	int64Value := time.Now().UnixNano()
-	err = newTSMetricForTest(t).Create(nil, clusterRow.ID, metricRow.ID, "localhost", "/test.metric.key", float64(int64Value))
+	err = newTSMetricForTest(t).Create(nil, clusterRow.ID, metricRow.ID, "localhost", "/test.metric.key", float64(int64Value), time.Now().Unix()+int64(900))
 	if err != nil {
 		t.Fatalf("Creating a TSMetric should work. Error: %v", err)
 	}
 
 	specificNumber := +3.730022e+009
-	err = newTSMetricForTest(t).Create(nil, clusterRow.ID, metricRow.ID, "localhost", "/test.metric.key", float64(specificNumber))
+	err = newTSMetricForTest(t).Create(nil, clusterRow.ID, metricRow.ID, "localhost", "/test.metric.key", float64(specificNumber), time.Now().Unix()+int64(900))
 	if err != nil {
 		t.Fatalf("Creating a TSMetric should work. Error: %v", err)
 	}
