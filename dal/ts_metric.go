@@ -76,9 +76,7 @@ func (ts *TSMetric) Create(tx *sqlx.Tx, clusterID, metricID int64, host, key str
 	return err
 }
 
-func (ts *TSMetric) CreateByHostRow(tx *sqlx.Tx, tsMetricAggr15mDB *sqlx.DB, hostRow *HostRow, metricsMap map[string]int64, tsMetricDeletedFrom, tsMetricAggr15mDeletedFrom int64) error {
-	tsMetricAggr15m := NewTSMetricAggr15m(tsMetricAggr15mDB)
-
+func (ts *TSMetric) CreateByHostRow(tx *sqlx.Tx, hostRow *HostRow, metricsMap map[string]int64, deletedFrom int64) error {
 	// Loop through every host's data and see if they are part of graph metrics.
 	// If they are, insert a record in ts_metrics.
 	for path, data := range hostRow.DataAsFlatKeyValue() {
@@ -89,7 +87,7 @@ func (ts *TSMetric) CreateByHostRow(tx *sqlx.Tx, tsMetricAggr15mDB *sqlx.DB, hos
 				// Deserialized JSON number -> interface{} always have float64 as type.
 				if trueValueFloat64, ok := value.(float64); ok {
 					// Ignore error for now, there's no need to break the entire loop when one insert fails.
-					err := ts.Create(tx, hostRow.ClusterID, metricID, hostRow.Hostname, metricKey, trueValueFloat64, tsMetricDeletedFrom)
+					err := ts.Create(tx, hostRow.ClusterID, metricID, hostRow.Hostname, metricKey, trueValueFloat64, deletedFrom)
 					if err != nil {
 						logrus.WithFields(logrus.Fields{
 							"Method":    "TSMetric.Create",
@@ -100,68 +98,6 @@ func (ts *TSMetric) CreateByHostRow(tx *sqlx.Tx, tsMetricAggr15mDB *sqlx.DB, hos
 							"Value":     trueValueFloat64,
 						}).Error(err)
 					}
-
-					// Aggregate avg,max,min,sum values per 15 minutes.
-					go func() {
-						selectAggrRows, err := ts.AggregateEveryXMinutes(tx, hostRow.ClusterID, 15)
-						if err != nil {
-							logrus.Error(err)
-						} else {
-							aggrTx, err := ts.db.Beginx()
-							if err != nil {
-								logrus.Error(err)
-							}
-
-							// Store those 15 minutes aggregation values
-							for _, selectAggrRow := range selectAggrRows {
-								err = tsMetricAggr15m.InsertOrUpdate(aggrTx, hostRow.ClusterID, metricID, metricKey, selectAggrRow, tsMetricAggr15mDeletedFrom)
-								if err != nil {
-									logrus.WithFields(logrus.Fields{
-										"Method":    "tsMetricAggr15m.InsertOrUpdate",
-										"ClusterID": hostRow.ClusterID,
-										"MetricID":  metricID,
-										"MetricKey": metricKey,
-									}).Error(err)
-								}
-							}
-
-							err = aggrTx.Commit()
-							if err != nil {
-								logrus.Error(err)
-							}
-						}
-					}()
-
-					// Aggregate avg,max,min,sum values per 15 minutes per host.
-					go func() {
-						selectAggrRows, err := ts.AggregateEveryXMinutesPerHost(tx, hostRow.ClusterID, 15)
-						if err != nil {
-							logrus.Error(err)
-						} else {
-							aggrTx, err := ts.db.Beginx()
-							if err != nil {
-								logrus.Error(err)
-							}
-
-							// Store those 15 minutes aggregation values per host
-							for _, selectAggrRow := range selectAggrRows {
-								err = tsMetricAggr15m.InsertOrUpdate(aggrTx, hostRow.ClusterID, metricID, metricKey, selectAggrRow, tsMetricAggr15mDeletedFrom)
-								if err != nil {
-									logrus.WithFields(logrus.Fields{
-										"Method":    "tsMetricAggr15m.InsertOrUpdate",
-										"ClusterID": hostRow.ClusterID,
-										"MetricID":  metricID,
-										"MetricKey": metricKey,
-									}).Error(err)
-								}
-							}
-
-							err = aggrTx.Commit()
-							if err != nil {
-								logrus.Error(err)
-							}
-						}
-					}()
 				}
 			}
 		}

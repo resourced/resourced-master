@@ -146,7 +146,7 @@ func PostApiHosts(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Asynchronously write time series data to ts_metrics
+	// Asynchronously write timeseries data
 	go func() {
 		metricsMap, err := dal.NewMetric(db).AllByClusterIDAsMap(nil, hostRow.ClusterID)
 		if err != nil {
@@ -154,7 +154,7 @@ func PostApiHosts(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		clusterRow, err := dal.NewCluster(db).GetByID(nil, accessTokenRow.ClusterID)
+		clusterRow, err := dal.NewCluster(db).GetByID(nil, hostRow.ClusterID)
 		if err != nil {
 			logrus.Error(err)
 			return
@@ -163,10 +163,42 @@ func PostApiHosts(w http.ResponseWriter, r *http.Request) {
 		tsMetricsDeletedFrom := clusterRow.GetDeletedFromUNIXTimestampForInsert("ts_metrics")
 		tsMetricsAggr15mDeletedFrom := clusterRow.GetDeletedFromUNIXTimestampForInsert("ts_metrics_aggr_15m")
 
-		err = dal.NewTSMetric(tsMetricDB).CreateByHostRow(nil, tsMetricAggr15mDB, hostRow, metricsMap, tsMetricsDeletedFrom, tsMetricsAggr15mDeletedFrom)
+		// Create ts_metrics row
+		err = dal.NewTSMetric(tsMetricDB).CreateByHostRow(nil, hostRow, metricsMap, tsMetricsDeletedFrom)
 		if err != nil {
 			logrus.Error(err)
+			return
 		}
+
+		go func() {
+			selectAggrRows, err := dal.NewTSMetric(tsMetricDB).AggregateEveryXMinutes(nil, hostRow.ClusterID, 15)
+			if err != nil {
+				logrus.Error(err)
+				return
+			}
+
+			// Create ts_metrics_aggr_15m rows.
+			err = dal.NewTSMetricAggr15m(tsMetricAggr15mDB).CreateByHostRow(nil, hostRow, metricsMap, selectAggrRows, tsMetricsAggr15mDeletedFrom)
+			if err != nil {
+				logrus.Error(err)
+				return
+			}
+		}()
+
+		go func() {
+			selectAggrRows, err := dal.NewTSMetric(tsMetricDB).AggregateEveryXMinutesPerHost(nil, hostRow.ClusterID, 15)
+			if err != nil {
+				logrus.Error(err)
+				return
+			}
+
+			// Create ts_metrics_aggr_15m rows per host.
+			err = dal.NewTSMetricAggr15m(tsMetricAggr15mDB).CreateByHostRowPerHost(nil, hostRow, metricsMap, selectAggrRows, tsMetricsAggr15mDeletedFrom)
+			if err != nil {
+				logrus.Error(err)
+				return
+			}
+		}()
 	}()
 
 	hostRowJson, err := json.Marshal(hostRow)

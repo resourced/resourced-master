@@ -60,6 +60,94 @@ func (ts *TSMetricAggr15m) metricRowsForHighchart(tx *sqlx.Tx, host string, tsMe
 	return hcPayload, nil
 }
 
+// CreateByHostRow creates new rows given host data.
+func (ts *TSMetricAggr15m) CreateByHostRow(tx *sqlx.Tx, hostRow *HostRow, metricsMap map[string]int64, selectAggrRows []*TSMetricSelectAggregateRow, deletedFrom int64) error {
+	// Loop through every host's data and see if they are part of graph metrics.
+	// If they are, insert a record in ts_metrics_aggr_15m.
+	for path, data := range hostRow.DataAsFlatKeyValue() {
+		for dataKey, _ := range data {
+			metricKey := path + "." + dataKey
+
+			if metricID, ok := metricsMap[metricKey]; ok {
+				aggrTx, err := ts.db.Beginx()
+				if err != nil {
+					return err
+				}
+
+				err = ts.InsertOrUpdateMany(aggrTx, hostRow.ClusterID, metricID, metricKey, selectAggrRows, deletedFrom)
+				if err != nil {
+					logrus.WithFields(logrus.Fields{
+						"Method":    "TSMetricAggr15m.InsertOrUpdate",
+						"ClusterID": hostRow.ClusterID,
+						"MetricID":  metricID,
+						"MetricKey": metricKey,
+					}).Error(err)
+				}
+
+				err = aggrTx.Commit()
+				if err != nil {
+					return err
+				}
+			}
+		}
+	}
+	return nil
+}
+
+// CreateByHostRowPerHost creates new rows given host data per host.
+func (ts *TSMetricAggr15m) CreateByHostRowPerHost(tx *sqlx.Tx, hostRow *HostRow, metricsMap map[string]int64, selectAggrRows []*TSMetricSelectAggregateRow, deletedFrom int64) error {
+	// Loop through every host's data and see if they are part of graph metrics.
+	// If they are, insert a record in ts_metrics_aggr_15m.
+	for path, data := range hostRow.DataAsFlatKeyValue() {
+		for dataKey, _ := range data {
+			metricKey := path + "." + dataKey
+
+			if metricID, ok := metricsMap[metricKey]; ok {
+				aggrTx, err := ts.db.Beginx()
+				if err != nil {
+					logrus.Error(err)
+				}
+
+				// Store those 15 minutes aggregation values per host
+				err = ts.InsertOrUpdateMany(aggrTx, hostRow.ClusterID, metricID, metricKey, selectAggrRows, deletedFrom)
+				if err != nil {
+					logrus.WithFields(logrus.Fields{
+						"Method":    "TSMetricAggr15m.InsertOrUpdate",
+						"ClusterID": hostRow.ClusterID,
+						"MetricID":  metricID,
+						"MetricKey": metricKey,
+					}).Error(err)
+				}
+
+				err = aggrTx.Commit()
+				if err != nil {
+					logrus.Error(err)
+				}
+			}
+		}
+	}
+	return nil
+}
+
+// InsertOrUpdateMany multiple records.
+func (ts *TSMetricAggr15m) InsertOrUpdateMany(tx *sqlx.Tx, clusterID, metricID int64, metricKey string, selectAggrRows []*TSMetricSelectAggregateRow, deletedFrom int64) (err error) {
+	for _, selectAggrRow := range selectAggrRows {
+		err = ts.InsertOrUpdate(tx, clusterID, metricID, metricKey, selectAggrRow, deletedFrom)
+		if err != nil {
+			logrus.WithFields(logrus.Fields{
+				"Method":    "TSMetricAggr15m.InsertOrUpdate",
+				"ClusterID": clusterID,
+				"MetricID":  metricID,
+				"MetricKey": metricKey,
+			}).Error(err)
+
+			return err
+		}
+	}
+
+	return nil
+}
+
 // InsertOrUpdate a new record.
 func (ts *TSMetricAggr15m) InsertOrUpdate(tx *sqlx.Tx, clusterID, metricID int64, metricKey string, selectAggrRow *TSMetricSelectAggregateRow, deletedFrom int64) (err error) {
 	// Check if metricKey is correct, if not don't do anything
