@@ -81,7 +81,7 @@ func (ts *TSMetricAggr15m) InsertOrUpdate(tx *sqlx.Tx, clusterID, metricID int64
 	data["max"] = selectAggrRow.Max
 	data["min"] = selectAggrRow.Min
 	data["sum"] = selectAggrRow.Sum
-	data["deleted"] = deletedFrom
+	data["deleted"] = time.Unix(deletedFrom, 0).UTC()
 
 	if selectAggrRow.Host != "" {
 		data["host"] = selectAggrRow.Host

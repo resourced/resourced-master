@@ -70,7 +70,7 @@ func (ts *TSMetric) Create(tx *sqlx.Tx, clusterID, metricID int64, host, key str
 	insertData["key"] = key
 	insertData["host"] = host
 	insertData["value"] = value
-	insertData["deleted"] = deletedFrom
+	insertData["deleted"] = time.Unix(deletedFrom, 0).UTC()
 
 	_, err := ts.InsertIntoTable(tx, insertData)
 	return err
