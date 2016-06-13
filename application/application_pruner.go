@@ -12,6 +12,10 @@ import (
 
 // PruneAll runs background job to prune all old timeseries data.
 func (app *Application) PruneAll() {
+	if !app.GeneralConfig.EnablePeriodicPruneJobs {
+		return
+	}
+
 	for {
 		var clusters []*dal.ClusterRow
 		var err error

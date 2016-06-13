@@ -66,13 +66,14 @@ type EmailConfig struct {
 
 // GeneralConfig stores all configuration data.
 type GeneralConfig struct {
-	Addr                   string
-	LogLevel               string
-	DSN                    string
-	CookieSecret           string
-	RequestShutdownTimeout string
-	VIPAddr                string
-	VIPProtocol            string
+	Addr                    string
+	LogLevel                string
+	DSN                     string
+	CookieSecret            string
+	RequestShutdownTimeout  string
+	VIPAddr                 string
+	VIPProtocol             string
+	EnablePeriodicPruneJobs bool
 
 	LocalAgent struct {
 		GraphiteTCPPort       string
