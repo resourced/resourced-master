@@ -18,6 +18,8 @@ import (
 func GetApiEventsLine(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
+	db := context.Get(r, "db.Core").(*sqlx.DB)
+
 	accessTokenRow := context.Get(r, "accessToken").(*dal.AccessTokenRow)
 
 	qParams := r.URL.Query()
@@ -45,9 +47,17 @@ func GetApiEventsLine(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	clusterRow, err := dal.NewCluster(db).GetByID(nil, accessTokenRow.ClusterID)
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
+
+	deletedFrom := clusterRow.GetDeletedFromUNIXTimestampForSelect("ts_events")
+
 	tsEventsDB := context.Get(r, "db.TSEvent").(*sqlx.DB)
 
-	rows, err := dal.NewTSEvent(tsEventsDB).AllLinesByClusterIDAndCreatedFromRangeForHighchart(nil, accessTokenRow.ClusterID, from, to)
+	rows, err := dal.NewTSEvent(tsEventsDB).AllLinesByClusterIDAndCreatedFromRangeForHighchart(nil, accessTokenRow.ClusterID, from, to, deletedFrom)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
@@ -65,6 +75,8 @@ func GetApiEventsLine(w http.ResponseWriter, r *http.Request) {
 func GetApiEventsBand(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
+	db := context.Get(r, "db.Core").(*sqlx.DB)
+
 	accessTokenRow := context.Get(r, "accessToken").(*dal.AccessTokenRow)
 
 	qParams := r.URL.Query()
@@ -92,9 +104,17 @@ func GetApiEventsBand(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	clusterRow, err := dal.NewCluster(db).GetByID(nil, accessTokenRow.ClusterID)
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
+
+	deletedFrom := clusterRow.GetDeletedFromUNIXTimestampForSelect("ts_events")
+
 	tsEventsDB := context.Get(r, "db.TSEvent").(*sqlx.DB)
 
-	rows, err := dal.NewTSEvent(tsEventsDB).AllBandsByClusterIDAndCreatedFromRangeForHighchart(nil, accessTokenRow.ClusterID, from, to)
+	rows, err := dal.NewTSEvent(tsEventsDB).AllBandsByClusterIDAndCreatedFromRangeForHighchart(nil, accessTokenRow.ClusterID, from, to, deletedFrom)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return

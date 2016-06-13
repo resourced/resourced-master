@@ -44,10 +44,15 @@ type TSEvent struct {
 }
 
 // AllLinesByClusterIDAndCreatedFromRangeForHighchart returns all rows given created_from range.
-func (ts *TSEvent) AllLinesByClusterIDAndCreatedFromRangeForHighchart(tx *sqlx.Tx, clusterID, from, to int64) ([]TSEventHighchartLinePayload, error) {
+func (ts *TSEvent) AllLinesByClusterIDAndCreatedFromRangeForHighchart(tx *sqlx.Tx, clusterID, from, to, deletedFrom int64) ([]TSEventHighchartLinePayload, error) {
 	rows := []*TSEventRow{}
-	query := fmt.Sprintf("SELECT * FROM %v WHERE cluster_id=$1 AND created_from = created_to AND created_from >= to_timestamp($2) at time zone 'utc' AND created_from <= to_timestamp($3) at time zone 'utc'", ts.table)
-	err := ts.db.Select(&rows, query, clusterID, from, to)
+	query := fmt.Sprintf(`SELECT * FROM %v WHERE cluster_id=$1 AND
+created_from = created_to AND
+created_from >= to_timestamp($2) at time zone 'utc' AND
+created_from <= to_timestamp($3) at time zone 'utc' AND
+deleted >= to_timestamp($4) at time zone 'utc'`, ts.table)
+
+	err := ts.db.Select(&rows, query, clusterID, from, to, deletedFrom)
 	if err != nil {
 		return nil, err
 	}
@@ -68,10 +73,15 @@ func (ts *TSEvent) AllLinesByClusterIDAndCreatedFromRangeForHighchart(tx *sqlx.T
 }
 
 // AllBandsByClusterIDAndCreatedFromRangeForHighchart returns all rows with time stretch between created_from and created_to.
-func (ts *TSEvent) AllBandsByClusterIDAndCreatedFromRangeForHighchart(tx *sqlx.Tx, clusterID, from, to int64) ([]TSEventHighchartLinePayload, error) {
+func (ts *TSEvent) AllBandsByClusterIDAndCreatedFromRangeForHighchart(tx *sqlx.Tx, clusterID, from, to, deletedFrom int64) ([]TSEventHighchartLinePayload, error) {
 	rows := []*TSEventRow{}
-	query := fmt.Sprintf("SELECT * FROM %v WHERE cluster_id=$1 AND created_from < created_to AND created_from >= to_timestamp($2) at time zone 'utc' AND created_from <= to_timestamp($3) at time zone 'utc'", ts.table)
-	err := ts.db.Select(&rows, query, clusterID, from, to)
+	query := fmt.Sprintf(`SELECT * FROM %v WHERE cluster_id=$1 AND
+created_from < created_to AND
+created_from >= to_timestamp($2) at time zone 'utc' AND
+created_from <= to_timestamp($3) at time zone 'utc' AND
+deleted >= to_timestamp($4) at time zone 'utc'`, ts.table)
+
+	err := ts.db.Select(&rows, query, clusterID, from, to, deletedFrom)
 	if err != nil {
 		return nil, err
 	}
