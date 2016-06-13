@@ -44,7 +44,7 @@ type TSExecutorLog struct {
 	TSBase
 }
 
-func (ts *TSExecutorLog) CreateFromJSON(tx *sqlx.Tx, clusterID int64, jsonData []byte) error {
+func (ts *TSExecutorLog) CreateFromJSON(tx *sqlx.Tx, clusterID int64, jsonData []byte, deletedFrom int64) error {
 	payload := &AgentLogPayload{}
 
 	err := json.Unmarshal(jsonData, payload)
@@ -52,16 +52,17 @@ func (ts *TSExecutorLog) CreateFromJSON(tx *sqlx.Tx, clusterID int64, jsonData [
 		return err
 	}
 
-	return ts.Create(tx, clusterID, payload.Host.Name, payload.Host.Tags, payload.Data.Loglines)
+	return ts.Create(tx, clusterID, payload.Host.Name, payload.Host.Tags, payload.Data.Loglines, deletedFrom)
 }
 
 // Create a new record.
-func (ts *TSExecutorLog) Create(tx *sqlx.Tx, clusterID int64, hostname string, tags map[string]string, loglines []string) error {
+func (ts *TSExecutorLog) Create(tx *sqlx.Tx, clusterID int64, hostname string, tags map[string]string, loglines []string, deletedFrom int64) error {
 	for _, logline := range loglines {
 		insertData := make(map[string]interface{})
 		insertData["cluster_id"] = clusterID
 		insertData["hostname"] = hostname
 		insertData["logline"] = logline
+		insertData["deleted"] = time.Unix(deletedFrom, 0).UTC()
 
 		tagsInJson, err := json.Marshal(tags)
 		if err == nil {
@@ -87,7 +88,7 @@ func (ts *TSExecutorLog) LastByClusterID(tx *sqlx.Tx, clusterID int64) (*TSExecu
 }
 
 // AllByClusterIDAndRange returns all logs withing time range.
-func (ts *TSExecutorLog) AllByClusterIDAndRange(tx *sqlx.Tx, clusterID int64, from, to int64) ([]*TSExecutorLogRow, error) {
+func (ts *TSExecutorLog) AllByClusterIDAndRange(tx *sqlx.Tx, clusterID int64, from, to, deletedFrom int64) ([]*TSExecutorLogRow, error) {
 	// Default is 15 minutes range
 	if to == -1 {
 		to = time.Now().UTC().Unix()
@@ -97,8 +98,13 @@ func (ts *TSExecutorLog) AllByClusterIDAndRange(tx *sqlx.Tx, clusterID int64, fr
 	}
 
 	rows := []*TSExecutorLogRow{}
-	query := fmt.Sprintf("SELECT * FROM %v WHERE cluster_id=$1 AND created >= to_timestamp($2) at time zone 'utc' AND created <= to_timestamp($3) at time zone 'utc' ORDER BY created DESC", ts.table)
-	err := ts.db.Select(&rows, query, clusterID, from, to)
+	query := fmt.Sprintf(`SELECT * FROM %v WHERE cluster_id=$1 AND
+created >= to_timestamp($2) at time zone 'utc' AND
+created <= to_timestamp($3) at time zone 'utc' AND
+deleted >= to_timestamp($4) at time zone 'utc'
+ORDER BY created DESC`, ts.table)
+
+	err := ts.db.Select(&rows, query, clusterID, from, to, deletedFrom)
 
 	if err != nil {
 		err = fmt.Errorf("%v. Query: %v", err.Error(), query)
@@ -107,15 +113,20 @@ func (ts *TSExecutorLog) AllByClusterIDAndRange(tx *sqlx.Tx, clusterID int64, fr
 }
 
 // AllByClusterIDRangeAndQuery returns all rows by resourced query.
-func (ts *TSExecutorLog) AllByClusterIDRangeAndQuery(tx *sqlx.Tx, clusterID int64, from, to int64, resourcedQuery string) ([]*TSExecutorLogRow, error) {
+func (ts *TSExecutorLog) AllByClusterIDRangeAndQuery(tx *sqlx.Tx, clusterID int64, from, to int64, resourcedQuery string, deletedFrom int64) ([]*TSExecutorLogRow, error) {
 	pgQuery := querybuilder.Parse(resourcedQuery)
 	if pgQuery == "" {
-		return ts.AllByClusterIDAndRange(tx, clusterID, from, to)
+		return ts.AllByClusterIDAndRange(tx, clusterID, from, to, deletedFrom)
 	}
 
 	rows := []*TSExecutorLogRow{}
-	query := fmt.Sprintf("SELECT * FROM %v WHERE cluster_id=$1 AND created >= to_timestamp($2) at time zone 'utc' AND created <= to_timestamp($3) at time zone 'utc' AND %v ORDER BY created DESC", ts.table, pgQuery)
-	err := ts.db.Select(&rows, query, clusterID, from, to)
+	query := fmt.Sprintf(`SELECT * FROM %v WHERE cluster_id=$1 AND
+created >= to_timestamp($2) at time zone 'utc' AND
+created <= to_timestamp($3) at time zone 'utc' AND
+deleted >= to_timestamp($4) at time zone 'utc' AND
+%v ORDER BY created DESC`, ts.table, pgQuery)
+
+	err := ts.db.Select(&rows, query, clusterID, from, to, deletedFrom)
 
 	if err != nil {
 		err = fmt.Errorf("%v. Query: %v", err.Error(), query)
@@ -124,7 +135,7 @@ func (ts *TSExecutorLog) AllByClusterIDRangeAndQuery(tx *sqlx.Tx, clusterID int6
 }
 
 // AllByClusterIDLastRowIntervalAndQuery returns all rows by cluster id, unix timestamp range since last row, and resourced query.
-func (ts *TSExecutorLog) AllByClusterIDLastRowIntervalAndQuery(tx *sqlx.Tx, clusterID int64, createdInterval, resourcedQuery string) ([]*TSExecutorLogRow, error) {
+func (ts *TSExecutorLog) AllByClusterIDLastRowIntervalAndQuery(tx *sqlx.Tx, clusterID int64, createdInterval, resourcedQuery string, deletedFrom int64) ([]*TSExecutorLogRow, error) {
 	lastRow, err := ts.LastByClusterID(tx, clusterID)
 	if err != nil {
 		return nil, err
@@ -133,12 +144,15 @@ func (ts *TSExecutorLog) AllByClusterIDLastRowIntervalAndQuery(tx *sqlx.Tx, clus
 	pgQuery := querybuilder.Parse(resourcedQuery)
 	rows := []*TSExecutorLogRow{}
 
-	query := fmt.Sprintf("SELECT * FROM %v WHERE cluster_id=$1 AND created >= ($2 at time zone 'utc' - INTERVAL '%v')", ts.table, createdInterval)
+	query := fmt.Sprintf(`SELECT * FROM %v WHERE cluster_id=$1 AND
+created >= ($2 at time zone 'utc' - INTERVAL '%v') AND
+deleted >= to_timestamp($3) at time zone 'utc'`, ts.table, createdInterval)
+
 	if pgQuery != "" {
 		query = fmt.Sprintf("%v AND %v ORDER BY created DESC", query, pgQuery)
 	}
 
-	err = ts.db.Select(&rows, query, clusterID, lastRow.Created)
+	err = ts.db.Select(&rows, query, clusterID, lastRow.Created, deletedFrom)
 
 	if err != nil {
 		err = fmt.Errorf("%v. Query: %v", err.Error(), query)

@@ -487,7 +487,7 @@ func TestCheckEvalLogDataExpression(t *testing.T) {
 	expression.Value = float64(0)
 	expression.PrevRange = 15
 
-	expression = checkRow.EvalLogDataExpression(db, nil, expression)
+	expression = checkRow.EvalLogDataExpression(db, db, nil, expression)
 	if expression.Result.Value != true {
 		// The result should be true. The count of logs with "aaa" string is indeed greater than 0, which means that this expression must fail.
 		t.Fatalf("Expression result is not %v %v", expression.Operator, expression.Value)

@@ -291,11 +291,11 @@ func (checkRow *CheckRow) GetExpressions() ([]CheckExpression, error) {
 // 1st value: List of all CheckExpression containing results.
 // 2nd value: The value of all expressions.
 // 3rd value: Error
-func (checkRow *CheckRow) EvalExpressions(hostDB *sqlx.DB, tsMetricDB *sqlx.DB, tsLogDB *sqlx.DB) ([]CheckExpression, bool, error) {
+func (checkRow *CheckRow) EvalExpressions(coreDB *sqlx.DB, tsMetricDB *sqlx.DB, tsLogDB *sqlx.DB) ([]CheckExpression, bool, error) {
 	var hostRows []*HostRow
 	var err error
 
-	host := NewHost(hostDB)
+	host := NewHost(coreDB)
 
 	if checkRow.HostsQuery != "" {
 		hostRows, err = host.AllByClusterIDQueryAndUpdatedInterval(nil, checkRow.ClusterID, checkRow.HostsQuery, "5m")
@@ -328,7 +328,7 @@ func (checkRow *CheckRow) EvalExpressions(hostDB *sqlx.DB, tsMetricDB *sqlx.DB, 
 			expression = checkRow.EvalRelativeHostDataExpression(tsMetricDB, hostRows, expression)
 
 		} else if expression.Type == "LogData" {
-			expression = checkRow.EvalLogDataExpression(tsLogDB, hostRows, expression)
+			expression = checkRow.EvalLogDataExpression(coreDB, tsLogDB, hostRows, expression)
 
 		} else if expression.Type == "Ping" {
 			expression = checkRow.EvalPingExpression(hostRows, expression)
@@ -515,7 +515,7 @@ func (checkRow *CheckRow) EvalRelativeHostDataExpression(tsMetricDB *sqlx.DB, ho
 	return expression
 }
 
-func (checkRow *CheckRow) EvalLogDataExpression(tsLogDB *sqlx.DB, hostRows []*HostRow, expression CheckExpression) CheckExpression {
+func (checkRow *CheckRow) EvalLogDataExpression(coreDB *sqlx.DB, tsLogDB *sqlx.DB, hostRows []*HostRow, expression CheckExpression) CheckExpression {
 	hostnames, err := checkRow.GetHostsList()
 	if err != nil {
 		expression.Result.Value = false
@@ -539,6 +539,14 @@ func (checkRow *CheckRow) EvalLogDataExpression(tsLogDB *sqlx.DB, hostRows []*Ho
 	badHostnames := make([]string, 0)
 	goodHostnames := make([]string, 0)
 
+	clusterRow, err := NewCluster(coreDB).GetByID(nil, checkRow.ClusterID)
+	if err != nil {
+		expression.Result.Value = false
+		return expression
+	}
+
+	deletedFrom := clusterRow.GetDeletedFromUNIXTimestampForSelect("ts_logs")
+
 	var perHostResult bool
 
 	for _, hostname := range hostnames {
@@ -546,7 +554,7 @@ func (checkRow *CheckRow) EvalLogDataExpression(tsLogDB *sqlx.DB, hostRows []*Ho
 		from := now.Add(-1 * time.Duration(expression.PrevRange) * time.Minute).UTC().Unix()
 		searchQuery := fmt.Sprintf(`logline search "%v"`, expression.Search)
 
-		valInt64, err := NewTSLog(tsLogDB).CountByClusterIDFromTimestampHostAndQuery(nil, checkRow.ClusterID, from, hostname, searchQuery)
+		valInt64, err := NewTSLog(tsLogDB).CountByClusterIDFromTimestampHostAndQuery(nil, checkRow.ClusterID, from, hostname, searchQuery, deletedFrom)
 		if err != nil {
 			continue
 		}

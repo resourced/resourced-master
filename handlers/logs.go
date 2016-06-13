@@ -60,8 +60,10 @@ func GetLogs(w http.ResponseWriter, r *http.Request) {
 		var tsLogs []*dal.TSLogRow
 		var err error
 
+		deletedFrom := currentCluster.GetDeletedFromUNIXTimestampForSelect("ts_logs")
+
 		if fromString == "" && toString == "" {
-			tsLogs, err = dal.NewTSLog(tsLogsDB).AllByClusterIDLastRowIntervalAndQuery(nil, currentCluster.ID, "15 minute", query)
+			tsLogs, err = dal.NewTSLog(tsLogsDB).AllByClusterIDLastRowIntervalAndQuery(nil, currentCluster.ID, "15 minute", query, deletedFrom)
 
 			if len(tsLogs) > 0 {
 				if from == 0 {
@@ -73,7 +75,7 @@ func GetLogs(w http.ResponseWriter, r *http.Request) {
 			}
 
 		} else {
-			tsLogs, err = dal.NewTSLog(tsLogsDB).AllByClusterIDRangeAndQuery(nil, currentCluster.ID, from, to, query)
+			tsLogs, err = dal.NewTSLog(tsLogsDB).AllByClusterIDRangeAndQuery(nil, currentCluster.ID, from, to, query, deletedFrom)
 		}
 
 		tsLogRowsWithError := &dal.TSLogRowsWithError{}
@@ -204,8 +206,10 @@ func GetLogsExecutors(w http.ResponseWriter, r *http.Request) {
 	// Fetch SQL rows in parallel
 	// --------------------------
 	go func(currentCluster *dal.ClusterRow, from, to int64, query string) {
+		deletedFrom := currentCluster.GetDeletedFromUNIXTimestampForSelect("ts_executor_logs")
+
 		tsLogRowsWithError := &dal.TSExecutorLogRowsWithError{}
-		tsLogRowsWithError.TSExecutorLogRows, tsLogRowsWithError.Error = dal.NewTSExecutorLog(tsExecutorLogsDB).AllByClusterIDRangeAndQuery(nil, currentCluster.ID, from, to, query)
+		tsLogRowsWithError.TSExecutorLogRows, tsLogRowsWithError.Error = dal.NewTSExecutorLog(tsExecutorLogsDB).AllByClusterIDRangeAndQuery(nil, currentCluster.ID, from, to, query, deletedFrom)
 		tsLogRowsWithError.Error = err
 		tsLogsChan <- tsLogRowsWithError
 	}(currentCluster, from, to, query)
@@ -313,7 +317,7 @@ func PostApiLogs(w http.ResponseWriter, r *http.Request) {
 func GetApiLogs(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	var err error
+	db := context.Get(r, "db.Core").(*sqlx.DB)
 
 	tsLogsDB := context.Get(r, "db.TSLog").(*sqlx.DB)
 
@@ -335,12 +339,20 @@ func GetApiLogs(w http.ResponseWriter, r *http.Request) {
 
 	query := qParams.Get("q")
 
+	clusterRow, err := dal.NewCluster(db).GetByID(nil, accessTokenRow.ClusterID)
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
+
+	deletedFrom := clusterRow.GetDeletedFromUNIXTimestampForSelect("ts_logs")
+
 	var tsLogs []*dal.TSLogRow
 
 	if fromString == "" && toString == "" {
-		tsLogs, err = dal.NewTSLog(tsLogsDB).AllByClusterIDLastRowIntervalAndQuery(nil, accessTokenRow.ClusterID, "15 minute", query)
+		tsLogs, err = dal.NewTSLog(tsLogsDB).AllByClusterIDLastRowIntervalAndQuery(nil, accessTokenRow.ClusterID, "15 minute", query, deletedFrom)
 	} else {
-		tsLogs, err = dal.NewTSLog(tsLogsDB).AllByClusterIDRangeAndQuery(nil, accessTokenRow.ClusterID, from, to, query)
+		tsLogs, err = dal.NewTSLog(tsLogsDB).AllByClusterIDRangeAndQuery(nil, accessTokenRow.ClusterID, from, to, query, deletedFrom)
 	}
 
 	if err != nil {
@@ -360,7 +372,7 @@ func GetApiLogs(w http.ResponseWriter, r *http.Request) {
 func GetApiLogsExecutors(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	var err error
+	db := context.Get(r, "db.Core").(*sqlx.DB)
 
 	tsExecutorLogsDB := context.Get(r, "db.TSExecutorLog").(*sqlx.DB)
 
@@ -382,12 +394,20 @@ func GetApiLogsExecutors(w http.ResponseWriter, r *http.Request) {
 
 	query := qParams.Get("q")
 
+	clusterRow, err := dal.NewCluster(db).GetByID(nil, accessTokenRow.ClusterID)
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
+
+	deletedFrom := clusterRow.GetDeletedFromUNIXTimestampForSelect("ts_logs")
+
 	var tsExecutorLogs []*dal.TSExecutorLogRow
 
 	if fromString == "" && toString == "" {
-		tsExecutorLogs, err = dal.NewTSExecutorLog(tsExecutorLogsDB).AllByClusterIDLastRowIntervalAndQuery(nil, accessTokenRow.ClusterID, "15 minute", query)
+		tsExecutorLogs, err = dal.NewTSExecutorLog(tsExecutorLogsDB).AllByClusterIDLastRowIntervalAndQuery(nil, accessTokenRow.ClusterID, "15 minute", query, deletedFrom)
 	} else {
-		tsExecutorLogs, err = dal.NewTSExecutorLog(tsExecutorLogsDB).AllByClusterIDRangeAndQuery(nil, accessTokenRow.ClusterID, from, to, query)
+		tsExecutorLogs, err = dal.NewTSExecutorLog(tsExecutorLogsDB).AllByClusterIDRangeAndQuery(nil, accessTokenRow.ClusterID, from, to, query, deletedFrom)
 	}
 
 	if err != nil {

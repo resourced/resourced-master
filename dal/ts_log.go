@@ -125,7 +125,7 @@ func (ts *TSLog) LastByClusterID(tx *sqlx.Tx, clusterID int64) (*TSLogRow, error
 }
 
 // AllByClusterIDAndRange returns all logs withing time range.
-func (ts *TSLog) AllByClusterIDAndRange(tx *sqlx.Tx, clusterID int64, from, to int64) ([]*TSLogRow, error) {
+func (ts *TSLog) AllByClusterIDAndRange(tx *sqlx.Tx, clusterID int64, from, to, deletedFrom int64) ([]*TSLogRow, error) {
 	// Default is 15 minutes range
 	if to == -1 {
 		to = time.Now().UTC().Unix()
@@ -135,8 +135,13 @@ func (ts *TSLog) AllByClusterIDAndRange(tx *sqlx.Tx, clusterID int64, from, to i
 	}
 
 	rows := []*TSLogRow{}
-	query := fmt.Sprintf("SELECT * FROM %v WHERE cluster_id=$1 AND created >= to_timestamp($2) at time zone 'utc' AND created <= to_timestamp($3) at time zone 'utc' ORDER BY created DESC", ts.table)
-	err := ts.db.Select(&rows, query, clusterID, from, to)
+	query := fmt.Sprintf(`SELECT * FROM %v WHERE cluster_id=$1 AND
+created >= to_timestamp($2) at time zone 'utc' AND
+created <= to_timestamp($3) at time zone 'utc' AND
+deleted >= to_timestamp($4) at time zone 'utc'
+ORDER BY created DESC`, ts.table)
+
+	err := ts.db.Select(&rows, query, clusterID, from, to, deletedFrom)
 
 	if err != nil {
 		err = fmt.Errorf("%v. Query: %v", err.Error(), query)
@@ -145,15 +150,20 @@ func (ts *TSLog) AllByClusterIDAndRange(tx *sqlx.Tx, clusterID int64, from, to i
 }
 
 // AllByClusterIDRangeAndQuery returns all rows by cluster id, unix timestamp range, and resourced query.
-func (ts *TSLog) AllByClusterIDRangeAndQuery(tx *sqlx.Tx, clusterID int64, from, to int64, resourcedQuery string) ([]*TSLogRow, error) {
+func (ts *TSLog) AllByClusterIDRangeAndQuery(tx *sqlx.Tx, clusterID int64, from, to int64, resourcedQuery string, deletedFrom int64) ([]*TSLogRow, error) {
 	pgQuery := querybuilder.Parse(resourcedQuery)
 	if pgQuery == "" {
-		return ts.AllByClusterIDAndRange(tx, clusterID, from, to)
+		return ts.AllByClusterIDAndRange(tx, clusterID, from, to, deletedFrom)
 	}
 
 	rows := []*TSLogRow{}
-	query := fmt.Sprintf("SELECT * FROM %v WHERE cluster_id=$1 AND created >= to_timestamp($2) at time zone 'utc' AND created <= to_timestamp($3) at time zone 'utc' AND %v ORDER BY created DESC", ts.table, pgQuery)
-	err := ts.db.Select(&rows, query, clusterID, from, to)
+	query := fmt.Sprintf(`SELECT * FROM %v WHERE cluster_id=$1 AND
+created >= to_timestamp($2) at time zone 'utc' AND
+created <= to_timestamp($3) at time zone 'utc' AND
+deleted >= to_timestamp($4) at time zone 'utc' AND %v
+ORDER BY created DESC`, ts.table, pgQuery)
+
+	err := ts.db.Select(&rows, query, clusterID, from, to, deletedFrom)
 
 	if err != nil {
 		err = fmt.Errorf("%v. Query: %v", err.Error(), query)
@@ -162,7 +172,7 @@ func (ts *TSLog) AllByClusterIDRangeAndQuery(tx *sqlx.Tx, clusterID int64, from,
 }
 
 // AllByClusterIDLastRowIntervalAndQuery returns all rows by cluster id, unix timestamp range since last row, and resourced query.
-func (ts *TSLog) AllByClusterIDLastRowIntervalAndQuery(tx *sqlx.Tx, clusterID int64, createdInterval, resourcedQuery string) ([]*TSLogRow, error) {
+func (ts *TSLog) AllByClusterIDLastRowIntervalAndQuery(tx *sqlx.Tx, clusterID int64, createdInterval, resourcedQuery string, deletedFrom int64) ([]*TSLogRow, error) {
 	lastRow, err := ts.LastByClusterID(tx, clusterID)
 	if err != nil {
 		return nil, err
@@ -171,12 +181,15 @@ func (ts *TSLog) AllByClusterIDLastRowIntervalAndQuery(tx *sqlx.Tx, clusterID in
 	pgQuery := querybuilder.Parse(resourcedQuery)
 	rows := []*TSLogRow{}
 
-	query := fmt.Sprintf("SELECT * FROM %v WHERE cluster_id=$1 AND created >= ($2 at time zone 'utc' - INTERVAL '%v')", ts.table, createdInterval)
+	query := fmt.Sprintf(`SELECT * FROM %v WHERE cluster_id=$1 AND
+created >= ($2 at time zone 'utc' - INTERVAL '%v') AND
+deleted >= to_timestamp($3)`, ts.table, createdInterval)
+
 	if pgQuery != "" {
 		query = fmt.Sprintf("%v AND %v ORDER BY created DESC", query, pgQuery)
 	}
 
-	err = ts.db.Select(&rows, query, clusterID, lastRow.Created)
+	err = ts.db.Select(&rows, query, clusterID, lastRow.Created, deletedFrom)
 
 	if err != nil {
 		err = fmt.Errorf("%v. Query: %v", err.Error(), query)
@@ -185,15 +198,21 @@ func (ts *TSLog) AllByClusterIDLastRowIntervalAndQuery(tx *sqlx.Tx, clusterID in
 }
 
 // CountByClusterIDFromTimestampHostAndQuery returns count by cluster id, from unix timestamp, host, and resourced query.
-func (ts *TSLog) CountByClusterIDFromTimestampHostAndQuery(tx *sqlx.Tx, clusterID int64, from int64, hostname, resourcedQuery string) (int64, error) {
+func (ts *TSLog) CountByClusterIDFromTimestampHostAndQuery(tx *sqlx.Tx, clusterID int64, from int64, hostname, resourcedQuery string, deletedFrom int64) (int64, error) {
 	pgQuery := querybuilder.Parse(resourcedQuery)
 	if pgQuery == "" {
 		return -1, errors.New("Query is unparsable")
 	}
 
 	var count int64
-	query := fmt.Sprintf("SELECT count(logline) FROM %v WHERE cluster_id=$1 AND created >= to_timestamp($2) at time zone 'utc' AND hostname=$3 AND %v", ts.table, pgQuery)
-	err := ts.db.Get(&count, query, clusterID, from, hostname)
+
+	query := fmt.Sprintf(`SELECT count(logline) FROM %v WHERE cluster_id=$1 AND
+created >= to_timestamp($2) at time zone 'utc' AND
+hostname=$3 AND
+deleted >= to_timestamp($4) at time zone 'utc' AND
+%v`, ts.table, pgQuery)
+
+	err := ts.db.Get(&count, query, clusterID, from, hostname, deletedFrom)
 
 	if err != nil {
 		err = fmt.Errorf("%v. Query: %v, ClusterID: %v, From: %v, Hostname: %v", err.Error(), query, clusterID, from, hostname)
