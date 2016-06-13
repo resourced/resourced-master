@@ -122,13 +122,19 @@ func PostApiEvents(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var tsEventRow *dal.TSEventRow
+	clusterRow, err := dal.NewCluster(db).GetByID(nil, accessTokenRow.ClusterID)
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
 
 	id := dal.NewTSEvent(db).NewExplicitID()
 
+	deletedFrom := clusterRow.GetDeletedFromUNIXTimestampForInsert("ts_events")
+
 	tsEventsDB := context.Get(r, "db.TSEvent").(*sqlx.DB)
 
-	tsEventRow, err = dal.NewTSEvent(tsEventsDB).CreateFromJSON(nil, id, accessTokenRow.ClusterID, dataJson)
+	tsEventRow, err := dal.NewTSEvent(tsEventsDB).CreateFromJSON(nil, id, accessTokenRow.ClusterID, dataJson, deletedFrom)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return

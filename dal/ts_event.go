@@ -100,7 +100,7 @@ func (ts *TSEvent) GetByID(tx *sqlx.Tx, id int64) (*TSEventRow, error) {
 	return row, err
 }
 
-func (ts *TSEvent) CreateFromJSON(tx *sqlx.Tx, id, clusterID int64, jsonData []byte) (*TSEventRow, error) {
+func (ts *TSEvent) CreateFromJSON(tx *sqlx.Tx, id, clusterID int64, jsonData []byte, deletedFrom int64) (*TSEventRow, error) {
 	payload := &TSEventCreatePayload{}
 
 	err := json.Unmarshal(jsonData, payload)
@@ -108,11 +108,11 @@ func (ts *TSEvent) CreateFromJSON(tx *sqlx.Tx, id, clusterID int64, jsonData []b
 		return nil, err
 	}
 
-	return ts.Create(tx, id, clusterID, payload.From, payload.To, payload.Description)
+	return ts.Create(tx, id, clusterID, payload.From, payload.To, payload.Description, deletedFrom)
 }
 
 // Create a new record.
-func (ts *TSEvent) Create(tx *sqlx.Tx, id, clusterID, fromUnix, toUnix int64, description string) (*TSEventRow, error) {
+func (ts *TSEvent) Create(tx *sqlx.Tx, id, clusterID, fromUnix, toUnix int64, description string, deletedFrom int64) (*TSEventRow, error) {
 	var from time.Time
 	var to time.Time
 
@@ -134,6 +134,7 @@ func (ts *TSEvent) Create(tx *sqlx.Tx, id, clusterID, fromUnix, toUnix int64, de
 	insertData["created_from"] = from
 	insertData["created_to"] = to
 	insertData["description"] = description
+	insertData["deleted"] = time.Unix(deletedFrom, 0).UTC()
 
 	_, err := ts.InsertIntoTable(tx, insertData)
 	if err != nil {
