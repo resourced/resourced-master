@@ -50,15 +50,6 @@ func NewGeneralConfig(configDir string) (config GeneralConfig, err error) {
 		config.LogLevel = "info"
 	}
 
-	if config.Metrics.DataRetentions == nil {
-		config.Metrics.DataRetentions = make(map[string]int)
-	}
-	if len(config.Metrics.DataRetentions) == 0 {
-		// Set defaults
-		config.Metrics.DataRetentions["ts_metrics"] = 1
-		config.Metrics.DataRetentions["ts_metrics_aggr_15m"] = 1
-	}
-
 	return config, err
 }
 
@@ -99,8 +90,13 @@ type GeneralConfig struct {
 	}
 
 	Metrics struct {
-		DSN            string
-		DataRetentions map[string]int
+		DSN           string
+		DataRetention int
+	}
+
+	MetricsAggr15m struct {
+		DSN           string
+		DataRetention int
 	}
 
 	Events struct {
@@ -146,6 +142,12 @@ func NewDBConfig(generalConfig GeneralConfig) (*DBConfig, error) {
 	}
 	conf.TSMetric = db
 
+	db, err = sqlx.Connect("postgres", generalConfig.MetricsAggr15m.DSN)
+	if err != nil {
+		return nil, err
+	}
+	conf.TSMetricAggr15m = db
+
 	db, err = sqlx.Connect("postgres", generalConfig.Events.DSN)
 	if err != nil {
 		return nil, err
@@ -175,10 +177,11 @@ func NewDBConfig(generalConfig GeneralConfig) (*DBConfig, error) {
 
 // DBConfig stores all database configuration data.
 type DBConfig struct {
-	Core          *sqlx.DB
-	TSMetric      *sqlx.DB
-	TSEvent       *sqlx.DB
-	TSExecutorLog *sqlx.DB
-	TSLog         *sqlx.DB
-	TSCheck       *sqlx.DB
+	Core            *sqlx.DB
+	TSMetric        *sqlx.DB
+	TSMetricAggr15m *sqlx.DB
+	TSEvent         *sqlx.DB
+	TSExecutorLog   *sqlx.DB
+	TSLog           *sqlx.DB
+	TSCheck         *sqlx.DB
 }

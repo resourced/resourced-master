@@ -122,7 +122,7 @@ func (app *Application) PruneTSMetricOnce(cluster *dal.ClusterRow) (err error) {
 	f := func() {
 		err = dal.NewTSMetric(app.DBConfig.TSMetric).DeleteByDayInterval(
 			nil,
-			int(math.Max(float64(clusterRetention), float64(app.GeneralConfig.Metrics.DataRetentions["ts_metrics"]))),
+			int(math.Max(float64(clusterRetention), float64(app.GeneralConfig.Metrics.DataRetention))),
 		)
 	}
 
@@ -153,9 +153,9 @@ func (app *Application) PruneTSMetricAggr15mOnce(cluster *dal.ClusterRow) (err e
 	}
 
 	f := func() {
-		err = dal.NewTSMetricAggr15m(app.DBConfig.TSMetric).DeleteByDayInterval(
+		err = dal.NewTSMetricAggr15m(app.DBConfig.TSMetricAggr15m).DeleteByDayInterval(
 			nil,
-			int(math.Max(float64(clusterRetention), float64(app.GeneralConfig.Metrics.DataRetentions["ts_metrics_aggr_15m"]))),
+			int(math.Max(float64(clusterRetention), float64(app.GeneralConfig.MetricsAggr15m.DataRetention))),
 		)
 	}
 

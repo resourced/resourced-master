@@ -3,6 +3,11 @@ DSN = "postgres://localhost:5432/resourced-master-ts-metrics?sslmode=disable"
 
 # DataRetention defines how long time series data are kept.
 # The unit is defined in days.
-[DataRetentions]
-ts_metrics = 7
-ts_metrics_aggr_15m = 7
+DataRetention = 7
+
+[MetricsAggr15m]
+DSN = "postgres://localhost:5432/resourced-master-ts-metrics?sslmode=disable"
+
+# DataRetention defines how long time series data are kept.
+# The unit is defined in days.
+DataRetention = 7
