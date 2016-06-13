@@ -801,7 +801,7 @@ func (checkRow *CheckRow) EvalHTTPExpression(hostRows []*HostRow, expression Che
 	return expression
 }
 
-func (checkRow *CheckRow) RunTriggers(appConfig config.GeneralConfig, tsCheckDB *sqlx.DB, mailr *mailer.Mailer) error {
+func (checkRow *CheckRow) RunTriggers(appConfig config.GeneralConfig, coreDB *sqlx.DB, tsCheckDB *sqlx.DB, mailr *mailer.Mailer) error {
 	if checkRow.IsSilenced {
 		return nil
 	}
@@ -812,8 +812,16 @@ func (checkRow *CheckRow) RunTriggers(appConfig config.GeneralConfig, tsCheckDB 
 		return err
 	}
 
+	clusterRow, err := NewCluster(coreDB).GetByID(nil, checkRow.ClusterID)
+	if err != nil {
+		logrus.Error(err)
+		return err
+	}
+
+	deletedFrom := clusterRow.GetDeletedFromUNIXTimestampForSelect("ts_checks")
+
 	for _, trigger := range triggers {
-		tsCheckRows, err := NewTSCheck(tsCheckDB).AllViolationsByClusterIDCheckIDAndInterval(nil, checkRow.ClusterID, checkRow.ID, trigger.CreatedIntervalMinute)
+		tsCheckRows, err := NewTSCheck(tsCheckDB).AllViolationsByClusterIDCheckIDAndInterval(nil, checkRow.ClusterID, checkRow.ID, trigger.CreatedIntervalMinute, deletedFrom)
 		if err != nil {
 			return err
 		}

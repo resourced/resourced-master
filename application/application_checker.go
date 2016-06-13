@@ -79,7 +79,7 @@ func (app *Application) CheckAndRunTriggers(refetchChecksChan <-chan bool) {
 						}
 
 						// 3. Run check's triggers.
-						err = checkRow.RunTriggers(app.GeneralConfig, app.DBConfig.TSCheck, app.Mailers["GeneralConfig.Checks"])
+						err = checkRow.RunTriggers(app.GeneralConfig, app.DBConfig.Core, app.DBConfig.TSCheck, app.Mailers["GeneralConfig.Checks"])
 						if err != nil {
 							logrus.WithFields(logrus.Fields{
 								"Method":    "checkRow.RunTriggers",
