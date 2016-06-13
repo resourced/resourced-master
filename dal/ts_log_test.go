@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"testing"
+	"time"
 
 	_ "github.com/lib/pq"
 )
@@ -41,7 +42,7 @@ func TestTSLogCreateValue(t *testing.T) {
 	// Create TSLog
 	dataJSONString := fmt.Sprintf(`{"Host": {"Name": "%v", "Tags": {}}, "Data": {"Filename":"", "Loglines": ["aaa", "bbb"]}}`, hostname)
 
-	err = newTSLogForTest(t).CreateFromJSON(nil, clusterRow.ID, []byte(dataJSONString))
+	err = newTSLogForTest(t).CreateFromJSON(nil, clusterRow.ID, []byte(dataJSONString), time.Now().Unix()+int64(900))
 	if err != nil {
 		t.Fatalf("Creating a TSLog should work. Error: %v", err)
 	}

@@ -470,7 +470,7 @@ func TestCheckEvalLogDataExpression(t *testing.T) {
 	// Create TSLog
 	dataJSONString := fmt.Sprintf(`{"Host": {"Name": "%v", "Tags": {}}, "Data": {"Filename":"", "Loglines": ["aaa", "bbb"]}}`, hostname)
 
-	err = newTSLogForTest(t).CreateFromJSON(nil, setupRows["clusterRow"].(*ClusterRow).ID, []byte(dataJSONString))
+	err = newTSLogForTest(t).CreateFromJSON(nil, setupRows["clusterRow"].(*ClusterRow).ID, []byte(dataJSONString), time.Now().Unix()+int64(900))
 	if err != nil {
 		t.Fatalf("Creating a TSLog should work. Error: %v", err)
 	}
@@ -713,7 +713,7 @@ func TestBuildEmailTriggerContent(t *testing.T) {
 	tsCheck := NewTSCheck(newDbForTest(t))
 	defer tsCheck.db.Close()
 
-	err = tsCheck.Create(nil, checkRow.ClusterID, checkRow.ID, true, expressionResults)
+	err = tsCheck.Create(nil, checkRow.ClusterID, checkRow.ID, true, expressionResults, time.Now().Unix()+int64(900))
 	if err != nil {
 		t.Fatalf("Creating a TSCheck should not fail. Error: %v", err)
 	}

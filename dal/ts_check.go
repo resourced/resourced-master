@@ -86,7 +86,7 @@ func (ts *TSCheck) AllViolationsByClusterIDCheckIDAndInterval(tx *sqlx.Tx, clust
 }
 
 // Create a new record.
-func (ts *TSCheck) Create(tx *sqlx.Tx, clusterID, CheckID int64, result bool, expressions []CheckExpression) error {
+func (ts *TSCheck) Create(tx *sqlx.Tx, clusterID, CheckID int64, result bool, expressions []CheckExpression, deletedFrom int64) error {
 	expressionsJSON, err := json.Marshal(expressions)
 	if err != nil {
 		return err
@@ -97,6 +97,7 @@ func (ts *TSCheck) Create(tx *sqlx.Tx, clusterID, CheckID int64, result bool, ex
 	insertData["check_id"] = CheckID
 	insertData["result"] = result
 	insertData["expressions"] = expressionsJSON
+	insertData["deleted"] = time.Unix(deletedFrom, 0).UTC()
 
 	_, err = ts.InsertIntoTable(tx, insertData)
 	return err

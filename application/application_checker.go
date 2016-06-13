@@ -51,7 +51,21 @@ func (app *Application) CheckAndRunTriggers(refetchChecksChan <-chan bool) {
 						}
 
 						// 2. Store the check result.
-						err = dal.NewTSCheck(app.DBConfig.TSCheck).Create(nil, checkRow.ClusterID, checkRow.ID, finalResult, expressionResults)
+						clusterRow, err := dal.NewCluster(app.DBConfig.Core).GetByID(nil, checkRow.ClusterID)
+						if err != nil {
+							logrus.WithFields(logrus.Fields{
+								"Method":    "Cluster.GetByID",
+								"ClusterID": checkRow.ClusterID,
+								"CheckID":   checkRow.ID,
+							}).Error(err)
+
+							libtime.SleepString(checkRow.Interval)
+							return
+						}
+
+						deletedFrom := clusterRow.GetDeletedFromUNIXTimestampForInsert("ts_checks")
+
+						err = dal.NewTSCheck(app.DBConfig.TSCheck).Create(nil, checkRow.ClusterID, checkRow.ID, finalResult, expressionResults, deletedFrom)
 						if err != nil {
 							logrus.WithFields(logrus.Fields{
 								"Method":    "TSCheck.Create",

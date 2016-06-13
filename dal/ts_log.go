@@ -103,7 +103,7 @@ func (ts *TSLog) Create(tx *sqlx.Tx, clusterID int64, hostname string, tags map[
 			"Tags":      string(tagsInJson),
 		}
 
-		_, err = prepared.Exec(clusterID, hostname, logline, filename, tagsInJson, deletedFrom)
+		_, err = prepared.Exec(clusterID, hostname, logline, filename, tagsInJson, time.Unix(deletedFrom, 0).UTC())
 		if err != nil {
 			logFields["Error"] = err.Error()
 			logrus.WithFields(logFields).Error("Failed to execute insert query")
