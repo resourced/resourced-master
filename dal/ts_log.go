@@ -58,7 +58,7 @@ type TSLog struct {
 	TSBase
 }
 
-func (ts *TSLog) CreateFromJSON(tx *sqlx.Tx, clusterID int64, jsonData []byte) error {
+func (ts *TSLog) CreateFromJSON(tx *sqlx.Tx, clusterID int64, jsonData []byte, deletedFrom int64) error {
 	payload := &AgentLogPayload{}
 
 	err := json.Unmarshal(jsonData, payload)
@@ -66,11 +66,11 @@ func (ts *TSLog) CreateFromJSON(tx *sqlx.Tx, clusterID int64, jsonData []byte) e
 		return err
 	}
 
-	return ts.Create(tx, clusterID, payload.Host.Name, payload.Host.Tags, payload.Data.Loglines, payload.Data.Filename)
+	return ts.Create(tx, clusterID, payload.Host.Name, payload.Host.Tags, payload.Data.Loglines, payload.Data.Filename, deletedFrom)
 }
 
 // Create a new record.
-func (ts *TSLog) Create(tx *sqlx.Tx, clusterID int64, hostname string, tags map[string]string, loglines []string, filename string) (err error) {
+func (ts *TSLog) Create(tx *sqlx.Tx, clusterID int64, hostname string, tags map[string]string, loglines []string, filename string, deletedFrom int64) (err error) {
 	if tx == nil {
 		tx, err = ts.db.Beginx()
 		if err != nil {
@@ -79,7 +79,7 @@ func (ts *TSLog) Create(tx *sqlx.Tx, clusterID int64, hostname string, tags map[
 		}
 	}
 
-	query := fmt.Sprintf("INSERT INTO %v (cluster_id, hostname, logline, filename, tags) VALUES ($1, $2, $3, $4, $5)", ts.table)
+	query := fmt.Sprintf("INSERT INTO %v (cluster_id, hostname, logline, filename, tags, deleted) VALUES ($1, $2, $3, $4, $5, $6)", ts.table)
 
 	prepared, err := ts.db.Preparex(query)
 	if err != nil {
@@ -103,7 +103,7 @@ func (ts *TSLog) Create(tx *sqlx.Tx, clusterID int64, hostname string, tags map[
 			"Tags":      string(tagsInJson),
 		}
 
-		_, err = prepared.Exec(clusterID, hostname, logline, filename, tagsInJson)
+		_, err = prepared.Exec(clusterID, hostname, logline, filename, tagsInJson, deletedFrom)
 		if err != nil {
 			logFields["Error"] = err.Error()
 			logrus.WithFields(logFields).Error("Failed to execute insert query")

@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/Sirupsen/logrus"
 	"github.com/gorilla/context"
 	"github.com/gorilla/csrf"
 	"github.com/jmoiron/sqlx"
@@ -279,6 +280,8 @@ func GetLogsExecutors(w http.ResponseWriter, r *http.Request) {
 func PostApiLogs(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
+	db := context.Get(r, "db.Core").(*sqlx.DB)
+
 	accessTokenRow := context.Get(r, "accessToken").(*dal.AccessTokenRow)
 
 	dataJson, err := ioutil.ReadAll(r.Body)
@@ -287,13 +290,22 @@ func PostApiLogs(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tsLogsDB := context.Get(r, "db.TSLog").(*sqlx.DB)
-
-	err = dal.NewTSLog(tsLogsDB).CreateFromJSON(nil, accessTokenRow.ClusterID, dataJson)
+	clusterRow, err := dal.NewCluster(db).GetByID(nil, accessTokenRow.ClusterID)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
 	}
+
+	deletedFrom := clusterRow.GetDeletedFromUNIXTimestampForInsert("ts_logs")
+
+	tsLogsDB := context.Get(r, "db.TSLog").(*sqlx.DB)
+
+	go func() {
+		err = dal.NewTSLog(tsLogsDB).CreateFromJSON(nil, accessTokenRow.ClusterID, dataJson, deletedFrom)
+		if err != nil {
+			logrus.Error(err)
+		}
+	}()
 
 	w.Write([]byte(`{"Message": "Success"}`))
 }
