@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"time"
 
 	"github.com/Sirupsen/logrus"
 	"github.com/jmoiron/sqlx"
@@ -34,6 +35,12 @@ func (cr *ClusterRow) GetDataRetention() map[string]int {
 	cr.DataRetention.Unmarshal(&retentions)
 
 	return retentions
+}
+
+// GetDeletedFromUNIXTimestamp returns UNIX timestamp from which data should be queried.
+func (cr *ClusterRow) GetDeletedFromUNIXTimestamp(tableName string) int64 {
+	retention := cr.GetDataRetention()[tableName]
+	return time.Now().Unix() - int64(retention*86400)
 }
 
 // GetMembers returns Members in map

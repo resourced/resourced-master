@@ -212,10 +212,15 @@ func (ts *TSMetric) GetAggregateXMinutesByHostnameAndKey(tx *sqlx.Tx, clusterID 
 	return row, err
 }
 
-func (ts *TSMetric) AllByMetricIDHostAndRange(tx *sqlx.Tx, clusterID, metricID int64, host string, from, to int64) ([]*TSMetricRow, error) {
+func (ts *TSMetric) AllByMetricIDHostAndRange(tx *sqlx.Tx, clusterID, metricID int64, host string, from, to, deletedFrom int64) ([]*TSMetricRow, error) {
 	rows := []*TSMetricRow{}
-	query := fmt.Sprintf("SELECT * FROM %v WHERE cluster_id=$1 AND metric_id=$2 AND host=$3 AND created >= to_timestamp($4) at time zone 'utc' AND created <= to_timestamp($5) at time zone 'utc' ORDER BY cluster_id,metric_id,created ASC", ts.table)
-	err := ts.db.Select(&rows, query, clusterID, metricID, host, from, to)
+	query := fmt.Sprintf(`SELECT * FROM %v WHERE cluster_id=$1 AND metric_id=$2 AND host=$3 AND
+created >= to_timestamp($4) at time zone 'utc' AND
+created <= to_timestamp($5) at time zone 'utc' AND
+deleted >= to_timestamp($6) at time zone 'utc'
+ORDER BY cluster_id,metric_id,created ASC`, ts.table)
+
+	err := ts.db.Select(&rows, query, clusterID, metricID, host, from, to, deletedFrom)
 
 	if err != nil {
 		err = fmt.Errorf("%v. Query: %v", err.Error(), query)
@@ -223,8 +228,8 @@ func (ts *TSMetric) AllByMetricIDHostAndRange(tx *sqlx.Tx, clusterID, metricID i
 	return rows, err
 }
 
-func (ts *TSMetric) AllByMetricIDHostAndRangeForHighchart(tx *sqlx.Tx, clusterID, metricID int64, host string, from, to int64) (*TSMetricHighchartPayload, error) {
-	tsMetricRows, err := ts.AllByMetricIDHostAndRange(tx, clusterID, metricID, host, from, to)
+func (ts *TSMetric) AllByMetricIDHostAndRangeForHighchart(tx *sqlx.Tx, clusterID, metricID int64, host string, from, to, deletedFrom int64) (*TSMetricHighchartPayload, error) {
+	tsMetricRows, err := ts.AllByMetricIDHostAndRange(tx, clusterID, metricID, host, from, to, deletedFrom)
 	if err != nil {
 		return nil, err
 	}
@@ -232,10 +237,15 @@ func (ts *TSMetric) AllByMetricIDHostAndRangeForHighchart(tx *sqlx.Tx, clusterID
 	return ts.metricRowsForHighchart(tx, host, tsMetricRows)
 }
 
-func (ts *TSMetric) AllByMetricIDAndRange(tx *sqlx.Tx, clusterID, metricID int64, from, to int64) ([]*TSMetricRow, error) {
+func (ts *TSMetric) AllByMetricIDAndRange(tx *sqlx.Tx, clusterID, metricID int64, from, to, deletedFrom int64) ([]*TSMetricRow, error) {
 	rows := []*TSMetricRow{}
-	query := fmt.Sprintf("SELECT * FROM %v WHERE cluster_id=$1 AND metric_id=$2 AND created >= to_timestamp($3) at time zone 'utc' AND created <= to_timestamp($4) at time zone 'utc' ORDER BY cluster_id,metric_id,created ASC", ts.table)
-	err := ts.db.Select(&rows, query, clusterID, metricID, from, to)
+	query := fmt.Sprintf(`SELECT * FROM %v WHERE cluster_id=$1 AND metric_id=$2 AND
+created >= to_timestamp($3) at time zone 'utc' AND
+created <= to_timestamp($4) at time zone 'utc' AND
+deleted >= to_timestamp($5) at time zone 'utc'
+ORDER BY cluster_id,metric_id,created ASC`, ts.table)
+
+	err := ts.db.Select(&rows, query, clusterID, metricID, from, to, deletedFrom)
 
 	if err != nil {
 		err = fmt.Errorf("%v. Query: %v", err.Error(), query)
@@ -243,8 +253,8 @@ func (ts *TSMetric) AllByMetricIDAndRange(tx *sqlx.Tx, clusterID, metricID int64
 	return rows, err
 }
 
-func (ts *TSMetric) AllByMetricIDAndRangeForHighchart(tx *sqlx.Tx, clusterID, metricID, from, to int64) ([]*TSMetricHighchartPayload, error) {
-	tsMetricRows, err := ts.AllByMetricIDAndRange(tx, clusterID, metricID, from, to)
+func (ts *TSMetric) AllByMetricIDAndRangeForHighchart(tx *sqlx.Tx, clusterID, metricID, from, to, deletedFrom int64) ([]*TSMetricHighchartPayload, error) {
+	tsMetricRows, err := ts.AllByMetricIDAndRange(tx, clusterID, metricID, from, to, deletedFrom)
 	if err != nil {
 		return nil, err
 	}

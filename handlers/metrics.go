@@ -81,9 +81,17 @@ func GetApiTSMetricsByHost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	clusterRow, err := dal.NewCluster(db).GetByID(nil, metricRow.ClusterID)
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
+
+	deletedFrom := clusterRow.GetDeletedFromUNIXTimestamp("ts_metrics")
+
 	tsMetricDB := context.Get(r, "db.TSMetric").(*sqlx.DB)
 
-	hcMetrics, err := dal.NewTSMetric(tsMetricDB).AllByMetricIDHostAndRangeForHighchart(nil, metricRow.ClusterID, id, host, from, to)
+	hcMetrics, err := dal.NewTSMetric(tsMetricDB).AllByMetricIDHostAndRangeForHighchart(nil, metricRow.ClusterID, id, host, from, to, deletedFrom)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
@@ -147,9 +155,17 @@ func GetApiTSMetricsByHost15Min(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	clusterRow, err := dal.NewCluster(db).GetByID(nil, metricRow.ClusterID)
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
+
+	deletedFrom := clusterRow.GetDeletedFromUNIXTimestamp("ts_metrics_aggr_15m")
+
 	tsMetricDB := context.Get(r, "db.TSMetric").(*sqlx.DB)
 
-	hcMetrics, err := dal.NewTSMetricAggr15m(tsMetricDB).AllByMetricIDHostAndRangeForHighchart(nil, metricRow.ClusterID, id, host, from, to, aggr)
+	hcMetrics, err := dal.NewTSMetricAggr15m(tsMetricDB).AllByMetricIDHostAndRangeForHighchart(nil, metricRow.ClusterID, id, host, from, to, deletedFrom, aggr)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
@@ -168,6 +184,8 @@ func GetApiTSMetrics(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	db := context.Get(r, "db.Core").(*sqlx.DB)
+
+	tsMetricDB := context.Get(r, "db.TSMetric").(*sqlx.DB)
 
 	qParams := r.URL.Query()
 
@@ -206,9 +224,15 @@ func GetApiTSMetrics(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tsMetricDB := context.Get(r, "db.TSMetric").(*sqlx.DB)
+	clusterRow, err := dal.NewCluster(db).GetByID(nil, metricRow.ClusterID)
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
 
-	hcMetrics, err := dal.NewTSMetric(tsMetricDB).AllByMetricIDAndRangeForHighchart(nil, metricRow.ClusterID, id, from, to)
+	deletedFrom := clusterRow.GetDeletedFromUNIXTimestamp("ts_metrics")
+
+	hcMetrics, err := dal.NewTSMetric(tsMetricDB).AllByMetricIDAndRangeForHighchart(nil, metricRow.ClusterID, id, from, to, deletedFrom)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
@@ -270,9 +294,17 @@ func GetApiTSMetrics15Min(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	clusterRow, err := dal.NewCluster(db).GetByID(nil, metricRow.ClusterID)
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
+
+	deletedFrom := clusterRow.GetDeletedFromUNIXTimestamp("ts_metrics")
+
 	tsMetricDB := context.Get(r, "db.TSMetric").(*sqlx.DB)
 
-	hcMetrics, err := dal.NewTSMetricAggr15m(tsMetricDB).AllByMetricIDAndRangeForHighchart(nil, metricRow.ClusterID, id, from, to, aggr)
+	hcMetrics, err := dal.NewTSMetricAggr15m(tsMetricDB).AllByMetricIDAndRangeForHighchart(nil, metricRow.ClusterID, id, from, to, deletedFrom, aggr)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
