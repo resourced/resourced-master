@@ -12,8 +12,8 @@ type TSBase struct {
 	Base
 }
 
-// DeleteByDayInterval deletes all record older than x days ago.
-func (ts *TSBase) DeleteByDayInterval(tx *sqlx.Tx, dayInterval int) error {
+// DeleteDeleted deletes all "deleted" records.
+func (ts *TSBase) DeleteDeleted(tx *sqlx.Tx, clusterID int64) error {
 	if ts.table == "" {
 		return errors.New("Table must not be empty.")
 	}
@@ -26,12 +26,10 @@ func (ts *TSBase) DeleteByDayInterval(tx *sqlx.Tx, dayInterval int) error {
 		return err
 	}
 
-	now := time.Now().UTC()
-	from := now.Add(-24 * time.Hour * time.Duration(dayInterval)).UTC().Unix()
+	now := time.Now().UTC().Unix()
+	query := fmt.Sprintf("DELETE FROM %v WHERE cluster_id=$1 AND deleted < to_timestamp($2) at time zone 'utc'", ts.table)
 
-	query := fmt.Sprintf("DELETE FROM %v WHERE created < to_timestamp($1) at time zone 'utc'", ts.table)
-
-	_, err = tx.Exec(query, from)
+	_, err = tx.Exec(query, clusterID, now)
 
 	if wrapInSingleTransaction == true {
 		err = tx.Commit()
