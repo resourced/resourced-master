@@ -37,6 +37,25 @@ func (app *Application) ListenAllPGChannels(listener *pq.ListenerConn) (bool, er
 	return ok, err
 }
 
+func (app *Application) HandleAllTypesOfNotification(notification *pq.Notification) error {
+	err := app.HandlePGNotificationPeersAdd(notification)
+	if err != nil {
+		return err
+	}
+
+	err = app.HandlePGNotificationPeersRemove(notification)
+	if err != nil {
+		return err
+	}
+
+	err = app.PGNotifyChecksRefetch()
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // HandlePGNotificationPeersAdd responds to peers_add channel.
 func (app *Application) HandlePGNotificationPeersAdd(notification *pq.Notification) error {
 	if notification.Channel == "peers_add" {

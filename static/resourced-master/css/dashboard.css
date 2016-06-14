@@ -221,6 +221,9 @@ select {
 .expression-container .btn-add-expression, .expression-container .btn-remove-expression {
     font-weight: bold;
 }
+.expression-part-host-metrics {
+    max-width: 388px;
+}
 
 .data-retention-label {
     padding-left: 0;

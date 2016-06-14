@@ -75,20 +75,12 @@ func main() {
 				select {
 				case notification := <-notificationChan:
 					if notification != nil {
+						logrus.WithFields(logrus.Fields{"Channel": notification.Channel}).Info("Received notification from PostgreSQL")
+
 						if notification.Channel == "checks_refetch" {
 							refetchChecksChan <- true
 						} else {
-							err := app.HandlePGNotificationPeersAdd(notification)
-							if err != nil {
-								logrus.Error(err)
-							}
-
-							err = app.HandlePGNotificationPeersRemove(notification)
-							if err != nil {
-								logrus.Error(err)
-							}
-
-							err = app.PGNotifyChecksRefetch()
+							err := app.HandleAllTypesOfNotification(notification)
 							if err != nil {
 								logrus.Error(err)
 							}
