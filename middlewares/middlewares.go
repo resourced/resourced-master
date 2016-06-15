@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/Sirupsen/logrus"
+	"github.com/didip/stopwatch"
 	"github.com/gorilla/context"
 	"github.com/gorilla/sessions"
 	"github.com/jmoiron/sqlx"
@@ -105,7 +107,23 @@ func SetClusters(next http.Handler) http.Handler {
 
 		db := context.Get(r, "db.Core").(*sqlx.DB)
 
-		clusterRows, err := dal.NewCluster(db).AllByUserID(nil, userRow.ID)
+		var clusterRows []*dal.ClusterRow
+		var err error
+
+		f := func() {
+			clusterRows, err = dal.NewCluster(db).AllByUserID(nil, userRow.ID)
+		}
+
+		// Measure the latency of AllByUserID because it is called on every request.
+		latency := stopwatch.Measure(f)
+		logrus.WithFields(logrus.Fields{
+			"Method":              "Cluster.AllByUserID",
+			"UserID":              userRow.ID,
+			"LatencyNanoSeconds":  latency,
+			"LatencyMicroSeconds": latency / 1000,
+			"LatencyMilliSeconds": latency / 1000 / 1000,
+		}).Info("Latency measurement")
+
 		if err != nil {
 			libhttp.HandleErrorJson(w, err)
 			return
