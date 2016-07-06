@@ -90,6 +90,10 @@ type GeneralConfig struct {
 		KeyFile  string
 	}
 
+	Hosts struct {
+		DSN string
+	}
+
 	Metrics struct {
 		DSN           string
 		DataRetention int
@@ -137,6 +141,12 @@ func NewDBConfig(generalConfig GeneralConfig) (*DBConfig, error) {
 	}
 	conf.Core = db
 
+	db, err = sqlx.Connect("postgres", generalConfig.Hosts.DSN)
+	if err != nil {
+		return nil, err
+	}
+	conf.Host = db
+
 	db, err = sqlx.Connect("postgres", generalConfig.Metrics.DSN)
 	if err != nil {
 		return nil, err
@@ -179,6 +189,7 @@ func NewDBConfig(generalConfig GeneralConfig) (*DBConfig, error) {
 // DBConfig stores all database configuration data.
 type DBConfig struct {
 	Core            *sqlx.DB
+	Host            *sqlx.DB
 	TSMetric        *sqlx.DB
 	TSMetricAggr15m *sqlx.DB
 	TSEvent         *sqlx.DB

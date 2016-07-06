@@ -291,11 +291,11 @@ func (checkRow *CheckRow) GetExpressions() ([]CheckExpression, error) {
 // 1st value: List of all CheckExpression containing results.
 // 2nd value: The value of all expressions.
 // 3rd value: Error
-func (checkRow *CheckRow) EvalExpressions(coreDB *sqlx.DB, tsMetricDB *sqlx.DB, tsLogDB *sqlx.DB) ([]CheckExpression, bool, error) {
+func (checkRow *CheckRow) EvalExpressions(coreDB, hostDB, tsMetricDB, tsLogDB *sqlx.DB) ([]CheckExpression, bool, error) {
 	var hostRows []*HostRow
 	var err error
 
-	host := NewHost(coreDB)
+	host := NewHost(hostDB)
 
 	if checkRow.HostsQuery != "" {
 		hostRows, err = host.AllByClusterIDQueryAndUpdatedInterval(nil, checkRow.ClusterID, checkRow.HostsQuery, "5m")

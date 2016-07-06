@@ -55,6 +55,7 @@ func SetDBs(dbConfig *config.DBConfig) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			context.Set(r, "db.Core", dbConfig.Core)
+			context.Set(r, "db.Host", dbConfig.Host)
 			context.Set(r, "db.TSMetric", dbConfig.TSMetric)
 			context.Set(r, "db.TSMetricAggr15m", dbConfig.TSMetricAggr15m)
 			context.Set(r, "db.TSEvent", dbConfig.TSEvent)

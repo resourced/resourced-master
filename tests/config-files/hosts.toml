@@ -1,0 +1,2 @@
+[Hosts]
+DSN = "postgres://localhost:5432/resourced-master-hosts?sslmode=disable"
