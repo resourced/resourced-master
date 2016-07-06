@@ -5,8 +5,8 @@ import (
 	"net/http"
 
 	"github.com/gorilla/context"
-	"github.com/jmoiron/sqlx"
 
+	"github.com/resourced/resourced-master/config"
 	"github.com/resourced/resourced-master/dal"
 	"github.com/resourced/resourced-master/libhttp"
 )
@@ -16,7 +16,7 @@ func PostApiExecutors(w http.ResponseWriter, r *http.Request) {
 
 	accessTokenRow := context.Get(r, "accessToken").(*dal.AccessTokenRow)
 
-	db := context.Get(r, "db.Core").(*sqlx.DB)
+	dbs := context.Get(r, "dbs").(*config.DBConfig)
 
 	dataJson, err := ioutil.ReadAll(r.Body)
 	if err != nil {
@@ -24,7 +24,7 @@ func PostApiExecutors(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	clusterRow, err := dal.NewCluster(db).GetByID(nil, accessTokenRow.ClusterID)
+	clusterRow, err := dal.NewCluster(dbs.Core).GetByID(nil, accessTokenRow.ClusterID)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
@@ -32,9 +32,7 @@ func PostApiExecutors(w http.ResponseWriter, r *http.Request) {
 
 	deletedFrom := clusterRow.GetDeletedFromUNIXTimestampForInsert("ts_executor_logs")
 
-	tsExecutorLogDB := context.Get(r, "db.TSExecutorLog").(*sqlx.DB)
-
-	err = dal.NewTSExecutorLog(tsExecutorLogDB).CreateFromJSON(nil, accessTokenRow.ClusterID, dataJson, deletedFrom)
+	err = dal.NewTSExecutorLog(dbs.TSExecutorLog).CreateFromJSON(nil, accessTokenRow.ClusterID, dataJson, deletedFrom)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return

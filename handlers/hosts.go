@@ -12,6 +12,7 @@ import (
 	"github.com/gorilla/csrf"
 	"github.com/jmoiron/sqlx"
 
+	"github.com/resourced/resourced-master/config"
 	"github.com/resourced/resourced-master/dal"
 	"github.com/resourced/resourced-master/libhttp"
 )
@@ -23,7 +24,7 @@ func GetHosts(w http.ResponseWriter, r *http.Request) {
 
 	currentCluster := context.Get(r, "currentCluster").(*dal.ClusterRow)
 
-	db := context.Get(r, "db.Core").(*sqlx.DB)
+	dbs := context.Get(r, "dbs").(*config.DBConfig)
 	hostDB := context.Get(r, "db.Host").(*sqlx.DB)
 
 	query := r.URL.Query().Get("q")
@@ -51,13 +52,13 @@ func GetHosts(w http.ResponseWriter, r *http.Request) {
 
 	go func(currentCluster *dal.ClusterRow) {
 		savedQueriesWithError := &dal.SavedQueryRowsWithError{}
-		savedQueriesWithError.SavedQueries, savedQueriesWithError.Error = dal.NewSavedQuery(db).AllByClusterIDAndType(nil, currentCluster.ID, "hosts")
+		savedQueriesWithError.SavedQueries, savedQueriesWithError.Error = dal.NewSavedQuery(dbs.Core).AllByClusterIDAndType(nil, currentCluster.ID, "hosts")
 		savedQueriesChan <- savedQueriesWithError
 	}(currentCluster)
 
 	go func(currentCluster *dal.ClusterRow) {
 		metricsMapWithError := &dal.MetricsMapWithError{}
-		metricsMapWithError.MetricsMap, metricsMapWithError.Error = dal.NewMetric(db).AllByClusterIDAsMap(nil, currentCluster.ID)
+		metricsMapWithError.MetricsMap, metricsMapWithError.Error = dal.NewMetric(dbs.Core).AllByClusterIDAsMap(nil, currentCluster.ID)
 		metricsMapChan <- metricsMapWithError
 	}(currentCluster)
 
@@ -129,10 +130,7 @@ func GetHosts(w http.ResponseWriter, r *http.Request) {
 func PostApiHosts(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	db := context.Get(r, "db.Core").(*sqlx.DB)
-	hostDB := context.Get(r, "db.Host").(*sqlx.DB)
-	tsMetricDB := context.Get(r, "db.TSMetric").(*sqlx.DB)
-	tsMetricAggr15mDB := context.Get(r, "db.TSMetricAggr15m").(*sqlx.DB)
+	dbs := context.Get(r, "dbs").(*config.DBConfig)
 
 	accessTokenRow := context.Get(r, "accessToken").(*dal.AccessTokenRow)
 
@@ -142,7 +140,7 @@ func PostApiHosts(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	hostRow, err := dal.NewHost(hostDB).CreateOrUpdate(nil, accessTokenRow, dataJson)
+	hostRow, err := dal.NewHost(dbs.Host).CreateOrUpdate(nil, accessTokenRow, dataJson)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
@@ -150,13 +148,13 @@ func PostApiHosts(w http.ResponseWriter, r *http.Request) {
 
 	// Asynchronously write timeseries data
 	go func() {
-		metricsMap, err := dal.NewMetric(db).AllByClusterIDAsMap(nil, hostRow.ClusterID)
+		metricsMap, err := dal.NewMetric(dbs.Core).AllByClusterIDAsMap(nil, hostRow.ClusterID)
 		if err != nil {
 			libhttp.HandleErrorJson(w, err)
 			return
 		}
 
-		clusterRow, err := dal.NewCluster(db).GetByID(nil, hostRow.ClusterID)
+		clusterRow, err := dal.NewCluster(dbs.Core).GetByID(nil, hostRow.ClusterID)
 		if err != nil {
 			logrus.Error(err)
 			return
@@ -166,21 +164,21 @@ func PostApiHosts(w http.ResponseWriter, r *http.Request) {
 		tsMetricsAggr15mDeletedFrom := clusterRow.GetDeletedFromUNIXTimestampForInsert("ts_metrics_aggr_15m")
 
 		// Create ts_metrics row
-		err = dal.NewTSMetric(tsMetricDB).CreateByHostRow(nil, hostRow, metricsMap, tsMetricsDeletedFrom)
+		err = dal.NewTSMetric(dbs.TSMetric).CreateByHostRow(nil, hostRow, metricsMap, tsMetricsDeletedFrom)
 		if err != nil {
 			logrus.Error(err)
 			return
 		}
 
 		go func() {
-			selectAggrRows, err := dal.NewTSMetric(tsMetricDB).AggregateEveryXMinutes(nil, hostRow.ClusterID, 15)
+			selectAggrRows, err := dal.NewTSMetric(dbs.TSMetric).AggregateEveryXMinutes(nil, hostRow.ClusterID, 15)
 			if err != nil {
 				logrus.Error(err)
 				return
 			}
 
 			// Create ts_metrics_aggr_15m rows.
-			err = dal.NewTSMetricAggr15m(tsMetricAggr15mDB).CreateByHostRow(nil, hostRow, metricsMap, selectAggrRows, tsMetricsAggr15mDeletedFrom)
+			err = dal.NewTSMetricAggr15m(dbs.TSMetricAggr15m).CreateByHostRow(nil, hostRow, metricsMap, selectAggrRows, tsMetricsAggr15mDeletedFrom)
 			if err != nil {
 				logrus.Error(err)
 				return
@@ -188,14 +186,14 @@ func PostApiHosts(w http.ResponseWriter, r *http.Request) {
 		}()
 
 		go func() {
-			selectAggrRows, err := dal.NewTSMetric(tsMetricDB).AggregateEveryXMinutesPerHost(nil, hostRow.ClusterID, 15)
+			selectAggrRows, err := dal.NewTSMetric(dbs.TSMetric).AggregateEveryXMinutesPerHost(nil, hostRow.ClusterID, 15)
 			if err != nil {
 				logrus.Error(err)
 				return
 			}
 
 			// Create ts_metrics_aggr_15m rows per host.
-			err = dal.NewTSMetricAggr15m(tsMetricAggr15mDB).CreateByHostRowPerHost(nil, hostRow, metricsMap, selectAggrRows, tsMetricsAggr15mDeletedFrom)
+			err = dal.NewTSMetricAggr15m(dbs.TSMetricAggr15m).CreateByHostRowPerHost(nil, hostRow, metricsMap, selectAggrRows, tsMetricsAggr15mDeletedFrom)
 			if err != nil {
 				logrus.Error(err)
 				return

@@ -7,8 +7,8 @@ import (
 
 	"github.com/gorilla/context"
 	"github.com/gorilla/mux"
-	"github.com/jmoiron/sqlx"
 
+	"github.com/resourced/resourced-master/config"
 	"github.com/resourced/resourced-master/dal"
 	"github.com/resourced/resourced-master/libhttp"
 )
@@ -16,11 +16,11 @@ import (
 func GetApiMetadata(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	db := context.Get(r, "db.Core").(*sqlx.DB)
+	dbs := context.Get(r, "dbs").(*config.DBConfig)
 
 	accessTokenRow := context.Get(r, "accessToken").(*dal.AccessTokenRow)
 
-	metadataRows, err := dal.NewMetadata(db).AllByClusterID(nil, accessTokenRow.ClusterID)
+	metadataRows, err := dal.NewMetadata(dbs.Core).AllByClusterID(nil, accessTokenRow.ClusterID)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
@@ -38,7 +38,7 @@ func GetApiMetadata(w http.ResponseWriter, r *http.Request) {
 func PostApiMetadataKey(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	db := context.Get(r, "db.Core").(*sqlx.DB)
+	dbs := context.Get(r, "dbs").(*config.DBConfig)
 
 	accessTokenRow := context.Get(r, "accessToken").(*dal.AccessTokenRow)
 
@@ -51,7 +51,7 @@ func PostApiMetadataKey(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	key := vars["key"]
 
-	metadataRow, err := dal.NewMetadata(db).CreateOrUpdate(nil, accessTokenRow.ClusterID, key, dataJson)
+	metadataRow, err := dal.NewMetadata(dbs.Core).CreateOrUpdate(nil, accessTokenRow.ClusterID, key, dataJson)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
@@ -69,14 +69,14 @@ func PostApiMetadataKey(w http.ResponseWriter, r *http.Request) {
 func DeleteApiMetadataKey(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	db := context.Get(r, "db.Core").(*sqlx.DB)
+	dbs := context.Get(r, "dbs").(*config.DBConfig)
 
 	accessTokenRow := context.Get(r, "accessToken").(*dal.AccessTokenRow)
 
 	vars := mux.Vars(r)
 	key := vars["key"]
 
-	metadataRow, err := dal.NewMetadata(db).DeleteByClusterIDAndKey(nil, accessTokenRow.ClusterID, key)
+	metadataRow, err := dal.NewMetadata(dbs.Core).DeleteByClusterIDAndKey(nil, accessTokenRow.ClusterID, key)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
@@ -94,14 +94,14 @@ func DeleteApiMetadataKey(w http.ResponseWriter, r *http.Request) {
 func GetApiMetadataKey(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	db := context.Get(r, "db.Core").(*sqlx.DB)
+	dbs := context.Get(r, "dbs").(*config.DBConfig)
 
 	accessTokenRow := context.Get(r, "accessToken").(*dal.AccessTokenRow)
 
 	vars := mux.Vars(r)
 	key := vars["key"]
 
-	metadataRow, err := dal.NewMetadata(db).GetByClusterIDAndKey(nil, accessTokenRow.ClusterID, key)
+	metadataRow, err := dal.NewMetadata(dbs.Core).GetByClusterIDAndKey(nil, accessTokenRow.ClusterID, key)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return

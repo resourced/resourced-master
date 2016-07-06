@@ -10,7 +10,6 @@ import (
 	"github.com/didip/stopwatch"
 	"github.com/gorilla/context"
 	"github.com/gorilla/sessions"
-	"github.com/jmoiron/sqlx"
 
 	"github.com/resourced/resourced-master/config"
 	"github.com/resourced/resourced-master/dal"
@@ -56,16 +55,6 @@ func SetDBs(dbConfig *config.DBConfig) func(http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			context.Set(r, "dbs", dbConfig)
 
-			// TODO: remove all these on every call
-			context.Set(r, "db.Core", dbConfig.Core)
-			context.Set(r, "db.Host", dbConfig.Host)
-			context.Set(r, "db.TSMetric", dbConfig.TSMetric)
-			context.Set(r, "db.TSMetricAggr15m", dbConfig.TSMetricAggr15m)
-			context.Set(r, "db.TSEvent", dbConfig.TSEvent)
-			context.Set(r, "db.TSExecutorLog", dbConfig.TSExecutorLog)
-			context.Set(r, "db.TSLog", dbConfig.TSLog)
-			context.Set(r, "db.TSCheck", dbConfig.TSCheck)
-
 			next.ServeHTTP(w, r)
 		})
 	}
@@ -109,13 +98,13 @@ func SetClusters(next http.Handler) http.Handler {
 
 		userRow := userRowInterface.(*dal.UserRow)
 
-		db := context.Get(r, "db.Core").(*sqlx.DB)
+		dbs := context.Get(r, "dbs").(*config.DBConfig)
 
 		var clusterRows []*dal.ClusterRow
 		var err error
 
 		f := func() {
-			clusterRows, err = dal.NewCluster(db).AllByUserID(nil, userRow.ID)
+			clusterRows, err = dal.NewCluster(dbs.Core).AllByUserID(nil, userRow.ID)
 		}
 
 		// Measure the latency of AllByUserID because it is called on every request.
@@ -162,7 +151,7 @@ func SetClusters(next http.Handler) http.Handler {
 // SetAccessTokens sets clusters data in context based on logged in user ID.
 func SetAccessTokens(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		db := context.Get(r, "db.Core").(*sqlx.DB)
+		dbs := context.Get(r, "dbs").(*config.DBConfig)
 
 		currentClusterInterface := context.Get(r, "currentCluster")
 		if currentClusterInterface == nil {
@@ -170,7 +159,7 @@ func SetAccessTokens(next http.Handler) http.Handler {
 			return
 		}
 
-		accessTokenRows, err := dal.NewAccessToken(db).AllByClusterID(nil, currentClusterInterface.(*dal.ClusterRow).ID)
+		accessTokenRows, err := dal.NewAccessToken(dbs.Core).AllByClusterID(nil, currentClusterInterface.(*dal.ClusterRow).ID)
 		if err != nil {
 			libhttp.HandleErrorJson(w, err)
 			return
@@ -216,9 +205,9 @@ func MustLoginApi(next http.Handler) http.Handler {
 			return
 		}
 
-		db := context.Get(r, "db.Core").(*sqlx.DB)
+		dbs := context.Get(r, "dbs").(*config.DBConfig)
 
-		accessTokenRow, err := dal.NewAccessToken(db).GetByAccessToken(nil, accessTokenString)
+		accessTokenRow, err := dal.NewAccessToken(dbs.Core).GetByAccessToken(nil, accessTokenString)
 		if err != nil {
 			libhttp.BasicAuthUnauthorized(w, nil)
 			return

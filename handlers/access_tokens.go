@@ -4,14 +4,14 @@ import (
 	"net/http"
 
 	"github.com/gorilla/context"
-	"github.com/jmoiron/sqlx"
 
+	"github.com/resourced/resourced-master/config"
 	"github.com/resourced/resourced-master/dal"
 	"github.com/resourced/resourced-master/libhttp"
 )
 
 func PostAccessTokens(w http.ResponseWriter, r *http.Request) {
-	db := context.Get(r, "db.Core").(*sqlx.DB)
+	dbs := context.Get(r, "dbs").(*config.DBConfig)
 
 	currentUser := context.Get(r, "currentUser").(*dal.UserRow)
 
@@ -23,7 +23,7 @@ func PostAccessTokens(w http.ResponseWriter, r *http.Request) {
 
 	level := r.FormValue("Level")
 
-	_, err = dal.NewAccessToken(db).Create(nil, currentUser.ID, clusterID, level)
+	_, err = dal.NewAccessToken(dbs.Core).Create(nil, currentUser.ID, clusterID, level)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
@@ -33,7 +33,7 @@ func PostAccessTokens(w http.ResponseWriter, r *http.Request) {
 }
 
 func PostAccessTokensLevel(w http.ResponseWriter, r *http.Request) {
-	db := context.Get(r, "db.Core").(*sqlx.DB)
+	dbs := context.Get(r, "dbs").(*config.DBConfig)
 
 	tokenID, err := getInt64SlugFromPath(w, r, "id")
 	if err != nil {
@@ -46,7 +46,7 @@ func PostAccessTokensLevel(w http.ResponseWriter, r *http.Request) {
 	data := make(map[string]interface{})
 	data["level"] = level
 
-	_, err = dal.NewAccessToken(db).UpdateByID(nil, data, tokenID)
+	_, err = dal.NewAccessToken(dbs.Core).UpdateByID(nil, data, tokenID)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
@@ -56,7 +56,7 @@ func PostAccessTokensLevel(w http.ResponseWriter, r *http.Request) {
 }
 
 func PostAccessTokensEnabled(w http.ResponseWriter, r *http.Request) {
-	db := context.Get(r, "db.Core").(*sqlx.DB)
+	dbs := context.Get(r, "dbs").(*config.DBConfig)
 
 	tokenID, err := getInt64SlugFromPath(w, r, "id")
 	if err != nil {
@@ -64,7 +64,7 @@ func PostAccessTokensEnabled(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	at := dal.NewAccessToken(db)
+	at := dal.NewAccessToken(dbs.Core)
 
 	accessTokenRow, err := at.GetByID(nil, tokenID)
 	if err != nil {

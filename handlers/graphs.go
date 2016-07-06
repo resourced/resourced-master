@@ -9,8 +9,8 @@ import (
 
 	"github.com/gorilla/context"
 	"github.com/gorilla/csrf"
-	"github.com/jmoiron/sqlx"
 
+	"github.com/resourced/resourced-master/config"
 	"github.com/resourced/resourced-master/dal"
 	"github.com/resourced/resourced-master/libhttp"
 )
@@ -22,9 +22,9 @@ func GetGraphs(w http.ResponseWriter, r *http.Request) {
 
 	currentCluster := context.Get(r, "currentCluster").(*dal.ClusterRow)
 
-	db := context.Get(r, "db.Core").(*sqlx.DB)
+	dbs := context.Get(r, "dbs").(*config.DBConfig)
 
-	graphs, err := dal.NewGraph(db).AllByClusterID(nil, currentCluster.ID)
+	graphs, err := dal.NewGraph(dbs.Core).AllByClusterID(nil, currentCluster.ID)
 	if err != nil {
 		libhttp.HandleErrorHTML(w, err, 500)
 		return
@@ -71,14 +71,14 @@ func PostGraphs(w http.ResponseWriter, r *http.Request) {
 	description := r.FormValue("Description")
 	range_ := r.FormValue("Range")
 
-	db := context.Get(r, "db.Core").(*sqlx.DB)
+	dbs := context.Get(r, "dbs").(*config.DBConfig)
 
 	data := make(map[string]interface{})
 	data["name"] = name
 	data["description"] = description
 	data["range"] = range_
 
-	_, err := dal.NewGraph(db).Create(nil, currentCluster.ID, data)
+	_, err := dal.NewGraph(dbs.Core).Create(nil, currentCluster.ID, data)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
@@ -102,7 +102,7 @@ func GetPostPutDeleteGraphsID(w http.ResponseWriter, r *http.Request) {
 func GetGraphsID(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html")
 
-	db := context.Get(r, "db.Core").(*sqlx.DB)
+	dbs := context.Get(r, "dbs").(*config.DBConfig)
 
 	currentUser := context.Get(r, "currentUser").(*dal.UserRow)
 
@@ -128,13 +128,13 @@ func GetGraphsID(w http.ResponseWriter, r *http.Request) {
 	// --------------------------
 	go func(currentCluster *dal.ClusterRow, id int64) {
 		graphsWithError := &dal.GraphRowsWithError{}
-		graphsWithError.Graphs, graphsWithError.Error = dal.NewGraph(db).AllByClusterID(nil, currentCluster.ID)
+		graphsWithError.Graphs, graphsWithError.Error = dal.NewGraph(dbs.Core).AllByClusterID(nil, currentCluster.ID)
 		graphsChan <- graphsWithError
 	}(currentCluster, id)
 
 	go func(currentCluster *dal.ClusterRow) {
 		metricsWithError := &dal.MetricRowsWithError{}
-		metricsWithError.Metrics, metricsWithError.Error = dal.NewMetric(db).AllByClusterID(nil, currentCluster.ID)
+		metricsWithError.Metrics, metricsWithError.Error = dal.NewMetric(dbs.Core).AllByClusterID(nil, currentCluster.ID)
 		metricsChan <- metricsWithError
 	}(currentCluster)
 
@@ -206,7 +206,7 @@ func GetGraphsID(w http.ResponseWriter, r *http.Request) {
 }
 
 func PutGraphsID(w http.ResponseWriter, r *http.Request) {
-	db := context.Get(r, "db.Core").(*sqlx.DB)
+	dbs := context.Get(r, "dbs").(*config.DBConfig)
 
 	id, err := getInt64SlugFromPath(w, r, "id")
 	if err != nil {
@@ -243,7 +243,7 @@ func PutGraphsID(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if len(data) > 0 {
-		_, err = dal.NewGraph(db).UpdateByID(nil, data, id)
+		_, err = dal.NewGraph(dbs.Core).UpdateByID(nil, data, id)
 		if err != nil {
 			libhttp.HandleErrorJson(w, err)
 			return
@@ -254,7 +254,7 @@ func PutGraphsID(w http.ResponseWriter, r *http.Request) {
 }
 
 func DeleteGraphsID(w http.ResponseWriter, r *http.Request) {
-	db := context.Get(r, "db.Core").(*sqlx.DB)
+	dbs := context.Get(r, "dbs").(*config.DBConfig)
 
 	currentCluster := context.Get(r, "currentCluster").(*dal.ClusterRow)
 
@@ -264,7 +264,7 @@ func DeleteGraphsID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err = dal.NewGraph(db).DeleteByClusterIDAndID(nil, currentCluster.ID, id)
+	_, err = dal.NewGraph(dbs.Core).DeleteByClusterIDAndID(nil, currentCluster.ID, id)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
@@ -276,7 +276,7 @@ func DeleteGraphsID(w http.ResponseWriter, r *http.Request) {
 func PutApiGraphsIDMetrics(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	db := context.Get(r, "db.Core").(*sqlx.DB)
+	dbs := context.Get(r, "dbs").(*config.DBConfig)
 
 	accessTokenRow := context.Get(r, "accessToken").(*dal.AccessTokenRow)
 
@@ -292,7 +292,7 @@ func PutApiGraphsIDMetrics(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	row, err := dal.NewGraph(db).UpdateMetricsByClusterIDAndID(nil, accessTokenRow.ClusterID, id, dataJSON)
+	row, err := dal.NewGraph(dbs.Core).UpdateMetricsByClusterIDAndID(nil, accessTokenRow.ClusterID, id, dataJSON)
 
 	rowJSON, err := json.Marshal(row)
 	if err != nil {

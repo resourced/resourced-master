@@ -12,8 +12,8 @@ import (
 	"github.com/gorilla/context"
 	"github.com/gorilla/csrf"
 	"github.com/gorilla/mux"
-	"github.com/jmoiron/sqlx"
 
+	"github.com/resourced/resourced-master/config"
 	"github.com/resourced/resourced-master/dal"
 	"github.com/resourced/resourced-master/libhttp"
 	"github.com/resourced/resourced-master/libslice"
@@ -22,7 +22,7 @@ import (
 func GetChecks(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html")
 
-	db := context.Get(r, "db.Core").(*sqlx.DB)
+	dbs := context.Get(r, "dbs").(*config.DBConfig)
 
 	currentUser := context.Get(r, "currentUser").(*dal.UserRow)
 
@@ -42,13 +42,13 @@ func GetChecks(w http.ResponseWriter, r *http.Request) {
 	// --------------------------
 	go func(currentCluster *dal.ClusterRow) {
 		checksWithError := &dal.CheckRowsWithError{}
-		checksWithError.Checks, checksWithError.Error = dal.NewCheck(db).AllByClusterID(nil, currentCluster.ID)
+		checksWithError.Checks, checksWithError.Error = dal.NewCheck(dbs.Core).AllByClusterID(nil, currentCluster.ID)
 		checksChan <- checksWithError
 	}(currentCluster)
 
 	go func(currentCluster *dal.ClusterRow) {
 		metricsWithError := &dal.MetricRowsWithError{}
-		metricsWithError.Metrics, metricsWithError.Error = dal.NewMetric(db).AllByClusterID(nil, currentCluster.ID)
+		metricsWithError.Metrics, metricsWithError.Error = dal.NewMetric(dbs.Core).AllByClusterID(nil, currentCluster.ID)
 		metricsChan <- metricsWithError
 	}(currentCluster)
 
@@ -110,7 +110,7 @@ func GetChecks(w http.ResponseWriter, r *http.Request) {
 }
 
 func PostChecks(w http.ResponseWriter, r *http.Request) {
-	db := context.Get(r, "db.Core").(*sqlx.DB)
+	dbs := context.Get(r, "dbs").(*config.DBConfig)
 
 	w.Header().Set("Content-Type", "text/html")
 
@@ -141,14 +141,14 @@ func PostChecks(w http.ResponseWriter, r *http.Request) {
 	data["last_result_hosts"] = []byte("[]")
 	data["last_result_expressions"] = []byte("[]")
 
-	_, err = dal.NewCheck(db).Create(nil, currentCluster.ID, data)
+	_, err = dal.NewCheck(dbs.Core).Create(nil, currentCluster.ID, data)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
 	}
 
 	go func() {
-		_, err := db.Exec("NOTIFY checks_refetch")
+		_, err := dbs.Core.Exec("NOTIFY checks_refetch")
 		if err != nil {
 			logrus.Error(err)
 		}
@@ -164,9 +164,9 @@ func PostPutDeleteCheckID(w http.ResponseWriter, r *http.Request) {
 	}
 
 	go func() {
-		db := context.Get(r, "db.Core").(*sqlx.DB)
+		dbs := context.Get(r, "dbs").(*config.DBConfig)
 
-		_, err := db.Exec("NOTIFY checks_refetch")
+		_, err := dbs.Core.Exec("NOTIFY checks_refetch")
 		if err != nil {
 			logrus.Error(err)
 		}
@@ -180,7 +180,7 @@ func PostPutDeleteCheckID(w http.ResponseWriter, r *http.Request) {
 }
 
 func PutCheckID(w http.ResponseWriter, r *http.Request) {
-	db := context.Get(r, "db.Core").(*sqlx.DB)
+	dbs := context.Get(r, "dbs").(*config.DBConfig)
 
 	id, err := getInt64SlugFromPath(w, r, "id")
 	if err != nil {
@@ -210,7 +210,7 @@ func PutCheckID(w http.ResponseWriter, r *http.Request) {
 	data["hosts_list"] = hostsListJSON
 	data["expressions"] = r.FormValue("Expressions")
 
-	_, err = dal.NewCheck(db).UpdateByID(nil, data, id)
+	_, err = dal.NewCheck(dbs.Core).UpdateByID(nil, data, id)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
@@ -226,11 +226,11 @@ func DeleteCheckID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	db := context.Get(r, "db.Core").(*sqlx.DB)
+	dbs := context.Get(r, "dbs").(*config.DBConfig)
 
 	currentCluster := context.Get(r, "currentCluster").(*dal.ClusterRow)
 
-	_, err = dal.NewCheck(db).DeleteByClusterIDAndID(nil, currentCluster.ID, id)
+	_, err = dal.NewCheck(dbs.Core).DeleteByClusterIDAndID(nil, currentCluster.ID, id)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
@@ -240,7 +240,7 @@ func DeleteCheckID(w http.ResponseWriter, r *http.Request) {
 }
 
 func PostCheckIDSilence(w http.ResponseWriter, r *http.Request) {
-	db := context.Get(r, "db.Core").(*sqlx.DB)
+	dbs := context.Get(r, "dbs").(*config.DBConfig)
 
 	id, err := getInt64SlugFromPath(w, r, "id")
 	if err != nil {
@@ -248,7 +248,7 @@ func PostCheckIDSilence(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	check := dal.NewCheck(db)
+	check := dal.NewCheck(dbs.Core)
 
 	checkRow, err := check.GetByID(nil, id)
 	if err != nil {
@@ -313,7 +313,7 @@ func newCheckTriggerFromForm(r *http.Request) (dal.CheckTrigger, error) {
 }
 
 func PostChecksTriggers(w http.ResponseWriter, r *http.Request) {
-	db := context.Get(r, "db.Core").(*sqlx.DB)
+	dbs := context.Get(r, "dbs").(*config.DBConfig)
 
 	w.Header().Set("Content-Type", "text/html")
 
@@ -335,7 +335,7 @@ func PostChecksTriggers(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	check := dal.NewCheck(db)
+	check := dal.NewCheck(dbs.Core)
 
 	trigger.ID = check.NewExplicitID()
 
@@ -352,7 +352,7 @@ func PostChecksTriggers(w http.ResponseWriter, r *http.Request) {
 	}
 
 	go func() {
-		_, err := db.Exec("NOTIFY checks_refetch")
+		_, err := dbs.Core.Exec("NOTIFY checks_refetch")
 		if err != nil {
 			logrus.Error(err)
 		}
@@ -368,9 +368,9 @@ func PostPutDeleteCheckTriggerID(w http.ResponseWriter, r *http.Request) {
 	}
 
 	go func() {
-		db := context.Get(r, "db.Core").(*sqlx.DB)
+		dbs := context.Get(r, "dbs").(*config.DBConfig)
 
-		_, err := db.Exec("NOTIFY checks_refetch")
+		_, err := dbs.Core.Exec("NOTIFY checks_refetch")
 		if err != nil {
 			logrus.Error(err)
 		}
@@ -410,9 +410,9 @@ func PutCheckTriggerID(w http.ResponseWriter, r *http.Request) {
 
 	trigger.ID = id
 
-	db := context.Get(r, "db.Core").(*sqlx.DB)
+	dbs := context.Get(r, "dbs").(*config.DBConfig)
 
-	check := dal.NewCheck(db)
+	check := dal.NewCheck(dbs.Core)
 
 	checkRow, err := check.GetByID(nil, checkID)
 	if err != nil {
@@ -451,9 +451,9 @@ func DeleteCheckTriggerID(w http.ResponseWriter, r *http.Request) {
 	trigger := dal.CheckTrigger{}
 	trigger.ID = id
 
-	db := context.Get(r, "db.Core").(*sqlx.DB)
+	dbs := context.Get(r, "dbs").(*config.DBConfig)
 
-	check := dal.NewCheck(db)
+	check := dal.NewCheck(dbs.Core)
 
 	checkRow, err := check.GetByID(nil, checkID)
 	if err != nil {

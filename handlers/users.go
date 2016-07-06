@@ -10,8 +10,8 @@ import (
 	"github.com/gorilla/context"
 	"github.com/gorilla/mux"
 	"github.com/gorilla/sessions"
-	"github.com/jmoiron/sqlx"
 
+	"github.com/resourced/resourced-master/config"
 	"github.com/resourced/resourced-master/dal"
 	"github.com/resourced/resourced-master/libhttp"
 	"github.com/resourced/resourced-master/mailer"
@@ -44,7 +44,7 @@ func GetSignup(w http.ResponseWriter, r *http.Request) {
 func PostSignup(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html")
 
-	db := context.Get(r, "db.Core").(*sqlx.DB)
+	dbs := context.Get(r, "dbs").(*config.DBConfig)
 
 	email := r.FormValue("Email")
 	password := r.FormValue("Password")
@@ -53,25 +53,25 @@ func PostSignup(w http.ResponseWriter, r *http.Request) {
 
 	emailValidated := false
 
-	userRow, err := dal.NewUser(db).GetByEmail(nil, email)
+	userRow, err := dal.NewUser(dbs.Core).GetByEmail(nil, email)
 
 	if err != nil && err.Error() == "sql: no rows in result set" {
 		// There's no existing user in the database, create a new one.
-		userRow, err = dal.NewUser(db).Signup(nil, email, password, passwordAgain)
+		userRow, err = dal.NewUser(dbs.Core).Signup(nil, email, password, passwordAgain)
 		if err != nil {
 			libhttp.HandleErrorHTML(w, err, 500)
 			return
 		}
 
 		// Create a default cluster
-		clusterRow, err := dal.NewCluster(db).Create(nil, userRow, "Default")
+		clusterRow, err := dal.NewCluster(dbs.Core).Create(nil, userRow, "Default")
 		if err != nil {
 			libhttp.HandleErrorHTML(w, err, 500)
 			return
 		}
 
 		// Create a default access-token
-		_, err = dal.NewAccessToken(db).Create(nil, userRow.ID, clusterRow.ID, "execute")
+		_, err = dal.NewAccessToken(dbs.Core).Create(nil, userRow.ID, clusterRow.ID, "execute")
 		if err != nil {
 			libhttp.HandleErrorHTML(w, err, 500)
 			return
@@ -86,14 +86,14 @@ func PostSignup(w http.ResponseWriter, r *http.Request) {
 		emailValidated = true
 
 		// There's an existing user in the database, update email and password info.
-		userRow, err = dal.NewUser(db).UpdateEmailAndPasswordById(nil, userRow.ID, email, password, passwordAgain)
+		userRow, err = dal.NewUser(dbs.Core).UpdateEmailAndPasswordById(nil, userRow.ID, email, password, passwordAgain)
 		if err != nil {
 			libhttp.HandleErrorHTML(w, err, 500)
 			return
 		}
 
 		// Verified that emailVerificationToken works.
-		_, err = dal.NewUser(db).UpdateEmailVerification(nil, emailVerificationToken)
+		_, err = dal.NewUser(dbs.Core).UpdateEmailVerification(nil, emailVerificationToken)
 		if err != nil {
 			libhttp.HandleErrorHTML(w, err, 500)
 			return
@@ -155,13 +155,13 @@ func GetLogin(w http.ResponseWriter, r *http.Request) {
 func PostLogin(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html")
 
-	db := context.Get(r, "db.Core").(*sqlx.DB)
+	dbs := context.Get(r, "dbs").(*config.DBConfig)
 	cookieStore := context.Get(r, "cookieStore").(*sessions.CookieStore)
 
 	email := r.FormValue("Email")
 	password := r.FormValue("Password")
 
-	u := dal.NewUser(db)
+	u := dal.NewUser(dbs.Core)
 
 	user, err := u.GetUserByEmailAndPassword(nil, email, password)
 	if err != nil {
@@ -199,7 +199,7 @@ func PutUsersID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	db := context.Get(r, "db.Core").(*sqlx.DB)
+	dbs := context.Get(r, "dbs").(*config.DBConfig)
 
 	cookieStore := context.Get(r, "cookieStore").(*sessions.CookieStore)
 
@@ -217,7 +217,7 @@ func PutUsersID(w http.ResponseWriter, r *http.Request) {
 	password := r.FormValue("Password")
 	passwordAgain := r.FormValue("PasswordAgain")
 
-	u := dal.NewUser(db)
+	u := dal.NewUser(dbs.Core)
 
 	currentUser, err = u.UpdateEmailAndPasswordById(nil, currentUser.ID, email, password, passwordAgain)
 	if err != nil {
@@ -246,11 +246,11 @@ func DeleteUsersID(w http.ResponseWriter, r *http.Request) {
 func GetUsersEmailVerificationToken(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html")
 
-	db := context.Get(r, "db.Core").(*sqlx.DB)
+	dbs := context.Get(r, "dbs").(*config.DBConfig)
 
 	emailVerificationToken := mux.Vars(r)["token"]
 
-	_, err := dal.NewUser(db).UpdateEmailVerification(nil, emailVerificationToken)
+	_, err := dal.NewUser(dbs.Core).UpdateEmailVerification(nil, emailVerificationToken)
 	if err != nil {
 		libhttp.HandleErrorHTML(w, err, 500)
 		return

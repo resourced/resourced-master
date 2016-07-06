@@ -291,11 +291,11 @@ func (checkRow *CheckRow) GetExpressions() ([]CheckExpression, error) {
 // 1st value: List of all CheckExpression containing results.
 // 2nd value: The value of all expressions.
 // 3rd value: Error
-func (checkRow *CheckRow) EvalExpressions(coreDB, hostDB, tsMetricDB, tsLogDB *sqlx.DB) ([]CheckExpression, bool, error) {
+func (checkRow *CheckRow) EvalExpressions(dbs *config.DBConfig) ([]CheckExpression, bool, error) {
 	var hostRows []*HostRow
 	var err error
 
-	host := NewHost(hostDB)
+	host := NewHost(dbs.Host)
 
 	if checkRow.HostsQuery != "" {
 		hostRows, err = host.AllByClusterIDQueryAndUpdatedInterval(nil, checkRow.ClusterID, checkRow.HostsQuery, "5m")
@@ -325,10 +325,10 @@ func (checkRow *CheckRow) EvalExpressions(coreDB, hostDB, tsMetricDB, tsLogDB *s
 			expression = checkRow.EvalRawHostDataExpression(hostRows, expression)
 
 		} else if expression.Type == "RelativeHostData" {
-			expression = checkRow.EvalRelativeHostDataExpression(tsMetricDB, hostRows, expression)
+			expression = checkRow.EvalRelativeHostDataExpression(dbs, hostRows, expression)
 
 		} else if expression.Type == "LogData" {
-			expression = checkRow.EvalLogDataExpression(coreDB, tsLogDB, hostRows, expression)
+			expression = checkRow.EvalLogDataExpression(dbs, hostRows, expression)
 
 		} else if expression.Type == "Ping" {
 			expression = checkRow.EvalPingExpression(hostRows, expression)
@@ -428,7 +428,7 @@ func (checkRow *CheckRow) EvalRawHostDataExpression(hostRows []*HostRow, express
 	return expression
 }
 
-func (checkRow *CheckRow) EvalRelativeHostDataExpression(tsMetricDB *sqlx.DB, hostRows []*HostRow, expression CheckExpression) CheckExpression {
+func (checkRow *CheckRow) EvalRelativeHostDataExpression(dbs *config.DBConfig, hostRows []*HostRow, expression CheckExpression) CheckExpression {
 	if hostRows == nil || len(hostRows) <= 0 {
 		expression.Result.Value = true
 		expression.Result.Message = "There are no hosts to check"
@@ -443,7 +443,7 @@ func (checkRow *CheckRow) EvalRelativeHostDataExpression(tsMetricDB *sqlx.DB, ho
 
 	for _, hostRow := range hostRows {
 
-		aggregateData, err := NewTSMetric(tsMetricDB).GetAggregateXMinutesByHostnameAndKey(nil, checkRow.ClusterID, expression.PrevRange, hostRow.Hostname, expression.Metric)
+		aggregateData, err := NewTSMetric(dbs.TSMetric).GetAggregateXMinutesByHostnameAndKey(nil, checkRow.ClusterID, expression.PrevRange, hostRow.Hostname, expression.Metric)
 		if err != nil {
 			// If a Host does not contain historical data of a particular metric,
 			// We assume that there's something wrong with it.
@@ -515,7 +515,7 @@ func (checkRow *CheckRow) EvalRelativeHostDataExpression(tsMetricDB *sqlx.DB, ho
 	return expression
 }
 
-func (checkRow *CheckRow) EvalLogDataExpression(coreDB *sqlx.DB, tsLogDB *sqlx.DB, hostRows []*HostRow, expression CheckExpression) CheckExpression {
+func (checkRow *CheckRow) EvalLogDataExpression(dbs *config.DBConfig, hostRows []*HostRow, expression CheckExpression) CheckExpression {
 	hostnames, err := checkRow.GetHostsList()
 	if err != nil {
 		expression.Result.Value = false
@@ -539,7 +539,7 @@ func (checkRow *CheckRow) EvalLogDataExpression(coreDB *sqlx.DB, tsLogDB *sqlx.D
 	badHostnames := make([]string, 0)
 	goodHostnames := make([]string, 0)
 
-	clusterRow, err := NewCluster(coreDB).GetByID(nil, checkRow.ClusterID)
+	clusterRow, err := NewCluster(dbs.Core).GetByID(nil, checkRow.ClusterID)
 	if err != nil {
 		expression.Result.Value = false
 		return expression
@@ -554,7 +554,7 @@ func (checkRow *CheckRow) EvalLogDataExpression(coreDB *sqlx.DB, tsLogDB *sqlx.D
 		from := now.Add(-1 * time.Duration(expression.PrevRange) * time.Minute).UTC().Unix()
 		searchQuery := fmt.Sprintf(`logline search "%v"`, expression.Search)
 
-		valInt64, err := NewTSLog(tsLogDB).CountByClusterIDFromTimestampHostAndQuery(nil, checkRow.ClusterID, from, hostname, searchQuery, deletedFrom)
+		valInt64, err := NewTSLog(dbs.TSLog).CountByClusterIDFromTimestampHostAndQuery(nil, checkRow.ClusterID, from, hostname, searchQuery, deletedFrom)
 		if err != nil {
 			continue
 		}

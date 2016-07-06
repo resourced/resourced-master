@@ -12,8 +12,8 @@ import (
 	"github.com/gorilla/context"
 	"github.com/gorilla/csrf"
 	"github.com/gorilla/sessions"
-	"github.com/jmoiron/sqlx"
 
+	"github.com/resourced/resourced-master/config"
 	"github.com/resourced/resourced-master/dal"
 	"github.com/resourced/resourced-master/libhttp"
 	"github.com/resourced/resourced-master/mailer"
@@ -23,7 +23,7 @@ import (
 func GetClusters(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html")
 
-	db := context.Get(r, "db.Core").(*sqlx.DB)
+	dbs := context.Get(r, "dbs").(*config.DBConfig)
 
 	currentUser := context.Get(r, "currentUser").(*dal.UserRow)
 
@@ -34,7 +34,7 @@ func GetClusters(w http.ResponseWriter, r *http.Request) {
 	accessTokens := make(map[int64][]*dal.AccessTokenRow)
 
 	for _, cluster := range clusters {
-		accessTokensSlice, err := dal.NewAccessToken(db).AllByClusterID(nil, cluster.ID)
+		accessTokensSlice, err := dal.NewAccessToken(dbs.Core).AllByClusterID(nil, cluster.ID)
 		if err != nil {
 			libhttp.HandleErrorHTML(w, err, 500)
 			return
@@ -76,11 +76,11 @@ func GetClusters(w http.ResponseWriter, r *http.Request) {
 
 // PostClusters creates a new cluster.
 func PostClusters(w http.ResponseWriter, r *http.Request) {
-	db := context.Get(r, "db.Core").(*sqlx.DB)
+	dbs := context.Get(r, "dbs").(*config.DBConfig)
 
 	currentUser := context.Get(r, "currentUser").(*dal.UserRow)
 
-	_, err := dal.NewCluster(db).Create(nil, currentUser, r.FormValue("Name"))
+	_, err := dal.NewCluster(dbs.Core).Create(nil, currentUser, r.FormValue("Name"))
 	if err != nil {
 		libhttp.HandleErrorHTML(w, err, 500)
 		return
@@ -139,7 +139,7 @@ func PostPutDeleteClusterID(w http.ResponseWriter, r *http.Request) {
 
 // PutClusterID updates a cluster's information.
 func PutClusterID(w http.ResponseWriter, r *http.Request) {
-	db := context.Get(r, "db.Core").(*sqlx.DB)
+	dbs := context.Get(r, "dbs").(*config.DBConfig)
 
 	id, err := getInt64SlugFromPath(w, r, "id")
 	if err != nil {
@@ -168,7 +168,7 @@ func PutClusterID(w http.ResponseWriter, r *http.Request) {
 	data["name"] = name
 	data["data_retention"] = dataRetentionJSON
 
-	_, err = dal.NewCluster(db).UpdateByID(nil, data, id)
+	_, err = dal.NewCluster(dbs.Core).UpdateByID(nil, data, id)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
@@ -179,7 +179,7 @@ func PutClusterID(w http.ResponseWriter, r *http.Request) {
 
 // DeleteClusterID deletes a cluster.
 func DeleteClusterID(w http.ResponseWriter, r *http.Request) {
-	db := context.Get(r, "db.Core").(*sqlx.DB)
+	dbs := context.Get(r, "dbs").(*config.DBConfig)
 
 	id, err := getInt64SlugFromPath(w, r, "id")
 	if err != nil {
@@ -187,7 +187,7 @@ func DeleteClusterID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	cluster := dal.NewCluster(db)
+	cluster := dal.NewCluster(dbs.Core)
 
 	clustersByUser, err := cluster.AllByUserID(nil, id)
 	if err != nil {
@@ -225,7 +225,7 @@ func PostPutDeleteClusterIDUsers(w http.ResponseWriter, r *http.Request) {
 
 // PutClusterIDUsers adds a user as a member to a particular cluster.
 func PutClusterIDUsers(w http.ResponseWriter, r *http.Request) {
-	db := context.Get(r, "db.Core").(*sqlx.DB)
+	dbs := context.Get(r, "dbs").(*config.DBConfig)
 
 	id, err := getInt64SlugFromPath(w, r, "id")
 	if err != nil {
@@ -236,11 +236,11 @@ func PutClusterIDUsers(w http.ResponseWriter, r *http.Request) {
 	email := r.FormValue("Email")
 	permission := r.FormValue("Permission")
 
-	userRow, err := dal.NewUser(db).GetByEmail(nil, email)
+	userRow, err := dal.NewUser(dbs.Core).GetByEmail(nil, email)
 	if err != nil && strings.Contains(err.Error(), "no rows in result set") {
 
 		// 1. Create a user with temporary password
-		userRow, err = dal.NewUser(db).SignupRandomPassword(nil, email)
+		userRow, err = dal.NewUser(dbs.Core).SignupRandomPassword(nil, email)
 		if err != nil {
 			libhttp.HandleErrorJson(w, err)
 			return
@@ -248,7 +248,7 @@ func PutClusterIDUsers(w http.ResponseWriter, r *http.Request) {
 
 		// 2. Send email invite to user
 		if userRow.EmailVerificationToken.String != "" {
-			clusterRow, err := dal.NewCluster(db).GetByID(nil, id)
+			clusterRow, err := dal.NewCluster(dbs.Core).GetByID(nil, id)
 			if err != nil {
 				libhttp.HandleErrorJson(w, err)
 				return
@@ -272,7 +272,7 @@ Your coleague has invited you to join cluster: %v. Click the following link to s
 	}
 
 	// Add user as a member to this cluster
-	err = dal.NewCluster(db).UpdateMember(nil, id, userRow, permission)
+	err = dal.NewCluster(dbs.Core).UpdateMember(nil, id, userRow, permission)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
@@ -283,7 +283,7 @@ Your coleague has invited you to join cluster: %v. Click the following link to s
 
 // DeleteClusterIDUsers removes user's membership from a particular cluster.
 func DeleteClusterIDUsers(w http.ResponseWriter, r *http.Request) {
-	db := context.Get(r, "db.Core").(*sqlx.DB)
+	dbs := context.Get(r, "dbs").(*config.DBConfig)
 
 	id, err := getInt64SlugFromPath(w, r, "id")
 	if err != nil {
@@ -293,9 +293,9 @@ func DeleteClusterIDUsers(w http.ResponseWriter, r *http.Request) {
 
 	email := r.FormValue("Email")
 
-	existingUser, _ := dal.NewUser(db).GetByEmail(nil, email)
+	existingUser, _ := dal.NewUser(dbs.Core).GetByEmail(nil, email)
 	if existingUser != nil {
-		err := dal.NewCluster(db).RemoveMember(nil, id, existingUser)
+		err := dal.NewCluster(dbs.Core).RemoveMember(nil, id, existingUser)
 		if err != nil {
 			libhttp.HandleErrorJson(w, err)
 			return

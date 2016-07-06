@@ -36,7 +36,7 @@ func (app *Application) CheckAndRunTriggers(refetchChecksChan <-chan bool) {
 				for _, checkRow := range checkRows {
 					go func(checkRow *dal.CheckRow) {
 						// 1. Evaluate all expressions in a check.
-						expressionResults, finalResult, err := checkRow.EvalExpressions(app.DBConfig.Core, app.DBConfig.Host, app.DBConfig.TSMetric, app.DBConfig.TSLog)
+						expressionResults, finalResult, err := checkRow.EvalExpressions(app.DBConfig)
 						if err != nil {
 							logrus.WithFields(logrus.Fields{
 								"Method":    "checkRow.EvalExpressions",

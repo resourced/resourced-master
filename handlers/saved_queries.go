@@ -6,18 +6,18 @@ import (
 	"strings"
 
 	"github.com/gorilla/context"
-	"github.com/jmoiron/sqlx"
 
+	"github.com/resourced/resourced-master/config"
 	"github.com/resourced/resourced-master/dal"
 	"github.com/resourced/resourced-master/libhttp"
 )
 
 func PostSavedQueries(w http.ResponseWriter, r *http.Request) {
-	db := context.Get(r, "db.Core").(*sqlx.DB)
+	dbs := context.Get(r, "dbs").(*config.DBConfig)
 
 	currentUser := context.Get(r, "currentUser").(*dal.UserRow)
 
-	accessTokenRow, err := dal.NewAccessToken(db).GetByUserID(nil, currentUser.ID)
+	accessTokenRow, err := dal.NewAccessToken(dbs.Core).GetByUserID(nil, currentUser.ID)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
@@ -26,7 +26,7 @@ func PostSavedQueries(w http.ResponseWriter, r *http.Request) {
 	savedQueryType := r.FormValue("Type")
 	savedQuery := r.FormValue("SavedQuery")
 
-	_, err = dal.NewSavedQuery(db).CreateOrUpdate(nil, accessTokenRow, savedQueryType, savedQuery)
+	_, err = dal.NewSavedQuery(dbs.Core).CreateOrUpdate(nil, accessTokenRow, savedQueryType, savedQuery)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
@@ -59,13 +59,13 @@ func DeleteSavedQueriesID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	db := context.Get(r, "db.Core").(*sqlx.DB)
+	dbs := context.Get(r, "dbs").(*config.DBConfig)
 
 	currentUser := context.Get(r, "currentUser").(*dal.UserRow)
 
 	currentCluster := context.Get(r, "currentCluster").(*dal.ClusterRow)
 
-	sq := dal.NewSavedQuery(db)
+	sq := dal.NewSavedQuery(dbs.Core)
 
 	savedQueryRow, err := sq.GetByID(nil, savedQueryID)
 
