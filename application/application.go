@@ -144,6 +144,18 @@ func (app *Application) MigrateUpAll() error {
 		return errs[0]
 	}
 
+	errs, ok = migrate.UpSync(app.GeneralConfig.Hosts.DSN, "./migrations/hosts")
+	if !ok {
+		return errs[0]
+	}
+
+	for _, dsn := range app.GeneralConfig.Hosts.DSNByClusterID {
+		errs, ok = migrate.UpSync(dsn, "./migrations/hosts")
+		if !ok {
+			return errs[0]
+		}
+	}
+
 	errs, ok = migrate.UpSync(app.GeneralConfig.Checks.DSN, "./migrations/ts-checks")
 	if !ok {
 		return errs[0]

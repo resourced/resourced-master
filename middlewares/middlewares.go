@@ -54,6 +54,9 @@ func SetVIPProtocol(vipProtocol string) func(http.Handler) http.Handler {
 func SetDBs(dbConfig *config.DBConfig) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			context.Set(r, "dbs", dbConfig)
+
+			// TODO: remove all these on every call
 			context.Set(r, "db.Core", dbConfig.Core)
 			context.Set(r, "db.Host", dbConfig.Host)
 			context.Set(r, "db.TSMetric", dbConfig.TSMetric)

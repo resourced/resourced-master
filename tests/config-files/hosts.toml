@@ -1,2 +1,6 @@
 [Hosts]
 DSN = "postgres://localhost:5432/resourced-master-hosts?sslmode=disable"
+
+[DSNByClusterID]
+1 = "postgres://localhost:5432/resourced-master-hosts-1?sslmode=disable"
+2 = "postgres://localhost:5432/resourced-master-hosts-2?sslmode=disable"

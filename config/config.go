@@ -91,7 +91,8 @@ type GeneralConfig struct {
 	}
 
 	Hosts struct {
-		DSN string
+		DSN            string
+		DSNByClusterID map[int64]string
 	}
 
 	Metrics struct {
@@ -134,6 +135,7 @@ type GeneralConfig struct {
 // NewDBConfig connects to all the databases and returns them in DBConfig instance.
 func NewDBConfig(generalConfig GeneralConfig) (*DBConfig, error) {
 	conf := &DBConfig{}
+	conf.HostByClusterID = make(map[int64]*sqlx.DB)
 
 	db, err := sqlx.Connect("postgres", generalConfig.DSN)
 	if err != nil {
@@ -146,6 +148,14 @@ func NewDBConfig(generalConfig GeneralConfig) (*DBConfig, error) {
 		return nil, err
 	}
 	conf.Host = db
+
+	for clusterID, dsn := range generalConfig.Hosts.DSNByClusterID {
+		db, err = sqlx.Connect("postgres", dsn)
+		if err != nil {
+			return nil, err
+		}
+		conf.HostByClusterID[int64(clusterID)] = db
+	}
 
 	db, err = sqlx.Connect("postgres", generalConfig.Metrics.DSN)
 	if err != nil {
@@ -190,6 +200,7 @@ func NewDBConfig(generalConfig GeneralConfig) (*DBConfig, error) {
 type DBConfig struct {
 	Core            *sqlx.DB
 	Host            *sqlx.DB
+	HostByClusterID map[int64]*sqlx.DB
 	TSMetric        *sqlx.DB
 	TSMetricAggr15m *sqlx.DB
 	TSEvent         *sqlx.DB
