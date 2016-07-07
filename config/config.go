@@ -4,6 +4,7 @@ package config
 import (
 	"io/ioutil"
 	"path"
+	"strconv"
 	"strings"
 
 	"github.com/BurntSushi/toml"
@@ -92,7 +93,7 @@ type GeneralConfig struct {
 
 	Hosts struct {
 		DSN            string
-		DSNByClusterID map[int64]string
+		DSNByClusterID map[string]string
 	}
 
 	Metrics struct {
@@ -149,12 +150,17 @@ func NewDBConfig(generalConfig GeneralConfig) (*DBConfig, error) {
 	}
 	conf.Host = db
 
-	for clusterID, dsn := range generalConfig.Hosts.DSNByClusterID {
+	for clusterIDString, dsn := range generalConfig.Hosts.DSNByClusterID {
+		clusterID, err := strconv.ParseInt(clusterIDString, 10, 64)
+		if err != nil {
+			return nil, err
+		}
+
 		db, err = sqlx.Connect("postgres", dsn)
 		if err != nil {
 			return nil, err
 		}
-		conf.HostByClusterID[int64(clusterID)] = db
+		conf.HostByClusterID[clusterID] = db
 	}
 
 	db, err = sqlx.Connect("postgres", generalConfig.Metrics.DSN)
@@ -207,4 +213,13 @@ type DBConfig struct {
 	TSExecutorLog   *sqlx.DB
 	TSLog           *sqlx.DB
 	TSCheck         *sqlx.DB
+}
+
+func (dbconf *DBConfig) GetHost(clusterID int64) *sqlx.DB {
+	conn, ok := dbconf.HostByClusterID[clusterID]
+	if !ok {
+		conn = dbconf.Host
+	}
+
+	return conn
 }

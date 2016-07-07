@@ -295,7 +295,7 @@ func (checkRow *CheckRow) EvalExpressions(dbs *config.DBConfig) ([]CheckExpressi
 	var hostRows []*HostRow
 	var err error
 
-	host := NewHost(dbs.Host)
+	host := NewHost(dbs.GetHost(checkRow.ClusterID))
 
 	if checkRow.HostsQuery != "" {
 		hostRows, err = host.AllByClusterIDQueryAndUpdatedInterval(nil, checkRow.ClusterID, checkRow.HostsQuery, "5m")

@@ -140,7 +140,7 @@ func PostApiHosts(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	hostRow, err := dal.NewHost(dbs.Host).CreateOrUpdate(nil, accessTokenRow, dataJson)
+	hostRow, err := dal.NewHost(dbs.GetHost(accessTokenRow.ClusterID)).CreateOrUpdate(nil, accessTokenRow, dataJson)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return

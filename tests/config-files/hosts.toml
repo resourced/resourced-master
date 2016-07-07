@@ -1,6 +1,9 @@
 [Hosts]
 DSN = "postgres://localhost:5432/resourced-master-hosts?sslmode=disable"
 
-[DSNByClusterID]
-1 = "postgres://localhost:5432/resourced-master-hosts-1?sslmode=disable"
-2 = "postgres://localhost:5432/resourced-master-hosts-2?sslmode=disable"
+# Optimization Setting: Enable this option if you have clusters with huge number of servers.
+# This setting allows you to store hosts data on a separate PostgreSQL database by cluster_id.
+# Format: key:   cluster id.
+#         value: DSN.
+# [Hosts.DSNByClusterID]
+# 1 = "postgres://localhost:5432/resourced-master-hosts-1?sslmode=disable"
