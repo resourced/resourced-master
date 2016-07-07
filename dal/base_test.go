@@ -7,6 +7,7 @@ import (
 	"github.com/Sirupsen/logrus"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
+	"github.com/resourced/resourced-master/config"
 	"github.com/resourced/resourced-master/libunix"
 	"github.com/satori/go.uuid"
 )
@@ -17,6 +18,21 @@ func init() {
 
 func newEmailForTest() string {
 	return fmt.Sprintf("brotato-%v@example.com", uuid.NewV4().String())
+}
+
+func newDBConfigForTest(t *testing.T) *config.DBConfig {
+	conf := &config.DBConfig{}
+	conf.HostByClusterID = make(map[int64]*sqlx.DB)
+	conf.Core = newDbForTest(t)
+	conf.Host = conf.Core
+	conf.TSMetric = conf.Core
+	conf.TSMetricAggr15m = conf.Core
+	conf.TSEvent = conf.Core
+	conf.TSExecutorLog = conf.Core
+	conf.TSLog = conf.Core
+	conf.TSCheck = conf.Core
+
+	return conf
 }
 
 func newDbForTest(t *testing.T) *sqlx.DB {

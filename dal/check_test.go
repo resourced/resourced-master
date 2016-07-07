@@ -363,7 +363,7 @@ func TestCheckEvalRelativeHostDataExpression(t *testing.T) {
 
 	// EvalRelativeHostDataExpression where hosts list is nil
 	// The result should be true, which means that this expression is a fail.
-	expression := checkRow.EvalRelativeHostDataExpression(newDbForTest(t), nil, CheckExpression{})
+	expression := checkRow.EvalRelativeHostDataExpression(newDBConfigForTest(t), nil, CheckExpression{})
 	if expression.Result.Value != true {
 		t.Fatalf("Expression result is not true")
 	}
@@ -379,7 +379,7 @@ func TestCheckEvalRelativeHostDataExpression(t *testing.T) {
 	expression.PrevAggr = "max"
 	expression.PrevRange = 3
 
-	expression = checkRow.EvalRelativeHostDataExpression(newDbForTest(t), hosts, expression)
+	expression = checkRow.EvalRelativeHostDataExpression(newDBConfigForTest(t), hosts, expression)
 	if expression.Result.Value != false {
 		// The result should be false. The max value of the last 3 minutes is 100, and 100 is not greater than 100 by more than 200%, which means that this expression does not fail.
 		t.Fatalf("Expression result is not false. %v %v %v", setupRows["hostRow"].(*HostRow).DataAsFlatKeyValue()["/stuff"]["Score"], expression.Operator, expression.Value)
@@ -405,7 +405,7 @@ func TestCheckEvalRelativeHostDataExpression(t *testing.T) {
 	expression.PrevAggr = "min"
 	expression.PrevRange = 3
 
-	expression = checkRow.EvalRelativeHostDataExpression(newDbForTest(t), hosts, expression)
+	expression = checkRow.EvalRelativeHostDataExpression(newDBConfigForTest(t), hosts, expression)
 	if expression.Result.Value != true {
 		// The result should be true. The min value of the last 3 minutes is 10, and 100 is greater than 10 by more than 200%, which means that this expression must fail.
 		t.Fatalf("Expression result should be true. %v %v %v", setupRows["hostRow"].(*HostRow).DataAsFlatKeyValue()["/stuff"]["Score"], expression.Operator, expression.Value)
@@ -418,7 +418,7 @@ func TestCheckEvalRelativeHostDataExpression(t *testing.T) {
 	expression.MinHost = 1
 	expression.Value = float64(200)
 
-	expression = checkRow.EvalRelativeHostDataExpression(newDbForTest(t), hosts, expression)
+	expression = checkRow.EvalRelativeHostDataExpression(newDBConfigForTest(t), hosts, expression)
 	if expression.Result.Value != true {
 		// The result should be true
 		// If we cannot find metric on the host, then we assume there's something wrong with the host. Thus, this expression must fail.
@@ -487,7 +487,7 @@ func TestCheckEvalLogDataExpression(t *testing.T) {
 	expression.Value = float64(0)
 	expression.PrevRange = 15
 
-	expression = checkRow.EvalLogDataExpression(db, db, nil, expression)
+	expression = checkRow.EvalLogDataExpression(newDBConfigForTest(t), nil, expression)
 	if expression.Result.Value != true {
 		// The result should be true. The count of logs with "aaa" string is indeed greater than 0, which means that this expression must fail.
 		t.Fatalf("Expression result is not %v %v", expression.Operator, expression.Value)
