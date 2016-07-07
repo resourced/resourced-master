@@ -266,26 +266,20 @@ $(document).ready(function() {
     }).get();
 });
 
-// Change the ordering of chart panels based on user clicks.
+// Save charts based on what user selected.
 $('.chart-keys option').click(function(event) {
-    var $option = $(this);
-    var jsonString = $option.val();
-    var val = JSON.parse(jsonString);
+    var selectedCharts = [];
 
-    if($(this).is(':selected')) {
-        var exists = false;
+    // Gather all chart JSON data
+    $('.chart-keys option:selected').each(function() {
+        var $option = $(this);
+        var jsonString = $option.val();
+        var val = JSON.parse(jsonString);
 
-        for(var i = 0; i < ResourcedMaster.globals.Charts.length; i++) {
-            if(ResourcedMaster.globals.Charts[i].ID == val.ID) {
-                exists = true;
-                break;
-            }
-        }
+        selectedCharts.push(val);
+    });
 
-        if(!exists) {
-            ResourcedMaster.globals.Charts.push(val);
-        }
-    }
+    ResourcedMaster.globals.Charts = selectedCharts;
 
     $('#add-chart-modal form input[name="MetricsWithOrder"]').val(
         JSON.stringify(ResourcedMaster.globals.Charts)
