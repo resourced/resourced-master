@@ -10,7 +10,6 @@ import (
 	"github.com/Sirupsen/logrus"
 	"github.com/gorilla/context"
 	"github.com/gorilla/csrf"
-	"github.com/jmoiron/sqlx"
 
 	"github.com/resourced/resourced-master/config"
 	"github.com/resourced/resourced-master/dal"
@@ -25,7 +24,6 @@ func GetHosts(w http.ResponseWriter, r *http.Request) {
 	currentCluster := context.Get(r, "currentCluster").(*dal.ClusterRow)
 
 	dbs := context.Get(r, "dbs").(*config.DBConfig)
-	hostDB := context.Get(r, "db.Host").(*sqlx.DB)
 
 	query := r.URL.Query().Get("q")
 
@@ -46,7 +44,7 @@ func GetHosts(w http.ResponseWriter, r *http.Request) {
 	// --------------------------
 	go func(currentCluster *dal.ClusterRow, query string) {
 		hostsWithError := &dal.HostRowsWithError{}
-		hostsWithError.Hosts, hostsWithError.Error = dal.NewHost(hostDB).AllByClusterIDAndQuery(nil, currentCluster.ID, query)
+		hostsWithError.Hosts, hostsWithError.Error = dal.NewHost(dbs.GetHost(currentCluster.ID)).AllByClusterIDAndQuery(nil, currentCluster.ID, query)
 		hostsChan <- hostsWithError
 	}(currentCluster, query)
 
@@ -213,14 +211,14 @@ func PostApiHosts(w http.ResponseWriter, r *http.Request) {
 func GetApiHosts(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	hostDB := context.Get(r, "db.Host").(*sqlx.DB)
+	dbs := context.Get(r, "dbs").(*config.DBConfig)
 
 	accessTokenRow := context.Get(r, "accessToken").(*dal.AccessTokenRow)
 
 	query := r.URL.Query().Get("q")
 	count := r.URL.Query().Get("count")
 
-	hosts, err := dal.NewHost(hostDB).AllByClusterIDAndQuery(nil, accessTokenRow.ClusterID, query)
+	hosts, err := dal.NewHost(dbs.GetHost(accessTokenRow.ClusterID)).AllByClusterIDAndQuery(nil, accessTokenRow.ClusterID, query)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
