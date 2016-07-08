@@ -181,7 +181,21 @@ function showLogs(olderOrNewer, logsJSON, ulSelector, itemsPerPage) {
     list.data('older-or-newer', olderOrNewer);
 
     list.html($.map(logsJSON.slice(Math.min(index, newIndex), Math.max(index, newIndex)), function(val) {
-        return '<li>' + val.Logline + '</li>';
+        var tags = '';
+
+        for (var prop in val.Tags) {
+            // skip loop if the property is from prototype
+            if(!val.Tags.hasOwnProperty(prop)) continue;
+
+            var tag = '<a href="#">' + prop + ": " + val.Tags[prop] + '</a>';
+            tags = tags + tag;
+        }
+
+        return '<li>' +
+            '<div class="logline">' + val.Logline + '</div>' +
+            '<div class="hostname">' + val.Hostname + '</div>' +
+            '<div class="tags">' + tags + '</div>' +
+        '</li>';
     }).join(''));
 }
 

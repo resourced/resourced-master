@@ -198,6 +198,30 @@ select {
 .container.logs .label {
     font-size: 60%;
 }
+.container.logs .logs-list {
+    list-style-type: none;
+    padding-left: 15px;
+}
+.container.logs .logs-list li {
+    margin-bottom: 16px;
+}
+.container.logs .logs-list li .logline {
+    border-bottom: 1px solid #4e5d6c;
+    padding-bottom: 2px;
+}
+.container.logs .logs-list li .hostname {
+    float: left;
+    margin-right: 10px;
+    padding-right: 10px;
+    padding-top: 2px;
+    border-right: 1px solid #4e5d6c;
+}
+.container.logs .logs-list li .tags {
+    padding-top: 2px;
+}
+.container.logs .logs-list li .tags a {
+    margin-right: 10px;
+}
 
 .row.checks h3 {
     margin-top: 0;
