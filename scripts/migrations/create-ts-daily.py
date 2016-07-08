@@ -11,16 +11,16 @@
 # 3... Columns to create composite indexes. The first 'created*' column is expected to be TIMESTAMP column where inheritance is based on.
 #
 # Examples:
-# ./scripts/migrations/create-ts-daily.py ts_metrics 2016 metric_id created deleted > ./migrations/core/0005_add-ts-metrics-2016.up.sql
-# ./scripts/migrations/create-ts-daily.py ts_metrics 2016 metric_id created deleted > ./migrations/ts-metrics/0005_add-ts-metrics-2016.up.sql
-# ./scripts/migrations/create-ts-daily.py ts_metrics_aggr_15m 2016 metric_id created deleted > ./migrations/core/0006_add-ts-metrics-aggr-15m-2016.up.sql
-# ./scripts/migrations/create-ts-daily.py ts_metrics_aggr_15m 2016 metric_id created deleted > ./migrations/ts-metrics/0006_add-ts-metrics-aggr-15m-2016.up.sql
-# ./scripts/migrations/create-ts-daily.py ts_executor_logs 2016 created deleted > ./migrations/core/0026_add-ts-executor-logs-2016.up.sql
-# ./scripts/migrations/create-ts-daily.py ts_executor_logs 2016 created deleted > ./migrations/ts-logs/0026_add-ts-executor-logs-2016.up.sql
-# ./scripts/migrations/create-ts-daily.py ts_logs 2016 created deleted > ./migrations/core/0027_add-ts-logs-2016.up.sql
-# ./scripts/migrations/create-ts-daily.py ts_logs 2016 created deleted > ./migrations/ts-logs/0027_add-ts-logs-2016.up.sql
-# ./scripts/migrations/create-ts-daily.py ts_checks 2016 check_id created deleted > ./migrations/core/0032_add-ts-checks-2016.up.sql
-# ./scripts/migrations/create-ts-daily.py ts_checks 2016 check_id created deleted > ./migrations/ts-checks/0032_add-ts-checks-2016.up.sql
+# ./scripts/migrations/create-ts-daily.py ts_metrics 2016 metric_id created deleted > ./migrations/core/0005_ts-metrics-2016.up.sql
+# ./scripts/migrations/create-ts-daily.py ts_metrics 2016 metric_id created deleted > ./migrations/ts-metrics/0005_ts-metrics-2016.up.sql
+# ./scripts/migrations/create-ts-daily.py ts_metrics_aggr_15m 2016 metric_id created deleted > ./migrations/core/0006_ts-metrics-aggr-15m-2016.up.sql
+# ./scripts/migrations/create-ts-daily.py ts_metrics_aggr_15m 2016 metric_id created deleted > ./migrations/ts-metrics/0006_ts-metrics-aggr-15m-2016.up.sql
+# ./scripts/migrations/create-ts-daily.py ts_executor_logs 2016 created deleted > ./migrations/core/0026_ts-executor-logs-2016.up.sql
+# ./scripts/migrations/create-ts-daily.py ts_executor_logs 2016 created deleted > ./migrations/ts-executor-logs/0026_ts-executor-logs-2016.up.sql
+# ./scripts/migrations/create-ts-daily.py ts_logs 2016 created deleted > ./migrations/core/0027_ts-logs-2016.up.sql
+# ./scripts/migrations/create-ts-daily.py ts_logs 2016 created deleted > ./migrations/ts-logs/0027_ts-logs-2016.up.sql
+# ./scripts/migrations/create-ts-daily.py ts_checks 2016 check_id created deleted > ./migrations/core/0032_ts-checks-2016.up.sql
+# ./scripts/migrations/create-ts-daily.py ts_checks 2016 check_id created deleted > ./migrations/ts-checks/0032_ts-checks-2016.up.sql
 
 import sys
 import calendar
@@ -91,7 +91,7 @@ def create_logs_fulltext_index_by_day(table_name, year, month, index):
 
 	padded_month = "%02d" % (month)
 	padded_index = "%02d" % (index)
-	columns = ["cluster_id", "created", "hostname", "tags", "to_tsvector('english', logline)"]
+	columns = ["cluster_id", "created", "hostname", "tags", "to_tsvector('english', regexp_replace(logline, '[^\w]+', ' ', 'gi'))"]
 
 	index_name_with_suffix = "idx_%s_%s_%s_%s_%s" % (table_name, year, padded_month, padded_index, '_'.join(columns[:-1]))
 	table_name_with_suffix = "%s_%s_%s_%s" % (table_name, year, padded_month, padded_index)
