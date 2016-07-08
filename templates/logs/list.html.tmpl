@@ -149,32 +149,25 @@ $('#search-input').bind("input propertychange", function(e) {
 
 <script>
 ResourcedMaster.globals.AccessToken = '{{ $.AccessToken.Token }}';
+ResourcedMaster.logs.itemsPerPage = 50;
 
-function setupPrevAndNextArrows(range, rangeText, from, to, _rev) {
-    var doc = {
-        _id: 'ResourcedMaster.logs.pagination',
-        from: from,
-        to, to,
-        text: rangeText,
-        range: range
-    };
-    if(_rev) {
-        doc._rev = _rev;
+function showLogs(logsJSON, ulSelector, itemsPerPage) {
+    var list = $(ulSelector);
+
+    var index = list.data('index') % logsJSON.length || 0;
+
+    var newIndex = index + itemsPerPage;
+    if(newIndex < 0) {
+        newIndex = 0;
     }
 
-    var promise = ResourcedMaster.UIStore.put(doc);
+    list.data('index', newIndex);
 
-    var getParams={};window.location.search.replace(/[?&]+([^=&]+)=([^&]*)/gi,function(str,key,value){getParams[key] = value;});
+    console.log(newIndex);
 
-    $('.pagination-range-display').text(rangeText);
-
-    $('.btn-pagination-prev').attr('href', '/logs?from=' + (from - range) + '&to=' + from + '&q=' + (getParams['q'] || ''));
-    $('.btn-pagination-next').attr('href', '/logs?from=' + to + '&to=' + (to + range) + '&q=' + (getParams['q'] || ''));
-
-    $('.search-form input[name="from"]').val(from);
-    $('.search-form input[name="to"]').val(to);
-
-    return promise;
+    list.html($.map(logsJSON.slice(index, newIndex), function(val) {
+        return '<li>' + val.Logline + '</li>';
+    }).join(''));
 }
 
 $(document).ready(function() {
@@ -233,14 +226,9 @@ $(document).ready(function() {
     ResourcedMaster.logs.get(ResourcedMaster.globals.AccessToken, {
         from: from,
         to: to,
-        successCallback: function(result) {
-            ResourcedMaster.logs.current = result;
-
-            var list = $('.logs-list');
-
-            list.html($.map(result, function(val) {
-                return '<li>' + val.Logline + '</li>';
-            }).join(''));
+        successCallback: function(logsJSON) {
+            ResourcedMaster.logs.current = logsJSON;
+            showLogs(ResourcedMaster.logs.current, '.logs-list', ResourcedMaster.logs.itemsPerPage);
         }
     });
 });
@@ -268,30 +256,14 @@ $('.container.saved-queries .toggler-header').on('switchChange.bootstrapSwitch',
     });
 });
 
-$('.pagination-range').click(function() {
-    var range = $(this).data('seconds');
-    var text = $(this).text();
-    var getParams={};window.location.search.replace(/[?&]+([^=&]+)=([^&]*)/gi,function(str,key,value){getParams[key] = value;});
+$('.btn-pagination-prev').click(function(e) {
+    e.preventDefault();
+    showLogs(ResourcedMaster.logs.current, '.logs-list', ResourcedMaster.logs.itemsPerPage);
+});
 
-    ResourcedMaster.UIStore.get('ResourcedMaster.logs.pagination').then(function(doc) {
-        if (doc && doc.from && doc.to) {
-            var to = doc.to;
-            var from = doc.to - range;
-
-            setupPrevAndNextArrows(range, text, from, to, doc._rev).then(function(doc) {
-                window.location = '/logs?from=' + from + '&to=' + to + '&q=' + (getParams['q'] || '');
-            });
-        }
-    }).catch(function (err) {
-        var to = {{ .To }};
-        var from = to - range;
-
-        if(err.name == 'not_found') {
-            setupPrevAndNextArrows(range, text, from, to).then(function(doc) {
-                window.location = '/logs?from=' + from + '&to=' + to + '&q=' + (getParams['q'] || '');
-            });
-        }
-    });
+$('.btn-pagination-next').click(function(e) {
+    e.preventDefault();
+    showLogs(ResourcedMaster.logs.current, '.logs-list', (ResourcedMaster.logs.itemsPerPage * -1));
 });
 </script>
 {{end}}
