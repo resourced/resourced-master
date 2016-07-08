@@ -123,6 +123,10 @@ $('#search-input').bind("input propertychange", function(e) {
         </div>
     </div>
 
+    <div class="from-to-marker">
+        <small class="time-unix-to-local">{{ $.From }}</small> - <small class="time-unix-to-local">{{ $.To }}</small>
+    </div>
+
     <div class="row">
         <ul class="logs-list"></ul>
     </div>

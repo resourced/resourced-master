@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"html/template"
 	"io/ioutil"
+	"math"
 	"net/http"
 	"strconv"
 	"time"
@@ -26,10 +27,40 @@ func GetLogs(w http.ResponseWriter, r *http.Request) {
 
 	dbs := context.Get(r, "dbs").(*config.DBConfig)
 
-	accessToken, err := getAccessToken(w, r, "read")
+	qParams := r.URL.Query()
+
+	// Parse To/to get param
+	toString := qParams.Get("To")
+	if toString == "" {
+		toString = qParams.Get("to")
+	}
+
+	// Parse From/from get param
+	fromString := qParams.Get("From")
+	if fromString == "" {
+		fromString = qParams.Get("from")
+	}
+
+	// Fetch the last log row if any of the from/to are missing.
+	var lastLogRow *dal.TSLogRow
+	var err error
+
+	if fromString == "" || toString == "" {
+		lastLogRow, err = dal.NewTSLog(dbs.TSLog).LastByClusterID(nil, currentCluster.ID)
+		if err != nil && err.Error() != "sql: no rows in result set" {
+			libhttp.HandleErrorJson(w, err)
+			return
+		}
+	}
+
+	to, err := strconv.ParseInt(toString, 10, 64)
 	if err != nil {
-		libhttp.HandleErrorJson(w, err)
-		return
+		to = lastLogRow.Created.Unix()
+	}
+
+	from, err := strconv.ParseInt(fromString, 10, 64)
+	if err != nil {
+		from = lastLogRow.Created.Add(-30 * time.Minute).Unix()
 	}
 
 	savedQueries, err := dal.NewSavedQuery(dbs.Core).AllByClusterIDAndType(nil, currentCluster.ID, "logs")
@@ -38,14 +69,11 @@ func GetLogs(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	lastLogRow, err := dal.NewTSLog(dbs.TSLog).LastByClusterID(nil, currentCluster.ID)
-	if err != nil && err.Error() != "sql: no rows in result set" {
+	accessToken, err := getAccessToken(w, r, "read")
+	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
 	}
-
-	to := lastLogRow.Created.Unix()
-	from := lastLogRow.Created.Add(-30 * time.Minute).Unix()
 
 	data := struct {
 		CSRFToken      string
@@ -88,82 +116,51 @@ func GetLogs(w http.ResponseWriter, r *http.Request) {
 func GetLogsExecutors(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html")
 
-	qParams := r.URL.Query()
-	to := time.Now().UTC().Unix()
-	from := to - 900
-
-	var err error
-
-	toString := qParams.Get("To")
-	if toString == "" {
-		toString = qParams.Get("to")
-	}
-	if toString != "" {
-		to, err = strconv.ParseInt(toString, 10, 64)
-		if err != nil {
-			to = time.Now().UTC().Unix()
-		}
-	}
-
-	fromString := qParams.Get("From")
-	if fromString == "" {
-		fromString = qParams.Get("from")
-	}
-	if fromString != "" {
-		from, err = strconv.ParseInt(fromString, 10, 64)
-		if err != nil {
-			// default is 15 minutes range
-			from = to - 900
-		}
-	}
-
-	query := qParams.Get("q")
-
 	currentUser := context.Get(r, "currentUser").(*dal.UserRow)
 
 	currentCluster := context.Get(r, "currentCluster").(*dal.ClusterRow)
 
 	dbs := context.Get(r, "dbs").(*config.DBConfig)
 
-	// -----------------------------------
-	// Create channels to receive SQL rows
-	// -----------------------------------
-	tsLogsChan := make(chan *dal.TSExecutorLogRowsWithError)
-	defer close(tsLogsChan)
+	qParams := r.URL.Query()
 
-	savedQueriesChan := make(chan *dal.SavedQueryRowsWithError)
-	defer close(savedQueriesChan)
-
-	// --------------------------
-	// Fetch SQL rows in parallel
-	// --------------------------
-	go func(currentCluster *dal.ClusterRow, from, to int64, query string) {
-		deletedFrom := currentCluster.GetDeletedFromUNIXTimestampForSelect("ts_executor_logs")
-
-		tsLogRowsWithError := &dal.TSExecutorLogRowsWithError{}
-		tsLogRowsWithError.TSExecutorLogRows, tsLogRowsWithError.Error = dal.NewTSExecutorLog(dbs.TSExecutorLog).AllByClusterIDRangeAndQuery(nil, currentCluster.ID, from, to, query, deletedFrom)
-		tsLogRowsWithError.Error = err
-		tsLogsChan <- tsLogRowsWithError
-	}(currentCluster, from, to, query)
-
-	go func(currentCluster *dal.ClusterRow) {
-		savedQueriesWithError := &dal.SavedQueryRowsWithError{}
-		savedQueriesWithError.SavedQueries, savedQueriesWithError.Error = dal.NewSavedQuery(dbs.Core).AllByClusterIDAndType(nil, currentCluster.ID, "executor_logs")
-		savedQueriesChan <- savedQueriesWithError
-	}(currentCluster)
-
-	// -----------------------------------
-	// Wait for channels to return results
-	// -----------------------------------
-	tsLogsWithError := <-tsLogsChan
-	if tsLogsWithError.Error != nil && tsLogsWithError.Error.Error() != "sql: no rows in result set" {
-		libhttp.HandleErrorJson(w, tsLogsWithError.Error)
-		return
+	// Parse To/to get param
+	toString := qParams.Get("To")
+	if toString == "" {
+		toString = qParams.Get("to")
 	}
 
-	savedQueriesWithError := <-savedQueriesChan
-	if savedQueriesWithError.Error != nil && savedQueriesWithError.Error.Error() != "sql: no rows in result set" {
-		libhttp.HandleErrorJson(w, savedQueriesWithError.Error)
+	// Parse From/from get param
+	fromString := qParams.Get("From")
+	if fromString == "" {
+		fromString = qParams.Get("from")
+	}
+
+	// Fetch the last log row if any of the from/to are missing.
+	var lastLogRow *dal.TSLogRow
+	var err error
+
+	if fromString == "" || toString == "" {
+		lastLogRow, err = dal.NewTSLog(dbs.TSLog).LastByClusterID(nil, currentCluster.ID)
+		if err != nil && err.Error() != "sql: no rows in result set" {
+			libhttp.HandleErrorJson(w, err)
+			return
+		}
+	}
+
+	to, err := strconv.ParseInt(toString, 10, 64)
+	if err != nil {
+		to = lastLogRow.Created.Unix()
+	}
+
+	from, err := strconv.ParseInt(fromString, 10, 64)
+	if err != nil {
+		from = lastLogRow.Created.Add(-30 * time.Minute).Unix()
+	}
+
+	savedQueries, err := dal.NewSavedQuery(dbs.Core).AllByClusterIDAndType(nil, currentCluster.ID, "logs")
+	if err != nil && err.Error() != "sql: no rows in result set" {
+		libhttp.HandleErrorJson(w, err)
 		return
 	}
 
@@ -180,7 +177,6 @@ func GetLogsExecutors(w http.ResponseWriter, r *http.Request) {
 		AccessToken    *dal.AccessTokenRow
 		Clusters       []*dal.ClusterRow
 		CurrentCluster *dal.ClusterRow
-		Logs           []*dal.TSExecutorLogRow
 		SavedQueries   []*dal.SavedQueryRow
 		From           int64
 		To             int64
@@ -191,8 +187,7 @@ func GetLogsExecutors(w http.ResponseWriter, r *http.Request) {
 		accessToken,
 		context.Get(r, "clusters").([]*dal.ClusterRow),
 		currentCluster,
-		tsLogsWithError.TSExecutorLogRows,
-		savedQueriesWithError.SavedQueries,
+		savedQueries,
 		from,
 		to,
 	}
@@ -253,19 +248,39 @@ func GetApiLogs(w http.ResponseWriter, r *http.Request) {
 
 	qParams := r.URL.Query()
 
+	// Parse To/to get param
 	toString := qParams.Get("To")
 	if toString == "" {
 		toString = qParams.Get("to")
 	}
-	to, err := strconv.ParseInt(toString, 10, 64)
 
+	// Parse From/from get param
 	fromString := qParams.Get("From")
 	if fromString == "" {
 		fromString = qParams.Get("from")
 	}
-	from, err := strconv.ParseInt(fromString, 10, 64)
 
-	query := qParams.Get("q")
+	// Fetch the last log row if any of the from/to are missing.
+	var lastLogRow *dal.TSLogRow
+	var err error
+
+	if fromString == "" || toString == "" {
+		lastLogRow, err = dal.NewTSLog(dbs.TSLog).LastByClusterID(nil, accessTokenRow.ClusterID)
+		if err != nil && err.Error() != "sql: no rows in result set" {
+			libhttp.HandleErrorJson(w, err)
+			return
+		}
+	}
+
+	to, err := strconv.ParseInt(toString, 10, 64)
+	if err != nil {
+		to = lastLogRow.Created.Unix()
+	}
+
+	from, err := strconv.ParseInt(fromString, 10, 64)
+	if err != nil {
+		from = lastLogRow.Created.Add(-30 * time.Minute).Unix()
+	}
 
 	clusterRow, err := dal.NewCluster(dbs.Core).GetByID(nil, accessTokenRow.ClusterID)
 	if err != nil {
@@ -275,13 +290,13 @@ func GetApiLogs(w http.ResponseWriter, r *http.Request) {
 
 	deletedFrom := clusterRow.GetDeletedFromUNIXTimestampForSelect("ts_logs")
 
-	var tsLogs []*dal.TSLogRow
-
-	if fromString == "" && toString == "" {
-		tsLogs, err = dal.NewTSLog(dbs.TSLog).AllByClusterIDLastRowIntervalAndQuery(nil, accessTokenRow.ClusterID, "15 minute", query, deletedFrom)
-	} else {
-		tsLogs, err = dal.NewTSLog(dbs.TSLog).AllByClusterIDRangeAndQuery(nil, accessTokenRow.ClusterID, from, to, query, deletedFrom)
-	}
+	tsLogs, err := dal.NewTSLog(dbs.TSLog).AllByClusterIDRangeAndQuery(
+		nil,
+		accessTokenRow.ClusterID,
+		int64(math.Min(float64(from), float64(to))),
+		int64(math.Max(float64(from), float64(to))),
+		qParams.Get("q"),
+		deletedFrom)
 
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
@@ -306,19 +321,39 @@ func GetApiLogsExecutors(w http.ResponseWriter, r *http.Request) {
 
 	qParams := r.URL.Query()
 
+	// Parse To/to get param
 	toString := qParams.Get("To")
 	if toString == "" {
 		toString = qParams.Get("to")
 	}
-	to, err := strconv.ParseInt(toString, 10, 64)
 
+	// Parse From/from get param
 	fromString := qParams.Get("From")
 	if fromString == "" {
 		fromString = qParams.Get("from")
 	}
-	from, err := strconv.ParseInt(fromString, 10, 64)
 
-	query := qParams.Get("q")
+	// Fetch the last log row if any of the from/to are missing.
+	var lastLogRow *dal.TSLogRow
+	var err error
+
+	if fromString == "" || toString == "" {
+		lastLogRow, err = dal.NewTSLog(dbs.TSLog).LastByClusterID(nil, accessTokenRow.ClusterID)
+		if err != nil && err.Error() != "sql: no rows in result set" {
+			libhttp.HandleErrorJson(w, err)
+			return
+		}
+	}
+
+	to, err := strconv.ParseInt(toString, 10, 64)
+	if err != nil {
+		to = lastLogRow.Created.Unix()
+	}
+
+	from, err := strconv.ParseInt(fromString, 10, 64)
+	if err != nil {
+		from = lastLogRow.Created.Add(-30 * time.Minute).Unix()
+	}
 
 	clusterRow, err := dal.NewCluster(dbs.Core).GetByID(nil, accessTokenRow.ClusterID)
 	if err != nil {
@@ -326,15 +361,15 @@ func GetApiLogsExecutors(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	deletedFrom := clusterRow.GetDeletedFromUNIXTimestampForSelect("ts_logs")
+	deletedFrom := clusterRow.GetDeletedFromUNIXTimestampForSelect("ts_executor_logs")
 
-	var tsExecutorLogs []*dal.TSExecutorLogRow
-
-	if fromString == "" && toString == "" {
-		tsExecutorLogs, err = dal.NewTSExecutorLog(dbs.TSExecutorLog).AllByClusterIDLastRowIntervalAndQuery(nil, accessTokenRow.ClusterID, "15 minute", query, deletedFrom)
-	} else {
-		tsExecutorLogs, err = dal.NewTSExecutorLog(dbs.TSExecutorLog).AllByClusterIDRangeAndQuery(nil, accessTokenRow.ClusterID, from, to, query, deletedFrom)
-	}
+	tsExecutorLogs, err := dal.NewTSExecutorLog(dbs.TSExecutorLog).AllByClusterIDRangeAndQuery(
+		nil,
+		accessTokenRow.ClusterID,
+		int64(math.Min(float64(from), float64(to))),
+		int64(math.Max(float64(from), float64(to))),
+		qParams.Get("q"),
+		deletedFrom)
 
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)

@@ -55,7 +55,7 @@ ResourcedMaster.hosts.get = function(accessToken, options) {
 
 ResourcedMaster.logs = {};
 ResourcedMaster.logs.get = function(accessToken, options) {
-    var path = '/api/logs';
+    var path = options.path || '/api/logs';
     var getParams = '';
 
     if('query' in options && options.query) {

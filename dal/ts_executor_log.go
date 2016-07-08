@@ -133,29 +133,3 @@ deleted >= to_timestamp($4) at time zone 'utc' AND
 	}
 	return rows, err
 }
-
-// AllByClusterIDLastRowIntervalAndQuery returns all rows by cluster id, unix timestamp range since last row, and resourced query.
-func (ts *TSExecutorLog) AllByClusterIDLastRowIntervalAndQuery(tx *sqlx.Tx, clusterID int64, createdInterval, resourcedQuery string, deletedFrom int64) ([]*TSExecutorLogRow, error) {
-	lastRow, err := ts.LastByClusterID(tx, clusterID)
-	if err != nil {
-		return nil, err
-	}
-
-	pgQuery := querybuilder.Parse(resourcedQuery)
-	rows := []*TSExecutorLogRow{}
-
-	query := fmt.Sprintf(`SELECT * FROM %v WHERE cluster_id=$1 AND
-created >= ($2 at time zone 'utc' - INTERVAL '%v') AND
-deleted >= to_timestamp($3) at time zone 'utc'`, ts.table, createdInterval)
-
-	if pgQuery != "" {
-		query = fmt.Sprintf("%v AND %v ORDER BY created DESC", query, pgQuery)
-	}
-
-	err = ts.db.Select(&rows, query, clusterID, lastRow.Created, deletedFrom)
-
-	if err != nil {
-		err = fmt.Errorf("%v. Query: %v", err.Error(), query)
-	}
-	return rows, err
-}

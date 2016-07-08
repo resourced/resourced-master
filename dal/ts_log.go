@@ -171,32 +171,6 @@ ORDER BY created DESC`, ts.table, pgQuery)
 	return rows, err
 }
 
-// AllByClusterIDLastRowIntervalAndQuery returns all rows by cluster id, unix timestamp range since last row, and resourced query.
-func (ts *TSLog) AllByClusterIDLastRowIntervalAndQuery(tx *sqlx.Tx, clusterID int64, createdInterval, resourcedQuery string, deletedFrom int64) ([]*TSLogRow, error) {
-	lastRow, err := ts.LastByClusterID(tx, clusterID)
-	if err != nil {
-		return nil, err
-	}
-
-	pgQuery := querybuilder.Parse(resourcedQuery)
-	rows := []*TSLogRow{}
-
-	query := fmt.Sprintf(`SELECT * FROM %v WHERE cluster_id=$1 AND
-created >= ($2 at time zone 'utc' - INTERVAL '%v') AND
-deleted >= to_timestamp($3)`, ts.table, createdInterval)
-
-	if pgQuery != "" {
-		query = fmt.Sprintf("%v AND %v ORDER BY created DESC", query, pgQuery)
-	}
-
-	err = ts.db.Select(&rows, query, clusterID, lastRow.Created, deletedFrom)
-
-	if err != nil {
-		err = fmt.Errorf("%v. Query: %v", err.Error(), query)
-	}
-	return rows, err
-}
-
 // CountByClusterIDFromTimestampHostAndQuery returns count by cluster id, from unix timestamp, host, and resourced query.
 func (ts *TSLog) CountByClusterIDFromTimestampHostAndQuery(tx *sqlx.Tx, clusterID int64, from int64, hostname, resourcedQuery string, deletedFrom int64) (int64, error) {
 	pgQuery := querybuilder.Parse(resourcedQuery)

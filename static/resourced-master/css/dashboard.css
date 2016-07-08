@@ -198,6 +198,12 @@ select {
 .container.logs .label {
     font-size: 60%;
 }
+.container.logs .from-to-marker {
+    margin-bottom: 22px;
+    font-size: 11px;
+    line-height: 0.1;
+    text-align: center;
+}
 .container.logs .logs-list {
     list-style-type: none;
     padding-left: 15px;
