@@ -151,8 +151,17 @@ $('#search-input').bind("input propertychange", function(e) {
 ResourcedMaster.globals.AccessToken = '{{ $.AccessToken.Token }}';
 ResourcedMaster.logs.itemsPerPage = 50;
 
-function showLogs(logsJSON, ulSelector, itemsPerPage) {
+function showLogs(olderOrNewer, logsJSON, ulSelector, itemsPerPage) {
     var list = $(ulSelector);
+
+    var storedOlderOrNewer = list.data('older-or-newer');
+
+    // Newer means we are paginating smaller array index number.
+    if(olderOrNewer == 'newer') {
+        if (itemsPerPage >= 0) {
+            itemsPerPage = itemsPerPage * -1;
+        }
+    }
 
     var index = list.data('index') % logsJSON.length || 0;
 
@@ -161,11 +170,17 @@ function showLogs(logsJSON, ulSelector, itemsPerPage) {
         newIndex = 0;
     }
 
+    // If user is switching back and forth between older and newer arrows,
+    // paginate one step further.
+    if(storedOlderOrNewer != olderOrNewer) {
+        index = index + itemsPerPage;
+        newIndex = index + itemsPerPage;
+    }
+
     list.data('index', newIndex);
+    list.data('older-or-newer', olderOrNewer);
 
-    console.log(newIndex);
-
-    list.html($.map(logsJSON.slice(index, newIndex), function(val) {
+    list.html($.map(logsJSON.slice(Math.min(index, newIndex), Math.max(index, newIndex)), function(val) {
         return '<li>' + val.Logline + '</li>';
     }).join(''));
 }
@@ -228,7 +243,7 @@ $(document).ready(function() {
         to: to,
         successCallback: function(logsJSON) {
             ResourcedMaster.logs.current = logsJSON;
-            showLogs(ResourcedMaster.logs.current, '.logs-list', ResourcedMaster.logs.itemsPerPage);
+            showLogs('older', ResourcedMaster.logs.current, '.logs-list', ResourcedMaster.logs.itemsPerPage);
         }
     });
 });
@@ -258,12 +273,12 @@ $('.container.saved-queries .toggler-header').on('switchChange.bootstrapSwitch',
 
 $('.btn-pagination-prev').click(function(e) {
     e.preventDefault();
-    showLogs(ResourcedMaster.logs.current, '.logs-list', ResourcedMaster.logs.itemsPerPage);
+    showLogs('older', ResourcedMaster.logs.current, '.logs-list', ResourcedMaster.logs.itemsPerPage);
 });
 
 $('.btn-pagination-next').click(function(e) {
     e.preventDefault();
-    showLogs(ResourcedMaster.logs.current, '.logs-list', (ResourcedMaster.logs.itemsPerPage * -1));
+    showLogs('newer', ResourcedMaster.logs.current, '.logs-list', ResourcedMaster.logs.itemsPerPage);
 });
 </script>
 {{end}}
