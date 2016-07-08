@@ -106,19 +106,12 @@ $('#search-input').bind("input propertychange", function(e) {
         <div class="col-lg-12">
             <div class="page-header" style="padding-bottom: 0">
                 <div class="row pull-right">
-                    <div class="col-lg-8">
-                        <div class="input-group">
-                            <span class="input-group-addon">last</span>
-                            <input type="number" class="form-control" name="paginationRangeMinute" value="30" style="width: 100px">
-                            <span class="input-group-addon">minutes</span>
-                        </div>
-                    </div>
-
-                    <div class="col-lg-4">
-                        <div class="btn-group btn-group" role="group">
+                    <div class="input-group">
+                        <input class="form-control daterange" type="text" />
+                        <span class ="input-group-btn">
                             <a type="button" class="btn btn-primary btn-pagination-prev" href=""><span aria-hidden="true" class="glyphicon glyphicon-arrow-left"></span></a>
                             <a type="button" class="btn btn-primary btn-pagination-next" href=""><span aria-hidden="true" class="glyphicon glyphicon-arrow-right"></span></a>
-                        </div>
+                        </span>
                     </div>
                 </div>
 
@@ -130,8 +123,8 @@ $('#search-input').bind("input propertychange", function(e) {
         </div>
     </div>
 
-    <div id="logs-container">
-        <ul class="list"></ul>
+    <div class="row">
+        <ul class="logs-list"></ul>
     </div>
 
     <div class="row" style="padding-top: 8px; padding-bottom: 8px; margin-bottom: 16px; border-top: 1px solid #4e5d6c">
@@ -141,19 +134,12 @@ $('#search-input').bind("input propertychange", function(e) {
 
         <div class="col-lg-8 col-md-6 col-sm-6 col-xs-6">
             <div class="row pull-right">
-                <div class="col-lg-8">
-                    <div class="input-group">
-                        <span class="input-group-addon">last</span>
-                        <input type="number" class="form-control" name="paginationRangeMinute" value="30" style="width: 100px">
-                        <span class="input-group-addon">minutes</span>
-                    </div>
-                </div>
-
-                <div class="col-lg-4">
-                    <div class="btn-group btn-group" role="group">
+                <div class="input-group">
+                    <input class="form-control daterange" type="text" />
+                    <span class ="input-group-btn">
                         <a type="button" class="btn btn-primary btn-pagination-prev" href=""><span aria-hidden="true" class="glyphicon glyphicon-arrow-left"></span></a>
                         <a type="button" class="btn btn-primary btn-pagination-next" href=""><span aria-hidden="true" class="glyphicon glyphicon-arrow-right"></span></a>
-                    </div>
+                    </span>
                 </div>
             </div>
         </div>
@@ -229,6 +215,19 @@ $(document).ready(function() {
     var from = {{ .From }};
 
     // -----------------------------------------------------
+    // Initialize daterange picker
+    //
+    $('input.daterange').each(function(index) {
+        var drpElem = $(this);
+
+        var settings = jQuery.extend(true, {}, ResourcedMaster.daterange.defaultSettings);
+        settings.startDate = from;
+        settings.stopDate = to;
+
+        drpElem.daterangepicker(settings);
+    });
+
+    // -----------------------------------------------------
     // Fetch logs data on-load
     //
     ResourcedMaster.logs.get(ResourcedMaster.globals.AccessToken, {
@@ -236,9 +235,14 @@ $(document).ready(function() {
         to: to,
         successCallback: function(result) {
             ResourcedMaster.logs.current = result;
-            console.log(result);
+
+            var list = $('.logs-list');
+
+            list.html($.map(result, function(val) {
+                return '<li>' + val.Logline + '</li>';
+            }).join(''));
         }
-    })
+    });
 });
 
 $('.container.saved-queries .toggler-header').on('switchChange.bootstrapSwitch', function(event, state) {
