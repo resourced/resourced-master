@@ -248,6 +248,17 @@ $(document).ready(function() {
     });
 });
 
+$('input.daterange').on('apply.daterangepicker', function(e, picker) {
+    ResourcedMaster.logs.get(ResourcedMaster.globals.AccessToken, {
+        from: picker.startDate.utc().unix(),
+        to: picker.endDate.utc().unix(),
+        successCallback: function(logsJSON) {
+            ResourcedMaster.logs.current = logsJSON;
+            showLogs('older', ResourcedMaster.logs.current, '.logs-list', ResourcedMaster.logs.itemsPerPage);
+        }
+    });
+});
+
 $('.container.saved-queries .toggler-header').on('switchChange.bootstrapSwitch', function(event, state) {
     if(state) {
         $(this).closest('.container.saved-queries').find('.row.saved-queries').show();
