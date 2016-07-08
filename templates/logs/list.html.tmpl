@@ -255,6 +255,7 @@ $(document).ready(function() {
     ResourcedMaster.logs.get(ResourcedMaster.globals.AccessToken, {
         from: from,
         to: to,
+        query: ResourcedMaster.url.getParams('q'),
         successCallback: function(logsJSON) {
             ResourcedMaster.logs.current = logsJSON;
             showLogs('older', ResourcedMaster.logs.current, '.logs-list', ResourcedMaster.logs.itemsPerPage);
@@ -263,14 +264,14 @@ $(document).ready(function() {
 });
 
 $('input.daterange').on('apply.daterangepicker', function(e, picker) {
-    ResourcedMaster.logs.get(ResourcedMaster.globals.AccessToken, {
-        from: picker.startDate.utc().unix(),
-        to: picker.endDate.utc().unix(),
-        successCallback: function(logsJSON) {
-            ResourcedMaster.logs.current = logsJSON;
-            showLogs('older', ResourcedMaster.logs.current, '.logs-list', ResourcedMaster.logs.itemsPerPage);
-        }
-    });
+    var newPath = window.location.pathname + '?from=' + picker.startDate.utc().unix() + '&to=' + picker.endDate.utc().unix();
+    var q = ResourcedMaster.url.getParams('q');
+
+    if(q) {
+        newPath = newPath + '&q=' + q;
+    }
+
+    window.location = newPath;
 });
 
 $('.container.saved-queries .toggler-header').on('switchChange.bootstrapSwitch', function(event, state) {

@@ -10,6 +10,22 @@ ResourcedMaster.globals.TSEventBandTextColors = [];
 
 ResourcedMaster.UIStore = new PouchDB('resourcedmaster-ui', {revs_limit: 1});
 
+ResourcedMaster.url = {};
+ResourcedMaster.url.getParams = function(sParam) {
+    var sPageURL = decodeURIComponent(window.location.search.substring(1)),
+        sURLVariables = sPageURL.split('&'),
+        sParameterName,
+        i;
+
+    for (i = 0; i < sURLVariables.length; i++) {
+        sParameterName = sURLVariables[i].split('=');
+
+        if (sParameterName[0] === sParam) {
+            return sParameterName[1] === undefined ? true : sParameterName[1];
+        }
+    }
+};
+
 ResourcedMaster.users = {};
 ResourcedMaster.users.logout = function() {
     $.removeCookie('resourcedmaster-session', { path: '/' });
@@ -42,7 +58,7 @@ ResourcedMaster.logs.get = function(accessToken, options) {
     var path = '/api/logs';
     var getParams = '';
 
-    if('query' in options) {
+    if('query' in options && options.query) {
         getParams = getParams + 'q=' + options.query;
     }
     if('from' in options) {
