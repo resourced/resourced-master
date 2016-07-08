@@ -37,6 +37,30 @@ ResourcedMaster.hosts.get = function(accessToken, options) {
     });
 };
 
+ResourcedMaster.logs = {};
+ResourcedMaster.logs.get = function(accessToken, options) {
+    var path = '/api/logs';
+    var getParams = '';
+
+    if('query' in options) {
+        getParams = getParams + 'q=' + options.query;
+    }
+    if('from' in options) {
+        getParams = getParams + '&from=' + options.from;
+    }
+    if('to' in options) {
+        getParams = getParams + '&to=' + options.to;
+    }
+
+    return $.ajax({
+        url: path + '?' + getParams,
+        beforeSend: function(xhr) {
+            xhr.setRequestHeader('Authorization', 'Basic ' + window.btoa(accessToken + ':'));
+        },
+        success: options.successCallback || null
+    });
+};
+
 ResourcedMaster.graphs = {};
 ResourcedMaster.graphs.ajax = function(accessToken, options) {
     var path = '/api/graphs';

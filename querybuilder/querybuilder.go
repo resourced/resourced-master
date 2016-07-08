@@ -1,4 +1,4 @@
-// Package querybuilder provides query building functionality.
+// Package querybuilder parses ResourceD query and turn it into PostgreSQL query.
 package querybuilder
 
 import (

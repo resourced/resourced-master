@@ -663,7 +663,6 @@ $(document).on('click', '.btn-add-expression', function() {
 });
 
 $(document).on('click', '.btn-hostquery-search', function() {
-    console.log(ResourcedMaster.globals.AccessToken);
     ResourcedMaster.hosts.get(ResourcedMaster.globals.AccessToken, {
         count: true,
         successCallback: function(result) {
