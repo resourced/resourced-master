@@ -299,11 +299,13 @@ $('.container.saved-queries .toggler-header').on('switchChange.bootstrapSwitch',
 $('.btn-pagination-prev').click(function(e) {
     e.preventDefault();
     showLogs('older', ResourcedMaster.logs.current, '.logs-list', ResourcedMaster.logs.itemsPerPage);
+    $('html, body').animate({ scrollTop: 0 }, 'slow'); // Scroll to top
 });
 
 $('.btn-pagination-next').click(function(e) {
     e.preventDefault();
     showLogs('newer', ResourcedMaster.logs.current, '.logs-list', ResourcedMaster.logs.itemsPerPage);
+    $('html, body').animate({ scrollTop: 0 }, 'slow'); // Scroll to top
 });
 </script>
 {{end}}
