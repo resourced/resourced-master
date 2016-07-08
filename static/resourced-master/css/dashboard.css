@@ -204,9 +204,12 @@ select {
     line-height: 0.1;
     text-align: center;
 }
+.container.logs .pagination {
+    margin: 0;
+}
 .container.logs .logs-list {
     list-style-type: none;
-    padding-left: 15px;
+    padding-left: 0;
 }
 .container.logs .logs-list li {
     margin-bottom: 16px;

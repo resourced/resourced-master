@@ -105,7 +105,7 @@ $('#search-input').bind("input propertychange", function(e) {
     <div class="row">
         <div class="col-lg-12">
             <div class="page-header" style="padding-bottom: 0">
-                <div class="row pull-right">
+                <div class="row pull-right pagination">
                     <div class="input-group">
                         <input class="form-control daterange" type="text" />
                         <span class ="input-group-btn">
@@ -128,7 +128,9 @@ $('#search-input').bind("input propertychange", function(e) {
     </div>
 
     <div class="row">
-        <ul class="logs-list"></ul>
+        <div class="col-lg-12">
+            <ul class="logs-list"></ul>
+        </div>
     </div>
 
     <div class="row" style="padding-top: 8px; padding-bottom: 8px; margin-bottom: 16px; border-top: 1px solid #4e5d6c">
@@ -137,7 +139,7 @@ $('#search-input').bind("input propertychange", function(e) {
         </div>
 
         <div class="col-lg-8 col-md-6 col-sm-6 col-xs-6">
-            <div class="row pull-right">
+            <div class="row pull-right pagination">
                 <div class="input-group">
                     <input class="form-control daterange" type="text" />
                     <span class ="input-group-btn">
