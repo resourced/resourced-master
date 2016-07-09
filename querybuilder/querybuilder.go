@@ -49,6 +49,7 @@ func parseStringField(statement, field, operator string) string {
 }
 
 // parseFullTextSearchField parses ResourceD "search" query and turns it into postgres statement.
+// Operator is "search" in this context.
 func parseFullTextSearchField(statement, field, operator string) string {
 	parts := strings.Split(statement, operator)
 
@@ -56,7 +57,51 @@ func parseFullTextSearchField(statement, field, operator string) string {
 	searchQuery = strings.TrimSpace(searchQuery)
 	searchQuery = libstring.StripChars(searchQuery, `"'`)
 
-	return fmt.Sprintf(`to_tsvector('english', regexp_replace(%v, '[^\w]+', ' ', 'gi')) @@ plainto_tsquery('%v')`, field, searchQuery)
+	// Split search query into multiple soon-to-be-tsquery-function-argument (+ boolean operators)
+	searchQueryChunks := strings.Fields(searchQuery)
+
+	tsQueryChunksWithBoolOperators := make([]string, 0)
+	tsQueryChunk := ""
+
+	for i, chunk := range searchQueryChunks {
+		// If chunk is not boolean operator, keep on appending to the same chunk.
+		if chunk != "||" && chunk != "&&" {
+			tsQueryChunk = tsQueryChunk + " " + chunk
+
+		} else {
+			tsQueryChunksWithBoolOperators = append(tsQueryChunksWithBoolOperators, strings.TrimSpace(tsQueryChunk))
+			tsQueryChunk = ""
+
+			// append boolean operator as well
+			tsQueryChunksWithBoolOperators = append(tsQueryChunksWithBoolOperators, strings.TrimSpace(chunk))
+		}
+
+		// If reached the end
+		if i == len(searchQueryChunks)-1 {
+			if strings.TrimSpace(tsQueryChunk) != "" {
+				tsQueryChunksWithBoolOperators = append(tsQueryChunksWithBoolOperators, strings.TrimSpace(tsQueryChunk))
+			}
+		}
+	}
+
+	// Now, let's build series of tsquery functions
+	tsQuerySlice := make([]string, 0)
+
+	for _, chunk := range tsQueryChunksWithBoolOperators {
+		if chunk == "||" || chunk == "&&" {
+			tsQuerySlice = append(tsQuerySlice, chunk)
+
+		} else if strings.Contains(chunk, "|") || strings.Contains(chunk, "&") {
+			tsQuerySlice = append(tsQuerySlice, fmt.Sprintf("to_tsquery('english', '%v')", chunk))
+
+		} else {
+			tsQuerySlice = append(tsQuerySlice, fmt.Sprintf("plainto_tsquery('english', '%v')", chunk))
+		}
+	}
+
+	tsQueries := strings.Join(tsQuerySlice, " ")
+
+	return fmt.Sprintf(`to_tsvector('english', regexp_replace(%v, '[^\w]+', ' ', 'gi')) || to_tsvector('english', %v) @@ (%v)`, field, field, tsQueries)
 }
 
 // parseStatement parses ResourceD statement and turns it into postgres statement.
