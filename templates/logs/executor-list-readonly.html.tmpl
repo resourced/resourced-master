@@ -51,7 +51,7 @@ $('#search-input').bind("input propertychange", function(e) {
     <div class="row">
         <div class="col-lg-12">
             <div class="page-header">
-                <div class="pull-right">
+                <div class="pull-right pagination">
                     <small class="updated-queries-toggle">Show All</small>
                     <input type="checkbox" class="toggler toggler-header pull-right" data-size="mini">
                 </div>
@@ -87,7 +87,7 @@ $('#search-input').bind("input propertychange", function(e) {
     <div class="row">
         <div class="col-lg-12">
             <div class="page-header" style="padding-bottom: 0">
-                <div class="row pull-right">
+                <div class="row pull-right pagination">
                     <div class="input-group">
                         <input class="form-control daterange" type="text" />
                         <span class ="input-group-btn">
@@ -136,54 +136,6 @@ $('#search-input').bind("input propertychange", function(e) {
 <script>
 ResourcedMaster.globals.AccessToken = '{{ $.AccessToken.Token }}';
 ResourcedMaster.logs.itemsPerPage = 50;
-
-function showLogs(olderOrNewer, logsJSON, ulSelector, itemsPerPage) {
-    var list = $(ulSelector);
-
-    var storedOlderOrNewer = list.data('older-or-newer');
-
-    // Newer means we are paginating smaller array index number.
-    if(olderOrNewer == 'newer') {
-        if (itemsPerPage >= 0) {
-            itemsPerPage = itemsPerPage * -1;
-        }
-    }
-
-    var index = list.data('index') % logsJSON.length || 0;
-
-    var newIndex = index + itemsPerPage;
-    if(newIndex < 0) {
-        newIndex = 0;
-    }
-
-    // If user is switching back and forth between older and newer arrows,
-    // paginate one step further.
-    if(storedOlderOrNewer != olderOrNewer) {
-        index = index + itemsPerPage;
-        newIndex = index + itemsPerPage;
-    }
-
-    list.data('index', newIndex);
-    list.data('older-or-newer', olderOrNewer);
-
-    list.html($.map(logsJSON.slice(Math.min(index, newIndex), Math.max(index, newIndex)), function(val) {
-        var tags = '';
-
-        for (var prop in val.Tags) {
-            // skip loop if the property is from prototype
-            if(!val.Tags.hasOwnProperty(prop)) continue;
-
-            var tag = '<a href="#">' + prop + ": " + val.Tags[prop] + '</a>';
-            tags = tags + tag;
-        }
-
-        return '<li>' +
-            '<div class="logline">' + val.Logline + '</div>' +
-            '<div class="hostname">' + val.Hostname + '</div>' +
-            '<div class="tags">' + tags + '</div>' +
-        '</li>';
-    }).join(''));
-}
 
 $(document).ready(function() {
     if(window.location.pathname.indexOf('/executors') >= 0) {
@@ -245,7 +197,7 @@ $(document).ready(function() {
         query: ResourcedMaster.url.getParams('q'),
         successCallback: function(logsJSON) {
             ResourcedMaster.logs.current = logsJSON;
-            showLogs('older', ResourcedMaster.logs.current, '.logs-list', ResourcedMaster.logs.itemsPerPage);
+            ResourcedMaster.logs.render('older', ResourcedMaster.logs.current, ResourcedMaster.logs.itemsPerPage, $('.logs-list'), $('.btn-pagination-prev'), $('.btn-pagination-next'));
         }
     });
 });
@@ -286,13 +238,15 @@ $('.container.saved-queries .toggler-header').on('switchChange.bootstrapSwitch',
 
 $('.btn-pagination-prev').click(function(e) {
     e.preventDefault();
-    showLogs('older', ResourcedMaster.logs.current, '.logs-list', ResourcedMaster.logs.itemsPerPage);
+    ResourcedMaster.logs.render('older', ResourcedMaster.logs.current, ResourcedMaster.logs.itemsPerPage, $('.logs-list'), $('.btn-pagination-prev'), $('.btn-pagination-next'));
+
     $('html, body').animate({ scrollTop: 0 }, 'slow'); // Scroll to top
 });
 
 $('.btn-pagination-next').click(function(e) {
     e.preventDefault();
-    showLogs('newer', ResourcedMaster.logs.current, '.logs-list', ResourcedMaster.logs.itemsPerPage);
+    ResourcedMaster.logs.render('newer', ResourcedMaster.logs.current, ResourcedMaster.logs.itemsPerPage, $('.logs-list'), $('.btn-pagination-prev'), $('.btn-pagination-next'));
+
     $('html, body').animate({ scrollTop: 0 }, 'slow'); // Scroll to top
 });
 </script>

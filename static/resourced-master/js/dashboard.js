@@ -76,6 +76,64 @@ ResourcedMaster.logs.get = function(accessToken, options) {
         success: options.successCallback || null
     });
 };
+ResourcedMaster.logs.render = function(olderOrNewer, logsJSON, itemsPerPage, ulElem, prevElem, nextElem) {
+    var shouldPaginate = logsJSON.length >= itemsPerPage;
+
+    var storedOlderOrNewer = ulElem.data('older-or-newer');
+
+    // Newer means we are paginating smaller array index number.
+    if(olderOrNewer == 'newer') {
+        if (itemsPerPage >= 0) {
+            itemsPerPage = itemsPerPage * -1;
+        }
+    }
+
+    var index = ulElem.data('index') % logsJSON.length || 0;
+
+    var newIndex = index + itemsPerPage;
+    if(newIndex < 0) {
+        newIndex = 0;
+    }
+
+    // If user is switching back and forth between older and newer arrows,
+    // paginate one step further.
+    if(storedOlderOrNewer != olderOrNewer) {
+        index = index + itemsPerPage;
+        newIndex = index + itemsPerPage;
+    }
+
+    ulElem.data('index', newIndex);
+    ulElem.data('older-or-newer', olderOrNewer);
+
+    var logsJSONForDisplay = [];
+
+    if(shouldPaginate) {
+        logsJSONForDisplay = logsJSON.slice(Math.min(index, newIndex), Math.max(index, newIndex));
+    } else {
+        logsJSONForDisplay = logsJSON;
+
+        prevElem.prop('disabled', true);
+        nextElem.prop('disabled', true);
+    }
+
+    ulElem.html($.map(logsJSONForDisplay, function(val) {
+        var tags = '';
+
+        for (var prop in val.Tags) {
+            // skip loop if the property is from prototype
+            if(!val.Tags.hasOwnProperty(prop)) continue;
+
+            var tag = '<a href="#">' + prop + ": " + val.Tags[prop] + '</a>';
+            tags = tags + tag;
+        }
+
+        return '<li>' +
+            '<div class="logline">' + val.Logline + '</div>' +
+            '<div class="hostname">' + val.Hostname + '</div>' +
+            '<div class="tags">' + tags + '</div>' +
+        '</li>';
+    }).join(''));
+};
 
 ResourcedMaster.graphs = {};
 ResourcedMaster.graphs.ajax = function(accessToken, options) {
