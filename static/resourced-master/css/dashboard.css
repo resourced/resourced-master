@@ -234,6 +234,14 @@ select {
 .container.logs .logs-list li .tags a {
     margin-right: 10px;
 }
+.container.logs .footer {
+    padding: 8px 0;
+    margin: 4px 0 16px;
+    border-top: 1px solid #4e5d6c;
+}
+.container.logs .footer > div {
+    padding: 0;
+}
 
 .row.checks h3 {
     margin-top: 0;
