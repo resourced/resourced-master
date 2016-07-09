@@ -217,5 +217,17 @@ func (app *Application) MigrateUpAll() error {
 		}
 	}
 
+	errs, ok = migrate.UpSync(app.GeneralConfig.MetricsAggr15m.DSN, "./migrations/ts-metrics")
+	if !ok {
+		return fmt.Errorf("DSN: %v, Error: %v", app.GeneralConfig.MetricsAggr15m.DSN, errs[0])
+	}
+
+	for _, dsn := range app.GeneralConfig.MetricsAggr15m.DSNByClusterID {
+		errs, ok = migrate.UpSync(dsn, "./migrations/ts-metrics")
+		if !ok {
+			return fmt.Errorf("DSN: %v, Error: %v", dsn, errs[0])
+		}
+	}
+
 	return nil
 }
