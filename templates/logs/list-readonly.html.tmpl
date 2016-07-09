@@ -237,6 +237,14 @@ $('.container.saved-queries .toggler-header').on('switchChange.bootstrapSwitch',
     });
 });
 
+$(document).on('click', '.logs-list .hostname a, .logs-list .tags a', function(e) {
+    e.preventDefault();
+
+    var clause = $(this).data('clause');
+    $('#search-input').val($('#search-input').val() + ' AND ' + clause);
+    $('#saved-queries-input').val($('#search-input').val());
+});
+
 $('.btn-pagination-prev').click(function(e) {
     e.preventDefault();
     ResourcedMaster.logs.render('older', ResourcedMaster.logs.current, ResourcedMaster.logs.itemsPerPage, $('.logs-list'), $('.btn-pagination-prev'), $('.btn-pagination-next'));

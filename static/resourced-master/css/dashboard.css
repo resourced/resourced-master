@@ -214,6 +214,9 @@ select {
 .container.logs .logs-list li {
     margin-bottom: 16px;
 }
+.container.logs .logs-list li a {
+    cursor: pointer;
+}
 .container.logs .logs-list li .logline {
     border-bottom: 1px solid #4e5d6c;
     padding-bottom: 2px;

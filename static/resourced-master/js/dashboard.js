@@ -123,13 +123,13 @@ ResourcedMaster.logs.render = function(olderOrNewer, logsJSON, itemsPerPage, ulE
             // skip loop if the property is from prototype
             if(!val.Tags.hasOwnProperty(prop)) continue;
 
-            var tag = '<a href="#">' + prop + ": " + val.Tags[prop] + '</a>';
+            var tag = '<a data-clause="tags.' + prop + '=\'' + val.Tags[prop] + '\'">' + prop + ": " + val.Tags[prop] + '</a>';
             tags = tags + tag;
         }
 
         return '<li>' +
             '<div class="logline">' + val.Logline + '</div>' +
-            '<div class="hostname">' + val.Hostname + '</div>' +
+            '<div class="hostname"><a data-clause="hostname=\'' + val.Hostname + '\'">' + val.Hostname + '</a></div>' +
             '<div class="tags">' + tags + '</div>' +
         '</li>';
     }).join(''));
