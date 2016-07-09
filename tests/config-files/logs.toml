@@ -5,9 +5,21 @@ DSN = "postgres://localhost:5432/resourced-master-ts-executor-logs?sslmode=disab
 # The unit is defined in days.
 DataRetention = 1
 
+# Optimization Setting: Enable this option if you want to shard executor logs data by cluster_id.
+# Format: key:   cluster id.
+#         value: DSN.
+# [ExecutorLogs.DSNByClusterID]
+# 1 = "postgres://localhost:5432/resourced-master-executor-logs-1?sslmode=disable"
+
 [Logs]
 DSN = "postgres://localhost:5432/resourced-master-ts-logs?sslmode=disable"
 
 # DataRetention defines how long time series data are kept.
 # The unit is defined in days.
 DataRetention = 1
+
+# Optimization Setting: Enable this option if you want to shard logs data by cluster_id.
+# Format: key:   cluster id.
+#         value: DSN.
+# [Logs.DSNByClusterID]
+# 1 = "postgres://localhost:5432/resourced-master-logs-1?sslmode=disable"

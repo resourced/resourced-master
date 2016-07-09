@@ -65,7 +65,7 @@ func (app *Application) CheckAndRunTriggers(refetchChecksChan <-chan bool) {
 
 						deletedFrom := clusterRow.GetDeletedFromUNIXTimestampForInsert("ts_checks")
 
-						err = dal.NewTSCheck(app.DBConfig.TSCheck).Create(nil, checkRow.ClusterID, checkRow.ID, finalResult, expressionResults, deletedFrom)
+						err = dal.NewTSCheck(app.DBConfig.GetTSCheck(checkRow.ClusterID)).Create(nil, checkRow.ClusterID, checkRow.ID, finalResult, expressionResults, deletedFrom)
 						if err != nil {
 							logrus.WithFields(logrus.Fields{
 								"Method":    "TSCheck.Create",
@@ -79,7 +79,7 @@ func (app *Application) CheckAndRunTriggers(refetchChecksChan <-chan bool) {
 						}
 
 						// 3. Run check's triggers.
-						err = checkRow.RunTriggers(app.GeneralConfig, app.DBConfig.Core, app.DBConfig.TSCheck, app.Mailers["GeneralConfig.Checks"])
+						err = checkRow.RunTriggers(app.GeneralConfig, app.DBConfig.Core, app.DBConfig.GetTSCheck(checkRow.ClusterID), app.Mailers["GeneralConfig.Checks"])
 						if err != nil {
 							logrus.WithFields(logrus.Fields{
 								"Method":    "checkRow.RunTriggers",

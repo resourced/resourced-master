@@ -46,7 +46,7 @@ func GetLogs(w http.ResponseWriter, r *http.Request) {
 	var err error
 
 	if fromString == "" || toString == "" {
-		lastLogRow, err = dal.NewTSLog(dbs.TSLog).LastByClusterID(nil, currentCluster.ID)
+		lastLogRow, err = dal.NewTSLog(dbs.GetTSLog(currentCluster.ID)).LastByClusterID(nil, currentCluster.ID)
 		if err != nil && err.Error() != "sql: no rows in result set" {
 			libhttp.HandleErrorJson(w, err)
 			return
@@ -141,7 +141,7 @@ func GetLogsExecutors(w http.ResponseWriter, r *http.Request) {
 	var err error
 
 	if fromString == "" || toString == "" {
-		lastLogRow, err = dal.NewTSLog(dbs.TSLog).LastByClusterID(nil, currentCluster.ID)
+		lastLogRow, err = dal.NewTSLog(dbs.GetTSLog(currentCluster.ID)).LastByClusterID(nil, currentCluster.ID)
 		if err != nil && err.Error() != "sql: no rows in result set" {
 			libhttp.HandleErrorJson(w, err)
 			return
@@ -230,7 +230,7 @@ func PostApiLogs(w http.ResponseWriter, r *http.Request) {
 	deletedFrom := clusterRow.GetDeletedFromUNIXTimestampForInsert("ts_logs")
 
 	go func() {
-		err = dal.NewTSLog(dbs.TSLog).CreateFromJSON(nil, accessTokenRow.ClusterID, dataJson, deletedFrom)
+		err = dal.NewTSLog(dbs.GetTSLog(accessTokenRow.ClusterID)).CreateFromJSON(nil, accessTokenRow.ClusterID, dataJson, deletedFrom)
 		if err != nil {
 			logrus.Error(err)
 		}
@@ -265,7 +265,7 @@ func GetApiLogs(w http.ResponseWriter, r *http.Request) {
 	var err error
 
 	if fromString == "" || toString == "" {
-		lastLogRow, err = dal.NewTSLog(dbs.TSLog).LastByClusterID(nil, accessTokenRow.ClusterID)
+		lastLogRow, err = dal.NewTSLog(dbs.GetTSLog(accessTokenRow.ClusterID)).LastByClusterID(nil, accessTokenRow.ClusterID)
 		if err != nil && err.Error() != "sql: no rows in result set" {
 			libhttp.HandleErrorJson(w, err)
 			return
@@ -290,7 +290,7 @@ func GetApiLogs(w http.ResponseWriter, r *http.Request) {
 
 	deletedFrom := clusterRow.GetDeletedFromUNIXTimestampForSelect("ts_logs")
 
-	tsLogs, err := dal.NewTSLog(dbs.TSLog).AllByClusterIDRangeAndQuery(
+	tsLogs, err := dal.NewTSLog(dbs.GetTSLog(accessTokenRow.ClusterID)).AllByClusterIDRangeAndQuery(
 		nil,
 		accessTokenRow.ClusterID,
 		int64(math.Min(float64(from), float64(to))),
@@ -338,7 +338,7 @@ func GetApiLogsExecutors(w http.ResponseWriter, r *http.Request) {
 	var err error
 
 	if fromString == "" || toString == "" {
-		lastLogRow, err = dal.NewTSLog(dbs.TSLog).LastByClusterID(nil, accessTokenRow.ClusterID)
+		lastLogRow, err = dal.NewTSLog(dbs.GetTSLog(accessTokenRow.ClusterID)).LastByClusterID(nil, accessTokenRow.ClusterID)
 		if err != nil && err.Error() != "sql: no rows in result set" {
 			libhttp.HandleErrorJson(w, err)
 			return
@@ -363,7 +363,7 @@ func GetApiLogsExecutors(w http.ResponseWriter, r *http.Request) {
 
 	deletedFrom := clusterRow.GetDeletedFromUNIXTimestampForSelect("ts_executor_logs")
 
-	tsExecutorLogs, err := dal.NewTSExecutorLog(dbs.TSExecutorLog).AllByClusterIDRangeAndQuery(
+	tsExecutorLogs, err := dal.NewTSExecutorLog(dbs.GetTSExecutorLog(accessTokenRow.ClusterID)).AllByClusterIDRangeAndQuery(
 		nil,
 		accessTokenRow.ClusterID,
 		int64(math.Min(float64(from), float64(to))),

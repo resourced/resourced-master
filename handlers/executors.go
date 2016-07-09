@@ -32,7 +32,7 @@ func PostApiExecutors(w http.ResponseWriter, r *http.Request) {
 
 	deletedFrom := clusterRow.GetDeletedFromUNIXTimestampForInsert("ts_executor_logs")
 
-	err = dal.NewTSExecutorLog(dbs.TSExecutorLog).CreateFromJSON(nil, accessTokenRow.ClusterID, dataJson, deletedFrom)
+	err = dal.NewTSExecutorLog(dbs.GetTSExecutorLog(accessTokenRow.ClusterID)).CreateFromJSON(nil, accessTokenRow.ClusterID, dataJson, deletedFrom)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return

@@ -443,7 +443,7 @@ func (checkRow *CheckRow) EvalRelativeHostDataExpression(dbs *config.DBConfig, h
 
 	for _, hostRow := range hostRows {
 
-		aggregateData, err := NewTSMetric(dbs.TSMetric).GetAggregateXMinutesByHostnameAndKey(nil, checkRow.ClusterID, expression.PrevRange, hostRow.Hostname, expression.Metric)
+		aggregateData, err := NewTSMetric(dbs.GetTSMetric(checkRow.ClusterID)).GetAggregateXMinutesByHostnameAndKey(nil, checkRow.ClusterID, expression.PrevRange, hostRow.Hostname, expression.Metric)
 		if err != nil {
 			// If a Host does not contain historical data of a particular metric,
 			// We assume that there's something wrong with it.
@@ -554,7 +554,7 @@ func (checkRow *CheckRow) EvalLogDataExpression(dbs *config.DBConfig, hostRows [
 		from := now.Add(-1 * time.Duration(expression.PrevRange) * time.Minute).UTC().Unix()
 		searchQuery := fmt.Sprintf(`logline search "%v"`, expression.Search)
 
-		valInt64, err := NewTSLog(dbs.TSLog).CountByClusterIDFromTimestampHostAndQuery(nil, checkRow.ClusterID, from, hostname, searchQuery, deletedFrom)
+		valInt64, err := NewTSLog(dbs.GetTSLog(checkRow.ClusterID)).CountByClusterIDFromTimestampHostAndQuery(nil, checkRow.ClusterID, from, hostname, searchQuery, deletedFrom)
 		if err != nil {
 			continue
 		}

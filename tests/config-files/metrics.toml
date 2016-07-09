@@ -5,9 +5,21 @@ DSN = "postgres://localhost:5432/resourced-master-ts-metrics?sslmode=disable"
 # The unit is defined in days.
 DataRetention = 7
 
+# Optimization Setting: Enable this option if you want to shard metrics data by cluster_id.
+# Format: key:   cluster id.
+#         value: DSN.
+# [Metrics.DSNByClusterID]
+# 1 = "postgres://localhost:5432/resourced-master-metrics-1?sslmode=disable"
+
 [MetricsAggr15m]
 DSN = "postgres://localhost:5432/resourced-master-ts-metrics?sslmode=disable"
 
 # DataRetention defines how long time series data are kept.
 # The unit is defined in days.
 DataRetention = 7
+
+# Optimization Setting: Enable this option if you want to shard aggregated 15m metrics data by cluster_id.
+# Format: key:   cluster id.
+#         value: DSN.
+# [MetricsAggr15m.DSNByClusterID]
+# 1 = "postgres://localhost:5432/resourced-master-aggr-metrics-15m-1?sslmode=disable"

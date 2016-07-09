@@ -89,7 +89,7 @@ func GetApiTSMetricsByHost(w http.ResponseWriter, r *http.Request) {
 
 	deletedFrom := clusterRow.GetDeletedFromUNIXTimestampForSelect("ts_metrics")
 
-	hcMetrics, err := dal.NewTSMetric(dbs.TSMetric).AllByMetricIDHostAndRangeForHighchart(nil, metricRow.ClusterID, id, host, from, to, deletedFrom)
+	hcMetrics, err := dal.NewTSMetric(dbs.GetTSMetric(metricRow.ClusterID)).AllByMetricIDHostAndRangeForHighchart(nil, metricRow.ClusterID, id, host, from, to, deletedFrom)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
@@ -161,7 +161,7 @@ func GetApiTSMetricsByHost15Min(w http.ResponseWriter, r *http.Request) {
 
 	deletedFrom := clusterRow.GetDeletedFromUNIXTimestampForSelect("ts_metrics_aggr_15m")
 
-	hcMetrics, err := dal.NewTSMetricAggr15m(dbs.TSMetricAggr15m).AllByMetricIDHostAndRangeForHighchart(nil, metricRow.ClusterID, id, host, from, to, deletedFrom, aggr)
+	hcMetrics, err := dal.NewTSMetricAggr15m(dbs.GetTSMetricAggr15m(metricRow.ClusterID)).AllByMetricIDHostAndRangeForHighchart(nil, metricRow.ClusterID, id, host, from, to, deletedFrom, aggr)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
@@ -226,7 +226,7 @@ func GetApiTSMetrics(w http.ResponseWriter, r *http.Request) {
 
 	deletedFrom := clusterRow.GetDeletedFromUNIXTimestampForSelect("ts_metrics")
 
-	hcMetrics, err := dal.NewTSMetric(dbs.TSMetric).AllByMetricIDAndRangeForHighchart(nil, metricRow.ClusterID, id, from, to, deletedFrom)
+	hcMetrics, err := dal.NewTSMetric(dbs.GetTSMetric(metricRow.ClusterID)).AllByMetricIDAndRangeForHighchart(nil, metricRow.ClusterID, id, from, to, deletedFrom)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
@@ -296,7 +296,7 @@ func GetApiTSMetrics15Min(w http.ResponseWriter, r *http.Request) {
 
 	deletedFrom := clusterRow.GetDeletedFromUNIXTimestampForSelect("ts_metrics")
 
-	hcMetrics, err := dal.NewTSMetricAggr15m(dbs.TSMetricAggr15m).AllByMetricIDAndRangeForHighchart(nil, metricRow.ClusterID, id, from, to, deletedFrom, aggr)
+	hcMetrics, err := dal.NewTSMetricAggr15m(dbs.GetTSMetricAggr15m(metricRow.ClusterID)).AllByMetricIDAndRangeForHighchart(nil, metricRow.ClusterID, id, from, to, deletedFrom, aggr)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return

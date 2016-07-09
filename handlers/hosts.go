@@ -162,21 +162,21 @@ func PostApiHosts(w http.ResponseWriter, r *http.Request) {
 		tsMetricsAggr15mDeletedFrom := clusterRow.GetDeletedFromUNIXTimestampForInsert("ts_metrics_aggr_15m")
 
 		// Create ts_metrics row
-		err = dal.NewTSMetric(dbs.TSMetric).CreateByHostRow(nil, hostRow, metricsMap, tsMetricsDeletedFrom)
+		err = dal.NewTSMetric(dbs.GetTSMetric(hostRow.ClusterID)).CreateByHostRow(nil, hostRow, metricsMap, tsMetricsDeletedFrom)
 		if err != nil {
 			logrus.Error(err)
 			return
 		}
 
 		go func() {
-			selectAggrRows, err := dal.NewTSMetric(dbs.TSMetric).AggregateEveryXMinutes(nil, hostRow.ClusterID, 15)
+			selectAggrRows, err := dal.NewTSMetric(dbs.GetTSMetric(hostRow.ClusterID)).AggregateEveryXMinutes(nil, hostRow.ClusterID, 15)
 			if err != nil {
 				logrus.Error(err)
 				return
 			}
 
 			// Create ts_metrics_aggr_15m rows.
-			err = dal.NewTSMetricAggr15m(dbs.TSMetricAggr15m).CreateByHostRow(nil, hostRow, metricsMap, selectAggrRows, tsMetricsAggr15mDeletedFrom)
+			err = dal.NewTSMetricAggr15m(dbs.GetTSMetricAggr15m(hostRow.ClusterID)).CreateByHostRow(nil, hostRow, metricsMap, selectAggrRows, tsMetricsAggr15mDeletedFrom)
 			if err != nil {
 				logrus.Error(err)
 				return
@@ -184,14 +184,14 @@ func PostApiHosts(w http.ResponseWriter, r *http.Request) {
 		}()
 
 		go func() {
-			selectAggrRows, err := dal.NewTSMetric(dbs.TSMetric).AggregateEveryXMinutesPerHost(nil, hostRow.ClusterID, 15)
+			selectAggrRows, err := dal.NewTSMetric(dbs.GetTSMetric(hostRow.ClusterID)).AggregateEveryXMinutesPerHost(nil, hostRow.ClusterID, 15)
 			if err != nil {
 				logrus.Error(err)
 				return
 			}
 
 			// Create ts_metrics_aggr_15m rows per host.
-			err = dal.NewTSMetricAggr15m(dbs.TSMetricAggr15m).CreateByHostRowPerHost(nil, hostRow, metricsMap, selectAggrRows, tsMetricsAggr15mDeletedFrom)
+			err = dal.NewTSMetricAggr15m(dbs.GetTSMetricAggr15m(hostRow.ClusterID)).CreateByHostRowPerHost(nil, hostRow, metricsMap, selectAggrRows, tsMetricsAggr15mDeletedFrom)
 			if err != nil {
 				logrus.Error(err)
 				return

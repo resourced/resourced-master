@@ -84,7 +84,7 @@ func (app *Application) PruneAll() {
 // PruneTSCheckOnce deletes old ts_checks data.
 func (app *Application) PruneTSCheckOnce(clusterID int64) (err error) {
 	f := func() {
-		err = dal.NewTSCheck(app.DBConfig.TSCheck).DeleteDeleted(nil, clusterID)
+		err = dal.NewTSCheck(app.DBConfig.GetTSCheck(clusterID)).DeleteDeleted(nil, clusterID)
 	}
 
 	latency := stopwatch.Measure(f)
