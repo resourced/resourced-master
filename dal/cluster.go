@@ -122,7 +122,7 @@ func (c *Cluster) Create(tx *sqlx.Tx, creator *UserRow, name string) (*ClusterRo
 	members[0] = make(map[string]interface{})
 	members[0]["ID"] = creator.ID
 	members[0]["Email"] = creator.Email
-	members[0]["Permission"] = "execute"
+	members[0]["Permission"] = "write"
 
 	membersJSON, err := json.Marshal(members)
 	if err != nil {

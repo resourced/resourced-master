@@ -62,7 +62,6 @@
                                             <select name="Level" onchange="$(this).closest('form').submit();" style="color: #000">
                                                 <option value="read" {{if eq $accessToken.Level "read"}} selected {{end}}>Read</option>
                                                 <option value="write" {{if eq $accessToken.Level "write"}} selected {{end}}>Write</option>
-                                                <option value="execute" {{if eq $accessToken.Level "execute"}} selected {{end}}>Execute</option>
                                             </select>
                                         </form>
                                     </td>
@@ -166,7 +165,6 @@
                         <select id="level" class="form-control" name="Level">
                             <option value="read">Read</option>
                             <option value="write">Write</option>
-                            <option value="execute">Execute</option>
                         </select>
                     </div>
                 </div>
@@ -205,7 +203,6 @@
                         <select id="level" class="form-control" name="Permission">
                             <option value="read">Read</option>
                             <option value="write">Write</option>
-                            <option value="execute">Execute</option>
                         </select>
                     </div>
                 </div>

@@ -39,7 +39,7 @@ func TestAccessTokenCRUD(t *testing.T) {
 	at := newAccessTokenForTest(t)
 
 	// Create access token
-	tokenRow, err := at.Create(nil, userRow.ID, clusterRow.ID, "execute")
+	tokenRow, err := at.Create(nil, userRow.ID, clusterRow.ID, "write")
 	if err != nil {
 		t.Fatalf("Creating a token should work. Error: %v", err)
 	}

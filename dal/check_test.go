@@ -42,7 +42,7 @@ func checkHostExpressionSetupForTest(t *testing.T) map[string]interface{} {
 	at := newAccessTokenForTest(t)
 	defer at.db.Close()
 
-	tokenRow, err := at.Create(nil, userRow.ID, clusterRow.ID, "execute")
+	tokenRow, err := at.Create(nil, userRow.ID, clusterRow.ID, "write")
 	if err != nil {
 		t.Fatalf("Creating a token should work. Error: %v", err)
 	}

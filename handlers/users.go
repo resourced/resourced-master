@@ -71,7 +71,7 @@ func PostSignup(w http.ResponseWriter, r *http.Request) {
 		}
 
 		// Create a default access-token
-		_, err = dal.NewAccessToken(dbs.Core).Create(nil, userRow.ID, clusterRow.ID, "execute")
+		_, err = dal.NewAccessToken(dbs.Core).Create(nil, userRow.ID, clusterRow.ID, "write")
 		if err != nil {
 			libhttp.HandleErrorHTML(w, err, 500)
 			return
