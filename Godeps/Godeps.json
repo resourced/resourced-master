@@ -2,6 +2,9 @@
 	"ImportPath": "github.com/resourced/resourced-master",
 	"GoVersion": "go1.7",
 	"GodepVersion": "v74",
+	"Packages": [
+		"./..."
+	],
 	"Deps": [
 		{
 			"ImportPath": "github.com/BurntSushi/toml",
@@ -164,8 +167,13 @@
 		},
 		{
 			"ImportPath": "github.com/resourced/resourced/libstring",
-			"Comment": "v3.0.0-8-g3d8780d",
-			"Rev": "3d8780dee5ba65d6286f23a8594cb4f8909bb425"
+			"Comment": "v3.0.1-37-g88df6a4",
+			"Rev": "88df6a4bea1f89864b974002dcaa6fd5d8d95924"
+		},
+		{
+			"ImportPath": "github.com/satori/go.uuid",
+			"Comment": "v1.0.0",
+			"Rev": "f9ab0dce87d815821e221626b772e3475a0d2749"
 		},
 		{
 			"ImportPath": "github.com/stretchr/graceful",
@@ -182,11 +190,11 @@
 		},
 		{
 			"ImportPath": "golang.org/x/net/netutil",
-			"Rev": "7dbad50ab5b31073856416cdcfeb2796d682f844"
+			"Rev": "04557861f124410b768b1ba5bb3a91b705afbfc6"
 		},
 		{
 			"ImportPath": "golang.org/x/sys/unix",
-			"Rev": "d4feaf1a7e61e1d9e79e6c4e76c6349e9cab0a03"
+			"Rev": "62bee037599929a6e9146f29d10dd5208c43507d"
 		}
 	]
 }
