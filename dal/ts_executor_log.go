@@ -56,13 +56,21 @@ func (ts *TSExecutorLog) CreateFromJSON(tx *sqlx.Tx, clusterID int64, jsonData [
 }
 
 // Create a new record.
-func (ts *TSExecutorLog) Create(tx *sqlx.Tx, clusterID int64, hostname string, tags map[string]string, loglines []string, deletedFrom int64) error {
-	for _, logline := range loglines {
+func (ts *TSExecutorLog) Create(tx *sqlx.Tx, clusterID int64, hostname string, tags map[string]string, loglines []AgentLoglinePayload, deletedFrom int64) error {
+	for _, loglinePayload := range loglines {
+		if loglinePayload.Content == "" {
+			continue
+		}
+
 		insertData := make(map[string]interface{})
 		insertData["cluster_id"] = clusterID
 		insertData["hostname"] = hostname
-		insertData["logline"] = logline
+		insertData["logline"] = loglinePayload.Content
 		insertData["deleted"] = time.Unix(deletedFrom, 0).UTC()
+
+		if loglinePayload.Created > 0 {
+			insertData["created"] = loglinePayload.Created
+		}
 
 		tagsInJson, err := json.Marshal(tags)
 		if err == nil {
