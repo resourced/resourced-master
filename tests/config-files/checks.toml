@@ -1,6 +1,8 @@
 [Checks]
 DSN = "postgres://localhost:5432/resourced-master-ts-checks?sslmode=disable"
 
+DBMaxOpenConnections = 50
+
 # DataRetention defines how long time series data are kept.
 # The unit is defined in days.
 DataRetention = 1

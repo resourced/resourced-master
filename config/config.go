@@ -70,6 +70,7 @@ type GeneralConfig struct {
 	Addr                    string
 	LogLevel                string
 	DSN                     string
+	DBMaxOpenConnections    int64
 	CookieSecret            string
 	RequestShutdownTimeout  string
 	VIPAddr                 string
@@ -92,41 +93,47 @@ type GeneralConfig struct {
 	}
 
 	Hosts struct {
-		DSN            string
-		DSNByClusterID map[string]string
+		DSN                  string
+		DBMaxOpenConnections int64
+		DSNByClusterID       map[string]string
 	}
 
 	Metrics struct {
-		DSN            string
-		DSNByClusterID map[string]string
+		DSN                  string
+		DBMaxOpenConnections int64
+		DSNByClusterID       map[string]string
 
 		DataRetention int
 	}
 
 	MetricsAggr15m struct {
-		DSN            string
-		DSNByClusterID map[string]string
+		DSN                  string
+		DBMaxOpenConnections int64
+		DSNByClusterID       map[string]string
 
 		DataRetention int
 	}
 
 	Events struct {
-		DSN            string
-		DSNByClusterID map[string]string
+		DSN                  string
+		DBMaxOpenConnections int64
+		DSNByClusterID       map[string]string
 
 		DataRetention int
 	}
 
 	ExecutorLogs struct {
-		DSN            string
-		DSNByClusterID map[string]string
+		DSN                  string
+		DBMaxOpenConnections int64
+		DSNByClusterID       map[string]string
 
 		DataRetention int
 	}
 
 	Logs struct {
-		DSN            string
-		DSNByClusterID map[string]string
+		DSN                  string
+		DBMaxOpenConnections int64
+		DSNByClusterID       map[string]string
 
 		DataRetention int
 	}
@@ -136,8 +143,9 @@ type GeneralConfig struct {
 
 		SMSEmailGateway map[string]string
 
-		DSN            string
-		DSNByClusterID map[string]string
+		DSN                  string
+		DBMaxOpenConnections int64
+		DSNByClusterID       map[string]string
 
 		DataRetention int
 	}
@@ -160,6 +168,9 @@ func NewDBConfig(generalConfig GeneralConfig) (*DBConfig, error) {
 	if err != nil {
 		return nil, err
 	}
+	if generalConfig.DBMaxOpenConnections > int64(0) {
+		db.DB.SetMaxOpenConns(int(generalConfig.DBMaxOpenConnections))
+	}
 	conf.Core = db
 
 	// ---------------------------------------------------------
@@ -168,6 +179,9 @@ func NewDBConfig(generalConfig GeneralConfig) (*DBConfig, error) {
 	db, err = sqlx.Connect("postgres", generalConfig.Hosts.DSN)
 	if err != nil {
 		return nil, err
+	}
+	if generalConfig.Hosts.DBMaxOpenConnections > int64(0) {
+		db.DB.SetMaxOpenConns(int(generalConfig.Hosts.DBMaxOpenConnections))
 	}
 	conf.Host = db
 
@@ -181,6 +195,9 @@ func NewDBConfig(generalConfig GeneralConfig) (*DBConfig, error) {
 		if err != nil {
 			return nil, err
 		}
+		if generalConfig.Hosts.DBMaxOpenConnections > int64(0) {
+			db.DB.SetMaxOpenConns(int(generalConfig.Hosts.DBMaxOpenConnections))
+		}
 		conf.HostByClusterID[clusterID] = db
 	}
 
@@ -190,6 +207,9 @@ func NewDBConfig(generalConfig GeneralConfig) (*DBConfig, error) {
 	db, err = sqlx.Connect("postgres", generalConfig.Metrics.DSN)
 	if err != nil {
 		return nil, err
+	}
+	if generalConfig.Metrics.DBMaxOpenConnections > int64(0) {
+		db.DB.SetMaxOpenConns(int(generalConfig.Metrics.DBMaxOpenConnections))
 	}
 	conf.TSMetric = db
 
@@ -203,6 +223,9 @@ func NewDBConfig(generalConfig GeneralConfig) (*DBConfig, error) {
 		if err != nil {
 			return nil, err
 		}
+		if generalConfig.Metrics.DBMaxOpenConnections > int64(0) {
+			db.DB.SetMaxOpenConns(int(generalConfig.Metrics.DBMaxOpenConnections))
+		}
 		conf.TSMetricByClusterID[clusterID] = db
 	}
 
@@ -212,6 +235,9 @@ func NewDBConfig(generalConfig GeneralConfig) (*DBConfig, error) {
 	db, err = sqlx.Connect("postgres", generalConfig.MetricsAggr15m.DSN)
 	if err != nil {
 		return nil, err
+	}
+	if generalConfig.MetricsAggr15m.DBMaxOpenConnections > int64(0) {
+		db.DB.SetMaxOpenConns(int(generalConfig.MetricsAggr15m.DBMaxOpenConnections))
 	}
 	conf.TSMetricAggr15m = db
 
@@ -225,6 +251,9 @@ func NewDBConfig(generalConfig GeneralConfig) (*DBConfig, error) {
 		if err != nil {
 			return nil, err
 		}
+		if generalConfig.MetricsAggr15m.DBMaxOpenConnections > int64(0) {
+			db.DB.SetMaxOpenConns(int(generalConfig.MetricsAggr15m.DBMaxOpenConnections))
+		}
 		conf.TSMetricAggr15mByClusterID[clusterID] = db
 	}
 
@@ -234,6 +263,9 @@ func NewDBConfig(generalConfig GeneralConfig) (*DBConfig, error) {
 	db, err = sqlx.Connect("postgres", generalConfig.Events.DSN)
 	if err != nil {
 		return nil, err
+	}
+	if generalConfig.Events.DBMaxOpenConnections > int64(0) {
+		db.DB.SetMaxOpenConns(int(generalConfig.Events.DBMaxOpenConnections))
 	}
 	conf.TSEvent = db
 
@@ -247,6 +279,9 @@ func NewDBConfig(generalConfig GeneralConfig) (*DBConfig, error) {
 		if err != nil {
 			return nil, err
 		}
+		if generalConfig.Events.DBMaxOpenConnections > int64(0) {
+			db.DB.SetMaxOpenConns(int(generalConfig.Events.DBMaxOpenConnections))
+		}
 		conf.TSEventByClusterID[clusterID] = db
 	}
 
@@ -256,6 +291,9 @@ func NewDBConfig(generalConfig GeneralConfig) (*DBConfig, error) {
 	db, err = sqlx.Connect("postgres", generalConfig.ExecutorLogs.DSN)
 	if err != nil {
 		return nil, err
+	}
+	if generalConfig.ExecutorLogs.DBMaxOpenConnections > int64(0) {
+		db.DB.SetMaxOpenConns(int(generalConfig.ExecutorLogs.DBMaxOpenConnections))
 	}
 	conf.TSExecutorLog = db
 
@@ -269,6 +307,9 @@ func NewDBConfig(generalConfig GeneralConfig) (*DBConfig, error) {
 		if err != nil {
 			return nil, err
 		}
+		if generalConfig.ExecutorLogs.DBMaxOpenConnections > int64(0) {
+			db.DB.SetMaxOpenConns(int(generalConfig.ExecutorLogs.DBMaxOpenConnections))
+		}
 		conf.TSExecutorLogByClusterID[clusterID] = db
 	}
 
@@ -278,6 +319,9 @@ func NewDBConfig(generalConfig GeneralConfig) (*DBConfig, error) {
 	db, err = sqlx.Connect("postgres", generalConfig.Logs.DSN)
 	if err != nil {
 		return nil, err
+	}
+	if generalConfig.Logs.DBMaxOpenConnections > int64(0) {
+		db.DB.SetMaxOpenConns(int(generalConfig.Logs.DBMaxOpenConnections))
 	}
 	conf.TSLog = db
 
@@ -291,6 +335,9 @@ func NewDBConfig(generalConfig GeneralConfig) (*DBConfig, error) {
 		if err != nil {
 			return nil, err
 		}
+		if generalConfig.Logs.DBMaxOpenConnections > int64(0) {
+			db.DB.SetMaxOpenConns(int(generalConfig.Logs.DBMaxOpenConnections))
+		}
 		conf.TSLogByClusterID[clusterID] = db
 	}
 
@@ -300,6 +347,9 @@ func NewDBConfig(generalConfig GeneralConfig) (*DBConfig, error) {
 	db, err = sqlx.Connect("postgres", generalConfig.Checks.DSN)
 	if err != nil {
 		return nil, err
+	}
+	if generalConfig.Checks.DBMaxOpenConnections > int64(0) {
+		db.DB.SetMaxOpenConns(int(generalConfig.Checks.DBMaxOpenConnections))
 	}
 	conf.TSCheck = db
 
@@ -312,6 +362,9 @@ func NewDBConfig(generalConfig GeneralConfig) (*DBConfig, error) {
 		db, err = sqlx.Connect("postgres", dsn)
 		if err != nil {
 			return nil, err
+		}
+		if generalConfig.Checks.DBMaxOpenConnections > int64(0) {
+			db.DB.SetMaxOpenConns(int(generalConfig.Checks.DBMaxOpenConnections))
 		}
 		conf.TSCheckByClusterID[clusterID] = db
 	}

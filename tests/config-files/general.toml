@@ -7,6 +7,8 @@ LogLevel = "info"
 # DSN to core PostgreSQL database
 DSN = "postgres://localhost:5432/resourced-master?sslmode=disable"
 
+DBMaxOpenConnections = 50
+
 # How long the HTTP server will wait for requests to drain before shutdown
 RequestShutdownTimeout = "1s"
 
