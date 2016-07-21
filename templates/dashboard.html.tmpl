@@ -185,10 +185,22 @@
     });
 
     // Set cluster on dropdown selection.
+    $('.nav-clusters').on('hidden.bs.dropdown', function(e) {
+        var clusterID = $(this).data('cluster-id');
+        var clusterName = $(this).find('.name').text();
+
+        if(clusterID && clusterName) {
+            window.location = "/";
+        }
+    });
+
     $('.nav-clusters .dropdown-menu li').click(function(e) {
         var $li = $(this);
         var clusterID = $li.data('cluster-id');
         var clusterName = $li.find('.name').text();
+
+        $('.nav-clusters').data('cluster-id', clusterID);
+        $('.nav-clusters').data('cluster-name', clusterName);
 
         $.post('/clusters/current',{ 'ClusterID': clusterID, 'gorilla.csrf.Token': ResourcedMaster.globals.CSRFToken })
         .done(function() {
