@@ -69,7 +69,7 @@ func (ts *TSExecutorLog) Create(tx *sqlx.Tx, clusterID int64, hostname string, t
 		insertData["deleted"] = time.Unix(deletedFrom, 0).UTC()
 
 		if loglinePayload.Created > 0 {
-			insertData["created"] = loglinePayload.Created
+			insertData["created"] = time.Unix(loglinePayload.Created, 0)
 		}
 
 		tagsInJson, err := json.Marshal(tags)
@@ -79,6 +79,9 @@ func (ts *TSExecutorLog) Create(tx *sqlx.Tx, clusterID int64, hostname string, t
 
 		_, err = ts.InsertIntoTable(tx, insertData)
 		if err != nil {
+			if tx != nil {
+				tx.Rollback()
+			}
 			return err
 		}
 	}
