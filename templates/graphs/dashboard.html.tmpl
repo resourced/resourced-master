@@ -30,6 +30,13 @@
         {{ range $metric := .CurrentGraph.MetricsFromJSON }}
         <div class="item panel panel-default panel-chart" data-cluster-id="{{ $metric.ClusterID }}" data-id="{{ $metric.ID }}" data-key="{{ $metric.Key }}">
             <div class="panel-heading" data-id="{{ $metric.ID }}" data-key="{{ $metric.Key }}">
+                <select class="form-control aggregate-selector" style="display: none">
+                    <option value="avg">Avg</option>
+                    <option value="max">Max</option>
+                    <option value="min">Min</option>
+                    <option value="sum">Sum</option>
+                </select>
+
                 <input class="form-control daterange" type="text" data-id="{{ $metric.ID }}" data-key="{{ $metric.Key }}" />
             </div>
 
@@ -177,7 +184,7 @@ function execWhenAllChartsRendered(numCharts) {
     }
 }
 
-function renderChartRange(numCharts, daterangepicker, from, to) {
+function renderChartRange(numCharts, daterangepicker, from, to, aggr) {
     var elem = daterangepicker.closest('.panel-heading');
     var metricID = elem.data('id');
     var metricKey = elem.data('key');
@@ -188,6 +195,7 @@ function renderChartRange(numCharts, daterangepicker, from, to) {
         to: to,
         containerDOM: containerDOM,
         title: metricKey,
+        aggr: aggr,
         onLoad: function() {
             execWhenAllChartsRendered(numCharts);
         }
@@ -195,6 +203,10 @@ function renderChartRange(numCharts, daterangepicker, from, to) {
 
     if((to - from) >= 21600) {
         renderOptions.shortAggrInterval = '15min';
+
+        elem.find('.aggregate-selector').show();
+    } else {
+        elem.find('.aggregate-selector').hide();
     }
 
     ResourcedMaster.metrics.renderOneChart(
@@ -216,7 +228,7 @@ function renderAllChart() {
         var from = drp.startDate.unix();
         var to = drp.endDate.unix();
 
-        renderChartRange($('.graphs-metrics-brick-layout .panel-heading').length, drpElem, from, to);
+        renderChartRange($('.graphs-metrics-brick-layout .panel-heading').length, drpElem, from, to, 'avg');
     });
 }
 
@@ -249,7 +261,7 @@ $(document).ready(function() {
             drpElem.daterangepicker(settings, function(start, end, label) {
                 var from = start.unix();
                 var to = end.unix();
-                renderChartRange($('input.daterange').length, drpElem, from, to);
+                renderChartRange($('input.daterange').length, drpElem, from, to, 'avg');
             });
         });
 
@@ -286,6 +298,16 @@ $('.chart-keys option').click(function(event) {
     );
 
     renderChartPreview();
+});
+
+$('.aggregate-selector').change(function() {
+    var panelHeadingElem = $(this).closest('.panel-heading');
+    var drpElem = panelHeadingElem.find('.daterange');
+    var drp = drpElem.data('daterangepicker');
+    var from = drp.startDate.unix();
+    var to = drp.endDate.unix();
+
+    renderChartRange($('.graphs-metrics-brick-layout .panel-heading').length, drpElem, from, to, $(this).val());
 });
 
 $('.graphs-select').change(function() {
