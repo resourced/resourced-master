@@ -347,8 +347,8 @@ $('#graph-modal').on('shown.bs.modal', function (event) {
     var metricKey = button.data('metric-key');
     var host = button.data('host');
 
-    var from = ResourcedMaster.daterange.defaultSettings.startDate.unix();
-    var to = ResourcedMaster.daterange.defaultSettings.endDate.unix();
+    var from = ResourcedMaster.daterange.defaultSettings.startDate.utc().unix();
+    var to = ResourcedMaster.daterange.defaultSettings.endDate.utc().unix();
 
     var renderOptions = {
         'from': from,
@@ -391,8 +391,8 @@ $('#graph-modal').on('show.bs.modal', function (event) {
     var drpElem = modal.find('.daterange');
 
     drpElem.daterangepicker(ResourcedMaster.daterange.defaultSettings, function(start, end, label) {
-        var from = start.unix();
-        var to = end.unix();
+        var from = start.utc().unix();
+        var to = end.utc().unix();
 
         var renderOptions = {
             'from': from,

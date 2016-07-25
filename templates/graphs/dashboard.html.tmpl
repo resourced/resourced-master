@@ -213,8 +213,8 @@ function renderAllChart() {
     $('.graphs-metrics-brick-layout .panel-heading').each(function() {
         var drpElem = $(this).find('.daterange');
         var drp = drpElem.data('daterangepicker');
-        var from = drp.startDate.unix();
-        var to = drp.endDate.unix();
+        var from = drp.startDate.utc().unix();
+        var to = drp.endDate.utc().unix();
 
         renderChartRange($('.graphs-metrics-brick-layout .panel-heading').length, drpElem, from, to);
     });
@@ -247,8 +247,8 @@ $(document).ready(function() {
             }
 
             drpElem.daterangepicker(settings, function(start, end, label) {
-                var from = start.unix();
-                var to = end.unix();
+                var from = start.utc().unix();
+                var to = end.utc().unix();
                 renderChartRange($('input.daterange').length, drpElem, from, to);
             });
         });
