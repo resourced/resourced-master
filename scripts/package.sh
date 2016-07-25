@@ -10,8 +10,10 @@ set -x
 # - Ensure godep is installed.
 #
 # Arguments:
-# $VERSION: semantic version number
+# $VERSION: semantic version number (required)
 #
+
+: "${VERSION?You must set VERSION}"
 
 CURRENT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 ROOT_DIR=$(dirname $CURRENT_DIR)
@@ -19,6 +21,7 @@ ROOT_DIR=$(dirname $CURRENT_DIR)
 cd $ROOT_DIR
 
 cp -r tests/config-files conf
+rm -rf conf/config-files
 
 GOOS=darwin godep go build
 tar cvzf resourced-master-darwin-$VERSION.tar.gz resourced-master static/ templates/ migrations/ conf/
