@@ -50,8 +50,16 @@ func (ts *TSMetricAggr15m) metricRowsForHighchart(tx *sqlx.Tx, host string, tsMe
 			row[1] = tsMetricAggrRow.Min
 		} else if aggr == "sum" || aggr == "Sum" {
 			row[1] = tsMetricAggrRow.Sum
-		} else {
+		} else if aggr == "avg" || aggr == "Avg" {
 			row[1] = tsMetricAggrRow.Avg
+		} else {
+			all := make(map[string]interface{})
+			all["max"] = tsMetricAggrRow.Max
+			all["min"] = tsMetricAggrRow.Min
+			all["sum"] = tsMetricAggrRow.Sum
+			all["avg"] = tsMetricAggrRow.Avg
+
+			row[1] = all
 		}
 
 		hcPayload.Data[i] = row
@@ -302,9 +310,6 @@ func (ts *TSMetricAggr15m) TransformForHighchart(tx *sqlx.Tx, tsMetricRows []*TS
 }
 
 func (ts *TSMetricAggr15m) AllByMetricIDHostAndRangeForHighchart(tx *sqlx.Tx, clusterID, metricID int64, host string, from, to, deletedFrom int64, aggr string) ([]*TSMetricHighchartPayload, error) {
-	if aggr == "" {
-		aggr = "avg"
-	}
 	tsMetricRows, err := ts.AllByMetricIDHostAndRange(tx, clusterID, metricID, host, from, to, deletedFrom)
 	if err != nil {
 		return nil, err

@@ -214,6 +214,9 @@ ResourcedMaster.metrics.get = function(accessToken, metricID, options) {
     if('to' in options) {
         getParams = getParams + '&To=' + options.to;
     }
+    if('aggr' in options) {
+        getParams = getParams + '&aggr=' + options.aggr;
+    }
 
     return $.ajax({
         url: path + '?' + getParams,
@@ -225,12 +228,40 @@ ResourcedMaster.metrics.get = function(accessToken, metricID, options) {
 };
 ResourcedMaster.metrics.renderOneChart = function(accessToken, metricID, eventLines, eventLineColors, eventBands, eventBandColors, eventBandTextColors, options) {
     options.successCallback = function(result) {
-        if (result.constructor != Array) {
+        if(result.constructor != Array) {
             result = [result];
         }
 
+        // Check if result is aggregated data.
+        // If so, then the result payload need to be rearranged.
+        if(result[0]) {
+            var firstValue = result[0]['data'][0][1];
+
+            if(typeof firstValue === 'object') {
+                var avgResult = {'name': result[0]['name'] + ' avg', 'data': []};
+                var maxResult = {'name': result[0]['name'] + ' max', 'data': []};
+                var minResult = {'name': result[0]['name'] + ' min', 'data': []};
+                var sumResult = {'name': result[0]['name'] + ' sum', 'data': []};
+
+                for(i = 0; i < result.length; i++) {
+                    var data = result[i]['data'];
+
+                    for(j = 0; j < data.length; j++) {
+                        var data = result[i]['data'][j];
+
+                        avgResult['data'].push([data[0], data[1]['avg']]);
+                        maxResult['data'].push([data[0], data[1]['max']]);
+                        minResult['data'].push([data[0], data[1]['min']]);
+                        sumResult['data'].push([data[0], data[1]['sum']]);
+                    }
+                }
+
+                result = [avgResult, maxResult, minResult, sumResult];
+            }
+        }
+
         var hcPlotLines = [];
-        for (i = 0; i < eventLines.length; i++) {
+        for(i = 0; i < eventLines.length; i++) {
             var plotEventSettings = {
                 color: eventLineColors[i],
                 width: 1,
@@ -248,7 +279,7 @@ ResourcedMaster.metrics.renderOneChart = function(accessToken, metricID, eventLi
         }
 
         var hcPlotBands = [];
-        for (i = 0; i < eventBands.length; i++) {
+        for(i = 0; i < eventBands.length; i++) {
             var plotEventSettings = {
                 color: eventBandColors[i],
                 from: eventBands[i].CreatedFrom,
