@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/Sirupsen/logrus"
 	"github.com/gorilla/context"
 	"github.com/gorilla/mux"
 
@@ -77,12 +78,14 @@ func GetApiTSMetricsByHost(w http.ResponseWriter, r *http.Request) {
 
 	metricRow, err := dal.NewMetric(dbs.Core).GetByID(nil, id)
 	if err != nil {
+		logrus.WithFields(logrus.Fields{"Error": err}).Error("Failed to fetch metric row")
 		libhttp.HandleErrorJson(w, err)
 		return
 	}
 
 	clusterRow, err := dal.NewCluster(dbs.Core).GetByID(nil, metricRow.ClusterID)
 	if err != nil {
+		logrus.WithFields(logrus.Fields{"Error": err}).Error("Failed to fetch cluster row")
 		libhttp.HandleErrorJson(w, err)
 		return
 	}
@@ -91,6 +94,7 @@ func GetApiTSMetricsByHost(w http.ResponseWriter, r *http.Request) {
 
 	hcMetrics, err := dal.NewTSMetric(dbs.GetTSMetric(metricRow.ClusterID)).AllByMetricIDHostAndRangeForHighchart(nil, metricRow.ClusterID, id, host, from, to, deletedFrom)
 	if err != nil {
+		logrus.WithFields(logrus.Fields{"Error": err}).Error("Failed to fetch metrics rows")
 		libhttp.HandleErrorJson(w, err)
 		return
 	}

@@ -161,6 +161,16 @@ ORDER BY cluster_id,metric_id,created ASC`, ts.table)
 
 	if err != nil {
 		err = fmt.Errorf("%v. Query: %v", err.Error(), query)
+
+		logrus.WithFields(logrus.Fields{
+			"Method":    "TSMetric.AllByMetricIDHostAndRange",
+			"ClusterID": clusterID,
+			"MetricID":  metricID,
+			"Hostname":  host,
+			"From":      from,
+			"To":        to,
+			"Deleted":   deletedFrom,
+		}).Error(err)
 	}
 	return rows, err
 }
