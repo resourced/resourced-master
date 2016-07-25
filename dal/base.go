@@ -103,6 +103,8 @@ func (b *Base) newTransactionIfNeeded(tx *sqlx.Tx) (*sqlx.Tx, bool, error) {
 }
 
 func (b *Base) InsertIntoTable(tx *sqlx.Tx, data map[string]interface{}) (sql.Result, error) {
+	var err error
+
 	if b.table == "" {
 		return nil, errors.New("Table must not be empty.")
 	}
@@ -111,6 +113,13 @@ func (b *Base) InsertIntoTable(tx *sqlx.Tx, data map[string]interface{}) (sql.Re
 	if tx == nil {
 		return nil, errors.New("Transaction struct must not be empty.")
 	}
+
+	defer func() {
+		if err != nil {
+			tx.Rollback()
+		}
+	}()
+
 	if err != nil {
 		return nil, err
 	}
@@ -172,9 +181,7 @@ func (b *Base) InsertIntoTable(tx *sqlx.Tx, data map[string]interface{}) (sql.Re
 	return result, err
 }
 
-func (b *Base) UpdateFromTable(tx *sqlx.Tx, data map[string]interface{}, where string) (sql.Result, error) {
-	var result sql.Result
-
+func (b *Base) UpdateFromTable(tx *sqlx.Tx, data map[string]interface{}, where string) (result sql.Result, err error) {
 	if b.table == "" {
 		return nil, errors.New("Table must not be empty.")
 	}
@@ -183,6 +190,13 @@ func (b *Base) UpdateFromTable(tx *sqlx.Tx, data map[string]interface{}, where s
 	if tx == nil {
 		return nil, errors.New("Transaction struct must not be empty.")
 	}
+
+	defer func() {
+		if err != nil {
+			tx.Rollback()
+		}
+	}()
+
 	if err != nil {
 		return nil, err
 	}
@@ -223,9 +237,7 @@ func (b *Base) UpdateFromTable(tx *sqlx.Tx, data map[string]interface{}, where s
 	return result, err
 }
 
-func (b *Base) UpdateByID(tx *sqlx.Tx, data map[string]interface{}, id int64) (sql.Result, error) {
-	var result sql.Result
-
+func (b *Base) UpdateByID(tx *sqlx.Tx, data map[string]interface{}, id int64) (result sql.Result, err error) {
 	if b.table == "" {
 		return nil, errors.New("Table must not be empty.")
 	}
@@ -234,6 +246,13 @@ func (b *Base) UpdateByID(tx *sqlx.Tx, data map[string]interface{}, id int64) (s
 	if tx == nil {
 		return nil, errors.New("Transaction struct must not be empty.")
 	}
+
+	defer func() {
+		if err != nil {
+			tx.Rollback()
+		}
+	}()
+
 	if err != nil {
 		return nil, err
 	}
@@ -277,9 +296,7 @@ func (b *Base) UpdateByID(tx *sqlx.Tx, data map[string]interface{}, id int64) (s
 	return result, err
 }
 
-func (b *Base) UpdateByKeyValueString(tx *sqlx.Tx, data map[string]interface{}, key, value string) (sql.Result, error) {
-	var result sql.Result
-
+func (b *Base) UpdateByKeyValueString(tx *sqlx.Tx, data map[string]interface{}, key, value string) (result sql.Result, err error) {
 	if b.table == "" {
 		return nil, errors.New("Table must not be empty.")
 	}
@@ -288,6 +305,13 @@ func (b *Base) UpdateByKeyValueString(tx *sqlx.Tx, data map[string]interface{}, 
 	if tx == nil {
 		return nil, errors.New("Transaction struct must not be empty.")
 	}
+
+	defer func() {
+		if err != nil {
+			tx.Rollback()
+		}
+	}()
+
 	if err != nil {
 		return nil, err
 	}
@@ -332,9 +356,7 @@ func (b *Base) UpdateByKeyValueString(tx *sqlx.Tx, data map[string]interface{}, 
 	return result, err
 }
 
-func (b *Base) DeleteFromTable(tx *sqlx.Tx, where string) (sql.Result, error) {
-	var result sql.Result
-
+func (b *Base) DeleteFromTable(tx *sqlx.Tx, where string) (result sql.Result, err error) {
 	if b.table == "" {
 		return nil, errors.New("Table must not be empty.")
 	}
@@ -343,6 +365,13 @@ func (b *Base) DeleteFromTable(tx *sqlx.Tx, where string) (sql.Result, error) {
 	if tx == nil {
 		return nil, errors.New("Transaction struct must not be empty.")
 	}
+
+	defer func() {
+		if err != nil {
+			tx.Rollback()
+		}
+	}()
+
 	if err != nil {
 		return nil, err
 	}
@@ -371,9 +400,7 @@ func (b *Base) DeleteFromTable(tx *sqlx.Tx, where string) (sql.Result, error) {
 	return result, err
 }
 
-func (b *Base) DeleteByID(tx *sqlx.Tx, id int64) (sql.Result, error) {
-	var result sql.Result
-
+func (b *Base) DeleteByID(tx *sqlx.Tx, id int64) (result sql.Result, err error) {
 	if b.table == "" {
 		return nil, errors.New("Table must not be empty.")
 	}
@@ -382,6 +409,13 @@ func (b *Base) DeleteByID(tx *sqlx.Tx, id int64) (sql.Result, error) {
 	if tx == nil {
 		return nil, errors.New("Transaction struct must not be empty.")
 	}
+
+	defer func() {
+		if err != nil {
+			tx.Rollback()
+		}
+	}()
+
 	if err != nil {
 		return nil, err
 	}
@@ -406,9 +440,7 @@ func (b *Base) DeleteByID(tx *sqlx.Tx, id int64) (sql.Result, error) {
 	return result, err
 }
 
-func (b *Base) DeleteByClusterIDAndID(tx *sqlx.Tx, clusterID, id int64) (sql.Result, error) {
-	var result sql.Result
-
+func (b *Base) DeleteByClusterIDAndID(tx *sqlx.Tx, clusterID, id int64) (result sql.Result, err error) {
 	if b.table == "" {
 		return nil, errors.New("Table must not be empty.")
 	}
@@ -417,6 +449,13 @@ func (b *Base) DeleteByClusterIDAndID(tx *sqlx.Tx, clusterID, id int64) (sql.Res
 	if tx == nil {
 		return nil, errors.New("Transaction struct must not be empty.")
 	}
+
+	defer func() {
+		if err != nil {
+			tx.Rollback()
+		}
+	}()
+
 	if err != nil {
 		return nil, err
 	}
