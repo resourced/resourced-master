@@ -148,6 +148,7 @@ func PostApiHosts(w http.ResponseWriter, r *http.Request) {
 	go func() {
 		metricsMap, err := dal.NewMetric(dbs.Core).AllByClusterIDAsMap(nil, hostRow.ClusterID)
 		if err != nil {
+			logrus.Error(err)
 			libhttp.HandleErrorJson(w, err)
 			return
 		}
