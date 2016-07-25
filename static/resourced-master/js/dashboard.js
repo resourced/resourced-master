@@ -234,7 +234,7 @@ ResourcedMaster.metrics.renderOneChart = function(accessToken, metricID, eventLi
 
         // Check if result is aggregated data.
         // If so, then the result payload need to be rearranged.
-        if(result[0]) {
+        if(result[0] && result[0]['data'][0]) {
             var firstValue = result[0]['data'][0][1];
 
             if(typeof firstValue === 'object') {
