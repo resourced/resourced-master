@@ -213,12 +213,6 @@
 			"revisionTime": "2016-02-26T05:29:04Z"
 		},
 		{
-			"checksumSHA1": "LnVJhENkcR6nSU5rX9A939zwji0=",
-			"path": "github.com/resourced/resourced/libstring",
-			"revision": "5dc7daaebf27e14df8b32ec5a03e9316d4f80954",
-			"revisionTime": "2016-07-25T03:55:07Z"
-		},
-		{
 			"checksumSHA1": "cKNzpMpci3WUAzXpe+tVnBv2cjE=",
 			"path": "github.com/satori/go.uuid",
 			"revision": "f9ab0dce87d815821e221626b772e3475a0d2749",
