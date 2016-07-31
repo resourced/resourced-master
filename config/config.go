@@ -10,7 +10,7 @@ import (
 	"github.com/BurntSushi/toml"
 	"github.com/jmoiron/sqlx"
 
-	"github.com/resourced/resourced/libstring"
+	"github.com/resourced/resourced-master/libstring"
 )
 
 // NewGeneralConfig is the constructor for GeneralConfig.
