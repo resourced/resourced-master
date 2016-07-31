@@ -95,7 +95,7 @@ func GetChecks(w http.ResponseWriter, r *http.Request) {
 
 	var tmpl *template.Template
 
-	currentUserPermission := currentCluster.GetPermissionByUserID(currentUser.ID)
+	currentUserPermission := currentCluster.GetLevelByUserID(currentUser.ID)
 	if currentUserPermission == "read" {
 		tmpl, err = template.ParseFiles("templates/dashboard.html.tmpl", "templates/checks/list-readonly.html.tmpl")
 	} else {

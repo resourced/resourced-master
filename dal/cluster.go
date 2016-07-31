@@ -20,6 +20,13 @@ func NewCluster(db *sqlx.DB) *Cluster {
 	return c
 }
 
+type ClusterMember struct {
+	ID      int64
+	Email   string
+	Level   string
+	Enabled bool
+}
+
 type ClusterRow struct {
 	ID            int64               `db:"id"`
 	Name          string              `db:"name"`
@@ -50,31 +57,18 @@ func (cr *ClusterRow) GetDeletedFromUNIXTimestampForInsert(tableName string) int
 }
 
 // GetMembers returns Members in map
-func (cr *ClusterRow) GetMembers() []map[string]interface{} {
-	members := make([]map[string]interface{}, 0)
+func (cr *ClusterRow) GetMembers() []ClusterMember {
+	members := make([]ClusterMember, 0)
 	cr.Members.Unmarshal(&members)
 
 	return members
 }
 
-// GetMemberByUserID returns a specific cluster member keyed by user id.
-func (cr *ClusterRow) GetMemberByUserID(id int64) map[string]interface{} {
-	members := cr.GetMembers()
-	for _, member := range members {
-		if int64(member["ID"].(float64)) == id {
-			return member
-		}
-	}
-
-	return nil
-}
-
-// GetPermissionByUserID returns a specific cluster member permission keyed by user id.
-func (cr *ClusterRow) GetPermissionByUserID(id int64) string {
-	members := cr.GetMembers()
-	for _, member := range members {
-		if int64(member["ID"].(float64)) == id {
-			return member["Permission"].(string)
+// GetLevelByUserID returns a specific cluster member level keyed by user id.
+func (cr *ClusterRow) GetLevelByUserID(id int64) string {
+	for _, member := range cr.GetMembers() {
+		if member.ID == id {
+			return member.Level
 		}
 	}
 
@@ -122,7 +116,7 @@ func (c *Cluster) Create(tx *sqlx.Tx, creator *UserRow, name string) (*ClusterRo
 	members[0] = make(map[string]interface{})
 	members[0]["ID"] = creator.ID
 	members[0]["Email"] = creator.Email
-	members[0]["Permission"] = "write"
+	members[0]["Level"] = "write"
 
 	membersJSON, err := json.Marshal(members)
 	if err != nil {
@@ -198,13 +192,13 @@ func (c *Cluster) AllSplitToDaemons(tx *sqlx.Tx, daemons []string) (map[string][
 }
 
 // UpdateMember adds or updates cluster member information.
-func (c *Cluster) UpdateMember(tx *sqlx.Tx, id int64, user *UserRow, permission string) error {
+func (c *Cluster) UpdateMember(tx *sqlx.Tx, id int64, user *UserRow, level string, enabled bool) error {
 	clusterRow, err := c.GetByID(tx, id)
 	if err != nil {
 		return err
 	}
 
-	members := make([]map[string]interface{}, 0)
+	members := make([]ClusterMember, 0)
 	err = clusterRow.Members.Unmarshal(&members)
 	if err != nil {
 		return err
@@ -212,21 +206,26 @@ func (c *Cluster) UpdateMember(tx *sqlx.Tx, id int64, user *UserRow, permission 
 
 	foundExisting := false
 
-	for _, member := range members {
-		if int64(member["ID"].(float64)) == user.ID {
-			member["Email"] = user.Email
-			member["Permission"] = permission
+	for i, member := range members {
+		if member.ID == user.ID {
+			memberReplacement := ClusterMember{}
+			memberReplacement.ID = member.ID
+			memberReplacement.Email = user.Email
+			memberReplacement.Level = level
+			memberReplacement.Enabled = enabled
 
+			members[i] = memberReplacement
 			foundExisting = true
 			break
 		}
 	}
 
 	if !foundExisting {
-		member := make(map[string]interface{})
-		member["ID"] = int64(user.ID)
-		member["Email"] = user.Email
-		member["Permission"] = permission
+		member := ClusterMember{}
+		member.ID = int64(user.ID)
+		member.Email = user.Email
+		member.Level = level
+		member.Enabled = enabled
 
 		members = append(members, member)
 	}
@@ -235,6 +234,8 @@ func (c *Cluster) UpdateMember(tx *sqlx.Tx, id int64, user *UserRow, permission 
 	if err != nil {
 		return err
 	}
+
+	println(string(membersJSON))
 
 	data := make(map[string]interface{})
 	data["members"] = membersJSON
@@ -251,16 +252,16 @@ func (c *Cluster) RemoveMember(tx *sqlx.Tx, id int64, user *UserRow) error {
 		return err
 	}
 
-	members := make([]map[string]interface{}, 0)
+	members := make([]ClusterMember, 0)
 	err = clusterRow.Members.Unmarshal(&members)
 	if err != nil {
 		return err
 	}
 
-	newMembers := make([]map[string]interface{}, 0)
+	newMembers := make([]ClusterMember, 0)
 
 	for _, member := range members {
-		if member["ID"].(int64) != user.ID {
+		if member.ID == user.ID {
 			newMembers = append(newMembers, member)
 		}
 	}

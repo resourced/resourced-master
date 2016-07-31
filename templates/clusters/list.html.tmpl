@@ -31,7 +31,7 @@
                             New Access Token
                         </button>
 
-                        <button class="btn btn-xs btn-default" type="button" data-toggle="modal" data-target="#cluster-membership-modal"
+                        <button class="btn btn-xs btn-default" type="button" data-toggle="modal" data-target="#cluster-new-member-modal"
                             data-cluster-id="{{ $cluster.ID }}" style="padding: 1px 8px">
                             Add User to Cluster
                         </button>
@@ -46,7 +46,7 @@
                         <table class="table table-condensed table-striped">
                             <thead>
                                 <tr>
-                                    <th>Access Token</th>
+                                    <th style="width: 76%">Access Token</th>
                                     <th>Level</th>
                                     <th>Enabled</th>
                                 </tr>
@@ -55,7 +55,7 @@
                             <tbody>
                             {{ range $accessToken := index $.AccessTokens $cluster.ID }}
                                 <tr>
-                                    <td>{{ $accessToken.Token }}</td>
+                                    <td style="width: 76%">{{ $accessToken.Token }}</td>
                                     <td>
                                         <form method="post" action="/access-tokens/{{ $accessToken.ID }}/level">
                                             <input type="hidden" name="gorilla.csrf.Token" value="{{ $.CSRFToken }}">
@@ -77,18 +77,62 @@
                         </table>
                     </div>
                 </div>
+
+                <!-- Users -->
+                <div class="row users">
+                    <div class="col-lg-12">
+                        <table class="table table-condensed table-striped">
+                            <thead>
+                                <tr>
+                                    <th style="width: 76%">Users</th>
+                                    <th>Level</th>
+                                    <th>Enabled</th>
+                                </tr>
+                            </thead>
+
+                            <tbody>
+                            {{ range $member := $cluster.GetMembers }}
+                                <tr>
+                                    <td style="width: 76%">{{ $member.Email }}</td>
+                                    <td>
+                                        <form method="post" action="/clusters/{{ $cluster.ID }}/users">
+                                            <input type="hidden" name="gorilla.csrf.Token" value="{{ $.CSRFToken }}">
+                                            <input type="hidden" name="Email" value="{{ $member.Email }}">
+                                            <input type="hidden" name="Enabled" value="{{ if $member.Enabled }}on{{end}}">
+
+                                            <select name="Level" onchange="$(this).closest('form').submit();" style="color: #000">
+                                                <option value="read" {{if eq $member.Level "read"}} selected {{end}}>Read</option>
+                                                <option value="write" {{if eq $member.Level "write"}} selected {{end}}>Write</option>
+                                            </select>
+                                        </form>
+                                    </td>
+                                    <td>
+                                        <form method="post" action="/clusters/{{ $cluster.ID }}/users">
+                                            <input type="hidden" name="gorilla.csrf.Token" value="{{ $.CSRFToken }}">
+                                            <input type="hidden" name="Email" value="{{ $member.Email }}">
+                                            <input type="hidden" name="Level" value="{{ $member.Level }}">
+
+                                            <input type="checkbox" name="Enabled" onclick="$(this).closest('form').submit();" {{ if $member.Enabled }} checked {{end}} {{ if  eq $member.Email $.CurrentUser.Email }} disabled {{end}}>
+                                        </form>
+                                    </td>
+                                </tr>
+                            {{ end }}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
             {{ end }}
         </div>
     </div>
 </div>
 
 <!-- Cluster Modal -->
-<div class="modal fade" id="cluster-modal" tabindex="-1" role="dialog" aria-labelledby="new-cluster-label" aria-hidden="true">
+<div class="modal fade" id="cluster-modal" tabindex="-1" role="dialog" aria-labelledby="cluster-label" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
                 <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-                <h4 class="modal-title" id="new-cluster-label">New Cluster</h4>
+                <h4 class="modal-title" id="cluster-label">New Cluster</h4>
             </div>
 
             <form method="post" action="/clusters">
@@ -178,18 +222,19 @@
     </div>
 </div>
 
-<!-- Cluster Membership Modal -->
-<div class="modal fade" id="cluster-membership-modal" tabindex="-1" role="dialog" aria-labelledby="new-cluster-label" aria-hidden="true">
+<!-- New Cluster Member Modal -->
+<div class="modal fade" id="cluster-new-member-modal" tabindex="-1" role="dialog" aria-labelledby="cluster-new-member-label" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
                 <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-                <h4 class="modal-title" id="new-cluster-label">Add a user to this cluster</h4>
+                <h4 class="modal-title" id="cluster-new-member-label">Add a user to this cluster</h4>
             </div>
 
             <form method="post" action="/clusters/users">
                 <input type="hidden" name="gorilla.csrf.Token" value="{{ $.CSRFToken }}">
                 <input type="hidden" name="_method" value="post">
+                <input type="hidden" name="Enabled" value="on">
 
                 <div class="modal-body">
                     <div class="form-group">
@@ -198,9 +243,9 @@
                     </div>
 
                     <div class="form-group">
-                        <label class="control-label" for="level">Permission:</label>
+                        <label class="control-label" for="level">Level:</label>
 
-                        <select id="level" class="form-control" name="Permission">
+                        <select id="level" class="form-control" name="Level">
                             <option value="read">Read</option>
                             <option value="write">Write</option>
                         </select>
@@ -251,7 +296,13 @@ $('#cluster-modal').on('show.bs.modal', function (event) {
     }
 });
 
-$('#cluster-membership-modal').on('show.bs.modal', function (event) {
+$('#cluster-modal input[type="number"]').keyup(function() {
+    if($(this).val() > 366) {
+        $(this).val(366);
+    }
+});
+
+$('#cluster-new-member-modal').on('show.bs.modal', function (event) {
     var button = $(event.relatedTarget);
     var clusterID = button.data('cluster-id');
     var modal = $(this);

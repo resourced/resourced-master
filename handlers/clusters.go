@@ -60,7 +60,7 @@ func GetClusters(w http.ResponseWriter, r *http.Request) {
 	var tmpl *template.Template
 	var err error
 
-	currentUserPermission := currentCluster.GetPermissionByUserID(currentUser.ID)
+	currentUserPermission := currentCluster.GetLevelByUserID(currentUser.ID)
 	if currentUserPermission == "read" {
 		tmpl, err = template.ParseFiles("templates/dashboard.html.tmpl", "templates/clusters/list-readonly.html.tmpl")
 	} else {
@@ -234,7 +234,12 @@ func PutClusterIDUsers(w http.ResponseWriter, r *http.Request) {
 	}
 
 	email := r.FormValue("Email")
-	permission := r.FormValue("Permission")
+	level := r.FormValue("Level")
+	enabled := false
+
+	if r.FormValue("Enabled") == "on" {
+		enabled = true
+	}
 
 	userRow, err := dal.NewUser(dbs.Core).GetByEmail(nil, email)
 	if err != nil && strings.Contains(err.Error(), "no rows in result set") {
@@ -272,7 +277,7 @@ Your coleague has invited you to join cluster: %v. Click the following link to s
 	}
 
 	// Add user as a member to this cluster
-	err = dal.NewCluster(dbs.Core).UpdateMember(nil, id, userRow, permission)
+	err = dal.NewCluster(dbs.Core).UpdateMember(nil, id, userRow, level, enabled)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
