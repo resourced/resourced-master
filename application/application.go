@@ -15,7 +15,7 @@ import (
 	_ "github.com/mattes/migrate/driver/postgres"
 	"github.com/mattes/migrate/migrate"
 	"github.com/rcrowley/go-metrics"
-	"github.com/stretchr/graceful"
+	"gopkg.in/tylerb/graceful.v1"
 
 	"github.com/resourced/resourced-master/config"
 	"github.com/resourced/resourced-master/libmap"

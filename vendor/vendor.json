@@ -219,12 +219,6 @@
 			"revisionTime": "2016-03-24T11:22:44Z"
 		},
 		{
-			"checksumSHA1": "cWFVHhM/Ze33JdDK7QBjivkaf/Y=",
-			"path": "github.com/stretchr/graceful",
-			"revision": "bffe07886e519361228b315595ca8041f0733ce3",
-			"revisionTime": "2016-05-31T05:24:20Z"
-		},
-		{
 			"checksumSHA1": "vE43s37+4CJ2CDU6TlOUOYE0K9c=",
 			"path": "golang.org/x/crypto/bcrypt",
 			"revision": "5bcd134fee4dd1475da17714aac19c0aa0142e2f",
@@ -247,6 +241,12 @@
 			"path": "golang.org/x/sys/unix",
 			"revision": "62bee037599929a6e9146f29d10dd5208c43507d",
 			"revisionTime": "2016-06-14T22:52:37Z"
+		},
+		{
+			"checksumSHA1": "8aQixD/F+3cpTTjSJdIyu5GioLc=",
+			"path": "gopkg.in/tylerb/graceful.v1",
+			"revision": "c838c13b2beeea4f4f54496da96a3a6ae567c37a",
+			"revisionTime": "2016-07-22T18:15:54Z"
 		}
 	],
 	"rootPath": "github.com/resourced/resourced-master"
