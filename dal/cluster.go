@@ -115,7 +115,7 @@ func (c *Cluster) Create(tx *sqlx.Tx, creator *UserRow, name string) (*ClusterRo
 	member := ClusterMember{}
 	member.ID = creator.ID
 	member.Email = creator.Email
-	member.Level = "admin"
+	member.Level = "write"
 
 	members := make([]ClusterMember{}, 1)
 	members[0] = member
