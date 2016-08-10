@@ -117,7 +117,7 @@ func (c *Cluster) Create(tx *sqlx.Tx, creator *UserRow, name string) (*ClusterRo
 	member.Email = creator.Email
 	member.Level = "write"
 
-	members := make([]ClusterMember{}, 1)
+	members := make([]ClusterMember, 1)
 	members[0] = member
 
 	membersJSON, err := json.Marshal(members)
