@@ -386,9 +386,37 @@ $('#graph-modal').on('show.bs.modal', function (event) {
     modal.data('metric-key', metricKey);
     modal.data('host', host);
 
+    var containerDOM = modal.find('.graph-lg-modal-container');
+
     var drpElem = modal.find('.daterange');
 
-    drpElem.daterangepicker(ResourcedMaster.daterange.defaultSettings);
+    drpElem.daterangepicker(ResourcedMaster.daterange.defaultSettings, function(start, end, label) {
+        var from = start.utc().unix();
+        var to = end.utc().unix();
+
+        var renderOptions = {
+            'from': from,
+            'to': to,
+            'host': host,
+            'containerDOM': containerDOM,
+            'title': metricKey
+        };
+
+        if((to - from) >= 21600) {
+            renderOptions.shortAggrInterval = '15min';
+        }
+
+        ResourcedMaster.metrics.renderOneChart(
+            ResourcedMaster.globals.AccessToken,
+            metricID,
+            ResourcedMaster.globals.TSEventLines,
+            ResourcedMaster.globals.TSEventLineColors,
+            ResourcedMaster.globals.TSEventBands,
+            ResourcedMaster.globals.TSEventBandColors,
+            ResourcedMaster.globals.TSEventBandTextColors,
+            renderOptions
+        );
+    });
 });
 </script>
 {{end}}
