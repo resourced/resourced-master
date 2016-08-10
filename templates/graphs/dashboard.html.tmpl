@@ -30,7 +30,13 @@
         {{ range $metric := .CurrentGraph.MetricsFromJSON }}
         <div class="item panel panel-default panel-chart" data-cluster-id="{{ $metric.ClusterID }}" data-id="{{ $metric.ID }}" data-key="{{ $metric.Key }}">
             <div class="panel-heading" data-id="{{ $metric.ID }}" data-key="{{ $metric.Key }}">
-                <input class="form-control daterange" type="text" data-id="{{ $metric.ID }}" data-key="{{ $metric.Key }}" />
+                <button class="btn btn-success pull-right" style="width: 10%; padding: 8px" data-toggle="modal" data-target="#graph-lg-modal"
+                    data-metric-id="{{ $metric.ID }}",
+                    data-metric-key="{{ $metric.Key }}">
+                    <span class="glyphicon glyphicon-resize-full" aria-hidden="true"></span>
+                </button>
+
+                <input class="form-control daterange" style="width: 90%" type="text" data-id="{{ $metric.ID }}" data-key="{{ $metric.Key }}" />
 
                 <select class="form-control aggregate-selector" style="display: none">
                     <option value="avg">Avg</option>
@@ -81,6 +87,25 @@
                     <button type="submit" class="btn btn-primary">Save</button>
                 </div>
             </form>
+        </div>
+    </div>
+</div>
+
+<!-- Enlarged Chart Modal -->
+<div class="modal fade" id="graph-lg-modal" tabindex="-1" role="dialog" aria-labelledby="graph-lg-label" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <input class="form-control daterange" type="text" />
+            </div>
+
+            <div class="modal-body">
+                <div class="graph-lg-modal-container"></div>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+            </div>
         </div>
     </div>
 </div>
@@ -327,6 +352,52 @@ $('#add-chart-modal').on('shown.bs.modal', function() {
     });
 
     renderChartPreview();
+});
+
+$('#graph-lg-modal').on('shown.bs.modal', function (event) {
+    var button = $(event.relatedTarget);   // Button that triggered the modal
+    var metricID = button.data('metric-id');
+    var metricKey = button.data('metric-key');
+
+    var from = ResourcedMaster.daterange.defaultSettings.startDate.utc().unix();
+    var to = ResourcedMaster.daterange.defaultSettings.endDate.utc().unix();
+
+    var renderOptions = {
+        'from': from,
+        'to': to,
+        'containerDOM': $('#graph-lg-modal .graph-lg-modal-container'),
+        'title': metricKey
+    };
+
+    if((to - from) >= 21600) {
+        renderOptions.shortAggrInterval = '15min';
+    }
+
+    ResourcedMaster.metrics.renderOneChart(
+        ResourcedMaster.globals.AccessToken,
+        metricID,
+        ResourcedMaster.globals.TSEventLines,
+        ResourcedMaster.globals.TSEventLineColors,
+        ResourcedMaster.globals.TSEventBands,
+        ResourcedMaster.globals.TSEventBandColors,
+        ResourcedMaster.globals.TSEventBandTextColors,
+        renderOptions
+    );
+
+});
+
+$('#graph-lg-modal').on('show.bs.modal', function (event) {
+    var button = $(event.relatedTarget);   // Button that triggered the modal
+    var metricID = button.data('metric-id');
+    var metricKey = button.data('metric-key');
+
+    var modal = $(this);
+    modal.data('metric-id', metricID);
+    modal.data('metric-key', metricKey);
+
+    var drpElem = modal.find('.daterange');
+
+    drpElem.daterangepicker(ResourcedMaster.daterange.defaultSettings);
 });
 </script>
 {{end}}
