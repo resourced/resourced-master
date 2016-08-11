@@ -92,6 +92,10 @@ type GeneralConfig struct {
 		KeyFile  string
 	}
 
+	PubSub struct {
+		Nodes []string
+	}
+
 	Hosts struct {
 		DSN                  string
 		DBMaxOpenConnections int64

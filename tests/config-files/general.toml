@@ -25,13 +25,13 @@ VIPProtocol = "http"
 # and create your own cronjob to drop tables instead.
 EnablePeriodicPruneJobs = true
 
+
 [LocalAgent]
 # Master will report its own metrics to localhost:{GraphiteTCPPort}
 GraphiteTCPPort = "55556"
 
 # How frequently will master report its own metrics
 ReportMetricsInterval = "60s"
-
 
 # RateLimiters configures how many requests are allowed per second
 [RateLimiters]
@@ -53,3 +53,9 @@ Port = 587
 Username = ""
 Password = ""
 Identity = ""
+
+# List every single master daemon and give it a port for peer-to-peer pubsub socket connection.
+[PubSub]
+Nodes = [
+	":55755"
+]

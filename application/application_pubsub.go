@@ -2,11 +2,35 @@ package application
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/lib/pq"
 
 	"github.com/resourced/resourced-master/config"
+	"github.com/resourced/resourced-master/pubsub"
 )
+
+func (app *Application) NewPublisher(generalConfig config.GeneralConfig) (*pubsub.PubSub, error) {
+	var url string
+
+	for _, node := range generalConfig.PubSub.Nodes {
+		node = strings.Replace(node, "localhost", "127.0.0.1", 1)
+
+		if strings.HasPrefix(node, ":") {
+			url = "tcp://127.0.0.1" + node
+			break
+		} else if strings.HasPrefix(node, app.Hostname) {
+			url = "tcp://" + node
+			break
+		}
+	}
+
+	if url != "" {
+		return pubsub.NewPubSub("pub", url)
+	}
+
+	return nil, fmt.Errorf("Failed to create a pubsub publisher. URL cannot be empty.")
+}
 
 // NewPGListener creates a new database connection for the purpose of listening events.
 func (app *Application) NewPGListener(generalConfig config.GeneralConfig) (*pq.ListenerConn, <-chan *pq.Notification, error) {

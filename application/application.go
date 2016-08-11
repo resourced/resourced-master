@@ -21,6 +21,7 @@ import (
 	"github.com/resourced/resourced-master/libmap"
 	"github.com/resourced/resourced-master/mailer"
 	"github.com/resourced/resourced-master/middlewares"
+	"github.com/resourced/resourced-master/pubsub"
 )
 
 // New is the constructor for Application struct.
@@ -67,6 +68,13 @@ func New(configDir string) (*Application, error) {
 		app.Mailers["GeneralConfig.Checks"] = mailer
 	}
 
+	// Create PubSub Publisher
+	publisher, err := app.NewPublisher(app.GeneralConfig)
+	if err != nil {
+		return nil, err
+	}
+	app.PubSubPublisher = publisher
+
 	return app, err
 }
 
@@ -81,6 +89,7 @@ type Application struct {
 	HandlerInstruments map[string]chan int64
 	LatencyGauges      map[string]metrics.Gauge
 	MetricsRegistry    metrics.Registry
+	PubSubPublisher    *pubsub.PubSub
 }
 
 func (app *Application) FullAddr() string {
