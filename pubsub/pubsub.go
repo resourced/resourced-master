@@ -48,6 +48,7 @@ func NewSubSocket(url string) (mangos.Socket, error) {
 	return sock, nil
 }
 
+// NewPubSub is the constructor to create *PubSub.
 func NewPubSub(mode, url string) (*PubSub, error) {
 	p := &PubSub{}
 	p.Mode = mode
@@ -75,6 +76,7 @@ type PubSub struct {
 	Socket mangos.Socket
 }
 
+// Publish a plain text message to a topic.
 func (p *PubSub) Publish(topic, message string) error {
 	if p.Mode != "pub" {
 		return fmt.Errorf("Publish method cannot be called if Mode != pub")
@@ -84,6 +86,7 @@ func (p *PubSub) Publish(topic, message string) error {
 	return p.Socket.Send([]byte(payload))
 }
 
+// Publish a JSON message to a topic.
 func (p *PubSub) PublishJSON(topic string, jsonBytes []byte) error {
 	if p.Mode != "pub" {
 		return fmt.Errorf("Publish method cannot be called if Mode != pub")
@@ -93,6 +96,7 @@ func (p *PubSub) PublishJSON(topic string, jsonBytes []byte) error {
 	return p.Socket.Send([]byte(payload))
 }
 
+// Subscribe to a topic.
 func (p *PubSub) Subscribe(topic string) error {
 	if p.Mode != "sub" {
 		return fmt.Errorf("Subscribe method cannot be called if Mode != sub")
@@ -100,6 +104,7 @@ func (p *PubSub) Subscribe(topic string) error {
 	return p.Socket.SetOption(mangos.OptionSubscribe, []byte(fmt.Sprintf("topic:%v|", topic)))
 }
 
+// PublishMetricsByHostRow publish many metrics, based on a single host data payload, to the corresponding pubsub pipe.
 func (p *PubSub) PublishMetricsByHostRow(hostRow *dal.HostRow, metricsMap map[string]int64) {
 	// Loop through every host's data and see if they are part of graph metrics.
 	// If they are, publish the metric to pubsub pipe.
