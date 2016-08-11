@@ -2,7 +2,6 @@ package application
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/lib/pq"
 
@@ -10,26 +9,24 @@ import (
 	"github.com/resourced/resourced-master/pubsub"
 )
 
+// NewPublisher creates a new PubSub instance with "pub" mode.
 func (app *Application) NewPublisher(generalConfig config.GeneralConfig) (*pubsub.PubSub, error) {
-	var url string
+	return pubsub.NewPubSub("pub", "tcp://127.0.0.1:"+generalConfig.PubSub.PublisherPort)
+}
 
-	for _, node := range generalConfig.PubSub.Nodes {
-		node = strings.Replace(node, "localhost", "127.0.0.1", 1)
+// NewSubscribers creates a map of PubSub instances with "sub" mode.
+func (app *Application) NewSubscribers(generalConfig config.GeneralConfig) (map[string]*pubsub.PubSub, error) {
+	subscribers := make(map[string]*pubsub.PubSub)
 
-		if strings.HasPrefix(node, ":") {
-			url = "tcp://127.0.0.1" + node
-			break
-		} else if strings.HasPrefix(node, app.Hostname) {
-			url = "tcp://" + node
-			break
+	for _, url := range generalConfig.PubSub.SubscriberURLs {
+		psub, err := pubsub.NewPubSub("sub", url)
+		if err != nil {
+			return subscribers, err
 		}
+		subscribers[url] = psub
 	}
 
-	if url != "" {
-		return pubsub.NewPubSub("pub", url)
-	}
-
-	return nil, fmt.Errorf("Failed to create a pubsub publisher. URL cannot be empty.")
+	return subscribers, nil
 }
 
 // NewPGListener creates a new database connection for the purpose of listening events.

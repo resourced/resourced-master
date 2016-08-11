@@ -93,7 +93,8 @@ type GeneralConfig struct {
 	}
 
 	PubSub struct {
-		Nodes []string
+		PublisherPort  string
+		SubscriberURLs []string
 	}
 
 	Hosts struct {

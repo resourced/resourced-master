@@ -75,6 +75,13 @@ func New(configDir string) (*Application, error) {
 	}
 	app.PubSubPublisher = publisher
 
+	// Create PubSub Subscribers
+	subscribers, err := app.NewSubscribers(app.GeneralConfig)
+	if err != nil {
+		return nil, err
+	}
+	app.PubSubSubscribers = subscribers
+
 	return app, err
 }
 
@@ -90,6 +97,7 @@ type Application struct {
 	LatencyGauges      map[string]metrics.Gauge
 	MetricsRegistry    metrics.Registry
 	PubSubPublisher    *pubsub.PubSub
+	PubSubSubscribers  map[string]*pubsub.PubSub
 }
 
 func (app *Application) FullAddr() string {
