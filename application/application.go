@@ -82,6 +82,11 @@ func New(configDir string) (*Application, error) {
 	}
 	app.PubSubSubscribers = subscribers
 
+	err = app.setupInternalSubscriptions()
+	if err != nil {
+		return nil, err
+	}
+
 	return app, err
 }
 

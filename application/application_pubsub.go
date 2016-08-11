@@ -29,6 +29,17 @@ func (app *Application) NewSubscribers(generalConfig config.GeneralConfig) (map[
 	return subscribers, nil
 }
 
+func (app *Application) setupInternalSubscriptions() error {
+	for _, psub := range app.PubSubSubscribers {
+		err := psub.Subscribe("peers-heartbeat")
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 // NewPGListener creates a new database connection for the purpose of listening events.
 func (app *Application) NewPGListener(generalConfig config.GeneralConfig) (*pq.ListenerConn, <-chan *pq.Notification, error) {
 	notificationChan := make(chan *pq.Notification)
