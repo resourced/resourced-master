@@ -14,6 +14,7 @@ import (
 	"github.com/resourced/resourced-master/config"
 	"github.com/resourced/resourced-master/dal"
 	"github.com/resourced/resourced-master/libhttp"
+	"github.com/resourced/resourced-master/pubsub"
 )
 
 func GetHosts(w http.ResponseWriter, r *http.Request) {
@@ -196,6 +197,19 @@ func PostApiHosts(w http.ResponseWriter, r *http.Request) {
 			if err != nil {
 				logrus.Error(err)
 				return
+			}
+		}()
+
+		// Every pubsub subscriber is subscribing to every graphed metric.
+		go func() {
+			pubsubSubscribers := context.Get(r, "pubsubSubscribers").(map[string]*pubsub.PubSub)
+			for _, subscriber := range pubsubSubscribers {
+				for metricKey, _ := range metricsMap {
+					err := subscriber.Subscribe("metric-" + metricKey)
+					if err != nil {
+						logrus.Error(err)
+					}
+				}
 			}
 		}()
 	}()

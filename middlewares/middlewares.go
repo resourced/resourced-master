@@ -98,6 +98,17 @@ func SetPubSubPublisher(publisher *pubsub.PubSub) func(http.Handler) http.Handle
 	}
 }
 
+// SetPubSubSubscribers passes pubsub subscribers socket to every request handler
+func SetPubSubSubscribers(subscribers map[string]*pubsub.PubSub) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			context.Set(r, "pubsubSubscribers", subscribers)
+
+			next.ServeHTTP(w, r)
+		})
+	}
+}
+
 // SetClusters sets clusters data in context based on logged in user ID.
 func SetClusters(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

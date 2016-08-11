@@ -133,6 +133,7 @@ func (app *Application) MiddlewareStruct() (*interpose.Middleware, error) {
 	middle.Use(middlewares.SetCookieStore(app.cookieStore))
 	middle.Use(middlewares.SetMailers(app.Mailers))
 	middle.Use(middlewares.SetPubSubPublisher(app.PubSubPublisher))
+	middle.Use(middlewares.SetPubSubSubscribers(app.PubSubSubscribers))
 
 	middle.UseHandler(app.mux())
 
