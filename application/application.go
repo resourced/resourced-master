@@ -132,6 +132,7 @@ func (app *Application) MiddlewareStruct() (*interpose.Middleware, error) {
 	middle.Use(middlewares.SetDBs(app.DBConfig))
 	middle.Use(middlewares.SetCookieStore(app.cookieStore))
 	middle.Use(middlewares.SetMailers(app.Mailers))
+	middle.Use(middlewares.SetPubSubPublisher(app.PubSubPublisher))
 
 	middle.UseHandler(app.mux())
 

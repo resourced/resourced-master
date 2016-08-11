@@ -17,6 +17,7 @@ import (
 	"github.com/resourced/resourced-master/dal"
 	"github.com/resourced/resourced-master/libhttp"
 	"github.com/resourced/resourced-master/mailer"
+	"github.com/resourced/resourced-master/pubsub"
 )
 
 // SetStringKeyValue set arbitrary key value on context and passes it around to every request handler
@@ -80,6 +81,17 @@ func SetMailers(mailers map[string]*mailer.Mailer) func(http.Handler) http.Handl
 			for key, mailr := range mailers {
 				context.Set(r, "mailer."+key, mailr)
 			}
+
+			next.ServeHTTP(w, r)
+		})
+	}
+}
+
+// SetPubSubPublisher passes pubsub publisher socket to every request handler
+func SetPubSubPublisher(publisher *pubsub.PubSub) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			context.Set(r, "pubsubPublisher", publisher)
 
 			next.ServeHTTP(w, r)
 		})

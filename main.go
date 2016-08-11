@@ -9,7 +9,6 @@ import (
 	"github.com/Sirupsen/logrus"
 	"github.com/alecthomas/kingpin"
 	metrics_graphite "github.com/cyberdelia/go-metrics-graphite"
-	"github.com/lib/pq"
 
 	"github.com/resourced/resourced-master/application"
 	"github.com/resourced/resourced-master/dal"
@@ -52,45 +51,15 @@ func main() {
 
 	switch parsedCLIArgs {
 	case "server":
-		// Listens to all pubsub messages
-		for url, subscriber := range app.PubSubSubscribers {
-			go app.OnPubSubReceivePayload(url, subscriber)
-		}
-
-		// Create a database listener
-		pgListener, pgNotificationChan, err := app.NewPGListener(app.GeneralConfig)
-		if err != nil {
-			logrus.Fatal(err)
-		}
-
-		// Listen on all database channels
-		_, err = app.ListenAllPGChannels(pgListener)
-		if err != nil {
-			logrus.Fatal(err)
-		}
-
 		refetchChecksChan := make(chan bool)
 
-		// Handle all database notification
-		go func(notificationChan <-chan *pq.Notification) {
-			for {
-				select {
-				case notification := <-notificationChan:
-					if notification != nil {
-						logrus.WithFields(logrus.Fields{"Channel": notification.Channel}).Info("Received notification from PostgreSQL")
+		for url, subscriber := range app.PubSubSubscribers {
+			go app.OnPubSubReceivePeersHeartbeat(url, subscriber)
+		}
 
-						if notification.Channel == "checks_refetch" {
-							refetchChecksChan <- true
-						} else {
-							err := app.HandleAllTypesOfNotification(notification)
-							if err != nil {
-								logrus.Error(err)
-							}
-						}
-					}
-				}
-			}
-		}(pgNotificationChan)
+		for url, subscriber := range app.PubSubSubscribers {
+			go app.OnPubSubReceiveChecksRefetch(url, subscriber, refetchChecksChan)
+		}
 
 		// Broadcast heartbeat
 		go app.SendHeartbeat()
