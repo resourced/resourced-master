@@ -133,6 +133,10 @@ func PostApiHosts(w http.ResponseWriter, r *http.Request) {
 
 	accessTokenRow := context.Get(r, "accessToken").(*dal.AccessTokenRow)
 
+	pubsubPublisher := context.Get(r, "pubsubPublisher").(*pubsub.PubSub)
+
+	pubsubSubscribers := context.Get(r, "pubsubSubscribers").(map[string]*pubsub.PubSub)
+
 	dataJson, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
@@ -200,10 +204,9 @@ func PostApiHosts(w http.ResponseWriter, r *http.Request) {
 			}
 		}()
 
-		// Every pubsub subscriber is subscribing to every graphed metric.
 		go func() {
-			pubsubSubscribers := context.Get(r, "pubsubSubscribers").(map[string]*pubsub.PubSub)
 			for _, subscriber := range pubsubSubscribers {
+				// Every pubsub subscriber is subscribing to every graphed metric.
 				for metricKey, _ := range metricsMap {
 					err := subscriber.Subscribe("metric-" + metricKey)
 					if err != nil {
@@ -211,6 +214,9 @@ func PostApiHosts(w http.ResponseWriter, r *http.Request) {
 					}
 				}
 			}
+
+			// Publish evey graphed metric to pubsub pipe.
+			pubsubPublisher.PublishMetricsByHostRow(hostRow, metricsMap)
 		}()
 	}()
 
