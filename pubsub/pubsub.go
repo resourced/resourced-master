@@ -110,34 +110,26 @@ func (p *PubSub) PublishMetricsByHostRow(hostRow *dal.HostRow, metricsMap map[st
 			if metricID, ok := metricsMap[metricKey]; ok {
 				// Deserialized JSON number -> interface{} always have float64 as type.
 				if trueValueFloat64, ok := value.(float64); ok {
-					metricPayload := make(map[string]interface{})
-					metricPayload["Key"] = metricKey
-					metricPayload["Value"] = trueValueFloat64
+					metricPayload := logrus.Fields{
+						"ClusterID": hostRow.ClusterID,
+						"MetricID":  metricID,
+						"MetricKey": metricKey,
+						"Hostname":  hostRow.Hostname,
+						"Value":     trueValueFloat64,
+					}
 
 					metricPayloadJSON, err := json.Marshal(metricPayload)
 					if err != nil {
-						logrus.WithFields(logrus.Fields{
-							"Method":    "PubSub.PublishMetricsByHostRow",
-							"ClusterID": hostRow.ClusterID,
-							"MetricID":  metricID,
-							"MetricKey": metricKey,
-							"Hostname":  hostRow.Hostname,
-							"Value":     trueValueFloat64,
-							"Error":     err,
-						}).Error("Failed to serialize metric for pubsub pipe")
+						metricPayload["Method"] = "PubSub.PublishMetricsByHostRow"
+						metricPayload["Error"] = err
+						logrus.WithFields(metricPayload).Error("Failed to serialize metric for pubsub pipe")
 					}
 
 					err = p.PublishJSON("metric-"+metricKey, metricPayloadJSON)
 					if err != nil {
-						logrus.WithFields(logrus.Fields{
-							"Method":    "PubSub.PublishMetricsByHostRow",
-							"ClusterID": hostRow.ClusterID,
-							"MetricID":  metricID,
-							"MetricKey": metricKey,
-							"Hostname":  hostRow.Hostname,
-							"Value":     trueValueFloat64,
-							"Error":     err,
-						}).Error("Failed to publish metric to pubsub pipe")
+						metricPayload["Method"] = "PubSub.PublishMetricsByHostRow"
+						metricPayload["Error"] = err
+						logrus.WithFields(metricPayload).Error("Failed to publish metric to pubsub pipe")
 					}
 				}
 			}
