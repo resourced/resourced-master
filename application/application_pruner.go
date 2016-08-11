@@ -19,7 +19,7 @@ func (app *Application) PruneAll() {
 		var err error
 
 		daemons := make([]string, 0)
-		allPeers := app.Peers.All()
+		allPeers := app.Peers.Items()
 
 		if len(allPeers) > 0 {
 			for hostAndPort, _ := range allPeers {

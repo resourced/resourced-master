@@ -4,8 +4,6 @@ import (
 	"encoding/gob"
 	"net"
 	"os"
-	"os/signal"
-	"syscall"
 	"time"
 
 	"github.com/Sirupsen/logrus"
@@ -15,7 +13,6 @@ import (
 
 	"github.com/resourced/resourced-master/application"
 	"github.com/resourced/resourced-master/dal"
-	"github.com/resourced/resourced-master/libtime"
 )
 
 var (
@@ -55,6 +52,11 @@ func main() {
 
 	switch parsedCLIArgs {
 	case "server":
+		// Listens to all pubsub messages
+		for url, subscriber := range app.PubSubSubscribers {
+			go app.OnPubSubReceivePayload(url, subscriber)
+		}
+
 		// Create a database listener
 		pgListener, pgNotificationChan, err := app.NewPGListener(app.GeneralConfig)
 		if err != nil {
@@ -90,56 +92,14 @@ func main() {
 			}
 		}(pgNotificationChan)
 
-		// Register self
-		go func() {
-			libtime.SleepString("5s")
-
-			err := app.PGNotifyPeersAdd()
-			if err != nil {
-				logrus.Error(err)
-			}
-		}()
+		// Broadcast heartbeat
+		go app.SendHeartbeat()
 
 		// Run all checks
 		app.CheckAndRunTriggers(refetchChecksChan)
 
 		// Prune old timeseries data
 		go app.PruneAll()
-
-		// Handle OS signals
-		sigChan := make(chan os.Signal, 1)
-		signal.Notify(sigChan,
-			syscall.SIGHUP,
-			syscall.SIGINT,
-			syscall.SIGTERM,
-			syscall.SIGQUIT)
-
-		go func() {
-			for {
-				s := <-sigChan
-				switch s {
-				case syscall.SIGHUP:
-
-				case syscall.SIGINT:
-					err := app.PGNotifyPeersRemove()
-					if err != nil {
-						logrus.Error(err)
-					}
-
-				case syscall.SIGTERM:
-					err := app.PGNotifyPeersRemove()
-					if err != nil {
-						logrus.Error(err)
-					}
-
-				case syscall.SIGQUIT:
-					err := app.PGNotifyPeersRemove()
-					if err != nil {
-						logrus.Error(err)
-					}
-				}
-			}
-		}()
 
 		// Publish metrics to local agent, which is a graphite endpoint.
 		addr, err := net.ResolveTCPAddr("tcp", "localhost:"+app.GeneralConfig.LocalAgent.GraphiteTCPPort)

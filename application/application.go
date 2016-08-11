@@ -14,11 +14,11 @@ import (
 	_ "github.com/lib/pq"
 	_ "github.com/mattes/migrate/driver/postgres"
 	"github.com/mattes/migrate/migrate"
+	gocache "github.com/patrickmn/go-cache"
 	"github.com/rcrowley/go-metrics"
 	"gopkg.in/tylerb/graceful.v1"
 
 	"github.com/resourced/resourced-master/config"
-	"github.com/resourced/resourced-master/libmap"
 	"github.com/resourced/resourced-master/mailer"
 	"github.com/resourced/resourced-master/middlewares"
 	"github.com/resourced/resourced-master/pubsub"
@@ -46,11 +46,11 @@ func New(configDir string) (*Application, error) {
 	app.GeneralConfig = generalConfig
 	app.DBConfig = dbConfig
 	app.cookieStore = sessions.NewCookieStore([]byte(app.GeneralConfig.CookieSecret))
-	app.Peers = libmap.NewTSafeMapString(nil)
 	app.Mailers = make(map[string]*mailer.Mailer)
 	app.HandlerInstruments = app.NewHandlerInstruments()
 	app.LatencyGauges = make(map[string]metrics.Gauge)
 	app.MetricsRegistry = app.NewMetricsRegistry(app.HandlerInstruments, app.LatencyGauges)
+	app.Peers = gocache.New(1*time.Minute, 10*time.Minute)
 
 	if app.GeneralConfig.Email != nil {
 		mailer, err := mailer.New(app.GeneralConfig.Email)
@@ -97,12 +97,12 @@ type Application struct {
 	DBConfig           *config.DBConfig
 	cookieStore        *sessions.CookieStore
 	Mailers            map[string]*mailer.Mailer
-	Peers              *libmap.TSafeMapString // Peers include self
 	HandlerInstruments map[string]chan int64
 	LatencyGauges      map[string]metrics.Gauge
 	MetricsRegistry    metrics.Registry
 	PubSubPublisher    *pubsub.PubSub
 	PubSubSubscribers  map[string]*pubsub.PubSub
+	Peers              *gocache.Cache
 }
 
 func (app *Application) FullAddr() string {

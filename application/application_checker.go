@@ -19,7 +19,7 @@ func (app *Application) CheckAndRunTriggers(refetchChecksChan <-chan bool) {
 			if refetchChecks {
 				daemons := make([]string, 0)
 
-				for hostAndPort, _ := range app.Peers.All() {
+				for hostAndPort, _ := range app.Peers.Items() {
 					daemons = append(daemons, hostAndPort)
 				}
 
