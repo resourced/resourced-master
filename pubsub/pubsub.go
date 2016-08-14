@@ -3,6 +3,8 @@ package pubsub
 import (
 	"encoding/json"
 	"fmt"
+	"os"
+	"strings"
 	"time"
 
 	"github.com/Sirupsen/logrus"
@@ -14,6 +16,30 @@ import (
 
 	"github.com/resourced/resourced-master/dal"
 )
+
+// GetSelfSubscriber returns one subscriber given a map of subscribers.
+// It uses hostname or localhost as criteria.
+func GetSelfSubscriber(subscribers map[string]*PubSub) (*PubSub, error) {
+	var subscriber *PubSub
+
+	hostname, err := os.Hostname()
+	if err != nil {
+		return nil, err
+	}
+
+	for _, sub := range subscribers {
+		if sub.IsSelf(hostname) {
+			subscriber = sub
+			break
+		}
+	}
+
+	if subscriber == nil {
+		return nil, fmt.Errorf("Failed to find subscriber for hostname: %v", hostname)
+	}
+
+	return subscriber, nil
+}
 
 // NewPubSocket creates a socket for publishing messages.
 func NewPubSocket(url string) (mangos.Socket, error) {
@@ -52,6 +78,7 @@ func NewSubSocket(url string) (mangos.Socket, error) {
 func NewPubSub(mode, url string) (*PubSub, error) {
 	p := &PubSub{}
 	p.Mode = mode
+	p.URL = url
 
 	if mode == "pub" {
 		sock, err := NewPubSocket(url)
@@ -73,7 +100,43 @@ func NewPubSub(mode, url string) (*PubSub, error) {
 
 type PubSub struct {
 	Mode   string
+	URL    string
 	Socket mangos.Socket
+}
+
+// IsSelf checks if current pubsub is running on the host.
+func (p *PubSub) IsSelf(selfHostname string) bool {
+	if strings.Contains(p.URL, "localhost") {
+		return true
+	}
+	if strings.Contains(p.URL, "127.0.0.1") {
+		return true
+	}
+	if strings.Contains(p.URL, selfHostname) {
+		return true
+	}
+
+	return false
+}
+
+// GetJSONContent returns JSON content from payload in bytes
+func (p *PubSub) GetJSONContent(payload string) ([]byte, error) {
+	payloadChunks := strings.Split(payload, "|")
+	for _, chunk := range payloadChunks {
+		keyValue := strings.Split(chunk, ":")
+
+		if keyValue[0] == "type" {
+			if keyValue[1] != "json" {
+				return nil, fmt.Errorf("Payload type must be json")
+			}
+
+			if keyValue[0] == "content" {
+				return []byte(keyValue[1]), nil
+			}
+		}
+	}
+
+	return nil, fmt.Errorf("Failed to look for json content from payload")
 }
 
 // Publish a plain text message to a topic.
@@ -94,14 +157,6 @@ func (p *PubSub) PublishJSON(topic string, jsonBytes []byte) error {
 
 	payload := fmt.Sprintf("topic:%s|type:json|created:%v|content:%v", topic, time.Now().UTC().Unix(), string(jsonBytes))
 	return p.Socket.Send([]byte(payload))
-}
-
-// Subscribe to a topic.
-func (p *PubSub) Subscribe(topic string) error {
-	if p.Mode != "sub" {
-		return fmt.Errorf("Subscribe method cannot be called if Mode != sub")
-	}
-	return p.Socket.SetOption(mangos.OptionSubscribe, []byte(fmt.Sprintf("topic:%v|", topic)))
 }
 
 // PublishMetricsByHostRow publish many metrics, based on a single host data payload, to the corresponding pubsub pipe.
@@ -140,4 +195,16 @@ func (p *PubSub) PublishMetricsByHostRow(hostRow *dal.HostRow, metricsMap map[st
 			}
 		}
 	}
+}
+
+// Subscribe to a topic.
+func (p *PubSub) Subscribe(topic string) error {
+	if p.Mode != "sub" {
+		return fmt.Errorf("Subscribe method cannot be called if Mode != sub")
+	}
+	return p.Socket.SetOption(mangos.OptionSubscribe, []byte(fmt.Sprintf("topic:%v|", topic)))
+}
+
+func (p *PubSub) SubscribeMetric(metricKey string) error {
+	return p.Subscribe("metric-" + metricKey)
 }

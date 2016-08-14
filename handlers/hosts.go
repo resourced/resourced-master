@@ -207,8 +207,9 @@ func PostApiHosts(w http.ResponseWriter, r *http.Request) {
 		go func() {
 			for _, subscriber := range pubsubSubscribers {
 				// Every pubsub subscriber is subscribing to every graphed metric.
+				// TODO: I may need to check if we are already subscribing... read docs.
 				for metricKey, _ := range metricsMap {
-					err := subscriber.Subscribe("metric-" + metricKey)
+					err := subscriber.SubscribeMetric(metricKey)
 					if err != nil {
 						logrus.Error(err)
 					}
