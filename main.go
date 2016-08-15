@@ -51,21 +51,13 @@ func main() {
 
 	switch parsedCLIArgs {
 	case "server":
-		refetchChecksChan := make(chan bool)
-
-		for url, subscriber := range app.PubSubSubscribers {
-			go app.OnPubSubReceivePeersHeartbeat(url, subscriber)
-		}
-
-		for url, subscriber := range app.PubSubSubscribers {
-			go app.OnPubSubReceiveChecksRefetch(url, subscriber, refetchChecksChan)
-		}
+		go app.MessageBus.OnReceive(app.MessageBusHandlers())
 
 		// Broadcast heartbeat
 		go app.SendHeartbeat()
 
 		// Run all checks
-		app.CheckAndRunTriggers(refetchChecksChan)
+		app.CheckAndRunTriggers(app.RefetchChecksChan)
 
 		// Prune old timeseries data
 		go app.PruneAll()

@@ -54,12 +54,12 @@ Username = ""
 Password = ""
 Identity = ""
 
-[PubSub]
-PublisherPort = "55755"
+[MessageBus]
+URL = "tcp://127.0.0.1:55755"
 
-# List every single master daemon, including self, and point them to publisher port for peer-to-peer pubsub socket connection.
-# The wire protocol is always tcp.
-# Localhost is always 127.0.0.1.
-SubscriberURLs = [
+# List every single master daemon, including self.
+#   * The wire protocol is always tcp.
+#   * Localhost is always 127.0.0.1.
+Peers = [
 	"tcp://127.0.0.1:55755"
 ]

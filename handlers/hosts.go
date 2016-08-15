@@ -14,7 +14,7 @@ import (
 	"github.com/resourced/resourced-master/config"
 	"github.com/resourced/resourced-master/dal"
 	"github.com/resourced/resourced-master/libhttp"
-	"github.com/resourced/resourced-master/pubsub"
+	"github.com/resourced/resourced-master/messagebus"
 )
 
 func GetHosts(w http.ResponseWriter, r *http.Request) {
@@ -133,9 +133,7 @@ func PostApiHosts(w http.ResponseWriter, r *http.Request) {
 
 	accessTokenRow := context.Get(r, "accessToken").(*dal.AccessTokenRow)
 
-	pubsubPublisher := context.Get(r, "pubsubPublisher").(*pubsub.PubSub)
-
-	pubsubSubscribers := context.Get(r, "pubsubSubscribers").(map[string]*pubsub.PubSub)
+	bus := context.Get(r, "bus").(*messagebus.MessageBus)
 
 	dataJson, err := ioutil.ReadAll(r.Body)
 	if err != nil {
@@ -205,19 +203,8 @@ func PostApiHosts(w http.ResponseWriter, r *http.Request) {
 		}()
 
 		go func() {
-			for _, subscriber := range pubsubSubscribers {
-				// Every pubsub subscriber is subscribing to every graphed metric.
-				// TODO: I may need to check if we are already subscribing... read docs.
-				for metricKey, _ := range metricsMap {
-					err := subscriber.SubscribeMetric(metricKey)
-					if err != nil {
-						logrus.Error(err)
-					}
-				}
-			}
-
 			// Publish evey graphed metric to pubsub pipe.
-			pubsubPublisher.PublishMetricsByHostRow(hostRow, metricsMap)
+			bus.PublishMetricsByHostRow(hostRow, metricsMap)
 		}()
 	}()
 

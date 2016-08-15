@@ -17,7 +17,7 @@ import (
 	"github.com/resourced/resourced-master/dal"
 	"github.com/resourced/resourced-master/libhttp"
 	"github.com/resourced/resourced-master/libslice"
-	"github.com/resourced/resourced-master/pubsub"
+	"github.com/resourced/resourced-master/messagebus"
 )
 
 func GetChecks(w http.ResponseWriter, r *http.Request) {
@@ -149,7 +149,7 @@ func PostChecks(w http.ResponseWriter, r *http.Request) {
 	}
 
 	go func() {
-		err := context.Get(r, "pubsubPublisher").(*pubsub.PubSub).Publish("checks-refetch", "true")
+		err := context.Get(r, "bus").(*messagebus.MessageBus).Publish("checks-refetch", "true")
 		if err != nil {
 			logrus.Error(err)
 		}
@@ -165,7 +165,7 @@ func PostPutDeleteCheckID(w http.ResponseWriter, r *http.Request) {
 	}
 
 	go func() {
-		err := context.Get(r, "pubsubPublisher").(*pubsub.PubSub).Publish("checks-refetch", "true")
+		err := context.Get(r, "bus").(*messagebus.MessageBus).Publish("checks-refetch", "true")
 		if err != nil {
 			logrus.Error(err)
 		}
@@ -351,7 +351,7 @@ func PostChecksTriggers(w http.ResponseWriter, r *http.Request) {
 	}
 
 	go func() {
-		err := context.Get(r, "pubsubPublisher").(*pubsub.PubSub).Publish("checks-refetch", "true")
+		err := context.Get(r, "bus").(*messagebus.MessageBus).Publish("checks-refetch", "true")
 		if err != nil {
 			logrus.Error(err)
 		}
@@ -367,7 +367,7 @@ func PostPutDeleteCheckTriggerID(w http.ResponseWriter, r *http.Request) {
 	}
 
 	go func() {
-		err := context.Get(r, "pubsubPublisher").(*pubsub.PubSub).Publish("checks-refetch", "true")
+		err := context.Get(r, "bus").(*messagebus.MessageBus).Publish("checks-refetch", "true")
 		if err != nil {
 			logrus.Error(err)
 		}

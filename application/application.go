@@ -20,8 +20,8 @@ import (
 
 	"github.com/resourced/resourced-master/config"
 	"github.com/resourced/resourced-master/mailer"
+	"github.com/resourced/resourced-master/messagebus"
 	"github.com/resourced/resourced-master/middlewares"
-	"github.com/resourced/resourced-master/pubsub"
 )
 
 // New is the constructor for Application struct.
@@ -51,6 +51,8 @@ func New(configDir string) (*Application, error) {
 	app.LatencyGauges = make(map[string]metrics.Gauge)
 	app.MetricsRegistry = app.NewMetricsRegistry(app.HandlerInstruments, app.LatencyGauges)
 	app.Peers = gocache.New(1*time.Minute, 10*time.Minute)
+	app.RefetchChecksChan = make(chan bool)
+	app.MetricStreamChan = make(chan string)
 
 	if app.GeneralConfig.Email != nil {
 		mailer, err := mailer.New(app.GeneralConfig.Email)
@@ -68,24 +70,12 @@ func New(configDir string) (*Application, error) {
 		app.Mailers["GeneralConfig.Checks"] = mailer
 	}
 
-	// Create PubSub Publisher
-	publisher, err := app.NewPublisher(app.GeneralConfig)
+	// Create MessageBus
+	bus, err := app.NewMessageBus(app.GeneralConfig)
 	if err != nil {
 		return nil, err
 	}
-	app.PubSubPublisher = publisher
-
-	// Create PubSub Subscribers
-	subscribers, err := app.NewSubscribers(app.GeneralConfig)
-	if err != nil {
-		return nil, err
-	}
-	app.PubSubSubscribers = subscribers
-
-	err = app.setupInternalSubscriptions()
-	if err != nil {
-		return nil, err
-	}
+	app.MessageBus = bus
 
 	return app, err
 }
@@ -100,9 +90,10 @@ type Application struct {
 	HandlerInstruments map[string]chan int64
 	LatencyGauges      map[string]metrics.Gauge
 	MetricsRegistry    metrics.Registry
-	PubSubPublisher    *pubsub.PubSub
-	PubSubSubscribers  map[string]*pubsub.PubSub
+	MessageBus         *messagebus.MessageBus
 	Peers              *gocache.Cache
+	RefetchChecksChan  chan bool
+	MetricStreamChan   chan string
 }
 
 func (app *Application) FullAddr() string {
@@ -132,8 +123,8 @@ func (app *Application) MiddlewareStruct() (*interpose.Middleware, error) {
 	middle.Use(middlewares.SetDBs(app.DBConfig))
 	middle.Use(middlewares.SetCookieStore(app.cookieStore))
 	middle.Use(middlewares.SetMailers(app.Mailers))
-	middle.Use(middlewares.SetPubSubPublisher(app.PubSubPublisher))
-	middle.Use(middlewares.SetPubSubSubscribers(app.PubSubSubscribers))
+	middle.Use(middlewares.SetMessageBus(app.MessageBus))
+	middle.Use(middlewares.SetMetricStreamChan(app.MetricStreamChan))
 
 	middle.UseHandler(app.mux())
 

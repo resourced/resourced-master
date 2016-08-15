@@ -17,7 +17,7 @@ import (
 	"github.com/resourced/resourced-master/dal"
 	"github.com/resourced/resourced-master/libhttp"
 	"github.com/resourced/resourced-master/mailer"
-	"github.com/resourced/resourced-master/pubsub"
+	"github.com/resourced/resourced-master/messagebus"
 )
 
 // SetStringKeyValue set arbitrary key value on context and passes it around to every request handler
@@ -87,22 +87,22 @@ func SetMailers(mailers map[string]*mailer.Mailer) func(http.Handler) http.Handl
 	}
 }
 
-// SetPubSubPublisher passes pubsub publisher socket to every request handler
-func SetPubSubPublisher(publisher *pubsub.PubSub) func(http.Handler) http.Handler {
+// SetMessageBus passes a message bus to every request handler
+func SetMessageBus(bus *messagebus.MessageBus) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			context.Set(r, "pubsubPublisher", publisher)
+			context.Set(r, "bus", bus)
 
 			next.ServeHTTP(w, r)
 		})
 	}
 }
 
-// SetPubSubSubscribers passes pubsub subscribers socket to every request handler
-func SetPubSubSubscribers(subscribers map[string]*pubsub.PubSub) func(http.Handler) http.Handler {
+// SetMetricStreamChan passes metric-stream channel to every request handler
+func SetMetricStreamChan(metricStreamChan chan string) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			context.Set(r, "pubsubSubscribers", subscribers)
+			context.Set(r, "metricStreamChan", metricStreamChan)
 
 			next.ServeHTTP(w, r)
 		})

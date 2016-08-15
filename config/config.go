@@ -92,9 +92,9 @@ type GeneralConfig struct {
 		KeyFile  string
 	}
 
-	PubSub struct {
-		PublisherPort  string
-		SubscriberURLs []string
+	MessageBus struct {
+		URL   string
+		Peers []string
 	}
 
 	Hosts struct {

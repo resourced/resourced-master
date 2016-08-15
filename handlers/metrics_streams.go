@@ -13,7 +13,7 @@ import (
 	"github.com/resourced/resourced-master/config"
 	"github.com/resourced/resourced-master/dal"
 	"github.com/resourced/resourced-master/libhttp"
-	"github.com/resourced/resourced-master/pubsub"
+	"github.com/resourced/resourced-master/messagebus"
 )
 
 func ApiMetricStreams(w http.ResponseWriter, r *http.Request) {
@@ -29,13 +29,12 @@ func ApiMetricStreams(w http.ResponseWriter, r *http.Request) {
 
 	dbs := context.Get(r, "dbs").(*config.DBConfig)
 
-	subscribers := context.Get(r, "pubsubSubscribers").(map[string]*pubsub.PubSub)
+	bus := context.Get(r, "bus").(*messagebus.MessageBus)
 
-	subscriber, err := pubsub.GetSelfSubscriber(subscribers)
-	if err != nil {
-		libhttp.HandleErrorHTML(w, err, 500)
-		return
-	}
+	metricStreamChan := context.Get(r, "metricStreamChan").(chan string)
+
+	// TODO
+	// Make sure we deny user who has no access to metricID.
 
 	metricID, err := getInt64SlugFromPath(w, r, "id")
 	if err != nil {
@@ -52,24 +51,22 @@ func ApiMetricStreams(w http.ResponseWriter, r *http.Request) {
 	host, foundHostVar := mux.Vars(r)["host"]
 
 	for {
-		payloadBytes, err := subscriber.Socket.Recv()
-		if err != nil {
-			logrus.Error(err)
-		}
-
-		payloadString := string(payloadBytes)
+		payloadString := <-metricStreamChan
 
 		if strings.HasPrefix(payloadString, fmt.Sprintf(`topic:metric-%v`, metricRow.Key)) {
-			jsonContent, err := subscriber.GetJSONContent(payloadString)
+			jsonContentString, err := bus.GetContent(payloadString)
 			if err != nil {
-				logrus.Error(err)
+				logrus.WithFields(logrus.Fields{
+					"Method": "ApiMetricStreams",
+					"Error":  err,
+				}).Errorf("Failed to parse metric-%v payload", metricRow.Key)
 			}
 
 			// Make sure to only return metrics with matching hostname if foundHostVar == true.
 			if foundHostVar {
 				payload := make(map[string]interface{})
 
-				err := json.Unmarshal(payloadBytes, &payload)
+				err := json.Unmarshal([]byte(jsonContentString), &payload)
 				if err != nil {
 					logrus.Error(err)
 				}
@@ -77,13 +74,13 @@ func ApiMetricStreams(w http.ResponseWriter, r *http.Request) {
 				hostnameInterface, ok := payload["Hostname"]
 				if ok {
 					if hostnameInterface.(string) == host {
-						fmt.Fprintf(w, "data: %v\n\n", string(jsonContent))
+						fmt.Fprintf(w, "data: %v\n\n", jsonContentString)
 						flusher.Flush()
 					}
 				}
 
 			} else {
-				fmt.Fprintf(w, "data: %v\n\n", string(jsonContent))
+				fmt.Fprintf(w, "data: %v\n\n", jsonContentString)
 				flusher.Flush()
 			}
 		}
