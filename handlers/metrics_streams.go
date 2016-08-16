@@ -49,6 +49,9 @@ func ApiMetricStreams(w http.ResponseWriter, r *http.Request) {
 	for {
 		jsonContentString := <-metricStreamChan
 
+		// Always tell the browser to reconnect every 1 second
+		fmt.Fprintf(w, "retry: 1000\n")
+
 		// Make sure to only return metrics with matching hostname if foundHostVar == true.
 		if foundHostVar {
 			payload := make(map[string]interface{})
@@ -64,12 +67,14 @@ func ApiMetricStreams(w http.ResponseWriter, r *http.Request) {
 			hostnameInterface, ok := payload["Hostname"]
 			if ok {
 				if hostnameInterface.(string) == host {
+					fmt.Fprintf(w, "event: metric-host\n")
 					fmt.Fprintf(w, "data: %v\n\n", jsonContentString)
 					flusher.Flush()
 				}
 			}
 
 		} else {
+			fmt.Fprintf(w, "event: metric\n")
 			fmt.Fprintf(w, "data: %v\n\n", jsonContentString)
 			flusher.Flush()
 		}

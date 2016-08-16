@@ -343,7 +343,9 @@ $('.row.hosts .toggler-body').on('switchChange.bootstrapSwitch', function(event,
 
 $('#graph-modal').on('hidden.bs.modal', function () {
     var es = $('#graph-modal').data('eventsource');
-    es.close();
+    if(es) {
+        es.close();
+    }
 })
 
 $('#graph-modal').on('shown.bs.modal', function (event) {
@@ -366,21 +368,15 @@ $('#graph-modal').on('shown.bs.modal', function (event) {
             var series = this.series[0];
 
             var es = new EventSource('/api/metrics/' + metricID + '/hosts/' + host + '/streams');
-            var listener = function (event) {
-                if(event.type == 'message' && event.data) {
-                    var datapoint = JSON.parse(event.data);
-                    console.log(datapoint);
-                    console.log(datapoint.MetricID);
-                    console.log(metricID);
 
+            es.addEventListener('metric-host', function(event) {
+                if(event.data) {
+                    var datapoint = JSON.parse(event.data);
                     if(datapoint.MetricID == metricID) {
                         series.addPoint([(new Date()).getTime(), datapoint.Value], true, true);
                     }
                 }
-            };
-            es.addEventListener("open", listener);
-            es.addEventListener("message", listener);
-            es.addEventListener("error", listener);
+            }, false);
 
             // Attach EventSource object to the modal so we can close it as we close modal.
             $('#graph-modal').data('eventsource', es);
