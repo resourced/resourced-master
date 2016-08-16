@@ -351,11 +351,26 @@ $('#graph-modal').on('shown.bs.modal', function (event) {
     var to = ResourcedMaster.daterange.defaultSettings.endDate.utc().unix();
 
     var renderOptions = {
-        'from': from,
-        'to': to,
-        'host': host,
-        'containerDOM': $('#graph-modal .graph-modal-container'),
-        'title': metricKey
+        from: from,
+        to: to,
+        host: host,
+        containerDOM: $('#graph-modal .graph-modal-container'),
+        title: metricKey,
+        onLoad: function() {
+            // Begin streaming Server Side Events after the graph is loaded
+            var series = this.series[0];
+
+            console.log("am i executing?")
+
+            var es = new EventSource('/api/metrics/' + metricID + '/hosts/' + host + '/streams');
+            var listener = function (event) {
+                console.log(event.type);
+                console.log(event.data);
+            };
+            es.addEventListener("open", listener);
+            es.addEventListener("message", listener);
+            es.addEventListener("error", listener);
+        }
     };
 
     if((to - from) >= 21600) {

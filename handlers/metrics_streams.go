@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"strings"
 
 	"github.com/Sirupsen/logrus"
 	"github.com/gorilla/context"
@@ -13,7 +12,6 @@ import (
 	"github.com/resourced/resourced-master/config"
 	"github.com/resourced/resourced-master/dal"
 	"github.com/resourced/resourced-master/libhttp"
-	"github.com/resourced/resourced-master/messagebus"
 )
 
 func ApiMetricStreams(w http.ResponseWriter, r *http.Request) {
@@ -28,8 +26,6 @@ func ApiMetricStreams(w http.ResponseWriter, r *http.Request) {
 	}
 
 	dbs := context.Get(r, "dbs").(*config.DBConfig)
-
-	bus := context.Get(r, "bus").(*messagebus.MessageBus)
 
 	metricStreamChan := context.Get(r, "metricStreamChan").(chan string)
 
@@ -51,38 +47,33 @@ func ApiMetricStreams(w http.ResponseWriter, r *http.Request) {
 	host, foundHostVar := mux.Vars(r)["host"]
 
 	for {
-		payloadString := <-metricStreamChan
+		jsonContentString := <-metricStreamChan
+		println("pulled data from metricStreamChan: " + jsonContentString)
+		println(foundHostVar)
 
-		if strings.HasPrefix(payloadString, fmt.Sprintf(`topic:metric-%v`, metricRow.Key)) {
-			jsonContentString, err := bus.GetContent(payloadString)
+		// Make sure to only return metrics with matching hostname if foundHostVar == true.
+		if foundHostVar {
+			payload := make(map[string]interface{})
+
+			err := json.Unmarshal([]byte(jsonContentString), &payload)
 			if err != nil {
 				logrus.WithFields(logrus.Fields{
 					"Method": "ApiMetricStreams",
 					"Error":  err,
-				}).Errorf("Failed to parse metric-%v payload", metricRow.Key)
+				}).Errorf("Failed to metric-%v JSON payload", metricRow.Key)
 			}
 
-			// Make sure to only return metrics with matching hostname if foundHostVar == true.
-			if foundHostVar {
-				payload := make(map[string]interface{})
-
-				err := json.Unmarshal([]byte(jsonContentString), &payload)
-				if err != nil {
-					logrus.Error(err)
+			hostnameInterface, ok := payload["Hostname"]
+			if ok {
+				if hostnameInterface.(string) == host {
+					fmt.Fprintf(w, "data: %v\n\n", jsonContentString)
+					flusher.Flush()
 				}
-
-				hostnameInterface, ok := payload["Hostname"]
-				if ok {
-					if hostnameInterface.(string) == host {
-						fmt.Fprintf(w, "data: %v\n\n", jsonContentString)
-						flusher.Flush()
-					}
-				}
-
-			} else {
-				fmt.Fprintf(w, "data: %v\n\n", jsonContentString)
-				flusher.Flush()
 			}
+
+		} else {
+			fmt.Fprintf(w, "data: %v\n\n", jsonContentString)
+			flusher.Flush()
 		}
 	}
 }

@@ -65,6 +65,21 @@ func (mb *MessageBus) GetContent(payload string) (string, error) {
 	return "", fmt.Errorf("Failed to look for content from payload")
 }
 
+func (mb *MessageBus) GetJSONStringContent(payload string) (string, error) {
+	if !strings.Contains(payload, "type:json") {
+		return "", fmt.Errorf("Payload type is not JSON")
+	}
+
+	payloadChunks := strings.Split(payload, "|")
+	for _, chunk := range payloadChunks {
+		if strings.HasPrefix(chunk, "content:") {
+			return strings.TrimPrefix(chunk, "content:"), nil
+		}
+	}
+
+	return "", fmt.Errorf("Failed to look for content from payload")
+}
+
 // Publish a plain text message to a topic.
 func (mb *MessageBus) Publish(topic, message string) error {
 	payload := fmt.Sprintf("topic:%s|type:plain|created:%v|content:%s", topic, time.Now().UTC().Unix(), message)
@@ -103,6 +118,9 @@ func (mb *MessageBus) PublishMetricsByHostRow(hostRow *dal.HostRow, metricsMap m
 						logrus.WithFields(metricPayload).Error("Failed to serialize metric for pubsub pipe")
 					}
 
+					println("publishing metric-" + metricKey)
+					println(string(metricPayloadJSON))
+
 					err = mb.PublishJSON("metric-"+metricKey, metricPayloadJSON)
 					if err != nil {
 						metricPayload["Method"] = "PubSub.PublishMetricsByHostRow"
@@ -128,6 +146,7 @@ func (mb *MessageBus) OnReceive(handlers map[string]func(msg string)) {
 		msg := string(msgBytes)
 
 		for topic, handler := range handlers {
+			println("topic: " + topic)
 			if strings.HasPrefix(msg, "topic:"+topic) {
 				go handler(msg)
 			}

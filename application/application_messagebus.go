@@ -53,7 +53,9 @@ func (app *Application) MessageBusHandlers() map[string]func(msg string) {
 	}
 
 	metricStream := func(msg string) {
-		payload, err := app.MessageBus.GetContent(msg)
+		println("receiving metric- message: " + msg)
+
+		content, err := app.MessageBus.GetJSONStringContent(msg)
 		if err != nil {
 			logrus.WithFields(logrus.Fields{
 				"Method": "app.MessageBusHandlers",
@@ -61,7 +63,7 @@ func (app *Application) MessageBusHandlers() map[string]func(msg string) {
 			}).Error("Error when parsing content from checks-refetch topic")
 		}
 
-		app.MetricStreamChan <- payload
+		app.MetricStreamChan <- content
 	}
 
 	return map[string]func(msg string){
