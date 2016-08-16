@@ -341,6 +341,11 @@ $('.row.hosts .toggler-body').on('switchChange.bootstrapSwitch', function(event,
     });
 });
 
+$('#graph-modal').on('hidden.bs.modal', function () {
+    var es = $('#graph-modal').data('eventsource');
+    es.close();
+})
+
 $('#graph-modal').on('shown.bs.modal', function (event) {
     var button = $(event.relatedTarget);   // Button that triggered the modal
     var metricID = button.data('metric-id');
@@ -360,16 +365,25 @@ $('#graph-modal').on('shown.bs.modal', function (event) {
             // Begin streaming Server Side Events after the graph is loaded
             var series = this.series[0];
 
-            console.log("am i executing?")
-
             var es = new EventSource('/api/metrics/' + metricID + '/hosts/' + host + '/streams');
             var listener = function (event) {
-                console.log(event.type);
-                console.log(event.data);
+                if(event.type == 'message' && event.data) {
+                    var datapoint = JSON.parse(event.data);
+                    console.log(datapoint);
+                    console.log(datapoint.MetricID);
+                    console.log(metricID);
+
+                    if(datapoint.MetricID == metricID) {
+                        series.addPoint([(new Date()).getTime(), datapoint.Value], true, true);
+                    }
+                }
             };
             es.addEventListener("open", listener);
             es.addEventListener("message", listener);
             es.addEventListener("error", listener);
+
+            // Attach EventSource object to the modal so we can close it as we close modal.
+            $('#graph-modal').data('eventsource', es);
         }
     };
 
