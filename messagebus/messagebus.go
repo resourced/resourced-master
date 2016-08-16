@@ -118,8 +118,7 @@ func (mb *MessageBus) PublishMetricsByHostRow(hostRow *dal.HostRow, metricsMap m
 						logrus.WithFields(metricPayload).Error("Failed to serialize metric for pubsub pipe")
 					}
 
-					println("publishing metric-" + metricKey)
-					println(string(metricPayloadJSON))
+					println("publishing metric: " + string(metricPayloadJSON))
 
 					err = mb.PublishJSON("metric-"+metricKey, metricPayloadJSON)
 					if err != nil {
@@ -145,8 +144,9 @@ func (mb *MessageBus) OnReceive(handlers map[string]func(msg string)) {
 
 		msg := string(msgBytes)
 
+		// NOTE: At this point, we already received duplicate message.
+
 		for topic, handler := range handlers {
-			println("topic: " + topic)
 			if strings.HasPrefix(msg, "topic:"+topic) {
 				go handler(msg)
 			}

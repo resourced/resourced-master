@@ -48,8 +48,6 @@ func ApiMetricStreams(w http.ResponseWriter, r *http.Request) {
 
 	for {
 		jsonContentString := <-metricStreamChan
-		println("pulled data from metricStreamChan: " + jsonContentString)
-		println(foundHostVar)
 
 		// Make sure to only return metrics with matching hostname if foundHostVar == true.
 		if foundHostVar {

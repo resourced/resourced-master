@@ -53,8 +53,6 @@ func (app *Application) MessageBusHandlers() map[string]func(msg string) {
 	}
 
 	metricStream := func(msg string) {
-		println("receiving metric- message: " + msg)
-
 		content, err := app.MessageBus.GetJSONStringContent(msg)
 		if err != nil {
 			logrus.WithFields(logrus.Fields{
@@ -63,6 +61,7 @@ func (app *Application) MessageBusHandlers() map[string]func(msg string) {
 			}).Error("Error when parsing content from checks-refetch topic")
 		}
 
+		// NOTE: At this point, we are already doubling the message that's received.
 		app.MetricStreamChan <- content
 	}
 
