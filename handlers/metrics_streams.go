@@ -67,14 +67,14 @@ func ApiMetricStreams(w http.ResponseWriter, r *http.Request) {
 			hostnameInterface, ok := payload["Hostname"]
 			if ok {
 				if hostnameInterface.(string) == host {
-					fmt.Fprintf(w, "event: metric-host\n")
+					fmt.Fprintf(w, "event: metric|%v|host|%v\n", metricID, host)
 					fmt.Fprintf(w, "data: %v\n\n", jsonContentString)
 					flusher.Flush()
 				}
 			}
 
 		} else {
-			fmt.Fprintf(w, "event: metric\n")
+			fmt.Fprintf(w, "event: metric|%v\n", metricID)
 			fmt.Fprintf(w, "data: %v\n\n", jsonContentString)
 			flusher.Flush()
 		}

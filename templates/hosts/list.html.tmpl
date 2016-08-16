@@ -367,13 +367,17 @@ $('#graph-modal').on('shown.bs.modal', function (event) {
             // Begin streaming Server Side Events after the graph is loaded
             var series = this.series[0];
 
+            // TODO: Make this work with basic-auth API key
             var es = new EventSource('/api/metrics/' + metricID + '/hosts/' + host + '/streams');
 
-            es.addEventListener('metric-host', function(event) {
+            es.addEventListener('metric|' + metricID + '|host|' + host, function(event) {
                 if(event.data) {
                     var datapoint = JSON.parse(event.data);
-                    if(datapoint.MetricID == metricID) {
-                        series.addPoint([(new Date()).getTime(), datapoint.Value], true, true);
+
+                    // TODO: At this point, we know we are receiving data regularly,
+                    // but the chart is not rendering at the same interval.
+                    if(datapoint.MetricID == metricID && datapoint.Value) {
+                        series.addPoint([datapoint.CreatedMillisecond, datapoint.Value], true, true);
                     }
                 }
             }, false);

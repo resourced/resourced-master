@@ -203,7 +203,7 @@ func PostApiHosts(w http.ResponseWriter, r *http.Request) {
 		}()
 
 		go func() {
-			// Publish evey graphed metric to pubsub pipe.
+			// Publish evey graphed metric to message bus.
 			bus.PublishMetricsByHostRow(hostRow, metricsMap)
 		}()
 	}()

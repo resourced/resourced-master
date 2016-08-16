@@ -95,7 +95,7 @@ func (mb *MessageBus) PublishJSON(topic string, jsonBytes []byte) error {
 // PublishMetricsByHostRow publish many metrics, based on a single host data payload.
 func (mb *MessageBus) PublishMetricsByHostRow(hostRow *dal.HostRow, metricsMap map[string]int64) {
 	// Loop through every host's data and see if they are part of graph metrics.
-	// If they are, publish the metric to pubsub pipe.
+	// If they are, publish the metric to message bus.
 	for path, data := range hostRow.DataAsFlatKeyValue() {
 		for dataKey, value := range data {
 			metricKey := path + "." + dataKey
@@ -104,18 +104,19 @@ func (mb *MessageBus) PublishMetricsByHostRow(hostRow *dal.HostRow, metricsMap m
 				// Deserialized JSON number -> interface{} always have float64 as type.
 				if trueValueFloat64, ok := value.(float64); ok {
 					metricPayload := logrus.Fields{
-						"ClusterID": hostRow.ClusterID,
-						"MetricID":  metricID,
-						"MetricKey": metricKey,
-						"Hostname":  hostRow.Hostname,
-						"Value":     trueValueFloat64,
+						"ClusterID":          hostRow.ClusterID,
+						"MetricID":           metricID,
+						"MetricKey":          metricKey,
+						"Hostname":           hostRow.Hostname,
+						"Value":              trueValueFloat64,
+						"CreatedMillisecond": time.Now().UTC().UnixNano() / int64(time.Millisecond),
 					}
 
 					metricPayloadJSON, err := json.Marshal(metricPayload)
 					if err != nil {
 						metricPayload["Method"] = "PubSub.PublishMetricsByHostRow"
 						metricPayload["Error"] = err
-						logrus.WithFields(metricPayload).Error("Failed to serialize metric for pubsub pipe")
+						logrus.WithFields(metricPayload).Error("Failed to serialize metric for message bus")
 					}
 
 					println("publishing metric: " + string(metricPayloadJSON))
@@ -124,7 +125,7 @@ func (mb *MessageBus) PublishMetricsByHostRow(hostRow *dal.HostRow, metricsMap m
 					if err != nil {
 						metricPayload["Method"] = "PubSub.PublishMetricsByHostRow"
 						metricPayload["Error"] = err
-						logrus.WithFields(metricPayload).Error("Failed to publish metric to pubsub pipe")
+						logrus.WithFields(metricPayload).Error("Failed to publish metric to message bus")
 					}
 				}
 			}
