@@ -224,27 +224,29 @@ function renderChartRange(numCharts, daterangepicker, from, to, aggr) {
         title: metricKey,
         aggr: aggr,
         onLoad: function() {
-            // Begin streaming Server Side Events after the graph is loaded
-            var chart = this;
+            if(!renderAggregate) {
+                // Begin streaming Server Side Events after the graph is loaded
+                var chart = this;
 
-            var series = this.series;
+                var series = this.series;
 
-            var es = new EventSource('/api/metrics/' + metricID + '/streams?accessToken=' + ResourcedMaster.globals.AccessToken);
+                var es = new EventSource('/api/metrics/' + metricID + '/streams?accessToken=' + ResourcedMaster.globals.AccessToken);
 
-            es.addEventListener('metric|' + metricID, function(event) {
-                if(!renderAggregate && event.data) {
-                    var datapoint = JSON.parse(event.data);
+                es.addEventListener('metric|' + metricID, function(event) {
+                    if(event.data) {
+                        var datapoint = JSON.parse(event.data);
 
-                    for(var i = 0; i < series.length; i++) {
-                        if(series[i].name == datapoint.Hostname && datapoint.MetricID == metricID && datapoint.Value) {
-                            series[i].addPoint([datapoint.CreatedMillisecond, datapoint.Value], false, true);
+                        for(var i = 0; i < series.length; i++) {
+                            if(series[i].name == datapoint.Hostname && datapoint.MetricID == metricID && datapoint.Value) {
+                                series[i].addPoint([datapoint.CreatedMillisecond, datapoint.Value], false, true);
+                            }
                         }
+                        chart.redraw();
                     }
-                    chart.redraw();
-                }
-            }, false);
+                }, false);
 
-            execWhenAllChartsRendered(numCharts);
+                execWhenAllChartsRendered(numCharts);
+            }
         }
     };
 
@@ -399,27 +401,29 @@ $('#graph-lg-modal').on('shown.bs.modal', function (event) {
         containerDOM: $('#graph-lg-modal .graph-lg-modal-container'),
         title: metricKey,
         onLoad: function() {
-            // Begin streaming Server Side Events after the graph is loaded
-            var series = this.series;
+            if(!renderAggregate) {
+                // Begin streaming Server Side Events after the graph is loaded
+                var series = this.series;
 
-            var es = new EventSource('/api/metrics/' + metricID + '/streams?accessToken=' + ResourcedMaster.globals.AccessToken);
+                var es = new EventSource('/api/metrics/' + metricID + '/streams?accessToken=' + ResourcedMaster.globals.AccessToken);
 
-            es.addEventListener('metric|' + metricID, function(event) {
-                if(!renderAggregate && event.data) {
-                    var datapoint = JSON.parse(event.data);
+                es.addEventListener('metric|' + metricID, function(event) {
+                    if(!renderAggregate && event.data) {
+                        var datapoint = JSON.parse(event.data);
 
-                    for(var i = 0; i < series.length; i++) {
-                        // TODO: At this point, we know we are receiving data regularly,
-                        // but the chart is not rendering at the same interval.
-                        if(series[i].name == datapoint.Hostname && datapoint.MetricID == metricID && datapoint.Value) {
-                            series[i].addPoint([datapoint.CreatedMillisecond, datapoint.Value], true, true);
+                        for(var i = 0; i < series.length; i++) {
+                            // TODO: At this point, we know we are receiving data regularly,
+                            // but the chart is not rendering at the same interval.
+                            if(series[i].name == datapoint.Hostname && datapoint.MetricID == metricID && datapoint.Value) {
+                                series[i].addPoint([datapoint.CreatedMillisecond, datapoint.Value], true, true);
+                            }
                         }
                     }
-                }
-            }, false);
+                }, false);
 
-            // Attach EventSource object to the modal so we can close it as we close modal.
-            $('#graph-lg-modal').data('eventsource', es);
+                // Attach EventSource object to the modal so we can close it as we close modal.
+                $('#graph-lg-modal').data('eventsource', es);
+            }
         }
     };
 

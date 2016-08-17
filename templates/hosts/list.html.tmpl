@@ -366,25 +366,27 @@ $('#graph-modal').on('shown.bs.modal', function (event) {
         containerDOM: $('#graph-modal .graph-modal-container'),
         title: metricKey,
         onLoad: function() {
-            // Begin streaming Server Side Events after the graph is loaded
-            var series = this.series[0];
+            if(!renderAggregate) {
+                // Begin streaming Server Side Events after the graph is loaded
+                var series = this.series[0];
 
-            var es = new EventSource('/api/metrics/' + metricID + '/hosts/' + host + '/streams?accessToken=' + ResourcedMaster.globals.AccessToken);
+                var es = new EventSource('/api/metrics/' + metricID + '/hosts/' + host + '/streams?accessToken=' + ResourcedMaster.globals.AccessToken);
 
-            es.addEventListener('metric|' + metricID + '|host|' + host, function(event) {
-                if(!renderAggregate && event.data) {
-                    var datapoint = JSON.parse(event.data);
+                es.addEventListener('metric|' + metricID + '|host|' + host, function(event) {
+                    if(event.data) {
+                        var datapoint = JSON.parse(event.data);
 
-                    // TODO: At this point, we know we are receiving data regularly,
-                    // but the chart is not rendering at the same interval.
-                    if(datapoint.MetricID == metricID && datapoint.Value) {
-                        series.addPoint([datapoint.CreatedMillisecond, datapoint.Value], true, true);
+                        // TODO: At this point, we know we are receiving data regularly,
+                        // but the chart is not rendering at the same interval.
+                        if(datapoint.MetricID == metricID && datapoint.Value) {
+                            series.addPoint([datapoint.CreatedMillisecond, datapoint.Value], true, true);
+                        }
                     }
-                }
-            }, false);
+                }, false);
 
-            // Attach EventSource object to the modal so we can close it as we close modal.
-            $('#graph-modal').data('eventsource', es);
+                // Attach EventSource object to the modal so we can close it as we close modal.
+                $('#graph-modal').data('eventsource', es);
+            }
         }
     };
 
