@@ -61,7 +61,6 @@ func (app *Application) MessageBusHandlers() map[string]func(msg string) {
 			}).Error("Error when parsing content from checks-refetch topic")
 		}
 
-		// NOTE: At this point, we are already doubling the message that's received.
 		for clientChan, _ := range app.MessageBus.Clients {
 			clientChan <- content
 		}

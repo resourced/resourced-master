@@ -215,6 +215,8 @@ function renderChartRange(numCharts, daterangepicker, from, to, aggr) {
     var metricKey = elem.data('key');
     var containerDOM = elem.siblings('.panel-body');
 
+    var renderAggregate = (to - from) >= 21600;
+
     var renderOptions = {
         from: from,
         to: to,
@@ -231,16 +233,10 @@ function renderChartRange(numCharts, daterangepicker, from, to, aggr) {
             var es = new EventSource('/api/metrics/' + metricID + '/streams');
 
             es.addEventListener('metric|' + metricID, function(event) {
-                console.log('am i called? inside es callback');
-
-                if(event.data) {
+                if(!renderAggregate && event.data) {
                     var datapoint = JSON.parse(event.data);
 
-                    console.log(event.data);
-
                     for(var i = 0; i < series.length; i++) {
-                        // TODO: At this point, we know we are receiving data regularly,
-                        // but the chart is not rendering at the same interval.
                         if(series[i].name == datapoint.Hostname && datapoint.MetricID == metricID && datapoint.Value) {
                             series[i].addPoint([datapoint.CreatedMillisecond, datapoint.Value], false, true);
                         }
@@ -253,7 +249,7 @@ function renderChartRange(numCharts, daterangepicker, from, to, aggr) {
         }
     };
 
-    if((to - from) >= 21600) {
+    if(renderAggregate) {
         renderOptions.shortAggrInterval = '15min';
 
         elem.find('.aggregate-selector').show();
@@ -396,6 +392,8 @@ $('#graph-lg-modal').on('shown.bs.modal', function (event) {
     var from = ResourcedMaster.daterange.defaultSettings.startDate.utc().unix();
     var to = ResourcedMaster.daterange.defaultSettings.endDate.utc().unix();
 
+    var renderAggregate = (to - from) >= 21600;
+
     var renderOptions = {
         from: from,
         to: to,
@@ -409,7 +407,7 @@ $('#graph-lg-modal').on('shown.bs.modal', function (event) {
             var es = new EventSource('/api/metrics/' + metricID + '/streams');
 
             es.addEventListener('metric|' + metricID, function(event) {
-                if(event.data) {
+                if(!renderAggregate && event.data) {
                     var datapoint = JSON.parse(event.data);
 
                     for(var i = 0; i < series.length; i++) {
@@ -427,7 +425,7 @@ $('#graph-lg-modal').on('shown.bs.modal', function (event) {
         }
     };
 
-    if((to - from) >= 21600) {
+    if(renderAggregate) {
         renderOptions.shortAggrInterval = '15min';
     }
 
