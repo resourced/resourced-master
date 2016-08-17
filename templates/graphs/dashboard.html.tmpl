@@ -229,8 +229,7 @@ function renderChartRange(numCharts, daterangepicker, from, to, aggr) {
 
             var series = this.series;
 
-            // TODO: Make this work with basic-auth API key
-            var es = new EventSource('/api/metrics/' + metricID + '/streams');
+            var es = new EventSource('/api/metrics/' + metricID + '/streams?accessToken=' + ResourcedMaster.globals.AccessToken);
 
             es.addEventListener('metric|' + metricID, function(event) {
                 if(!renderAggregate && event.data) {
@@ -403,8 +402,7 @@ $('#graph-lg-modal').on('shown.bs.modal', function (event) {
             // Begin streaming Server Side Events after the graph is loaded
             var series = this.series;
 
-            // TODO: Make this work with basic-auth API key
-            var es = new EventSource('/api/metrics/' + metricID + '/streams');
+            var es = new EventSource('/api/metrics/' + metricID + '/streams?accessToken=' + ResourcedMaster.globals.AccessToken);
 
             es.addEventListener('metric|' + metricID, function(event) {
                 if(!renderAggregate && event.data) {

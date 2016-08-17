@@ -68,11 +68,6 @@ func ApiMetricStreams(w http.ResponseWriter, r *http.Request) {
 			break
 		}
 
-		println("Passing JSON metric to SSE: " + jsonContentString)
-
-		// Always tell the browser to reconnect every 1 second
-		// fmt.Fprintf(w, "retry: 1000\n")
-
 		// Make sure to only return metrics with matching hostname if foundHostVar == true.
 		if foundHostVar {
 			payload := make(map[string]interface{})

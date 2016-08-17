@@ -25,6 +25,7 @@ func (app *Application) mux() *mux.Router {
 	SetAccessTokens := middlewares.SetAccessTokens
 	MinimumMiddlewareChain := middlewares.MinimumMiddlewareChain
 	MinimumAPIMiddlewareChain := middlewares.MinimumAPIMiddlewareChain
+	MinimumAPIStreamMiddlewareChain := middlewares.MinimumAPIStreamMiddlewareChain
 
 	useHTTPS := app.GeneralConfig.HTTPS.CertFile != "" && app.GeneralConfig.HTTPS.KeyFile != ""
 	CSRF := middlewares.CSRFMiddleware(useHTTPS, app.GeneralConfig.CookieSecret)
@@ -90,8 +91,8 @@ func (app *Application) mux() *mux.Router {
 
 	router.Handle("/api/graphs/{id:[0-9]+}/metrics", MinimumAPIMiddlewareChain().Then(tollbooth.LimitFuncHandler(generalAPILimiter, handlers.PutApiGraphsIDMetrics))).Methods("PUT")
 
-	router.Handle("/api/metrics/{id:[0-9]+}/streams", tollbooth.LimitFuncHandler(generalAPILimiter, handlers.ApiMetricStreams))
-	router.Handle("/api/metrics/{id:[0-9]+}/hosts/{host}/streams", tollbooth.LimitFuncHandler(generalAPILimiter, handlers.ApiMetricStreams))
+	router.Handle("/api/metrics/{id:[0-9]+}/streams", MinimumAPIStreamMiddlewareChain().Then(tollbooth.LimitFuncHandler(generalAPILimiter, handlers.ApiMetricStreams)))
+	router.Handle("/api/metrics/{id:[0-9]+}/hosts/{host}/streams", MinimumAPIStreamMiddlewareChain().Then(tollbooth.LimitFuncHandler(generalAPILimiter, handlers.ApiMetricStreams)))
 
 	router.Handle("/api/metrics/{id:[0-9]+}/hosts/{host}", MinimumAPIMiddlewareChain().Then(tollbooth.LimitFuncHandler(generalAPILimiter, handlers.GetApiTSMetricsByHost))).Methods("GET")
 	router.Handle("/api/metrics/{id:[0-9]+}/hosts/{host}/15min", MinimumAPIMiddlewareChain().Then(tollbooth.LimitFuncHandler(generalAPILimiter, handlers.GetApiTSMetricsByHost15Min))).Methods("GET")

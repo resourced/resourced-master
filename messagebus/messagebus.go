@@ -62,11 +62,9 @@ func (mb *MessageBus) ManageClients() {
 	for {
 		select {
 		case newChan := <-mb.NewClientChan:
-			println("received a new client")
 			mb.Clients[newChan] = true
 
 		case closeChan := <-mb.CloseClientChan:
-			println("closing a new client")
 			delete(mb.Clients, closeChan)
 			close(closeChan)
 		}
@@ -139,8 +137,6 @@ func (mb *MessageBus) PublishMetricsByHostRow(hostRow *dal.HostRow, metricsMap m
 						metricPayload["Error"] = err
 						logrus.WithFields(metricPayload).Error("Failed to serialize metric for message bus")
 					}
-
-					println("publishing metric: " + string(metricPayloadJSON))
 
 					err = mb.PublishJSON("metric-"+metricKey, metricPayloadJSON)
 					if err != nil {

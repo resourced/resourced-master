@@ -369,8 +369,7 @@ $('#graph-modal').on('shown.bs.modal', function (event) {
             // Begin streaming Server Side Events after the graph is loaded
             var series = this.series[0];
 
-            // TODO: Make this work with basic-auth API key
-            var es = new EventSource('/api/metrics/' + metricID + '/hosts/' + host + '/streams');
+            var es = new EventSource('/api/metrics/' + metricID + '/hosts/' + host + '/streams?accessToken=' + ResourcedMaster.globals.AccessToken);
 
             es.addEventListener('metric|' + metricID + '|host|' + host, function(event) {
                 if(!renderAggregate && event.data) {

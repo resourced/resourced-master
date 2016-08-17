@@ -264,6 +264,45 @@ func MustLoginApi(next http.Handler) http.Handler {
 	})
 }
 
+// MustLoginApiStream is a middleware that checks /api/.../stream login.
+func MustLoginApiStream(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		accessTokenString := r.URL.Query().Get("accessToken")
+
+		// Check the upper-case version
+		if accessTokenString == "" {
+			accessTokenString = r.URL.Query().Get("AccessToken")
+		}
+
+		// If still empty, then deny
+		if accessTokenString == "" {
+			libhttp.BasicAuthUnauthorized(w, nil)
+			return
+		}
+
+		dbs := context.Get(r, "dbs").(*config.DBConfig)
+
+		accessTokenRow, err := dal.NewAccessToken(dbs.Core).GetByAccessToken(nil, accessTokenString)
+		if err != nil {
+			libhttp.BasicAuthUnauthorized(w, nil)
+			return
+		}
+		if accessTokenRow == nil {
+			libhttp.BasicAuthUnauthorized(w, nil)
+			return
+		}
+
+		if !accessTokenRow.Enabled {
+			libhttp.BasicAuthUnauthorized(w, nil)
+			return
+		}
+
+		context.Set(r, "accessToken", accessTokenRow)
+
+		next.ServeHTTP(w, r)
+	})
+}
+
 func MustBeMember(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		currentClusterInterface := context.Get(r, "currentCluster")
@@ -304,4 +343,8 @@ func MinimumMiddlewareChain(csrf func(http.Handler) http.Handler) alice.Chain {
 
 func MinimumAPIMiddlewareChain() alice.Chain {
 	return alice.New(MustLoginApi)
+}
+
+func MinimumAPIStreamMiddlewareChain() alice.Chain {
+	return alice.New(MustLoginApiStream)
 }
