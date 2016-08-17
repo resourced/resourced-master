@@ -12,6 +12,7 @@ import (
 	"github.com/resourced/resourced-master/config"
 	"github.com/resourced/resourced-master/dal"
 	"github.com/resourced/resourced-master/libhttp"
+	"github.com/resourced/resourced-master/messagebus"
 )
 
 func ApiMetricStreams(w http.ResponseWriter, r *http.Request) {
@@ -27,7 +28,7 @@ func ApiMetricStreams(w http.ResponseWriter, r *http.Request) {
 
 	dbs := context.Get(r, "dbs").(*config.DBConfig)
 
-	metricStreamChan := context.Get(r, "metricStreamChan").(chan string)
+	bus := context.Get(r, "bus").(*messagebus.MessageBus)
 
 	// TODO
 	// Make sure we deny user who has no access to metricID.
@@ -46,11 +47,31 @@ func ApiMetricStreams(w http.ResponseWriter, r *http.Request) {
 
 	host, foundHostVar := mux.Vars(r)["host"]
 
+	// Create a new channel for this connected client.
+	newClientChan := make(chan string)
+
+	// Inform message bus of this new channel.
+	bus.NewClientChan <- newClientChan
+
+	// Listen to the closing of the http connection via the CloseNotifier,
+	// and close the corresponding channel.
+	connClosedChan := w.(http.CloseNotifier).CloseNotify()
+	go func() {
+		<-connClosedChan
+		bus.CloseClientChan <- newClientChan
+	}()
+
 	for {
-		jsonContentString := <-metricStreamChan
+		jsonContentString, isOpen := <-newClientChan
+		if !isOpen {
+			// If newClientChan was closed, client has disconnected.
+			break
+		}
+
+		println("Passing JSON metric to SSE: " + jsonContentString)
 
 		// Always tell the browser to reconnect every 1 second
-		fmt.Fprintf(w, "retry: 1000\n")
+		// fmt.Fprintf(w, "retry: 1000\n")
 
 		// Make sure to only return metrics with matching hostname if foundHostVar == true.
 		if foundHostVar {

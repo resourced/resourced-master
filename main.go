@@ -51,6 +51,8 @@ func main() {
 
 	switch parsedCLIArgs {
 	case "server":
+		go app.MessageBus.ManageClients()
+
 		go app.MessageBus.OnReceive(app.MessageBusHandlers())
 
 		// Broadcast heartbeat

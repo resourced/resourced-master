@@ -98,17 +98,6 @@ func SetMessageBus(bus *messagebus.MessageBus) func(http.Handler) http.Handler {
 	}
 }
 
-// SetMetricStreamChan passes metric-stream channel to every request handler
-func SetMetricStreamChan(metricStreamChan chan string) func(http.Handler) http.Handler {
-	return func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			context.Set(r, "metricStreamChan", metricStreamChan)
-
-			next.ServeHTTP(w, r)
-		})
-	}
-}
-
 // SetClusters sets clusters data in context based on logged in user ID.
 func SetClusters(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

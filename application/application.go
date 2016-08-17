@@ -52,7 +52,6 @@ func New(configDir string) (*Application, error) {
 	app.MetricsRegistry = app.NewMetricsRegistry(app.HandlerInstruments, app.LatencyGauges)
 	app.Peers = gocache.New(1*time.Minute, 10*time.Minute)
 	app.RefetchChecksChan = make(chan bool)
-	app.MetricStreamChan = make(chan string)
 
 	if app.GeneralConfig.Email != nil {
 		mailer, err := mailer.New(app.GeneralConfig.Email)
@@ -93,7 +92,6 @@ type Application struct {
 	MessageBus         *messagebus.MessageBus
 	Peers              *gocache.Cache
 	RefetchChecksChan  chan bool
-	MetricStreamChan   chan string
 }
 
 func (app *Application) FullAddr() string {
@@ -124,7 +122,6 @@ func (app *Application) MiddlewareStruct() (*interpose.Middleware, error) {
 	middle.Use(middlewares.SetCookieStore(app.cookieStore))
 	middle.Use(middlewares.SetMailers(app.Mailers))
 	middle.Use(middlewares.SetMessageBus(app.MessageBus))
-	middle.Use(middlewares.SetMetricStreamChan(app.MetricStreamChan))
 
 	middle.UseHandler(app.mux())
 

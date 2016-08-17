@@ -62,7 +62,9 @@ func (app *Application) MessageBusHandlers() map[string]func(msg string) {
 		}
 
 		// NOTE: At this point, we are already doubling the message that's received.
-		app.MetricStreamChan <- content
+		for clientChan, _ := range app.MessageBus.Clients {
+			clientChan <- content
+		}
 	}
 
 	return map[string]func(msg string){

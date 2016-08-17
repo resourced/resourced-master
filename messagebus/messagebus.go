@@ -33,13 +33,19 @@ func New(url string) (*MessageBus, error) {
 	}
 
 	mb.Socket = sock
+	mb.Clients = make(map[chan string]bool)
+	mb.NewClientChan = make(chan (chan string))
+	mb.CloseClientChan = make(chan (chan string))
 
 	return mb, nil
 }
 
 type MessageBus struct {
-	URL    string
-	Socket mangos.Socket
+	URL             string
+	Socket          mangos.Socket
+	Clients         map[chan string]bool
+	NewClientChan   chan chan string
+	CloseClientChan chan chan string
 }
 
 func (mb *MessageBus) DialOthers(urls []string) error {
@@ -50,6 +56,21 @@ func (mb *MessageBus) DialOthers(urls []string) error {
 		}
 	}
 	return nil
+}
+
+func (mb *MessageBus) ManageClients() {
+	for {
+		select {
+		case newChan := <-mb.NewClientChan:
+			println("received a new client")
+			mb.Clients[newChan] = true
+
+		case closeChan := <-mb.CloseClientChan:
+			println("closing a new client")
+			delete(mb.Clients, closeChan)
+			close(closeChan)
+		}
+	}
 }
 
 func (mb *MessageBus) GetContent(payload string) (string, error) {

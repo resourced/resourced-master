@@ -223,21 +223,29 @@ function renderChartRange(numCharts, daterangepicker, from, to, aggr) {
         aggr: aggr,
         onLoad: function() {
             // Begin streaming Server Side Events after the graph is loaded
-            var series = this.series[0];
+            var chart = this;
+
+            var series = this.series;
 
             // TODO: Make this work with basic-auth API key
             var es = new EventSource('/api/metrics/' + metricID + '/streams');
 
             es.addEventListener('metric|' + metricID, function(event) {
+                console.log('am i called? inside es callback');
+
                 if(event.data) {
                     var datapoint = JSON.parse(event.data);
-                    console.log(datapoint);
 
-                    // TODO: At this point, we know we are receiving data regularly,
-                    // but the chart is not rendering at the same interval.
-                    if(datapoint.MetricID == metricID && datapoint.Value) {
-                        series.addPoint([datapoint.CreatedMillisecond, datapoint.Value], true, true);
+                    console.log(event.data);
+
+                    for(var i = 0; i < series.length; i++) {
+                        // TODO: At this point, we know we are receiving data regularly,
+                        // but the chart is not rendering at the same interval.
+                        if(series[i].name == datapoint.Hostname && datapoint.MetricID == metricID && datapoint.Value) {
+                            series[i].addPoint([datapoint.CreatedMillisecond, datapoint.Value], false, true);
+                        }
                     }
+                    chart.redraw();
                 }
             }, false);
 
@@ -395,7 +403,7 @@ $('#graph-lg-modal').on('shown.bs.modal', function (event) {
         title: metricKey,
         onLoad: function() {
             // Begin streaming Server Side Events after the graph is loaded
-            var series = this.series[0];
+            var series = this.series;
 
             // TODO: Make this work with basic-auth API key
             var es = new EventSource('/api/metrics/' + metricID + '/streams');
@@ -404,10 +412,12 @@ $('#graph-lg-modal').on('shown.bs.modal', function (event) {
                 if(event.data) {
                     var datapoint = JSON.parse(event.data);
 
-                    // TODO: At this point, we know we are receiving data regularly,
-                    // but the chart is not rendering at the same interval.
-                    if(datapoint.MetricID == metricID && datapoint.Value) {
-                        series.addPoint([datapoint.CreatedMillisecond, datapoint.Value], true, true);
+                    for(var i = 0; i < series.length; i++) {
+                        // TODO: At this point, we know we are receiving data regularly,
+                        // but the chart is not rendering at the same interval.
+                        if(series[i].name == datapoint.Hostname && datapoint.MetricID == metricID && datapoint.Value) {
+                            series[i].addPoint([datapoint.CreatedMillisecond, datapoint.Value], true, true);
+                        }
                     }
                 }
             }, false);
