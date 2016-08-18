@@ -247,12 +247,12 @@ ResourcedMaster.metrics.renderOneChart = function(accessToken, metricID, eventLi
                     var data = result[i]['data'];
 
                     for(j = 0; j < data.length; j++) {
-                        var data = result[i]['data'][j];
+                        var eachData = result[i]['data'][j];
 
-                        avgResult['data'].push([data[0], data[1]['avg']]);
-                        maxResult['data'].push([data[0], data[1]['max']]);
-                        minResult['data'].push([data[0], data[1]['min']]);
-                        sumResult['data'].push([data[0], data[1]['sum']]);
+                        avgResult['data'].push([eachData[0], eachData[1]['avg']]);
+                        maxResult['data'].push([eachData[0], eachData[1]['max']]);
+                        minResult['data'].push([eachData[0], eachData[1]['min']]);
+                        sumResult['data'].push([eachData[0], eachData[1]['sum']]);
                     }
                 }
 
