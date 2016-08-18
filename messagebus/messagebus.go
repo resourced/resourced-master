@@ -2,7 +2,6 @@ package messagebus
 
 import (
 	"encoding/json"
-	"fmt"
 	"strings"
 	"time"
 
@@ -13,6 +12,7 @@ import (
 	"github.com/go-mangos/mangos/transport/tcp"
 
 	"github.com/resourced/resourced-master/dal"
+	resourced_wire "github.com/resourced/resourced-wire"
 )
 
 func New(url string) (*MessageBus, error) {
@@ -71,44 +71,26 @@ func (mb *MessageBus) ManageClients() {
 	}
 }
 
-func (mb *MessageBus) GetContent(payload string) (string, error) {
-	payloadChunks := strings.Split(payload, "|")
-	for _, chunk := range payloadChunks {
-		keyValue := strings.Split(chunk, ":")
-
-		if keyValue[0] == "content" {
-			return keyValue[1], nil
-		}
-	}
-
-	return "", fmt.Errorf("Failed to look for content from payload")
-}
-
-func (mb *MessageBus) GetJSONStringContent(payload string) (string, error) {
-	if !strings.Contains(payload, "type:json") {
-		return "", fmt.Errorf("Payload type is not JSON")
-	}
-
-	payloadChunks := strings.Split(payload, "|")
-	for _, chunk := range payloadChunks {
-		if strings.HasPrefix(chunk, "content:") {
-			return strings.TrimPrefix(chunk, "content:"), nil
-		}
-	}
-
-	return "", fmt.Errorf("Failed to look for content from payload")
-}
-
 // Publish a plain text message to a topic.
 func (mb *MessageBus) Publish(topic, message string) error {
-	payload := fmt.Sprintf("topic:%s|type:plain|created:%v|content:%s", topic, time.Now().UTC().Unix(), message)
-	return mb.Socket.Send([]byte(payload))
+	wire := resourced_wire.Wire{
+		Topic:   topic,
+		Type:    "plain",
+		Created: time.Now().UTC().Unix(),
+		Content: message,
+	}
+	return mb.Socket.Send([]byte(wire.EncodePlain()))
 }
 
 // Publish a JSON message to a topic.
 func (mb *MessageBus) PublishJSON(topic string, jsonBytes []byte) error {
-	payload := fmt.Sprintf("topic:%s|type:json|created:%v|content:%v", topic, time.Now().UTC().Unix(), string(jsonBytes))
-	return mb.Socket.Send([]byte(payload))
+	wire := resourced_wire.Wire{
+		Topic:   topic,
+		Type:    "json",
+		Created: time.Now().UTC().Unix(),
+		Content: string(jsonBytes),
+	}
+	return mb.Socket.Send([]byte(wire.EncodeJSON()))
 }
 
 // PublishMetricsByHostRow publish many metrics, based on a single host data payload.

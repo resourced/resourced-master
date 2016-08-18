@@ -1,6 +1,7 @@
 package application
 
 import (
+	"strings"
 	"time"
 
 	"github.com/Sirupsen/logrus"
@@ -8,6 +9,7 @@ import (
 
 	"github.com/resourced/resourced-master/config"
 	"github.com/resourced/resourced-master/messagebus"
+	resourced_wire "github.com/resourced/resourced-wire"
 )
 
 // NewMessageBus creates a new MessageBus instance.
@@ -27,11 +29,11 @@ func (app *Application) NewMessageBus(generalConfig config.GeneralConfig) (*mess
 
 func (app *Application) MessageBusHandlers() map[string]func(msg string) {
 	peersHeartbeat := func(msg string) {
-		fullAddr, err := app.MessageBus.GetContent(msg)
-		if err != nil {
+		fullAddr := resourced_wire.ParseSingle(msg).PlainContent()
+		if strings.Contains(fullAddr, "Error") {
 			logrus.WithFields(logrus.Fields{
 				"Method": "app.MessageBusHandlers",
-				"Error":  err,
+				"Error":  fullAddr,
 			}).Error("Error when parsing content from peers-heartbeat topic")
 		}
 
@@ -41,11 +43,11 @@ func (app *Application) MessageBusHandlers() map[string]func(msg string) {
 	}
 
 	checksRefetch := func(msg string) {
-		_, err := app.MessageBus.GetContent(msg)
-		if err != nil {
+		content := resourced_wire.ParseSingle(msg).PlainContent()
+		if strings.Contains(content, "Error") {
 			logrus.WithFields(logrus.Fields{
 				"Method": "app.MessageBusHandlers",
-				"Error":  err,
+				"Error":  content,
 			}).Error("Error when parsing content from checks-refetch topic")
 		}
 
@@ -53,11 +55,11 @@ func (app *Application) MessageBusHandlers() map[string]func(msg string) {
 	}
 
 	metricStream := func(msg string) {
-		content, err := app.MessageBus.GetJSONStringContent(msg)
-		if err != nil {
+		content := resourced_wire.ParseSingle(msg).JSONStringContent()
+		if strings.Contains(content, "Error") {
 			logrus.WithFields(logrus.Fields{
 				"Method": "app.MessageBusHandlers",
-				"Error":  err,
+				"Error":  content,
 			}).Error("Error when parsing content from checks-refetch topic")
 		}
 
