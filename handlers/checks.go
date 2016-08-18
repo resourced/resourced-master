@@ -148,8 +148,9 @@ func PostChecks(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	bus := context.Get(r, "bus").(*messagebus.MessageBus)
 	go func() {
-		err := context.Get(r, "bus").(*messagebus.MessageBus).Publish("checks-refetch", "true")
+		err := bus.Publish("checks-refetch", "true")
 		if err != nil {
 			logrus.Error(err)
 		}
@@ -164,8 +165,9 @@ func PostPutDeleteCheckID(w http.ResponseWriter, r *http.Request) {
 		method = "put"
 	}
 
+	bus := context.Get(r, "bus").(*messagebus.MessageBus)
 	go func() {
-		err := context.Get(r, "bus").(*messagebus.MessageBus).Publish("checks-refetch", "true")
+		err := bus.Publish("checks-refetch", "true")
 		if err != nil {
 			logrus.Error(err)
 		}
@@ -350,8 +352,9 @@ func PostChecksTriggers(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	bus := context.Get(r, "bus").(*messagebus.MessageBus)
 	go func() {
-		err := context.Get(r, "bus").(*messagebus.MessageBus).Publish("checks-refetch", "true")
+		err := bus.Publish("checks-refetch", "true")
 		if err != nil {
 			logrus.Error(err)
 		}
@@ -366,8 +369,9 @@ func PostPutDeleteCheckTriggerID(w http.ResponseWriter, r *http.Request) {
 		method = "put"
 	}
 
+	bus := context.Get(r, "bus").(*messagebus.MessageBus)
 	go func() {
-		err := context.Get(r, "bus").(*messagebus.MessageBus).Publish("checks-refetch", "true")
+		err := bus.Publish("checks-refetch", "true")
 		if err != nil {
 			logrus.Error(err)
 		}

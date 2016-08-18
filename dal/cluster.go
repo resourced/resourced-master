@@ -176,12 +176,12 @@ func (c *Cluster) AllSplitToDaemons(tx *sqlx.Tx, daemons []string) (map[string][
 
 	bucketsPointer := 0
 	for _, row := range rows {
-		buckets[bucketsPointer] = append(buckets[bucketsPointer], row)
-		bucketsPointer = bucketsPointer + 1
-
 		if bucketsPointer >= len(buckets) {
 			bucketsPointer = 0
 		}
+
+		buckets[bucketsPointer] = append(buckets[bucketsPointer], row)
+		bucketsPointer = bucketsPointer + 1
 	}
 
 	result := make(map[string][]*ClusterRow)
