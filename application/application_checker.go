@@ -47,8 +47,6 @@ func (app *Application) CheckAndRunTriggers(refetchChecksChan <-chan bool) {
 						}
 
 						for range time.Tick(checkDuration) {
-							println("I should be called again and again")
-
 							// 1. Evaluate all expressions in a check.
 							expressionResults, finalResult, err := checkRow.EvalExpressions(app.DBConfig)
 							if err != nil {
