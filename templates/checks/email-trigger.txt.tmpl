@@ -1,4 +1,4 @@
-Check: {{ .Check.Name }} triggered an email alert.
+"{{ .Check.Name }}" triggered an email alert.
 
 Here are the results of each expression:
 {{ range $i, $expression := .LastViolation.GetExpressionsWithoutError }}
