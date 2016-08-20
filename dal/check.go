@@ -145,6 +145,12 @@ func (a *Check) All(tx *sqlx.Tx) ([]*CheckRow, error) {
 
 // AllSplitToDaemons returns all rows divided into daemons equally.
 func (a *Check) AllSplitToDaemons(tx *sqlx.Tx, daemons []string) (map[string][]*CheckRow, error) {
+	result := make(map[string][]*CheckRow)
+
+	if len(daemons) == 0 {
+		return result, nil
+	}
+
 	rows, err := a.All(tx)
 	if err != nil {
 		return nil, err
@@ -164,8 +170,6 @@ func (a *Check) AllSplitToDaemons(tx *sqlx.Tx, daemons []string) (map[string][]*
 		buckets[bucketsPointer] = append(buckets[bucketsPointer], row)
 		bucketsPointer = bucketsPointer + 1
 	}
-
-	result := make(map[string][]*CheckRow)
 
 	for i, checksInbucket := range buckets {
 		result[daemons[i]] = checksInbucket
@@ -900,7 +904,7 @@ func (checkRow *CheckRow) RunEmailTrigger(trigger CheckTrigger, lastViolation *T
 	}
 
 	to := trigger.Action.Email
-	subject := fmt.Sprintf(`%v Check(ID: %v): %v, failed %v times`, appConfig.Checks.Email.SubjectPrefix, checkRow.ID, checkRow.Name, violationsCount)
+	subject := fmt.Sprintf(`Check(ID: %v): %v, failed %v times`, checkRow.ID, checkRow.Name, violationsCount)
 	body := ""
 
 	if lastViolation != nil {
@@ -941,7 +945,7 @@ func (checkRow *CheckRow) RunSMSTrigger(trigger CheckTrigger, lastViolation *TSC
 
 	to := fmt.Sprintf("%v@%v", flattenPhone, gateway)
 	subject := ""
-	body := fmt.Sprintf(`%v Check(ID: %v): %v, failed %v times`, appConfig.Checks.Email.SubjectPrefix, checkRow.ID, checkRow.Name, violationsCount)
+	body := fmt.Sprintf(`Check(ID: %v): %v, failed %v times`, checkRow.ID, checkRow.Name, violationsCount)
 
 	err = mailr.Send(to, subject, body)
 	if err != nil {
