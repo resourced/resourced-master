@@ -160,12 +160,10 @@ $(document).ready(function() {
     $('.container.saved-queries .toggler-header').each(function() {
         var elem = $(this);
 
-        ResourcedMaster.UIStore.get('.container.saved-queries .toggler-header').then(function(doc) {
-            if (doc && doc.state) {
-                elem.bootstrapSwitch('state', true, true);
-                elem.closest('.container.saved-queries').find('.row.saved-queries').show();
-            }
-        });
+        if($.localStorage.get('UIStore', '.container.saved-queries .toggler-header')) {
+            elem.bootstrapSwitch('state', true, true);
+            elem.closest('.container.saved-queries').find('.row.saved-queries').show();
+        }
     });
 
     // -----------------------------------------------------
@@ -220,20 +218,7 @@ $('.container.saved-queries .toggler-header').on('switchChange.bootstrapSwitch',
         $(this).closest('.container.saved-queries').find('.row.saved-queries:gt(4)').hide();
     }
 
-    var uiStoreID = '.container.saved-queries .toggler-header';
-    var uiStoreData = {
-        _id: uiStoreID,
-        state: state
-    };
-
-    ResourcedMaster.UIStore.get(uiStoreID).then(function(doc) {
-        if(doc) { uiStoreData._rev = doc._rev; }
-        return ResourcedMaster.UIStore.put(uiStoreData);
-    }).catch(function (err) {
-        if(err.name == 'not_found') {
-            return ResourcedMaster.UIStore.put(uiStoreData);
-        }
-    });
+    $.localStorage.set('UIStore', '.container.saved-queries .toggler-header', state);
 });
 
 $(document).on('click', '.logs-list .hostname a, .logs-list .tags a', function(e) {

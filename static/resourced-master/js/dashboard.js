@@ -8,8 +8,6 @@ ResourcedMaster.globals.TSEventLineColors = [];
 ResourcedMaster.globals.TSEventBandColors = [];
 ResourcedMaster.globals.TSEventBandTextColors = [];
 
-ResourcedMaster.UIStore = new PouchDB('resourcedmaster-ui', {revs_limit: 1});
-
 ResourcedMaster.url = {};
 ResourcedMaster.url.getParams = function(sParam) {
     var sPageURL = decodeURIComponent(window.location.search.substring(1)),
