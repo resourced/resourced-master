@@ -226,12 +226,10 @@ $(document).ready(function() {
     $('.container.saved-queries .toggler-header').each(function() {
         var elem = $(this);
 
-        ResourcedMaster.UIStore.get('.container.saved-queries .toggler-header').then(function(doc) {
-            if (doc && doc.state) {
-                elem.bootstrapSwitch('state', true, true);
-                elem.closest('.container.saved-queries').find('.row.saved-queries').show();
-            }
-        });
+        if($.localStorage.get('UIStore', '.container.saved-queries .toggler-header')) {
+            elem.bootstrapSwitch('state', true, true);
+            elem.closest('.container.saved-queries').find('.row.saved-queries').show();
+        }
     });
 
     // Show row details if toggler is set to on.
@@ -239,12 +237,10 @@ $(document).ready(function() {
         var elem = $(this);
         var hostID = elem.data('host-id');
 
-        ResourcedMaster.UIStore.get('.row.hosts .toggler-header[data-host-id="' + hostID + '"]').then(function(doc) {
-            if (doc && doc.state) {
-                elem.bootstrapSwitch('state', true, true);
-                elem.closest('.hosts').find('.details').show();
-            }
-        });
+        if($.localStorage.get('UIStore', '.row.hosts .toggler-header[data-host-id="' + hostID + '"]')) {
+            elem.bootstrapSwitch('state', true, true);
+            elem.closest('.hosts').find('.details').show();
+        }
     });
 
     // Show row/path details if toggler is set to on.
@@ -252,15 +248,13 @@ $(document).ready(function() {
         var elem = $(this);
         var path = elem.data('path');
 
-        ResourcedMaster.UIStore.get('.row.hosts .toggler-body[data-path="' + path + '"]').then(function(doc) {
-            if(doc && doc.state == true) {
-                elem.bootstrapSwitch('state', true, true);
-                elem.closest('.detail-header').siblings('.detail-body[data-path="' + path + '"]').show();
-            } else if(doc && doc.state == false) {
-                elem.bootstrapSwitch('state', false, false);
-                elem.closest('.detail-header').siblings('.detail-body[data-path="' + path + '"]').hide();
-            }
-        });
+        if($.localStorage.get('UIStore', '.row.hosts .toggler-body[data-path="' + path + '"]') == true) {
+            elem.bootstrapSwitch('state', true, true);
+            elem.closest('.detail-header').siblings('.detail-body[data-path="' + path + '"]').show();
+        } else {
+            elem.bootstrapSwitch('state', false, false);
+            elem.closest('.detail-header').siblings('.detail-body[data-path="' + path + '"]').hide();
+        }
     });
 
     $('.row.hosts .host-value').each(function() {
@@ -282,20 +276,7 @@ $('.container.saved-queries .toggler-header').on('switchChange.bootstrapSwitch',
         $(this).closest('.container.saved-queries').find('.row.saved-queries:gt(4)').hide();
     }
 
-    var uiStoreID = '.container.saved-queries .toggler-header';
-    var uiStoreData = {
-        _id: uiStoreID,
-        state: state
-    };
-
-    ResourcedMaster.UIStore.get(uiStoreID).then(function(doc) {
-        if(doc) { uiStoreData._rev = doc._rev; }
-        return ResourcedMaster.UIStore.put(uiStoreData);
-    }).catch(function (err) {
-        if(err.name == 'not_found') {
-            return ResourcedMaster.UIStore.put(uiStoreData);
-        }
-    });
+    $.localStorage.set('UIStore', '.container.saved-queries .toggler-header', state);
 });
 
 $('.row.hosts .toggler-header').on('switchChange.bootstrapSwitch', function(event, state) {
@@ -303,20 +284,7 @@ $('.row.hosts .toggler-header').on('switchChange.bootstrapSwitch', function(even
 
     var hostID = $(this).data('host-id');
 
-    var uiStoreID = '.row.hosts .toggler-header[data-host-id="' + hostID + '"]';
-    var uiStoreData = {
-        _id: uiStoreID,
-        state: state
-    };
-
-    ResourcedMaster.UIStore.get(uiStoreID).then(function(doc) {
-        if(doc) { uiStoreData._rev = doc._rev; }
-        return ResourcedMaster.UIStore.put(uiStoreData);
-    }).catch(function(err) {
-        if(err.name == 'not_found') {
-            return ResourcedMaster.UIStore.put(uiStoreData);
-        }
-    });
+    $.localStorage.set('UIStore', '.row.hosts .toggler-header[data-host-id="' + hostID + '"]', state);
 });
 
 $('.row.hosts .toggler-body').on('switchChange.bootstrapSwitch', function(event, state) {
@@ -325,20 +293,7 @@ $('.row.hosts .toggler-body').on('switchChange.bootstrapSwitch', function(event,
 
     $detailHeader.siblings('.detail-body[data-path="' + path + '"]').toggle();
 
-    var uiStoreID = '.row.hosts .toggler-body[data-path="' + path + '"]';
-    var uiStoreData = {
-        _id: uiStoreID,
-        state: state
-    };
-
-    ResourcedMaster.UIStore.get(uiStoreID).then(function(doc) {
-        if(doc) { uiStoreData._rev = doc._rev; }
-        return ResourcedMaster.UIStore.put(uiStoreData);
-    }).catch(function (err) {
-        if(err.name == 'not_found') {
-            return ResourcedMaster.UIStore.put(uiStoreData);
-        }
-    });
+    $.localStorage.set('UIStore', '.row.hosts .toggler-body[data-path="' + path + '"]', state);
 });
 
 $('#graph-modal').on('hidden.bs.modal', function () {
