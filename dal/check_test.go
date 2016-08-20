@@ -728,8 +728,6 @@ func TestBuildEmailTriggerContent(t *testing.T) {
 		t.Fatalf("Generating the content of email alert should not fail. Error: %v", err)
 	}
 
-	println(content)
-
 	// ----------------------------------------------------------------------
 
 	// DELETE FROM Checks WHERE id=...

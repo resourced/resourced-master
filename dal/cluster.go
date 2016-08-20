@@ -237,8 +237,6 @@ func (c *Cluster) UpdateMember(tx *sqlx.Tx, id int64, user *UserRow, level strin
 		return err
 	}
 
-	println(string(membersJSON))
-
 	data := make(map[string]interface{})
 	data["members"] = membersJSON
 
