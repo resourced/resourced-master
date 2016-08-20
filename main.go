@@ -9,6 +9,7 @@ import (
 	"github.com/Sirupsen/logrus"
 	"github.com/alecthomas/kingpin"
 	metrics_graphite "github.com/cyberdelia/go-metrics-graphite"
+	gocache "github.com/patrickmn/go-cache"
 
 	"github.com/resourced/resourced-master/application"
 	"github.com/resourced/resourced-master/dal"
@@ -57,6 +58,12 @@ func main() {
 
 		// Broadcast heartbeat
 		go app.SendHeartbeat()
+
+		go func() {
+			// On boot, assign self to peers map and send a message to RefetchChecksChan
+			app.Peers.Set(app.FullAddr(), true, gocache.DefaultExpiration)
+			app.RefetchChecksChan <- true
+		}()
 
 		// Run all checks
 		app.CheckAndRunTriggers(app.RefetchChecksChan)
