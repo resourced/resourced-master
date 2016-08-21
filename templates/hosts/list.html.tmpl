@@ -25,8 +25,8 @@
 
 <script>
 $(window).load(function() {
-    var key = "q";
-    var value = "";
+    var key = 'q';
+    var value = '';
     var sPageURL = window.location.search.substring(1);
     var sURLVariables = sPageURL.split('&');
 
@@ -37,9 +37,9 @@ $(window).load(function() {
         }
     }
 
-    value = value.replace(/\+/g, " ");
+    value = value.replace(/\+/g, ' ');
 
-    if(value != "") {
+    if(value != '') {
         $('[name="q"]').val(decodeURIComponent(value));
     }
 
@@ -49,7 +49,7 @@ $(window).load(function() {
 
 // This catches keyup, onchange, and paste events.
 // cp search input to saved-queries input
-$('#search-input').bind("input propertychange", function(e) {
+$('#search-input').bind('input propertychange', function(e) {
     $('#saved-queries-input').val($(this).val());
 });
 </script>
@@ -288,10 +288,10 @@ $('.row.hosts .toggler-header').on('switchChange.bootstrapSwitch', function(even
 });
 
 $('.row.hosts .toggler-body').on('switchChange.bootstrapSwitch', function(event, state) {
-    var $detailHeader = $(this).closest('.detail-header');
-    var path = $detailHeader.data('path');
+    var detailHeader = $(this).closest('.detail-header');
+    var path = detailHeader.data('path');
 
-    $detailHeader.siblings('.detail-body[data-path="' + path + '"]').toggle();
+    detailHeader.siblings('.detail-body[data-path="' + path + '"]').toggle();
 
     $.localStorage.set('UIStore', '.row.hosts .toggler-body[data-path="' + path + '"]', state);
 });
@@ -382,15 +382,21 @@ $('#graph-modal').on('show.bs.modal', function (event) {
         var to = end.utc().unix();
 
         var renderOptions = {
-            'from': from,
-            'to': to,
-            'host': host,
-            'containerDOM': containerDOM,
-            'title': metricKey
+            from: from,
+            to: to,
+            host: host,
+            containerDOM: containerDOM,
+            title: metricKey
         };
 
         if((to - from) >= 21600) {
             renderOptions.shortAggrInterval = '15min';
+        }
+
+        // If we have an established EventSource, disconnect it.
+        var es = $('#graph-modal').data('eventsource');
+        if(es) {
+            es.close();
         }
 
         ResourcedMaster.metrics.renderOneChart(
