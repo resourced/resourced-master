@@ -5,12 +5,9 @@
 
 **ResourceD Master** receives server data from ResourceD agents and serves them as HTTP+JSON.
 
-**NOTE: This documentation refers to master branch. For stable release, checkout the [main website](http://resourced.io/).**
-
+**NOTE: This README provides a quick start guide. For comprehensive documentation, checkout the [main website](http://resourced.io/).**
 
 ![Signup](http://i.imgur.com/UcNmeTF.png)
-
-![Access Tokens](http://i.imgur.com/3H9ONza.png)
 
 ![Hosts](http://i.imgur.com/aTEOlA3.png)
 
@@ -19,17 +16,14 @@
 
 1. Install PostgreSQL 9.5.x
 
-2. Install git
-
-3. Install Go 1.6.x, setup `$GOPATH`, and `PATH=$PATH:$GOPATH/bin`
-
-4. Create PostgreSQL databases.
+2. Create PostgreSQL databases.
     ```
     # This example shows you how to create databases under resourced user.
     # Make sure user, password, and pg_hba.conf are configured correctly.
     sudo su - postgres
     createuser -P -e resourced
     createdb --owner=resourced resourced-master
+    createdb --owner=resourced resourced-master-hosts
     createdb --owner=resourced resourced-master-ts-checks
     createdb --owner=resourced resourced-master-ts-events
     createdb --owner=resourced resourced-master-ts-executor-logs
@@ -37,7 +31,7 @@
     createdb --owner=resourced resourced-master-ts-metrics
     ```
 
-5. [Download the tar.gz](https://github.com/resourced/resourced-master/releases), unpack it, and run the binary using init/systemd/supervisord. You can follow the examples of init scripts [here](https://github.com/resourced/resourced-master/tree/master/scripts/init).
+3. [Download the tar.gz](https://github.com/resourced/resourced-master/releases), unpack it, and run the binary using init/systemd/supervisord. You can follow the examples of init scripts [here](https://github.com/resourced/resourced-master/tree/master/scripts/init).
 
 
 ## Installation for developers/contributors
@@ -54,6 +48,8 @@ You can set it via `-c` flag or `RESOURCED_MASTER_CONFIG_DIR` environment variab
 The `.tar.gz` file provides you with a default config directory. In there, you will see the following files:
 
 * `general.toml` All default settings are defined in `general.toml`.
+
+* `hosts.toml` All settings related to storing hosts data.
 
 * `metrics.toml` All settings related to storing metrics data.
 
@@ -72,100 +68,17 @@ Every HTTP request requires AccessToken passed as user. Example:
 curl -u 0b79bab50daca910b000d4f1a2b675d604257e42: https://localhost:55655/api/hosts
 ```
 
-* **GET** `/api/hosts` Returns list of all hosts data.
-
-* **POST** `/api/hosts` Submit JSON data from 1 host. The JSON payload format is defined by `type AgentResourcePayload struct`. See: [/dal/host.go#L25](https://github.com/resourced/resourced-master/blob/master/dal/host.go#L25)
-
-* **GET** `/api/metrics/{id:[0-9]+}` Returns list of all metrics timeseries data.
-
-* **GET** `/api/metrics/{id:[0-9]+}/15min` Returns list of all metrics timeseries data in 15 minutes aggregate.
-
-* **GET** `/api/metrics/{id:[0-9]+}/hosts/{host}` Returns list of all metrics timeseries data per host.
-
-* **GET** `/api/metrics/{id:[0-9]+}/hosts/{host}/15min` Returns list of all metrics timeseries data per host in 15 minutes aggregate.
-
-* **POST** `/api/events` Sends event data to master.
-
-* **GET** `/api/logs` Returns list of log data.
-
-* **POST** `/api/logs` Sends log data to master.
-
-* **GET** `/api/metadata` Returns list of all JSON metadata.
-
-* **GET** `/api/metadata/{key}` Returns a JSON metadata on master.
-
-* **POST** `/api/metadata/{key}` Stores a JSON metadata on master.
-
-* **DELETE** `/api/metadata/{key}` Deletes a JSON metadata on master.
+For a comprehensive list of API endpoints, visit: [resourced.io/docs](//resourced.io/docs/api-master-authentication/)
 
 
 ## Querying
 
-ResourceD offers SQL-like language to query your data.
+ResourceD offers SQL-like language to query your data. You can use it to query various data:
+
+* Hosts: by hostname, by tags, or by JSON path ([Docs](//resourced.io/docs/api-master-hosts-get/#query-language)).
+
+* Logs: by hostname, by tags, or by full-text search ([Docs](//resourced.io/docs/api-master-logs-get/#query-language)).
 
 
-### Host Data
+**Check out the docs for more info, visit: [resourced.io/docs](//resourced.io/docs).**
 
-There are 3 fields to query from: `hostname`, `tags`, and `JSON path`.
-
-Currently, you can only use *AND* conjunctive operators.
-
-
-**Query by hostname**
-
-* Exact match: `hostname = "localhost"`
-
-* Starts-with match: `hostname ~^ "awesome-app-"`
-
-* Regex match, case insensitive: `hostname ~* "awesome-app-"`
-
-* Regex match, case sensitive: `hostname ~ "awesome-app-"`
-
-* Regex match negation, case sensitive: `hostname !~ "awesome-app-"`
-
-* Regex match negation, case insensitive: `hostname !~* "awesome-app-"`
-
-
-**Query by tags**
-
-* Exact match: `tags.mysql = 5.6.24`
-
-* Multiple exact match: `tags.mysql = 5.6.24 and tags.redis = 3.0.1`
-
-
-**Query by JSON path**
-
-To craft JSON path query, start with ResourceD path and then use "." delimited separator as you get deeper into the JSON structure.
-
-For example, let's say your resourced agent shipped `/free` data:
-```json
-{"/free": {"Swap": {"Free": 0, "Used": 0, "Total": 0}, "Memory": {"Free": 1346609152, "Used": 7243325440, "Total": 8589934592, "ActualFree": 3666075648, "ActualUsed": 4923858944}}}
-```
-
-You can then query `Swap -> Used` this way: `/free.Swap.Used > 10000000`
-
-
-### Log Data
-
-There are 3 fields to query from: `hostname`, `tags`, and `logline`.
-
-Currently, you can only use *AND* conjunctive operators.
-
-
-**Query by hostname**
-
-The same as Host Data.
-
-
-**Query by tags**
-
-The same as Host Data.
-
-
-**Query by logline**
-
-ResourceD offers full-text search for loglines. Basic example: `logline search "error & mysql"`.
-
-The search query must consist of single tokens separated by the Boolean operators & (AND), | (OR) and ! (NOT). These operators can be grouped using parentheses.
-
-Visit http://www.postgresql.org/docs/current/static/textsearch-controls.html for more details.
