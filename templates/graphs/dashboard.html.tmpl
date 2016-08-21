@@ -127,6 +127,11 @@ ResourcedMaster.globals.CurrentGraph = {
     Range: '{{ $.CurrentGraph.Range }}'
 };
 
+// Initialize EventSource in background.
+setTimeout(function() {
+    ResourcedMaster.globals.EventSource = new EventSource('/api/metrics/streams?accessToken=' + ResourcedMaster.globals.AccessToken);
+}, 5);
+
 function renderChartPreview() {
     var lastMetric = ResourcedMaster.globals.Charts[ResourcedMaster.globals.Charts.length - 1];
     var containerDOM = $('#add-chart-modal').find('.add-chart-modal-container');
@@ -187,24 +192,21 @@ function execWhenAllChartsRendered(numCharts) {
 
     if(ResourcedMaster.globals.ChartsRendered.length >= numCharts) {
         // Begin Packery Layout and enable Draggabily
-        var $container = $('.graphs-metrics-brick-layout');
+        var container = $('.graphs-metrics-brick-layout');
 
-        $container.packery({
+        container.packery({
             columnWidth: '.graphs-metrics-brick-layout .sizer',
             rowHeight: '.graphs-metrics-brick-layout .sizer',
             itemSelector: '.graphs-metrics-brick-layout .item',
             percentPosition: true
         });
 
-        // get item elements, jQuery-ify them
-        var $itemElems = $( $container.packery('getItemElements') );
-
-        $itemElems.each( function( i, gridItem ) {
+        $(container.packery('getItemElements')).each(function( i, gridItem ) {
             var draggie = new Draggabilly( gridItem, {handle: '.panel-body'} );
-            $container.packery( 'bindDraggabillyEvents', draggie );
+            container.packery( 'bindDraggabillyEvents', draggie );
         });
 
-        $container.off('dragItemPositioned').on('dragItemPositioned', updateChartsOrderServerSide);
+        container.off('dragItemPositioned').on('dragItemPositioned', updateChartsOrderServerSide);
         // -------------------------------------------
     }
 }
@@ -230,20 +232,20 @@ function renderChartRange(numCharts, daterangepicker, from, to, aggr) {
 
                 var series = this.series;
 
-                var es = new EventSource('/api/metrics/' + metricID + '/streams?accessToken=' + ResourcedMaster.globals.AccessToken);
+                if(ResourcedMaster.globals.EventSource) {
+                    ResourcedMaster.globals.EventSource.addEventListener('metric|' + metricID, function(event) {
+                        if(event.data) {
+                            var datapoint = JSON.parse(event.data);
 
-                es.addEventListener('metric|' + metricID, function(event) {
-                    if(event.data) {
-                        var datapoint = JSON.parse(event.data);
-
-                        for(var i = 0; i < series.length; i++) {
-                            if(series[i].name == datapoint.Hostname && datapoint.MetricID == metricID && datapoint.Value) {
-                                series[i].addPoint([datapoint.CreatedMillisecond, datapoint.Value], false, true);
+                            for(var i = 0; i < series.length; i++) {
+                                if(series[i].name == datapoint.Hostname && datapoint.MetricID == metricID && datapoint.Value) {
+                                    series[i].addPoint([datapoint.CreatedMillisecond, datapoint.Value], false, true);
+                                }
                             }
+                            chart.redraw();
                         }
-                        chart.redraw();
-                    }
-                }, false);
+                    }, false);
+                }
 
                 execWhenAllChartsRendered(numCharts);
             }
@@ -378,13 +380,6 @@ $('#add-chart-modal').on('shown.bs.modal', function() {
     renderChartPreview();
 });
 
-$('#graph-lg-modal').on('hidden.bs.modal', function () {
-    var es = $('#graph-lg-modal').data('eventsource');
-    if(es) {
-        es.close();
-    }
-})
-
 $('#graph-lg-modal').on('shown.bs.modal', function (event) {
     var button = $(event.relatedTarget);   // Button that triggered the modal
     var metricID = button.data('metric-id');
@@ -405,24 +400,21 @@ $('#graph-lg-modal').on('shown.bs.modal', function (event) {
                 // Begin streaming Server Side Events after the graph is loaded
                 var series = this.series;
 
-                var es = new EventSource('/api/metrics/' + metricID + '/streams?accessToken=' + ResourcedMaster.globals.AccessToken);
+                if(ResourcedMaster.globals.EventSource) {
+                    ResourcedMaster.globals.EventSource.addEventListener('metric|' + metricID, function(event) {
+                        if(!renderAggregate && event.data) {
+                            var datapoint = JSON.parse(event.data);
 
-                es.addEventListener('metric|' + metricID, function(event) {
-                    if(!renderAggregate && event.data) {
-                        var datapoint = JSON.parse(event.data);
-
-                        for(var i = 0; i < series.length; i++) {
-                            // TODO: At this point, we know we are receiving data regularly,
-                            // but the chart is not rendering at the same interval.
-                            if(series[i].name == datapoint.Hostname && datapoint.MetricID == metricID && datapoint.Value) {
-                                series[i].addPoint([datapoint.CreatedMillisecond, datapoint.Value], true, true);
+                            for(var i = 0; i < series.length; i++) {
+                                // TODO: At this point, we know we are receiving data regularly,
+                                // but the chart is not rendering at the same interval.
+                                if(series[i].name == datapoint.Hostname && datapoint.MetricID == metricID && datapoint.Value) {
+                                    series[i].addPoint([datapoint.CreatedMillisecond, datapoint.Value], true, true);
+                                }
                             }
                         }
-                    }
-                }, false);
-
-                // Attach EventSource object to the modal so we can close it as we close modal.
-                $('#graph-lg-modal').data('eventsource', es);
+                    }, false);
+                }
             }
         }
     };
@@ -470,12 +462,6 @@ $('#graph-lg-modal').on('show.bs.modal', function (event) {
 
         if((to - from) >= 21600) {
             renderOptions.shortAggrInterval = '15min';
-        }
-
-        // If we have an established EventSource, disconnect it.
-        var es = $('#graph-lg-modal').data('eventsource');
-        if(es) {
-            es.close();
         }
 
         ResourcedMaster.metrics.renderOneChart(
