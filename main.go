@@ -24,7 +24,7 @@ var (
 
 	appMigrateUpArg = appMigrateArg.Command("up", "Run all migrations to the most current.").Default()
 
-	appVersion = "4.1.1"
+	appVersion = "4.2.0"
 )
 
 func init() {
