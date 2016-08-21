@@ -81,6 +81,30 @@
 			"revisionTime": "2016-05-15T16:26:28Z"
 		},
 		{
+			"checksumSHA1": "+tiyVKIigYGo7qb06tW5fG1cRME=",
+			"path": "github.com/go-mangos/mangos",
+			"revision": "c3916ba23b3aa721fd13b4dec916b2d15f4a2520",
+			"revisionTime": "2016-07-19T02:05:16Z"
+		},
+		{
+			"checksumSHA1": "bCABisMlBcpDa8h9npMeYZVcHHk=",
+			"path": "github.com/go-mangos/mangos/protocol/bus",
+			"revision": "c3916ba23b3aa721fd13b4dec916b2d15f4a2520",
+			"revisionTime": "2016-07-19T02:05:16Z"
+		},
+		{
+			"checksumSHA1": "6JrI4kOgZoQUgPWClrJLILBpfvg=",
+			"path": "github.com/go-mangos/mangos/transport/ipc",
+			"revision": "c3916ba23b3aa721fd13b4dec916b2d15f4a2520",
+			"revisionTime": "2016-07-19T02:05:16Z"
+		},
+		{
+			"checksumSHA1": "LdkRqfaCeiszPKHznmu5LWQHqiY=",
+			"path": "github.com/go-mangos/mangos/transport/tcp",
+			"revision": "c3916ba23b3aa721fd13b4dec916b2d15f4a2520",
+			"revisionTime": "2016-07-19T02:05:16Z"
+		},
+		{
 			"checksumSHA1": "iIUYZyoanCQQTUaWsu8b+iOSPt4=",
 			"path": "github.com/gorilla/context",
 			"revision": "aed02d124ae4a0e94fea4541c8effd05bf0c8296",
@@ -205,6 +229,12 @@
 			"path": "github.com/nytlabs/gojsonexplode",
 			"revision": "0f3fe6bb573f445e686ebae5579d064484ec1819",
 			"revisionTime": "2016-02-01T06:50:13Z"
+		},
+		{
+			"checksumSHA1": "vNL7xL08iaySNAxSUz+AoXGu3DQ=",
+			"path": "github.com/patrickmn/go-cache",
+			"revision": "1881a9bccb818787f68c52bfba648c6cf34c34fa",
+			"revisionTime": "2016-01-27T17:00:04Z"
 		},
 		{
 			"checksumSHA1": "69oDmck/6WoFdASUzyIbIFR7VmM=",
