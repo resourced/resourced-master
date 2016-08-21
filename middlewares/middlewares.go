@@ -202,6 +202,13 @@ func MustLogin(next http.Handler) http.Handler {
 		userRowInterface := session.Values["user"]
 
 		if userRowInterface == nil {
+			cookieStore := context.Get(r, "cookieStore").(*sessions.CookieStore)
+			session, err := cookieStore.Get(r, "resourcedmaster-session")
+			if err == nil {
+				delete(session.Values, "user")
+				session.Options.MaxAge = -1
+			}
+
 			http.Redirect(w, r, "/login", 301)
 			return
 		}
