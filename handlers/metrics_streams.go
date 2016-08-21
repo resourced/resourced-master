@@ -19,6 +19,7 @@ func ApiMetricStreams(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/event-stream")
 	w.Header().Set("Cache-Control", "no-cache")
 	w.Header().Set("Connection", "keep-alive")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
 
 	flusher, ok := w.(http.Flusher)
 	if !ok {
@@ -107,6 +108,7 @@ func ApiMetricIDStreams(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/event-stream")
 	w.Header().Set("Cache-Control", "no-cache")
 	w.Header().Set("Connection", "keep-alive")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
 
 	flusher, ok := w.(http.Flusher)
 	if !ok {
@@ -118,8 +120,7 @@ func ApiMetricIDStreams(w http.ResponseWriter, r *http.Request) {
 
 	bus := context.Get(r, "bus").(*messagebus.MessageBus)
 
-	// TODO
-	// Make sure we deny user who has no access to metricID.
+	accessTokenRow := context.Get(r, "accessToken").(*dal.AccessTokenRow)
 
 	metricID, err := getInt64SlugFromPath(w, r, "id")
 	if err != nil {
@@ -156,18 +157,39 @@ func ApiMetricIDStreams(w http.ResponseWriter, r *http.Request) {
 			break
 		}
 
+		payload := make(map[string]interface{})
+
+		err := json.Unmarshal([]byte(jsonContentString), &payload)
+		if err != nil {
+			logrus.WithFields(logrus.Fields{
+				"Method": "ApiMetricStreams",
+				"Error":  err,
+			}).Errorf("Failed to unmarshal metric-%v JSON payload", metricRow.Key)
+			continue
+		}
+
+		clusterIDInterface, ok := payload["ClusterID"]
+		if !ok {
+			logrus.WithFields(logrus.Fields{
+				"Method": "ApiMetricStreams",
+			}).Errorf("ClusterID is missing from payload")
+			continue
+		}
+
+		clusterID := int64(clusterIDInterface.(float64))
+
+		// Don't funnel payload if ClusterID is incorrect.
+		if clusterID != accessTokenRow.ClusterID {
+			continue
+		}
+
+		// Don't funnel payload if metricRow.ClusterID does not belong.
+		if metricRow.ClusterID != accessTokenRow.ClusterID {
+			continue
+		}
+
 		// Make sure to only return metrics with matching hostname if foundHostVar == true.
 		if foundHostVar {
-			payload := make(map[string]interface{})
-
-			err := json.Unmarshal([]byte(jsonContentString), &payload)
-			if err != nil {
-				logrus.WithFields(logrus.Fields{
-					"Method": "ApiMetricIDStreams",
-					"Error":  err,
-				}).Errorf("Failed to unmarshal metric-%v JSON payload", metricRow.Key)
-			}
-
 			hostnameInterface, ok := payload["Hostname"]
 			if ok {
 				if hostnameInterface.(string) == host {
