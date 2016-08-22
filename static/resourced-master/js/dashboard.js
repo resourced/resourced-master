@@ -226,6 +226,10 @@ ResourcedMaster.metrics.get = function(accessToken, metricID, options) {
 };
 ResourcedMaster.metrics.renderOneChart = function(accessToken, metricID, eventLines, eventLineColors, eventBands, eventBandColors, eventBandTextColors, options) {
     options.successCallback = function(result) {
+        if((!result || !result.data || result.data.length == 0) && toastr) {
+            toastr.warning('API for Metric(ID: ' + metricID + ') returned no data');
+        }
+
         if(result.constructor != Array) {
             result = [result];
         }
