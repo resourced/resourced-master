@@ -261,12 +261,12 @@ func (c *Cluster) RemoveMember(tx *sqlx.Tx, id int64, user *UserRow) error {
 	newMembers := make([]ClusterMember, 0)
 
 	for _, member := range members {
-		if member.ID == user.ID {
+		if member.ID != user.ID {
 			newMembers = append(newMembers, member)
 		}
 	}
 
-	newMembersJSON, err := json.Marshal(members)
+	newMembersJSON, err := json.Marshal(newMembers)
 	if err != nil {
 		return err
 	}
