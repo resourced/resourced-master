@@ -221,7 +221,12 @@ ResourcedMaster.metrics.get = function(accessToken, metricID, options) {
         beforeSend: function(xhr) {
             xhr.setRequestHeader("Authorization", "Basic " + window.btoa(accessToken + ':'));
         },
-        success: options.successCallback || null
+        success: options.successCallback || null,
+        error: options.errorCallback || function() {
+            if(toastr) {
+                toastr.error('API for Metric(ID: ' + metricID + ') failed to return data');
+            }
+        }
     });
 };
 ResourcedMaster.metrics.renderOneChart = function(accessToken, metricID, eventLines, eventLineColors, eventBands, eventBandColors, eventBandTextColors, options) {
