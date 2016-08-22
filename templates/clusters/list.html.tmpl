@@ -49,6 +49,7 @@
                                     <th style="width: 76%">Access Token</th>
                                     <th>Level</th>
                                     <th>Enabled</th>
+                                    <th></th>
                                 </tr>
                             </thead>
 
@@ -71,6 +72,13 @@
                                             <input type="checkbox" name="Enabled" onclick="$(this).closest('form').submit();" {{ if $accessToken.Enabled }} checked {{end}}>
                                         </form>
                                     </td>
+                                    <td>
+                                        <form method="post" action="/access-tokens/{{ $accessToken.ID }}">
+                                            <input type="hidden" name="gorilla.csrf.Token" value="{{ $.CSRFToken }}">
+                                            <input type="hidden" name="_method" value="delete">
+                                            <button type="submit" class="btn btn-danger btn-block btn-xs">Delete</button>
+                                        </form>
+                                    </td>
                                 </tr>
                             {{ end }}
                             </tbody>
@@ -87,6 +95,7 @@
                                     <th style="width: 76%">Users</th>
                                     <th>Level</th>
                                     <th>Enabled</th>
+                                    <th></th>
                                 </tr>
                             </thead>
 
@@ -113,6 +122,15 @@
                                             <input type="hidden" name="Level" value="{{ $member.Level }}">
 
                                             <input type="checkbox" name="Enabled" onclick="$(this).closest('form').submit();" {{ if $member.Enabled }} checked {{end}} {{ if  eq $member.Email $.CurrentUser.Email }} disabled {{end}}>
+                                        </form>
+                                    </td>
+                                    <td>
+                                        <form method="post" action="/clusters/{{ $cluster.ID }}/users">
+                                            <input type="hidden" name="gorilla.csrf.Token" value="{{ $.CSRFToken }}">
+                                            <input type="hidden" name="_method" value="delete">
+                                            <input type="hidden" name="Email" value="{{ $member.Email }}">
+                                            <input type="hidden" name="Level" value="{{ $member.Level }}">
+                                            <button type="submit" class="btn btn-danger btn-block btn-xs">Delete</button>
                                         </form>
                                     </td>
                                 </tr>
