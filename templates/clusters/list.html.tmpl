@@ -147,37 +147,37 @@
 
                     <div class="input-group">
                         <span class="input-group-addon data-retention-label">ts_checks data retention: </span>
-                        <input type="number" class="form-control" name="Table:ts_checks" value="1">
+                        <input type="number" class="form-control" name="Table:ts_checks" value="1" min="1">
                         <span class="input-group-addon">days</span>
                     </div>
 
                     <div class="input-group">
                         <span class="input-group-addon data-retention-label">ts_events data retention: </span>
-                        <input type="number" class="form-control" name="Table:ts_events" value="1">
+                        <input type="number" class="form-control" name="Table:ts_events" value="1" min="1">
                         <span class="input-group-addon">days</span>
                     </div>
 
                     <div class="input-group">
                         <span class="input-group-addon data-retention-label">ts_executor_logs data retention: </span>
-                        <input type="number" class="form-control" name="Table:ts_executor_logs" value="1">
+                        <input type="number" class="form-control" name="Table:ts_executor_logs" value="1" min="1">
                         <span class="input-group-addon">days</span>
                     </div>
 
                     <div class="input-group">
                         <span class="input-group-addon data-retention-label">ts_logs data retention: </span>
-                        <input type="number" class="form-control" name="Table:ts_logs" value="1">
+                        <input type="number" class="form-control" name="Table:ts_logs" value="1" min="1">
                         <span class="input-group-addon">days</span>
                     </div>
 
                     <div class="input-group">
                         <span class="input-group-addon data-retention-label">ts_metrics data retention: </span>
-                        <input type="number" class="form-control" name="Table:ts_metrics" value="1">
+                        <input type="number" class="form-control" name="Table:ts_metrics" value="1" min="1">
                         <span class="input-group-addon">days</span>
                     </div>
 
                     <div class="input-group">
                         <span class="input-group-addon data-retention-label">ts_metrics_aggr_15m data retention: </span>
-                        <input type="number" class="form-control" name="Table:ts_metrics_aggr_15m" value="1">
+                        <input type="number" class="form-control" name="Table:ts_metrics_aggr_15m" value="1" min="1">
                         <span class="input-group-addon">days</span>
                     </div>
                 </div>
@@ -239,7 +239,7 @@
                 <div class="modal-body">
                     <div class="form-group">
                         <label class="control-label" for="email">Email:</label>
-                        <input type="text" name="Email" id="email" class="form-control" placeholder="bob@example.com">
+                        <input type="email" name="Email" id="email" class="form-control" placeholder="bob@example.com" required>
                     </div>
 
                     <div class="form-group">
@@ -262,7 +262,7 @@
 </div>
 
 <script>
-$('#new-access-token-modal').on('show.bs.modal', function (event) {
+$('#new-access-token-modal').on('show.bs.modal', function(event) {
     var button = $(event.relatedTarget);           // Button that triggered the modal
     var clusterID = button.data('cluster-id');     // Extract info from data-* attributes
     var modal = $(this);

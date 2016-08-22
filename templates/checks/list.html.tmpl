@@ -160,16 +160,16 @@
                             <div class="input-group">
                                 <span class="input-group-addon" style="padding-left: 0">When violations occured between</span>
 
-                                <input type="number" class="form-control" name="LowViolationsCount" value="1">
+                                <input type="number" class="form-control" name="LowViolationsCount" value="1" min="0">
 
                                 <span class="input-group-addon">and</span>
 
-                                <input type="number" class="form-control" name="HighViolationsCount">
+                                <input type="number" class="form-control" name="HighViolationsCount" min="0">
 
                                 <span class="input-group-addon">the last</span>
 
                                 <div class="input-group">
-                                    <input type="number" class="form-control" name="CreatedIntervalMinute" value="3">
+                                    <input type="number" class="form-control" name="CreatedIntervalMinute" value="3" min="0">
                                     <span class="input-group-addon">minutes</span>
                                 </div>
                             </div>
@@ -258,7 +258,7 @@
                             <label>Interval</label>
 
                             <div class="input-group">
-                                <input type="text" class="form-control" name="IntervalInSeconds" value="60">
+                                <input type="number" class="form-control" name="IntervalInSeconds" value="60" min="1">
                                 <span class="input-group-addon">seconds</span>
                             </div>
                         </div>
