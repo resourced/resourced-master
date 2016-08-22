@@ -117,7 +117,7 @@ $('#search-input').bind('input propertychange', function(e) {
     </div>
 
     {{ range $host := .Hosts }}
-    <div class="row hosts">
+    <div class="row hosts hosts-{{ $host.ID }}">
         <div class="col-xs-12 col-lg-12">
             <div>
                 <div class="pull-right">
@@ -151,10 +151,10 @@ $('#search-input').bind('input propertychange', function(e) {
                                 <td>{{ $key }}</td>
                                 <td class="host-value">{{ $value }}</td>
                                 <td class="graph-column-btn">
-                                    <div class="btn-group" role="group">
+                                    <div class="btn-group chart-metric-or-not" role="group" data-key="{{ $key }}">
                                         {{ if (ne 0 (index $.MetricsMap (print $path "." $key))) }}
                                         <form class="pull-left delete-metric-form" action="/clusters/{{ $host.ClusterID }}/metrics/{{ index $.MetricsMap (print $path "." $key) }}"
-                                            method="post">
+                                            method="post" data-host-id="{{ $host.ID }}" data-key="{{ $key }}">
                                             <input type="hidden" name="gorilla.csrf.Token" value="{{ $.CSRFToken }}">
                                             <input type="hidden" name="_method" value="delete">
                                             <button type="submit" class="btn btn-danger btn-sm">Delete</button>
@@ -168,7 +168,7 @@ $('#search-input').bind('input propertychange', function(e) {
                                         </button>
 
                                         {{ else }}
-                                        <form action="/clusters/{{ $host.ClusterID }}/metrics" method="post">
+                                        <form class="chart-metric-form" action="/clusters/{{ $host.ClusterID }}/metrics" method="post" data-host-id="{{ $host.ID }}" data-key="{{ $key }}">
                                             <input type="hidden" name="gorilla.csrf.Token" value="{{ $.CSRFToken }}">
                                             <input type="hidden" name="Key" value="{{ $path }}.{{ $key }}">
                                             <button type="submit" class="btn btn-success btn-sm btn-do-chart-metric">Chart Metric?</button>
@@ -296,14 +296,64 @@ $('.row.hosts .toggler-body').on('switchChange.bootstrapSwitch', function(event,
     $.localStorage.set('UIStore', '.row.hosts .toggler-body[data-path="' + path + '"]', state);
 });
 
-$('#graph-modal').on('hidden.bs.modal', function () {
+// Ajaxify .chart-metric-form submission.
+$(document).on('submit', '.chart-metric-form', function(event) {
+    event.preventDefault();
+
+    var form = $(this);
+    var hostID = form.data('host-id');
+    var key = form.data('key');
+
+    $.ajax({
+        type: form.attr('method'),
+        url: form.attr('action'),
+        data: form.serialize(),
+        success: function(newHTMLString) {
+            var newHTML = $(newHTMLString);
+            var tobeReplacedSelector = '.hosts-' + hostID + ' .chart-metric-or-not[data-key="' + key + '"]';
+            var tobeReplaced = $(tobeReplacedSelector);
+            var replacer = newHTML.find(tobeReplacedSelector);
+
+            if(tobeReplaced && replacer) {
+                $(tobeReplaced).replaceWith(replacer.get(0).outerHTML);
+            }
+        }
+    });
+});
+
+// Ajaxify .delete-metric-form submission.
+$(document).on('submit', '.delete-metric-form', function(event) {
+    event.preventDefault();
+
+    var form = $(this);
+    var hostID = form.data('host-id');
+    var key = form.data('key');
+
+    $.ajax({
+        type: form.attr('method'),
+        url: form.attr('action'),
+        data: form.serialize(),
+        success: function(newHTMLString) {
+            var newHTML = $(newHTMLString);
+            var tobeReplacedSelector = '.hosts-' + hostID + ' .chart-metric-or-not[data-key="' + key + '"]';
+            var tobeReplaced = $(tobeReplacedSelector);
+            var replacer = newHTML.find(tobeReplacedSelector);
+
+            if(tobeReplaced && replacer) {
+                $(tobeReplaced).replaceWith(replacer.get(0).outerHTML);
+            }
+        }
+    });
+});
+
+$(document).on('hidden.bs.modal', '#graph-modal', function() {
     var es = $('#graph-modal').data('eventsource');
     if(es) {
         es.close();
     }
 })
 
-$('#graph-modal').on('shown.bs.modal', function (event) {
+$(document).on('shown.bs.modal', '#graph-modal', function(event) {
     var button = $(event.relatedTarget);   // Button that triggered the modal
     var metricID = button.data('metric-id');
     var metricKey = button.data('metric-key');
@@ -362,7 +412,7 @@ $('#graph-modal').on('shown.bs.modal', function (event) {
 
 });
 
-$('#graph-modal').on('show.bs.modal', function (event) {
+$(document).on('show.bs.modal', '#graph-modal', function(event) {
     var button = $(event.relatedTarget);   // Button that triggered the modal
     var metricID = button.data('metric-id');
     var metricKey = button.data('metric-key');
