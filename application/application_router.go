@@ -85,6 +85,7 @@ func (app *Application) mux() *mux.Router {
 
 	router.Handle("/access-tokens/{id:[0-9]+}/level", MinimumMiddlewareChain(CSRF).ThenFunc(handlers.PostAccessTokensLevel)).Methods("POST")
 	router.Handle("/access-tokens/{id:[0-9]+}/enabled", MinimumMiddlewareChain(CSRF).ThenFunc(handlers.PostAccessTokensEnabled)).Methods("POST")
+	router.Handle("/access-tokens/{id:[0-9]+}/delete", MinimumMiddlewareChain(CSRF).ThenFunc(handlers.PostAccessTokensDelete)).Methods("POST")
 
 	router.Handle("/api/hosts", MinimumAPIMiddlewareChain().Then(tollbooth.LimitFuncHandler(generalAPILimiter, handlers.GetApiHosts))).Methods("GET")
 	router.Handle("/api/hosts", MinimumAPIMiddlewareChain().ThenFunc(handlers.PostApiHosts)).Methods("POST")

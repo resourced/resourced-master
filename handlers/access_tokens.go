@@ -83,3 +83,21 @@ func PostAccessTokensEnabled(w http.ResponseWriter, r *http.Request) {
 
 	http.Redirect(w, r, "/clusters", 301)
 }
+
+func PostAccessTokensDelete(w http.ResponseWriter, r *http.Request) {
+	dbs := context.Get(r, "dbs").(*config.DBConfig)
+
+	tokenID, err := getInt64SlugFromPath(w, r, "id")
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
+
+	_, err = dal.NewAccessToken(dbs.Core).DeleteByID(nil, tokenID)
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
+
+	http.Redirect(w, r, "/clusters", 301)
+}
