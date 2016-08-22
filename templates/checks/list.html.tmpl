@@ -40,7 +40,7 @@
                     {{ end }}
                     </form>
 
-                    <button class="btn btn-default btn-xs" data-toggle="modal" data-target="#checks-modal"
+                    <button class="btn btn-default btn-xs" data-toggle="modal" data-target="#checks-modal" data-backdrop="static"
                         data-id="{{ $check.ID }}"
                         data-name="{{ $check.Name }}"
                         data-interval="{{ $check.Interval }}"
@@ -50,12 +50,12 @@
                         Details
                     </button>
 
-                    <button class="btn btn-default btn-xs" data-toggle="modal" data-target="#triggers-modal"
+                    <button class="btn btn-default btn-xs" data-toggle="modal" data-target="#triggers-modal" data-backdrop="static"
                         data-check-id="{{ $check.ID }}">
                         Show Triggers
                     </button>
 
-                    <button class="btn btn-success btn-xs" data-toggle="modal" data-target="#trigger-modal"
+                    <button class="btn btn-success btn-xs" data-toggle="modal" data-target="#trigger-modal" data-backdrop="static"
                         data-check-id="{{ $check.ID }}"
                         data-check-interval="{{ $check.Interval }}">
                         New Trigger
@@ -97,6 +97,7 @@
                                 </form>
 
                                 <button class="btn btn-success btn-xs pull-right" data-toggle="modal" data-target="#trigger-modal"
+                                    data-backdrop="static"
                                     data-id="{{ $trigger.ID }}"
                                     data-check-id="{{ $check.ID }}"
                                     data-check-interval="{{ $check.Interval }}"
