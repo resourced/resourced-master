@@ -103,6 +103,11 @@ select {
 .saved-queries form {
     display: inline-block;
 }
+
+.row.hosts {
+    margin-bottom: 18px;
+}
+
 .hosts h3 {
     margin-top: 0;
     margin-bottom: 6px;
