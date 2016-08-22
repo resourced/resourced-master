@@ -197,6 +197,19 @@
         }
     });
 
+    // Enforce minimum value of input[type=number]
+    $(document).on('keyup', 'input[type="number"]', function(event) {
+        var minString = $(this).attr('min');
+
+        if(minString) {
+            var min = parseInt(minString, 10);
+
+            if($(this).val() < min) {
+                $(this).val(min);
+            }
+        }
+    });
+
     $(window).load(function() {
         $('.nav-tabs').removeClass('active');
 
