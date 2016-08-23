@@ -668,6 +668,11 @@ $(document).on('click', '.btn-remove-expression', function() {
 $(document).on('click', '.btn-add-expression', function() {
     $('.expression-container').append($('#expression-boolean-operator-tmpl').html());
     $('.expression-container').append('<div class="modal-body expression">' + $('.expression:first').html() + '</div>');
+
+    // Make sure the newly generated expression displays the correct type inside the <select> element.
+    $('.expression-container .expression:last .expression-type').val(
+        $('.expression-container .expression:first .expression-type').val()
+    );
 });
 
 $(document).on('click', '.btn-hostquery-search', function() {
