@@ -273,9 +273,13 @@
                 <div class="modal-body">
                     <div class="row form-group">
                         <div class="col-sm-12">
-                            <label class="pull-right query-hosts-count" style="color: #5cb85c; display: none">Found <span class="query-hosts-count-number">0</span> hosts</label>
                             <label style="width: 100%">
+                                <small class="pull-right query-hosts-count hidden" style="margin-top: 3px; font-size: 9px; color: #5cb85c; margin-left: 8px">
+                                    Found <span class="query-hosts-count-number">0</span> hosts
+                                </small>
+
                                 <small class="pull-right" style="margin-top: 3px; font-size: 9px">(the same query /hosts tab uses)</small>
+
                                 Query for Hosts
                             </label>
 
@@ -668,11 +672,20 @@ $(document).on('click', '.btn-add-expression', function() {
 
 $(document).on('click', '.btn-hostquery-search', function() {
     ResourcedMaster.hosts.get(ResourcedMaster.globals.AccessToken, {
-        count: true,
+        query: $(this).closest('.input-group').find('input[name="HostsQuery"]').val(),
         successCallback: function(result) {
-            console.log(result);
-            $('.query-hosts-count').show();
-            $('.query-hosts-count-number').html(result);
+            $('.query-hosts-count').removeClass('hidden');
+            $('.query-hosts-count-number').html(result.length);
+
+            var hostnames = $.map(result, function(host, index) {
+                return host.Hostname;
+            });
+
+            toastr.success(
+                hostnames.join('<br>'),
+                'Found ' + result.length + ' hosts',
+                {timeOut: 120000}
+            );
         }
     })
 });
