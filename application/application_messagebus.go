@@ -38,13 +38,8 @@ func (app *Application) MessageBusHandlers() map[string]func(msg string) {
 		}
 
 		if fullAddr != "" {
-			peersLengthBeforeSet := len(app.Peers.Items())
-
 			app.Peers.Set(fullAddr, true, gocache.DefaultExpiration)
-
-			if len(app.Peers.Items()) != peersLengthBeforeSet {
-				app.RefetchChecksChan <- true
-			}
+			app.RefetchChecksChan <- true
 		}
 	}
 
