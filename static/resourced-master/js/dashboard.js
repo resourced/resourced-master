@@ -426,7 +426,7 @@ Highcharts.theme = {
     title: {
         style: {
             color: '#E0E0E3',
-            fontSize: '20px'
+            fontSize: '1em'
         }
     },
     subtitle: {
