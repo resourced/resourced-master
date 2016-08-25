@@ -1,24 +1,23 @@
 "{{ .Check.Name }}" triggered an email alert.
 
-Here are the results of each expression:
+Here is the result of each expression:
+
 {{ range $i, $expression := .LastViolation.GetExpressionsWithoutError }}
 {{- if ne $expression.Type "BooleanOperator" -}}
 
-{{ addInt $i 1 }}. Check {{ $expression.Type }} where {{ $expression.Metric }} {{ $expression.Operator }} {{ $expression.Value }} affecting at minimum {{ $expression.MinHost }} hosts is {{ if $expression.Result.Value }}triggered{{ else }}not triggered{{ end }}.
-
+{{- if gt (len $expression.Result.BadHostnames) 0 -}}[BAD]{{- end }}{{- if gt (len $expression.Result.GoodHostnames) 0 -}}[GOOD]{{- end }} Check {{ $expression.Type }} where {{ $expression.Metric }} {{ $expression.Operator }} {{ $expression.Value }}{{ if eq $expression.Type "RelativeHostData" }}%{{ end }} affecting at minimum {{ $expression.MinHost }} hosts is {{ if $expression.Result.Value }}triggered{{ else }}NOT triggered{{ end }}.
 {{- if gt (len $expression.Result.BadHostnames) 0 }}
     Bad Hostnames:
     {{- range $hostname := $expression.Result.BadHostnames }}
         - {{ $hostname }}
     {{ end }}
-{{ end }}
-
+{{- end -}}
 {{- if gt (len $expression.Result.GoodHostnames) 0 }}
     Good Hostnames:
     {{- range $hostname := $expression.Result.GoodHostnames }}
         - {{ $hostname }}
     {{ end }}
-{{ end }}
+{{- end -}}
 
 {{ end }}
 {{ end }}
