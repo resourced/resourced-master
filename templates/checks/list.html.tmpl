@@ -29,7 +29,7 @@
     {{ range $check := .Checks }}
     <div class="row checks" data-id="{{ $check.ID }}">
         <div class="col-xs-12 col-lg-12">
-            <div class="pull-right" style="margin-top: 5px">
+            <div class="pull-right" style="margin-top: 5px; margin-left: 10px">
                 <div class="btn-group" role="group">
                     <form action="/checks/{{ $check.ID }}/silence" method="post" style="display: inline-block; float: left">
                         <input type="hidden" name="gorilla.csrf.Token" value="{{ $.CSRFToken }}">
@@ -61,6 +61,10 @@
                         New Trigger
                     </button>
                 </div>
+            </div>
+
+            <div class="pull-right" style="margin-top: 5px">
+                <div class="btn-group check-{{ $check.ID }}-results" role="group" data-id="{{ $check.ID }}"></div>
             </div>
 
             <h3>{{ $check.Name }}</h3>
@@ -231,6 +235,28 @@
                     <button type="button" class="btn btn-primary">Save</button>
                 </div>
             </form>
+        </div>
+    </div>
+</div>
+
+<!-- Check Result Modal -->
+<div class="modal fade" id="check-result-modal" tabindex="-1" role="dialog" aria-labelledby="check-result-label" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close" style="margin-top: 1px">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+                <button class="final-result btn btn-xs pull-right" style="margin-top: 1px; margin-right: 6px">GOOD</button>
+                <h4 class="modal-title" id="check-result-label">Check Result</h4>
+            </div>
+
+            <div class="modal-body">
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+            </div>
         </div>
     </div>
 </div>
@@ -652,8 +678,37 @@ $(document).ready(function() {
 
         ResourcedMaster.checks.results.get(ResourcedMaster.globals.AccessToken, {
             id: checkID,
-            successCallback: function(result) {
-                console.log(result);
+            successCallback: function(checkResults) {
+                var container = $('.check-' + checkID + '-results');
+
+                for(var i = 0; i < checkResults.length; i++) {
+                    var btn = $('<button class="red-green-block btn"></button>');
+
+                    btn.attr('title', new Date(checkResults[i].Created));
+                    btn.data('expressions', checkResults[i].Expressions);
+                    btn.data('created', checkResults[i].Created);
+                    btn.data('id', checkResults[i].CheckID);
+                    btn.data('cluster-id', checkResults[i].ClusterID);
+                    btn.data('result', checkResults[i].Result);
+
+                    if(checkResults[i].Result) {
+                        btn.addClass('btn-success');
+                    } else {
+                        btn.addClass('btn-danger');
+                    }
+
+                    if(i == 0) {
+                        btn.text('newest');
+                        btn.addClass('with-text');
+                    } else if(i == checkResults.length - 1) {
+                        btn.text('older');
+                        btn.addClass('with-text');                    
+                    } else {
+                        btn.removeClass('with-text');
+                    }
+
+                    container.append(btn);
+                }
             }
         });
     });
@@ -705,6 +760,43 @@ $(document).on('click', '.btn-hostquery-search', function() {
             );
         }
     })
+});
+
+
+$(document).on('click', '.red-green-block.btn', function (event) {
+    var button = $(this);
+
+    var modal = $('#check-result-modal');
+
+    modal.find('.modal-title').html('Check (ID: ' + button.data('id') + ') Results');
+
+    if(button.data('result')) {
+        modal.find('.final-result').text('GOOD');
+        modal.find('.final-result').addClass('btn-success');
+        modal.find('.final-result').removeClass('btn-danger');
+    } else {
+        modal.find('.final-result').text('BAD');
+        modal.find('.final-result').addClass('btn-danger');
+        modal.find('.final-result').removeClass('btn-success');
+    }
+
+    var expressions = button.data('expressions');
+
+    for(var i = 0; i < expressions.length; i++) {
+        var expression = expressions[i];
+
+        var expressionText = 'Check ' + expression.Type + ' where ' + expression.Metric + ' ' + expression.Operator + ' ' + expression.Value;
+
+        if(expression.Type == 'RelativeHostData') {
+            expressionText = expressionText + '%';
+        }
+
+        expressionText = expressionText + ' affecting at minimum ' + expression.MinHost + ' hosts';
+
+        console.log(expressionText);
+    }
+
+    modal.modal('toggle');
 });
 
 $('#checks-modal form .btn-primary').click(function() {

@@ -2,7 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
-	"errors"
+	"fmt"
 	"html/template"
 	"net/http"
 	"strconv"
@@ -320,13 +320,13 @@ func PostChecksTriggers(w http.ResponseWriter, r *http.Request) {
 
 	checkIDString := mux.Vars(r)["checkid"]
 	if checkIDString == "" {
-		libhttp.HandleErrorJson(w, errors.New("id cannot be empty."))
+		libhttp.HandleErrorJson(w, fmt.Errorf("id cannot be empty."))
 		return
 	}
 
 	checkID, err := strconv.ParseInt(checkIDString, 10, 64)
 	if err != nil {
-		libhttp.HandleErrorJson(w, errors.New("id cannot be non numeric."))
+		libhttp.HandleErrorJson(w, fmt.Errorf("id cannot be non numeric."))
 		return
 	}
 
@@ -387,13 +387,13 @@ func PostPutDeleteCheckTriggerID(w http.ResponseWriter, r *http.Request) {
 func PutCheckTriggerID(w http.ResponseWriter, r *http.Request) {
 	checkIDString := mux.Vars(r)["checkid"]
 	if checkIDString == "" {
-		libhttp.HandleErrorJson(w, errors.New("id cannot be empty."))
+		libhttp.HandleErrorJson(w, fmt.Errorf("id cannot be empty."))
 		return
 	}
 
 	checkID, err := strconv.ParseInt(checkIDString, 10, 64)
 	if err != nil {
-		libhttp.HandleErrorJson(w, errors.New("id cannot be non numeric."))
+		libhttp.HandleErrorJson(w, fmt.Errorf("id cannot be non numeric."))
 		return
 	}
 
@@ -433,13 +433,13 @@ func PutCheckTriggerID(w http.ResponseWriter, r *http.Request) {
 func DeleteCheckTriggerID(w http.ResponseWriter, r *http.Request) {
 	checkIDString := mux.Vars(r)["checkid"]
 	if checkIDString == "" {
-		libhttp.HandleErrorJson(w, errors.New("id cannot be empty."))
+		libhttp.HandleErrorJson(w, fmt.Errorf("id cannot be empty."))
 		return
 	}
 
 	checkID, err := strconv.ParseInt(checkIDString, 10, 64)
 	if err != nil {
-		libhttp.HandleErrorJson(w, errors.New("id cannot be non numeric."))
+		libhttp.HandleErrorJson(w, fmt.Errorf("id cannot be non numeric."))
 		return
 	}
 
