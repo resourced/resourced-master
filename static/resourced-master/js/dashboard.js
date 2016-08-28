@@ -30,6 +30,30 @@ ResourcedMaster.users.logout = function() {
     window.location = '/login';
 };
 
+ResourcedMaster.checks = {};
+ResourcedMaster.checks.results = {};
+ResourcedMaster.checks.results.get = function(accessToken, options) {
+    var path = '/api/checks';
+    var getParams = '';
+
+    if('id' in options) {
+        path = path + '/' + options.id;
+    }
+    if('limit' in options) {
+        getParams = getParams + 'limit=' + options.limit;
+    }
+
+    path = path + '/results';
+
+    return $.ajax({
+        url: path + '?' + getParams,
+        beforeSend: function(xhr) {
+            xhr.setRequestHeader('Authorization', 'Basic ' + window.btoa(accessToken + ':'));
+        },
+        success: options.successCallback || null
+    });
+};
+
 ResourcedMaster.hosts = {};
 ResourcedMaster.hosts.get = function(accessToken, options) {
     var path = '/api/hosts';

@@ -476,6 +476,8 @@ func GetApiCheckIDResults(w http.ResponseWriter, r *http.Request) {
 
 	dbs := context.Get(r, "dbs").(*config.DBConfig)
 
+	accessTokenRow := context.Get(r, "accessToken").(*dal.AccessTokenRow)
+
 	qParams := r.URL.Query()
 
 	limitString := qParams.Get("Limit")
@@ -496,6 +498,11 @@ func GetApiCheckIDResults(w http.ResponseWriter, r *http.Request) {
 	checkRow, err := dal.NewCheck(dbs.Core).GetByID(nil, id)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
+		return
+	}
+
+	if accessTokenRow.ClusterID != checkRow.ClusterID {
+		libhttp.HandleErrorJson(w, fmt.Errorf("No permission to access check with ID: %v", id))
 		return
 	}
 

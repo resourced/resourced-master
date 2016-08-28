@@ -27,7 +27,7 @@
     </div>
 
     {{ range $check := .Checks }}
-    <div class="row checks">
+    <div class="row checks" data-id="{{ $check.ID }}">
         <div class="col-xs-12 col-lg-12">
             <div class="pull-right" style="margin-top: 5px">
                 <div class="btn-group" role="group">
@@ -645,6 +645,18 @@ $(document).ready(function() {
     if($('.row.checks').length == 0) {
         $('#search-input').hide();
     }
+
+    // Fetch the last 10 results for every check
+    $('.row.checks').each(function() {
+        var checkID = $(this).data('id');
+
+        ResourcedMaster.checks.results.get(ResourcedMaster.globals.AccessToken, {
+            id: checkID,
+            successCallback: function(result) {
+                console.log(result);
+            }
+        });
+    });
 });
 
 // Show or hide expression part appropriately
