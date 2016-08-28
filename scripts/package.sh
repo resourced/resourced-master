@@ -20,6 +20,8 @@ ROOT_DIR=$(dirname $CURRENT_DIR)
 
 cd $ROOT_DIR
 
+git checkout tests/config-files/*.toml
+
 cp -r tests/config-files conf
 rm -rf conf/config-files
 
