@@ -155,6 +155,9 @@ func PutClusterID(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			dataRetentionValue = int64(1)
 		}
+		if dataRetentionValue < int64(1) {
+			dataRetentionValue = int64(1)
+		}
 		dataRetention[table] = int(dataRetentionValue)
 	}
 
