@@ -297,6 +297,17 @@ select {
     font-size: 12px;
 }
 
+#check-result-modal .final-result {
+    font-size: 8px;
+    margin: 6px 4px 0 0;
+}
+#check-result-modal .expression {
+    margin-bottom: 12px;
+}
+#check-result-modal .expression p {
+    margin-bottom: 4px;
+}
+
 @media(max-width:1200px) {
     .form-group-search-and-save .search-form, .form-group-search-and-save .search-form .input-group {
         width: 832px;
