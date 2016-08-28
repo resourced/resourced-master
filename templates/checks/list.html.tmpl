@@ -681,7 +681,7 @@ $(document).ready(function() {
                 var container = $('.check-' + checkID + '-results');
 
                 for(var i = 0; i < checkResults.length; i++) {
-                    var btn = $('<button class="red-green-block btn"></button>');
+                    var btn = $('<button class="red-green-block btn btn-skip-confirm"></button>');
 
                     btn.attr('title', new Date(checkResults[i].Created));
                     btn.data('expressions', checkResults[i].Expressions);
@@ -691,10 +691,11 @@ $(document).ready(function() {
                     btn.data('cluster-id', checkResults[i].ClusterID);
                     btn.data('result', checkResults[i].Result);
 
+                    // Reminder: if Result == true, that means treshold has been reached, which means bad.
                     if(checkResults[i].Result) {
-                        btn.addClass('btn-success');
-                    } else {
                         btn.addClass('btn-danger');
+                    } else {
+                        btn.addClass('btn-success');
                     }
 
                     if(i == 0) {
@@ -772,12 +773,13 @@ $(document).on('click', '.red-green-block.btn', function (event) {
 
     modal.find('.final-result').text(new Date(button.data('created')));
 
-    if(button.data('result')) {
-        modal.find('.final-result').addClass('btn-success');
-        modal.find('.final-result').removeClass('btn-danger');
-    } else {
+    // Reminder: if Result == true, that means treshold has been reached, which means bad.
+    if(button.data('result') == true) {
         modal.find('.final-result').addClass('btn-danger');
         modal.find('.final-result').removeClass('btn-success');
+    } else {
+        modal.find('.final-result').addClass('btn-success');
+        modal.find('.final-result').removeClass('btn-danger');
     }
 
     var expressions = button.data('expressions');
@@ -785,10 +787,11 @@ $(document).on('click', '.red-green-block.btn', function (event) {
     for(var i = 0; i < expressions.length; i++) {
         var expression = expressions[i];
 
+        // Reminder: if Result == true, that means treshold has been reached, which means bad.
         if(expression.Result) {
-            var buttonString = '<button class="btn btn-xs btn-success pull-right">GOOD</button>';
-        } else {
             var buttonString = '<button class="btn btn-xs btn-danger pull-right">BAD</button>';
+        } else {
+            var buttonString = '<button class="btn btn-xs btn-success pull-right">GOOD</button>';
         }
 
         var expressionText = expression.Type + ' where ' + expression.Metric + ' ' + expression.Operator + ' ' + expression.Value;

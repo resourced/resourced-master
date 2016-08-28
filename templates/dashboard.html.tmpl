@@ -163,14 +163,19 @@
 
     // Confirm every delete button
     $(document).on('click', '.btn-danger', function() {
-        if(!confirm('Are you sure? Press OK to continue.')) {
+        if(!$(this).hasClass('btn-skip-confirm')) {
+            if(!confirm('Are you sure? Press OK to continue.')) {
+                return false;
+            }
+
+            var form = $(this).closest('form');
+
+            if(form) {
+                form.find('input[name="_method"]').val('delete');
+                form.submit();            
+            }
             return false;
         }
-
-        var form = $(this).closest('form');
-        form.find('input[name="_method"]').val('delete');
-        form.submit();
-        return false;
     });
 
     // Always validate input[type=email] on every page.
