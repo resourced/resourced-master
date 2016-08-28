@@ -788,7 +788,7 @@ $(document).on('click', '.red-green-block.btn', function (event) {
         var expression = expressions[i];
 
         // Reminder: if Result == true, that means treshold has been reached, which means bad.
-        if(expression.Result) {
+        if(expression.Result.Value) {
             var buttonString = '<button class="btn btn-xs btn-danger pull-right">BAD</button>';
         } else {
             var buttonString = '<button class="btn btn-xs btn-success pull-right">GOOD</button>';
