@@ -90,7 +90,7 @@
 
                         <td>
                             <div class="btn-group pull-right" role="group">
-                                <form action="/checks/{{ $check.ID }}/triggers/{{ $trigger.ID }}" method="post" onsubmit="return confirm('Are you sure you want to delete?');" style="display: inline-block">
+                                <form action="/checks/{{ $check.ID }}/triggers/{{ $trigger.ID }}" method="post" style="display: inline-block">
                                     <input type="hidden" name="gorilla.csrf.Token" value="{{ $.CSRFToken }}">
                                     <input type="hidden" name="_method" value="delete">
                                     <button type="submit" class="btn btn-danger btn-xs">Delete</button>

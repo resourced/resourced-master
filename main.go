@@ -66,7 +66,7 @@ func main() {
 		}()
 
 		// Run all checks
-		app.CheckAndRunTriggers(app.RefetchChecksChan)
+		app.CheckAndRunTriggers()
 
 		// Prune old timeseries data
 		go app.PruneAll()
