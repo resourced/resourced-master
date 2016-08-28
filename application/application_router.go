@@ -114,6 +114,8 @@ func (app *Application) mux() *mux.Router {
 
 	router.Handle(`/api/logs/executors`, MinimumAPIMiddlewareChain().Then(tollbooth.LimitFuncHandler(generalAPILimiter, handlers.GetApiLogsExecutors))).Methods("GET")
 
+	router.Handle("/api/checks/{id:[0-9]+}/results", MinimumMiddlewareChain(CSRF).ThenFunc(handlers.GetApiCheckIDResults)).Methods("GET")
+
 	router.Handle("/api/metadata", MinimumAPIMiddlewareChain().Then(tollbooth.LimitFuncHandler(generalAPILimiter, handlers.GetApiMetadata))).Methods("GET")
 	router.Handle(`/api/metadata/{key}`, MinimumAPIMiddlewareChain().Then(tollbooth.LimitFuncHandler(generalAPILimiter, handlers.PostApiMetadataKey))).Methods("POST")
 	router.Handle(`/api/metadata/{key}`, MinimumAPIMiddlewareChain().Then(tollbooth.LimitFuncHandler(generalAPILimiter, handlers.DeleteApiMetadataKey))).Methods("DELETE")

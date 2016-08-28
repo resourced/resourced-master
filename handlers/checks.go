@@ -470,3 +470,42 @@ func DeleteCheckTriggerID(w http.ResponseWriter, r *http.Request) {
 
 	http.Redirect(w, r, r.Referer(), 301)
 }
+
+func GetApiCheckIDResults(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	dbs := context.Get(r, "dbs").(*config.DBConfig)
+
+	qParams := r.URL.Query()
+
+	limitString := qParams.Get("Limit")
+	if limitString == "" {
+		limitString = qParams.Get("limit")
+	}
+	limit, err := strconv.ParseInt(limitString, 10, 64)
+	if err != nil || limit <= 0 {
+		limit = 10
+	}
+
+	id, err := getInt64SlugFromPath(w, r, "id")
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
+
+	checkRow, err := dal.NewCheck(dbs.Core).GetByID(nil, id)
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
+
+	tsCheckRows, err := dal.NewTSCheck(dbs.GetTSCheck(checkRow.ClusterID)).LastByClusterIDCheckIDAndLimit(nil, checkRow.ClusterID, checkRow.ID, limit)
+
+	tsCheckRowsJSON, err := json.Marshal(tsCheckRows)
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
+
+	w.Write(tsCheckRowsJSON)
+}

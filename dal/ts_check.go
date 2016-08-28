@@ -40,16 +40,33 @@ type TSCheck struct {
 	TSBase
 }
 
-// LastByClusterIDCheckIDAndResult returns a row by cluster_id, check_id and result.
-func (ts *TSCheck) LastByClusterIDCheckIDAndAffectedHosts(tx *sqlx.Tx, clusterID, CheckID int64, result bool) (*TSCheckRow, error) {
-	row := &TSCheckRow{}
-	query := fmt.Sprintf("SELECT * FROM %v WHERE cluster_id=$1 AND check_id=$2 AND result=$3 ORDER BY cluster_id,check_id,created DESC LIMIT 1", ts.table)
-	err := ts.db.Get(row, query, clusterID, CheckID, result)
+// LastByClusterIDCheckIDAndLimit returns a row by cluster_id, check_id and result.
+func (ts *TSCheck) LastByClusterIDCheckIDAndLimit(tx *sqlx.Tx, clusterID, checkID, limit int64) ([]*TSCheckRow, error) {
+	rows := []*TSCheckRow{}
+	query := fmt.Sprintf("SELECT * FROM %v WHERE cluster_id=$1 AND check_id=$2 ORDER BY cluster_id,check_id,created DESC LIMIT $3", ts.table)
+	err := ts.db.Select(&rows, query, clusterID, checkID, limit)
 
 	logrus.WithFields(logrus.Fields{
-		"Method":    "TSCheck.LastByClusterIDCheckIDAndAffectedHosts",
+		"Method":    "TSCheck.LastByClusterIDCheckIDAndResult",
 		"ClusterID": clusterID,
-		"CheckID":   CheckID,
+		"CheckID":   checkID,
+		"Limit":     limit,
+		"Query":     query,
+	}).Info("Select Query")
+
+	return rows, err
+}
+
+// LastByClusterIDCheckIDAndResult returns a row by cluster_id, check_id and result.
+func (ts *TSCheck) LastByClusterIDCheckIDAndResult(tx *sqlx.Tx, clusterID, checkID int64, result bool) (*TSCheckRow, error) {
+	row := &TSCheckRow{}
+	query := fmt.Sprintf("SELECT * FROM %v WHERE cluster_id=$1 AND check_id=$2 AND result=$3 ORDER BY cluster_id,check_id,created DESC LIMIT 1", ts.table)
+	err := ts.db.Get(row, query, clusterID, checkID, result)
+
+	logrus.WithFields(logrus.Fields{
+		"Method":    "TSCheck.LastByClusterIDCheckIDAndResult",
+		"ClusterID": clusterID,
+		"CheckID":   checkID,
 		"Result":    result,
 		"Query":     query,
 	}).Info("Select Query")
@@ -59,7 +76,7 @@ func (ts *TSCheck) LastByClusterIDCheckIDAndAffectedHosts(tx *sqlx.Tx, clusterID
 
 // AllViolationsByClusterIDCheckIDAndInterval returns all ts_checks rows since last good marker.
 func (ts *TSCheck) AllViolationsByClusterIDCheckIDAndInterval(tx *sqlx.Tx, clusterID, CheckID, createdIntervalMinute, deletedFrom int64) ([]*TSCheckRow, error) {
-	lastGoodOne, err := ts.LastByClusterIDCheckIDAndAffectedHosts(tx, clusterID, CheckID, false)
+	lastGoodOne, err := ts.LastByClusterIDCheckIDAndResult(tx, clusterID, CheckID, false)
 	if err != nil {
 		if strings.Contains(err.Error(), "no rows in result set") {
 			lastGoodOne = nil

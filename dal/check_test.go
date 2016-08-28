@@ -718,7 +718,7 @@ func TestBuildEmailTriggerContent(t *testing.T) {
 		t.Fatalf("Creating a TSCheck should not fail. Error: %v", err)
 	}
 
-	lastViolation, err := tsCheck.LastByClusterIDCheckIDAndAffectedHosts(nil, checkRow.ClusterID, checkRow.ID, true)
+	lastViolation, err := tsCheck.LastByClusterIDCheckIDAndResult(nil, checkRow.ClusterID, checkRow.ID, true)
 	if err != nil {
 		t.Fatalf("Fetching a TSCheck should not fail. Error: %v", err)
 	}
