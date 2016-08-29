@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Sirupsen/logrus"
 	"github.com/carbocation/interpose"
 	"github.com/gorilla/sessions"
 	_ "github.com/lib/pq"
@@ -76,6 +77,13 @@ func New(configDir string) (*Application, error) {
 	}
 	app.MessageBus = bus
 
+	// Setup loggers
+	app.StdOutLogger = logrus.New()
+	app.StdOutLogger.Out = os.Stdout
+
+	app.StdErrLogger = logrus.New()
+	app.StdErrLogger.Out = os.Stderr
+
 	return app, err
 }
 
@@ -92,6 +100,8 @@ type Application struct {
 	MessageBus         *messagebus.MessageBus
 	Peers              *gocache.Cache
 	RefetchChecksChan  chan bool
+	StdOutLogger       *logrus.Logger
+	StdErrLogger       *logrus.Logger
 }
 
 func (app *Application) FullAddr() string {
