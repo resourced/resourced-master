@@ -15,7 +15,7 @@ import (
 	"github.com/resourced/resourced-master/middlewares"
 )
 
-func (app *Application) NewHandlerInstruments() map[string]chan int64 {
+func (app *Application) newHandlerInstruments() map[string]chan int64 {
 	instruments := make(map[string]chan int64)
 	for _, key := range []string{"GetHosts", "GetLogs", "GetLogsExecutors"} {
 		instruments[key] = make(chan int64)
@@ -23,7 +23,7 @@ func (app *Application) NewHandlerInstruments() map[string]chan int64 {
 	return instruments
 }
 
-func (app *Application) GetHandlerInstrument(key string) chan int64 {
+func (app *Application) getHandlerInstrument(key string) chan int64 {
 	var instrument chan int64
 
 	app.RLock()
@@ -59,7 +59,7 @@ func (app *Application) mux2() *chi.Mux {
 
 	r.Route("/", func(r chi.Router) {
 		r.Use(CSRF, middlewares.MustLogin, middlewares.SetClusters, middlewares.MustBeMember, middlewares.SetAccessTokens)
-		r.Get("/", stopwatch.LatencyFuncHandler(app.GetHandlerInstrument("GetHosts"), []string{"GET"}, handlers.GetHosts).(http.HandlerFunc))
+		r.Get("/", stopwatch.LatencyFuncHandler(app.getHandlerInstrument("GetHosts"), []string{"GET"}, handlers.GetHosts).(http.HandlerFunc))
 	})
 
 	r.Route("/saved-queries", func(r chi.Router) {
@@ -81,8 +81,8 @@ func (app *Application) mux2() *chi.Mux {
 
 	r.Route("/logs", func(r chi.Router) {
 		r.Use(CSRF, middlewares.MustLogin, middlewares.SetClusters, middlewares.MustBeMember, middlewares.SetAccessTokens)
-		r.Get("/", stopwatch.LatencyFuncHandler(app.GetHandlerInstrument("GetLogs"), []string{"GET"}, handlers.GetLogs).(http.HandlerFunc))
-		r.Get("/executors", stopwatch.LatencyFuncHandler(app.GetHandlerInstrument("GetLogsExecutors"), []string{"GET"}, handlers.GetLogsExecutors).(http.HandlerFunc))
+		r.Get("/", stopwatch.LatencyFuncHandler(app.getHandlerInstrument("GetLogs"), []string{"GET"}, handlers.GetLogs).(http.HandlerFunc))
+		r.Get("/executors", stopwatch.LatencyFuncHandler(app.getHandlerInstrument("GetLogsExecutors"), []string{"GET"}, handlers.GetLogsExecutors).(http.HandlerFunc))
 	})
 
 	r.Route("/checks", func(r chi.Router) {
