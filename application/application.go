@@ -4,26 +4,22 @@ package application
 
 import (
 	"fmt"
-	"net/http"
 	"os"
 	"strings"
 	"sync"
 	"time"
 
 	"github.com/Sirupsen/logrus"
-	"github.com/carbocation/interpose"
 	"github.com/gorilla/sessions"
 	_ "github.com/lib/pq"
 	_ "github.com/mattes/migrate/driver/postgres"
 	"github.com/mattes/migrate/migrate"
 	gocache "github.com/patrickmn/go-cache"
 	"github.com/rcrowley/go-metrics"
-	"gopkg.in/tylerb/graceful.v1"
 
 	"github.com/resourced/resourced-master/config"
 	"github.com/resourced/resourced-master/mailer"
 	"github.com/resourced/resourced-master/messagebus"
-	"github.com/resourced/resourced-master/middlewares"
 )
 
 // New is the constructor for Application struct.
@@ -122,44 +118,6 @@ func (app *Application) FullAddr() string {
 	}
 
 	return addr
-}
-
-// MiddlewareStruct configures all the middlewares that are in-use for all request handlers.
-func (app *Application) MiddlewareStruct() (*interpose.Middleware, error) {
-	middle := interpose.New()
-	middle.Use(middlewares.SetAddr(app.GeneralConfig.Addr))
-	middle.Use(middlewares.SetVIPAddr(app.GeneralConfig.VIPAddr))
-	middle.Use(middlewares.SetVIPProtocol(app.GeneralConfig.VIPProtocol))
-	middle.Use(middlewares.SetDBs(app.DBConfig))
-	middle.Use(middlewares.SetCookieStore(app.cookieStore))
-	middle.Use(middlewares.SetMailers(app.Mailers))
-	middle.Use(middlewares.SetMessageBus(app.MessageBus))
-
-	middle.UseHandler(app.mux())
-
-	return middle, nil
-}
-
-// NewHTTPServer returns an instance of HTTP server.
-func (app *Application) NewHTTPServer() (*graceful.Server, error) {
-	// Create HTTP middlewares
-	middle, err := app.MiddlewareStruct()
-	if err != nil {
-		return nil, err
-	}
-
-	requestTimeout, err := time.ParseDuration(app.GeneralConfig.RequestShutdownTimeout)
-	if err != nil {
-		return nil, err
-	}
-
-	// Create HTTP server
-	srv := &graceful.Server{
-		Timeout: requestTimeout,
-		Server:  &http.Server{Addr: app.GeneralConfig.Addr, Handler: middle},
-	}
-
-	return srv, nil
 }
 
 // MigrateUpAll runs all migration files to be up-to-date.

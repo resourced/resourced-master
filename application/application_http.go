@@ -4,10 +4,12 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/carbocation/interpose"
 	"github.com/didip/stopwatch"
 	"github.com/didip/tollbooth"
 	"github.com/gorilla/mux"
 	"github.com/pressly/chi"
+	"gopkg.in/tylerb/graceful.v1"
 
 	"github.com/resourced/resourced-master/handlers"
 	"github.com/resourced/resourced-master/middlewares"
@@ -331,4 +333,42 @@ func (app *Application) mux() *mux.Router {
 	router.PathPrefix("/").Handler(http.FileServer(http.Dir("static")))
 
 	return router
+}
+
+// MiddlewareStruct configures all the middlewares that are in-use for all request handlers.
+func (app *Application) MiddlewareStruct() (*interpose.Middleware, error) {
+	middle := interpose.New()
+	middle.Use(middlewares.SetAddr(app.GeneralConfig.Addr))
+	middle.Use(middlewares.SetVIPAddr(app.GeneralConfig.VIPAddr))
+	middle.Use(middlewares.SetVIPProtocol(app.GeneralConfig.VIPProtocol))
+	middle.Use(middlewares.SetDBs(app.DBConfig))
+	middle.Use(middlewares.SetCookieStore(app.cookieStore))
+	middle.Use(middlewares.SetMailers(app.Mailers))
+	middle.Use(middlewares.SetMessageBus(app.MessageBus))
+
+	middle.UseHandler(app.mux())
+
+	return middle, nil
+}
+
+// NewHTTPServer returns an instance of HTTP server.
+func (app *Application) NewHTTPServer() (*graceful.Server, error) {
+	// Create HTTP middlewares
+	middle, err := app.MiddlewareStruct()
+	if err != nil {
+		return nil, err
+	}
+
+	requestTimeout, err := time.ParseDuration(app.GeneralConfig.RequestShutdownTimeout)
+	if err != nil {
+		return nil, err
+	}
+
+	// Create HTTP server
+	srv := &graceful.Server{
+		Timeout: requestTimeout,
+		Server:  &http.Server{Addr: app.GeneralConfig.Addr, Handler: middle},
+	}
+
+	return srv, nil
 }
