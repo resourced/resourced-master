@@ -32,7 +32,7 @@ func (app *Application) GetHandlerInstrument(key string) chan int64 {
 }
 
 func (app *Application) mux2() *chi.Mux {
-	// generalAPILimiter := tollbooth.NewLimiter(int64(app.GeneralConfig.RateLimiters.GeneralAPI), time.Second)
+	generalAPILimiter := tollbooth.NewLimiter(int64(app.GeneralConfig.RateLimiters.GeneralAPI), time.Second)
 	signupLimiter := tollbooth.NewLimiter(int64(app.GeneralConfig.RateLimiters.PostSignup), time.Second)
 
 	useHTTPS := app.GeneralConfig.HTTPS.CertFile != "" && app.GeneralConfig.HTTPS.KeyFile != ""
@@ -148,6 +148,79 @@ func (app *Application) mux2() *chi.Mux {
 		r.Post("/:id/level", handlers.PostAccessTokensLevel)
 		r.Post("/:id/enabled", handlers.PostAccessTokensEnabled)
 		r.Post("/:id/delete", handlers.PostAccessTokensDelete)
+	})
+
+	r.Route("/api", func(r chi.Router) {
+		r.Route("/hosts", func(r chi.Router) {
+			r.Use(middlewares.MustLoginApi)
+			r.Get("/", tollbooth.LimitFuncHandler(generalAPILimiter, handlers.GetApiHosts).(http.HandlerFunc))
+			r.Post("/", handlers.PostApiHosts)
+		})
+
+		r.Route("/graphs", func(r chi.Router) {
+			r.Use(middlewares.MustLoginApi)
+			r.Put("/:id/metrics", tollbooth.LimitFuncHandler(generalAPILimiter, handlers.PutApiGraphsIDMetrics).(http.HandlerFunc))
+		})
+
+		r.Route("/metrics", func(r chi.Router) {
+			r.Route("/streams", func(r chi.Router) {
+				r.Use(middlewares.MustLoginApiStream)
+				r.Handle("/", tollbooth.LimitFuncHandler(generalAPILimiter, handlers.ApiMetricStreams))
+			})
+
+			r.Route("/:id/streams", func(r chi.Router) {
+				r.Use(middlewares.MustLoginApiStream)
+				r.Handle("/", tollbooth.LimitFuncHandler(generalAPILimiter, handlers.ApiMetricIDStreams))
+			})
+
+			r.Route("/:id/hosts/:host/streams", func(r chi.Router) {
+				r.Use(middlewares.MustLoginApiStream)
+				r.Handle("/", tollbooth.LimitFuncHandler(generalAPILimiter, handlers.ApiMetricIDStreams))
+			})
+
+			r.Route("/:id", func(r chi.Router) {
+				r.Use(middlewares.MustLoginApi)
+				r.Get("/", tollbooth.LimitFuncHandler(generalAPILimiter, handlers.GetApiTSMetrics).(http.HandlerFunc))
+				r.Get("/15min", tollbooth.LimitFuncHandler(generalAPILimiter, handlers.GetApiTSMetrics15Min).(http.HandlerFunc))
+
+				r.Get("/hosts/:host", tollbooth.LimitFuncHandler(generalAPILimiter, handlers.GetApiTSMetricsByHost).(http.HandlerFunc))
+				r.Get("hosts/:host/15min", tollbooth.LimitFuncHandler(generalAPILimiter, handlers.GetApiTSMetricsByHost15Min).(http.HandlerFunc))
+			})
+		})
+
+		r.Route("/events", func(r chi.Router) {
+			r.Use(middlewares.MustLoginApi)
+			r.Post("/", tollbooth.LimitFuncHandler(generalAPILimiter, handlers.PostApiEvents).(http.HandlerFunc))
+			r.Post("/line", tollbooth.LimitFuncHandler(generalAPILimiter, handlers.GetApiEventsLine).(http.HandlerFunc))
+			r.Post("/band", tollbooth.LimitFuncHandler(generalAPILimiter, handlers.GetApiEventsBand).(http.HandlerFunc))
+			r.Delete("/:id", tollbooth.LimitFuncHandler(generalAPILimiter, handlers.DeleteApiEventsID).(http.HandlerFunc))
+		})
+
+		r.Route("/logs", func(r chi.Router) {
+			r.Use(middlewares.MustLoginApi)
+			r.Get("/", tollbooth.LimitFuncHandler(generalAPILimiter, handlers.GetApiLogs).(http.HandlerFunc))
+			r.Post("/", handlers.PostApiLogs)
+			r.Get("/executors", tollbooth.LimitFuncHandler(generalAPILimiter, handlers.GetApiLogsExecutors).(http.HandlerFunc))
+		})
+
+		r.Route("/executors", func(r chi.Router) {
+			r.Use(middlewares.MustLoginApi)
+			r.Post("/", handlers.PostApiExecutors)
+		})
+
+		r.Route("/checks", func(r chi.Router) {
+			r.Use(middlewares.MustLoginApi)
+			r.Get("/:id/results", tollbooth.LimitFuncHandler(generalAPILimiter, handlers.GetApiCheckIDResults).(http.HandlerFunc))
+		})
+
+		r.Route("/metadata", func(r chi.Router) {
+			r.Use(middlewares.MustLoginApi)
+			r.Get("/", tollbooth.LimitFuncHandler(generalAPILimiter, handlers.GetApiMetadata).(http.HandlerFunc))
+			r.Get("/:key", tollbooth.LimitFuncHandler(generalAPILimiter, handlers.GetApiMetadataKey).(http.HandlerFunc))
+			r.Post("/:key", tollbooth.LimitFuncHandler(generalAPILimiter, handlers.PostApiMetadataKey).(http.HandlerFunc))
+			r.Delete("/:key", tollbooth.LimitFuncHandler(generalAPILimiter, handlers.DeleteApiMetadataKey).(http.HandlerFunc))
+		})
+
 	})
 
 	return r
