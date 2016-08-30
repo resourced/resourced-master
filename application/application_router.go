@@ -7,6 +7,7 @@ import (
 	"github.com/didip/stopwatch"
 	"github.com/didip/tollbooth"
 	"github.com/gorilla/mux"
+	"github.com/pressly/chi"
 
 	"github.com/resourced/resourced-master/handlers"
 	"github.com/resourced/resourced-master/middlewares"
@@ -18,6 +19,138 @@ func (app *Application) NewHandlerInstruments() map[string]chan int64 {
 		instruments[key] = make(chan int64)
 	}
 	return instruments
+}
+
+func (app *Application) GetHandlerInstrument(key string) chan int64 {
+	var instrument chan int64
+
+	app.RLock()
+	instrument = app.HandlerInstruments[key]
+	app.RUnlock()
+
+	return instrument
+}
+
+func (app *Application) mux2() *chi.Mux {
+	// generalAPILimiter := tollbooth.NewLimiter(int64(app.GeneralConfig.RateLimiters.GeneralAPI), time.Second)
+	signupLimiter := tollbooth.NewLimiter(int64(app.GeneralConfig.RateLimiters.PostSignup), time.Second)
+
+	useHTTPS := app.GeneralConfig.HTTPS.CertFile != "" && app.GeneralConfig.HTTPS.KeyFile != ""
+	CSRF := middlewares.CSRFMiddleware(useHTTPS, app.GeneralConfig.CookieSecret)
+
+	r := chi.NewRouter()
+
+	// Set various info for every request.
+	r.Use(middlewares.SetAddr(app.GeneralConfig.Addr))
+	r.Use(middlewares.SetVIPAddr(app.GeneralConfig.VIPAddr))
+	r.Use(middlewares.SetVIPProtocol(app.GeneralConfig.VIPProtocol))
+	r.Use(middlewares.SetDBs(app.DBConfig))
+	r.Use(middlewares.SetCookieStore(app.cookieStore))
+	r.Use(middlewares.SetMailers(app.Mailers))
+	r.Use(middlewares.SetMessageBus(app.MessageBus))
+
+	r.Get("/signup", handlers.GetSignup)
+	r.Post("/signup", tollbooth.LimitFuncHandler(signupLimiter, handlers.PostSignup).(http.HandlerFunc))
+
+	r.Get("/login", handlers.GetLogin)
+	r.Post("/login", handlers.PostLogin)
+
+	r.Route("/", func(r chi.Router) {
+		r.Use(CSRF, middlewares.MustLogin, middlewares.SetClusters, middlewares.MustBeMember, middlewares.SetAccessTokens)
+		r.Get("/", stopwatch.LatencyFuncHandler(app.GetHandlerInstrument("GetHosts"), []string{"GET"}, handlers.GetHosts).(http.HandlerFunc))
+	})
+
+	r.Route("/saved-queries", func(r chi.Router) {
+		r.Use(CSRF, middlewares.MustLogin, middlewares.SetClusters, middlewares.MustBeMember)
+		r.Post("/:id", handlers.PostPutDeleteSavedQueriesID)
+		r.Put("/:id", handlers.PostPutDeleteSavedQueriesID)
+		r.Delete("/:id", handlers.PostPutDeleteSavedQueriesID)
+	})
+
+	r.Route("/graphs", func(r chi.Router) {
+		r.Use(CSRF, middlewares.MustLogin, middlewares.SetClusters, middlewares.MustBeMember, middlewares.SetAccessTokens)
+		r.Get("/", handlers.GetGraphs)
+		r.Post("/", handlers.PostGraphs)
+		r.Get("/:id", handlers.GetPostPutDeleteGraphsID)
+		r.Post("/:id", handlers.GetPostPutDeleteGraphsID)
+		r.Put("/:id", handlers.GetPostPutDeleteGraphsID)
+		r.Delete("/:id", handlers.GetPostPutDeleteGraphsID)
+	})
+
+	r.Route("/logs", func(r chi.Router) {
+		r.Use(CSRF, middlewares.MustLogin, middlewares.SetClusters, middlewares.MustBeMember, middlewares.SetAccessTokens)
+		r.Get("/", stopwatch.LatencyFuncHandler(app.GetHandlerInstrument("GetLogs"), []string{"GET"}, handlers.GetLogs).(http.HandlerFunc))
+		r.Get("/executors", stopwatch.LatencyFuncHandler(app.GetHandlerInstrument("GetLogsExecutors"), []string{"GET"}, handlers.GetLogsExecutors).(http.HandlerFunc))
+	})
+
+	r.Route("/checks", func(r chi.Router) {
+		r.Use(CSRF, middlewares.MustLogin, middlewares.SetClusters, middlewares.MustBeMember, middlewares.SetAccessTokens)
+		r.Get("/", handlers.GetChecks)
+		r.Post("/", handlers.PostChecks)
+
+		r.Route("/:checkID", func(r chi.Router) {
+			r.Use(CSRF, middlewares.MustLogin, middlewares.SetClusters, middlewares.MustBeMember)
+			r.Post("/", handlers.PostPutDeleteCheckID)
+			r.Put("/", handlers.PostPutDeleteCheckID)
+			r.Delete("/", handlers.PostPutDeleteCheckID)
+			r.Post("/silence", handlers.PostCheckIDSilence)
+
+			r.Route("/triggers", func(r chi.Router) {
+				r.Use(CSRF, middlewares.MustLogin, middlewares.SetClusters, middlewares.MustBeMember)
+				r.Post("/", handlers.PostChecksTriggers)
+				r.Post("/:triggerID", handlers.PostPutDeleteCheckTriggerID)
+				r.Put("/:triggerID", handlers.PostPutDeleteCheckTriggerID)
+				r.Delete("/:triggerID", handlers.PostPutDeleteCheckTriggerID)
+			})
+		})
+	})
+
+	r.Route("/users", func(r chi.Router) {
+		r.Route("/:id", func(r chi.Router) {
+			r.Use(CSRF, middlewares.MustLogin, middlewares.SetClusters, middlewares.MustBeMember)
+			r.Post("/", handlers.PostPutDeleteUsersID)
+			r.Put("/", handlers.PostPutDeleteUsersID)
+			r.Delete("/", handlers.PostPutDeleteUsersID)
+		})
+
+		r.Get("/email-verification/:token", handlers.GetUsersEmailVerificationToken)
+	})
+
+	r.Route("/clusters", func(r chi.Router) {
+		r.Use(CSRF, middlewares.MustLogin, middlewares.SetClusters, middlewares.MustBeMember)
+		r.Get("/", handlers.GetClusters)
+		r.Post("/", handlers.PostClusters)
+		r.Post("/current", handlers.PostClustersCurrent)
+
+		r.Route("/:clusterID", func(r chi.Router) {
+			r.Use(CSRF, middlewares.MustLogin, middlewares.SetClusters, middlewares.MustBeMember)
+			r.Post("/", handlers.PostPutDeleteClusterID)
+			r.Put("/", handlers.PostPutDeleteClusterID)
+			r.Delete("/", handlers.PostPutDeleteClusterID)
+
+			r.Post("/access-tokens", handlers.PostAccessTokens)
+			r.Post("/users", handlers.PostPutDeleteClusterIDUsers)
+			r.Put("/users", handlers.PostPutDeleteClusterIDUsers)
+			r.Delete("/users", handlers.PostPutDeleteClusterIDUsers)
+
+			r.Route("/metrics", func(r chi.Router) {
+				r.Use(CSRF, middlewares.MustLogin, middlewares.SetClusters, middlewares.MustBeMember)
+				r.Post("/", handlers.PostMetrics)
+				r.Post("/:metricID", handlers.PostPutDeleteMetricID)
+				r.Put("/:metricID", handlers.PostPutDeleteMetricID)
+				r.Delete("/:metricID", handlers.PostPutDeleteMetricID)
+			})
+		})
+	})
+
+	r.Route("/access-tokens", func(r chi.Router) {
+		r.Use(CSRF, middlewares.MustLogin, middlewares.SetClusters, middlewares.MustBeMember)
+		r.Post("/:id/level", handlers.PostAccessTokensLevel)
+		r.Post("/:id/enabled", handlers.PostAccessTokensEnabled)
+		r.Post("/:id/delete", handlers.PostAccessTokensDelete)
+	})
+
+	return r
 }
 
 // mux returns an instance of HTTP router with all the predefined rules.

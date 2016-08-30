@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/Sirupsen/logrus"
@@ -102,6 +103,7 @@ type Application struct {
 	RefetchChecksChan  chan bool
 	StdOutLogger       *logrus.Logger
 	StdErrLogger       *logrus.Logger
+	sync.RWMutex
 }
 
 func (app *Application) FullAddr() string {

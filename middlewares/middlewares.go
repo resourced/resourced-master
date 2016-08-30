@@ -2,16 +2,17 @@
 package middlewares
 
 import (
+	"context"
 	"errors"
 	"net/http"
 	"strings"
 
 	"github.com/Sirupsen/logrus"
 	"github.com/didip/stopwatch"
-	"github.com/gorilla/context"
 	"github.com/gorilla/csrf"
 	"github.com/gorilla/sessions"
 	"github.com/justinas/alice"
+	chi_middleware "github.com/pressly/chi/middleware"
 
 	"github.com/resourced/resourced-master/config"
 	"github.com/resourced/resourced-master/dal"
@@ -20,15 +21,13 @@ import (
 	"github.com/resourced/resourced-master/messagebus"
 )
 
-// SetStringKeyValue set arbitrary key value on context and passes it around to every request handler
-func SetStringKeyValue(key, value string) func(http.Handler) http.Handler {
-	return func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			context.Set(r, key, value)
-
-			next.ServeHTTP(w, r)
-		})
+// CSRFMiddleware is a constructor that creates github.com/gorilla/csrf.CSRF struct
+func CSRFMiddleware(useHTTPS bool, salt string) func(http.Handler) http.Handler {
+	CSRFOptions := csrf.Secure(false)
+	if useHTTPS {
+		CSRFOptions = csrf.Secure(true)
 	}
+	return csrf.Protect([]byte(salt), CSRFOptions)
 }
 
 // SetAddr passes daemon host and port to every request handler
@@ -36,7 +35,7 @@ func SetAddr(addr string) func(http.Handler) http.Handler {
 	if strings.HasPrefix(addr, ":") {
 		addr = "localhost" + addr
 	}
-	return SetStringKeyValue("addr", addr)
+	return chi_middleware.WithValue("addr", addr)
 }
 
 // SetVIPAddr passes VIP host and port to every request handler
@@ -44,19 +43,19 @@ func SetVIPAddr(vipAddr string) func(http.Handler) http.Handler {
 	if strings.HasPrefix(vipAddr, ":") {
 		vipAddr = "localhost" + vipAddr
 	}
-	return SetStringKeyValue("vipAddr", vipAddr)
+	return chi_middleware.WithValue("vipAddr", vipAddr)
 }
 
 // SetVIPProtocol passes VIP protocol to every request handler
 func SetVIPProtocol(vipProtocol string) func(http.Handler) http.Handler {
-	return SetStringKeyValue("vipProtocol", vipProtocol)
+	return chi_middleware.WithValue("vipProtocol", vipProtocol)
 }
 
 // SetDBs passes all database connections to every request handler
 func SetDBs(dbConfig *config.DBConfig) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			context.Set(r, "dbs", dbConfig)
+			r = r.WithContext(context.WithValue(r.Context(), "dbs", dbConfig))
 
 			next.ServeHTTP(w, r)
 		})
@@ -67,7 +66,7 @@ func SetDBs(dbConfig *config.DBConfig) func(http.Handler) http.Handler {
 func SetCookieStore(cookieStore *sessions.CookieStore) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			context.Set(r, "cookieStore", cookieStore)
+			r = r.WithContext(context.WithValue(r.Context(), "cookieStore", cookieStore))
 
 			next.ServeHTTP(w, r)
 		})
@@ -79,7 +78,7 @@ func SetMailers(mailers map[string]*mailer.Mailer) func(http.Handler) http.Handl
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			for key, mailr := range mailers {
-				context.Set(r, "mailer."+key, mailr)
+				r = r.WithContext(context.WithValue(r.Context(), "mailer."+key, mailr))
 			}
 
 			next.ServeHTTP(w, r)
@@ -91,7 +90,7 @@ func SetMailers(mailers map[string]*mailer.Mailer) func(http.Handler) http.Handl
 func SetMessageBus(bus *messagebus.MessageBus) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			context.Set(r, "bus", bus)
+			r = r.WithContext(context.WithValue(r.Context(), "bus", bus))
 
 			next.ServeHTTP(w, r)
 		})
@@ -101,7 +100,9 @@ func SetMessageBus(bus *messagebus.MessageBus) func(http.Handler) http.Handler {
 // SetClusters sets clusters data in context based on logged in user ID.
 func SetClusters(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		cookieStore := context.Get(r, "cookieStore").(*sessions.CookieStore)
+		ctx := r.Context()
+
+		cookieStore := ctx.Value("cookieStore").(*sessions.CookieStore)
 		session, _ := cookieStore.Get(r, "resourcedmaster-session")
 		userRowInterface := session.Values["user"]
 
@@ -112,7 +113,7 @@ func SetClusters(next http.Handler) http.Handler {
 
 		userRow := userRowInterface.(*dal.UserRow)
 
-		dbs := context.Get(r, "dbs").(*config.DBConfig)
+		dbs := ctx.Value("dbs").(*config.DBConfig)
 
 		var clusterRows []*dal.ClusterRow
 		var err error
@@ -136,7 +137,7 @@ func SetClusters(next http.Handler) http.Handler {
 			return
 		}
 
-		context.Set(r, "clusters", clusterRows)
+		r = r.WithContext(context.WithValue(ctx, "clusters", clusterRows))
 
 		// Set currentCluster if not previously set.
 		if len(clusterRows) > 0 {
@@ -155,7 +156,8 @@ func SetClusters(next http.Handler) http.Handler {
 		currentClusterInterface := session.Values["currentCluster"]
 		if currentClusterInterface != nil {
 			currentClusterRow := currentClusterInterface.(*dal.ClusterRow)
-			context.Set(r, "currentCluster", currentClusterRow)
+
+			r = r.WithContext(context.WithValue(ctx, "currentCluster", currentClusterRow))
 		}
 
 		next.ServeHTTP(w, r)
@@ -165,9 +167,11 @@ func SetClusters(next http.Handler) http.Handler {
 // SetAccessTokens sets clusters data in context based on logged in user ID.
 func SetAccessTokens(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		dbs := context.Get(r, "dbs").(*config.DBConfig)
+		ctx := r.Context()
 
-		currentClusterInterface := context.Get(r, "currentCluster")
+		dbs := ctx.Value("dbs").(*config.DBConfig)
+
+		currentClusterInterface := ctx.Value("currentCluster")
 		if currentClusterInterface == nil {
 			libhttp.HandleErrorJson(w, errors.New("Unable to get access tokens because current cluster is nil."))
 			return
@@ -179,30 +183,23 @@ func SetAccessTokens(next http.Handler) http.Handler {
 			return
 		}
 
-		context.Set(r, "accessTokens", accessTokenRows)
+		r = r.WithContext(context.WithValue(ctx, "accessTokens", accessTokenRows))
 
 		next.ServeHTTP(w, r)
 	})
 }
 
-// CSRFMiddleware is a constructor that creates github.com/gorilla/csrf.CSRF struct
-func CSRFMiddleware(useHTTPS bool, salt string) func(http.Handler) http.Handler {
-	CSRFOptions := csrf.Secure(false)
-	if useHTTPS {
-		CSRFOptions = csrf.Secure(true)
-	}
-	return csrf.Protect([]byte(salt), CSRFOptions)
-}
-
 // MustLogin is a middleware that checks existence of current user.
 func MustLogin(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		cookieStore := context.Get(r, "cookieStore").(*sessions.CookieStore)
+		ctx := r.Context()
+
+		cookieStore := ctx.Value("cookieStore").(*sessions.CookieStore)
 		session, _ := cookieStore.Get(r, "resourcedmaster-session")
 		userRowInterface := session.Values["user"]
 
 		if userRowInterface == nil {
-			cookieStore := context.Get(r, "cookieStore").(*sessions.CookieStore)
+			cookieStore := ctx.Value("cookieStore").(*sessions.CookieStore)
 			session, err := cookieStore.Get(r, "resourcedmaster-session")
 			if err == nil {
 				delete(session.Values, "user")
@@ -213,7 +210,7 @@ func MustLogin(next http.Handler) http.Handler {
 			return
 		}
 
-		context.Set(r, "currentUser", userRowInterface.(*dal.UserRow))
+		r = r.WithContext(context.WithValue(ctx, "currentUser", userRowInterface.(*dal.UserRow)))
 
 		next.ServeHTTP(w, r)
 	})
@@ -222,6 +219,8 @@ func MustLogin(next http.Handler) http.Handler {
 // MustLoginApi is a middleware that checks /api login.
 func MustLoginApi(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx := r.Context()
+
 		auth := r.Header.Get("Authorization")
 
 		if auth == "" {
@@ -235,7 +234,7 @@ func MustLoginApi(next http.Handler) http.Handler {
 			return
 		}
 
-		dbs := context.Get(r, "dbs").(*config.DBConfig)
+		dbs := ctx.Value("dbs").(*config.DBConfig)
 
 		accessTokenRow, err := dal.NewAccessToken(dbs.Core).GetByAccessToken(nil, accessTokenString)
 		if err != nil {
@@ -265,7 +264,7 @@ func MustLoginApi(next http.Handler) http.Handler {
 			return
 		}
 
-		context.Set(r, "accessToken", accessTokenRow)
+		r = r.WithContext(context.WithValue(ctx, "accessToken", accessTokenRow))
 
 		next.ServeHTTP(w, r)
 	})
@@ -274,6 +273,8 @@ func MustLoginApi(next http.Handler) http.Handler {
 // MustLoginApiStream is a middleware that checks /api/.../stream login.
 func MustLoginApiStream(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx := r.Context()
+
 		accessTokenString := r.URL.Query().Get("accessToken")
 
 		// Check the upper-case version
@@ -287,7 +288,7 @@ func MustLoginApiStream(next http.Handler) http.Handler {
 			return
 		}
 
-		dbs := context.Get(r, "dbs").(*config.DBConfig)
+		dbs := ctx.Value("dbs").(*config.DBConfig)
 
 		accessTokenRow, err := dal.NewAccessToken(dbs.Core).GetByAccessToken(nil, accessTokenString)
 		if err != nil {
@@ -304,7 +305,7 @@ func MustLoginApiStream(next http.Handler) http.Handler {
 			return
 		}
 
-		context.Set(r, "accessToken", accessTokenRow)
+		r = r.WithContext(context.WithValue(ctx, "accessToken", accessTokenRow))
 
 		next.ServeHTTP(w, r)
 	})
@@ -312,13 +313,15 @@ func MustLoginApiStream(next http.Handler) http.Handler {
 
 func MustBeMember(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		currentClusterInterface := context.Get(r, "currentCluster")
+		ctx := r.Context()
+
+		currentClusterInterface := ctx.Value("currentCluster")
 		if currentClusterInterface == nil {
 			http.Redirect(w, r, "/login", 301)
 			return
 		}
 
-		currentUserInterface := context.Get(r, "currentUser")
+		currentUserInterface := ctx.Value("currentUser")
 		if currentUserInterface == nil {
 			http.Redirect(w, r, "/login", 301)
 			return

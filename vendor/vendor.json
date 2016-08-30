@@ -237,6 +237,12 @@
 			"revisionTime": "2016-01-27T17:00:04Z"
 		},
 		{
+			"checksumSHA1": "tYcGhJ7OuM2n44k8D/g7L2ZS1hE=",
+			"path": "github.com/pressly/chi",
+			"revision": "cc779a3f1cef5f0dfbc320d50f98f060bb6f2f34",
+			"revisionTime": "2016-08-29T19:42:49Z"
+		},
+		{
 			"checksumSHA1": "69oDmck/6WoFdASUzyIbIFR7VmM=",
 			"path": "github.com/rcrowley/go-metrics",
 			"revision": "eeba7bd0dd01ace6e690fa833b3f22aaec29af43",
