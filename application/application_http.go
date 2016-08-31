@@ -64,6 +64,8 @@ func (app *Application) mux() *chi.Mux {
 
 	r.Route("/saved-queries", func(r chi.Router) {
 		r.Use(CSRF, middlewares.MustLogin, middlewares.SetClusters, middlewares.MustBeMember)
+		r.Post("/", handlers.PostSavedQueries)
+
 		r.Post("/:id", handlers.PostPutDeleteSavedQueriesID)
 		r.Put("/:id", handlers.PostPutDeleteSavedQueriesID)
 		r.Delete("/:id", handlers.PostPutDeleteSavedQueriesID)
@@ -73,6 +75,7 @@ func (app *Application) mux() *chi.Mux {
 		r.Use(CSRF, middlewares.MustLogin, middlewares.SetClusters, middlewares.MustBeMember, middlewares.SetAccessTokens)
 		r.Get("/", handlers.GetGraphs)
 		r.Post("/", handlers.PostGraphs)
+
 		r.Get("/:id", handlers.GetPostPutDeleteGraphsID)
 		r.Post("/:id", handlers.GetPostPutDeleteGraphsID)
 		r.Put("/:id", handlers.GetPostPutDeleteGraphsID)
@@ -193,8 +196,8 @@ func (app *Application) mux() *chi.Mux {
 		r.Route("/events", func(r chi.Router) {
 			r.Use(middlewares.MustLoginApi)
 			r.Post("/", tollbooth.LimitFuncHandler(generalAPILimiter, handlers.PostApiEvents).(http.HandlerFunc))
-			r.Post("/line", tollbooth.LimitFuncHandler(generalAPILimiter, handlers.GetApiEventsLine).(http.HandlerFunc))
-			r.Post("/band", tollbooth.LimitFuncHandler(generalAPILimiter, handlers.GetApiEventsBand).(http.HandlerFunc))
+			r.Get("/line", tollbooth.LimitFuncHandler(generalAPILimiter, handlers.GetApiEventsLine).(http.HandlerFunc))
+			r.Get("/band", tollbooth.LimitFuncHandler(generalAPILimiter, handlers.GetApiEventsBand).(http.HandlerFunc))
 			r.Delete("/:id", tollbooth.LimitFuncHandler(generalAPILimiter, handlers.DeleteApiEventsID).(http.HandlerFunc))
 		})
 
