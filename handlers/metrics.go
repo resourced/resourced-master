@@ -7,7 +7,6 @@ import (
 	"strconv"
 
 	"github.com/Sirupsen/logrus"
-	"github.com/gorilla/context"
 	"github.com/gorilla/mux"
 
 	"github.com/resourced/resourced-master/config"
@@ -16,7 +15,7 @@ import (
 )
 
 func PostMetrics(w http.ResponseWriter, r *http.Request) {
-	dbs := context.Get(r, "dbs").(*config.DBConfig)
+	dbs := r.Context().Value("dbs").(*config.DBConfig)
 
 	vars := mux.Vars(r)
 
@@ -41,7 +40,7 @@ func PostMetrics(w http.ResponseWriter, r *http.Request) {
 func GetApiTSMetricsByHost(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	dbs := context.Get(r, "dbs").(*config.DBConfig)
+	dbs := r.Context().Value("dbs").(*config.DBConfig)
 
 	id, err := getInt64SlugFromPath(w, r, "id")
 	if err != nil {
@@ -111,7 +110,7 @@ func GetApiTSMetricsByHost(w http.ResponseWriter, r *http.Request) {
 func GetApiTSMetricsByHost15Min(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	dbs := context.Get(r, "dbs").(*config.DBConfig)
+	dbs := r.Context().Value("dbs").(*config.DBConfig)
 
 	id, err := getInt64SlugFromPath(w, r, "id")
 	if err != nil {
@@ -183,7 +182,7 @@ func GetApiTSMetricsByHost15Min(w http.ResponseWriter, r *http.Request) {
 func GetApiTSMetrics(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	dbs := context.Get(r, "dbs").(*config.DBConfig)
+	dbs := r.Context().Value("dbs").(*config.DBConfig)
 
 	qParams := r.URL.Query()
 
@@ -248,7 +247,7 @@ func GetApiTSMetrics(w http.ResponseWriter, r *http.Request) {
 func GetApiTSMetrics15Min(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	dbs := context.Get(r, "dbs").(*config.DBConfig)
+	dbs := r.Context().Value("dbs").(*config.DBConfig)
 
 	qParams := r.URL.Query()
 
@@ -336,7 +335,7 @@ func PutMetricID(w http.ResponseWriter, r *http.Request) {
 
 // DeleteMetricID deletes metrics by ID
 func DeleteMetricID(w http.ResponseWriter, r *http.Request) {
-	dbs := context.Get(r, "dbs").(*config.DBConfig)
+	dbs := r.Context().Value("dbs").(*config.DBConfig)
 
 	vars := mux.Vars(r)
 

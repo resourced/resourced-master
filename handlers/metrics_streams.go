@@ -6,7 +6,6 @@ import (
 	"net/http"
 
 	"github.com/Sirupsen/logrus"
-	"github.com/gorilla/context"
 	"github.com/gorilla/mux"
 
 	"github.com/resourced/resourced-master/config"
@@ -27,9 +26,9 @@ func ApiMetricStreams(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	bus := context.Get(r, "bus").(*messagebus.MessageBus)
+	bus := r.Context().Value("bus").(*messagebus.MessageBus)
 
-	accessTokenRow := context.Get(r, "accessToken").(*dal.AccessTokenRow)
+	accessTokenRow := r.Context().Value("accessToken").(*dal.AccessTokenRow)
 
 	// Create a new channel for this connected client.
 	newClientChan := make(chan string)
@@ -116,11 +115,11 @@ func ApiMetricIDStreams(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	dbs := context.Get(r, "dbs").(*config.DBConfig)
+	dbs := r.Context().Value("dbs").(*config.DBConfig)
 
-	bus := context.Get(r, "bus").(*messagebus.MessageBus)
+	bus := r.Context().Value("bus").(*messagebus.MessageBus)
 
-	accessTokenRow := context.Get(r, "accessToken").(*dal.AccessTokenRow)
+	accessTokenRow := r.Context().Value("accessToken").(*dal.AccessTokenRow)
 
 	metricID, err := getInt64SlugFromPath(w, r, "id")
 	if err != nil {

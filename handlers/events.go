@@ -8,8 +8,6 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/gorilla/context"
-
 	"github.com/resourced/resourced-master/config"
 	"github.com/resourced/resourced-master/dal"
 	"github.com/resourced/resourced-master/libhttp"
@@ -18,9 +16,9 @@ import (
 func GetApiEventsLine(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	dbs := context.Get(r, "dbs").(*config.DBConfig)
+	dbs := r.Context().Value("dbs").(*config.DBConfig)
 
-	accessTokenRow := context.Get(r, "accessToken").(*dal.AccessTokenRow)
+	accessTokenRow := r.Context().Value("accessToken").(*dal.AccessTokenRow)
 
 	qParams := r.URL.Query()
 
@@ -73,9 +71,9 @@ func GetApiEventsLine(w http.ResponseWriter, r *http.Request) {
 func GetApiEventsBand(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	dbs := context.Get(r, "dbs").(*config.DBConfig)
+	dbs := r.Context().Value("dbs").(*config.DBConfig)
 
-	accessTokenRow := context.Get(r, "accessToken").(*dal.AccessTokenRow)
+	accessTokenRow := r.Context().Value("accessToken").(*dal.AccessTokenRow)
 
 	qParams := r.URL.Query()
 
@@ -128,9 +126,9 @@ func GetApiEventsBand(w http.ResponseWriter, r *http.Request) {
 func PostApiEvents(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	dbs := context.Get(r, "dbs").(*config.DBConfig)
+	dbs := r.Context().Value("dbs").(*config.DBConfig)
 
-	accessTokenRow := context.Get(r, "accessToken").(*dal.AccessTokenRow)
+	accessTokenRow := r.Context().Value("accessToken").(*dal.AccessTokenRow)
 
 	dataJson, err := ioutil.ReadAll(r.Body)
 	if err != nil {
@@ -166,9 +164,9 @@ func PostApiEvents(w http.ResponseWriter, r *http.Request) {
 func DeleteApiEventsID(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	dbs := context.Get(r, "dbs").(*config.DBConfig)
+	dbs := r.Context().Value("dbs").(*config.DBConfig)
 
-	accessTokenRow := context.Get(r, "accessToken").(*dal.AccessTokenRow)
+	accessTokenRow := r.Context().Value("accessToken").(*dal.AccessTokenRow)
 
 	id, err := getInt64SlugFromPath(w, r, "id")
 	if err != nil {

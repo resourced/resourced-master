@@ -5,7 +5,6 @@ import (
 	"io/ioutil"
 	"net/http"
 
-	"github.com/gorilla/context"
 	"github.com/gorilla/mux"
 
 	"github.com/resourced/resourced-master/config"
@@ -16,9 +15,9 @@ import (
 func GetApiMetadata(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	dbs := context.Get(r, "dbs").(*config.DBConfig)
+	dbs := r.Context().Value("dbs").(*config.DBConfig)
 
-	accessTokenRow := context.Get(r, "accessToken").(*dal.AccessTokenRow)
+	accessTokenRow := r.Context().Value("accessToken").(*dal.AccessTokenRow)
 
 	metadataRows, err := dal.NewMetadata(dbs.Core).AllByClusterID(nil, accessTokenRow.ClusterID)
 	if err != nil {
@@ -38,9 +37,9 @@ func GetApiMetadata(w http.ResponseWriter, r *http.Request) {
 func PostApiMetadataKey(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	dbs := context.Get(r, "dbs").(*config.DBConfig)
+	dbs := r.Context().Value("dbs").(*config.DBConfig)
 
-	accessTokenRow := context.Get(r, "accessToken").(*dal.AccessTokenRow)
+	accessTokenRow := r.Context().Value("accessToken").(*dal.AccessTokenRow)
 
 	dataJson, err := ioutil.ReadAll(r.Body)
 	if err != nil {
@@ -69,9 +68,9 @@ func PostApiMetadataKey(w http.ResponseWriter, r *http.Request) {
 func DeleteApiMetadataKey(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	dbs := context.Get(r, "dbs").(*config.DBConfig)
+	dbs := r.Context().Value("dbs").(*config.DBConfig)
 
-	accessTokenRow := context.Get(r, "accessToken").(*dal.AccessTokenRow)
+	accessTokenRow := r.Context().Value("accessToken").(*dal.AccessTokenRow)
 
 	vars := mux.Vars(r)
 	key := vars["key"]
@@ -94,9 +93,9 @@ func DeleteApiMetadataKey(w http.ResponseWriter, r *http.Request) {
 func GetApiMetadataKey(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	dbs := context.Get(r, "dbs").(*config.DBConfig)
+	dbs := r.Context().Value("dbs").(*config.DBConfig)
 
-	accessTokenRow := context.Get(r, "accessToken").(*dal.AccessTokenRow)
+	accessTokenRow := r.Context().Value("accessToken").(*dal.AccessTokenRow)
 
 	vars := mux.Vars(r)
 	key := vars["key"]

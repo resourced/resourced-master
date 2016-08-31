@@ -5,7 +5,6 @@ import (
 	"net/http"
 
 	"github.com/Sirupsen/logrus"
-	"github.com/gorilla/context"
 
 	"github.com/resourced/resourced-master/config"
 	"github.com/resourced/resourced-master/dal"
@@ -15,9 +14,9 @@ import (
 func PostApiExecutors(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	accessTokenRow := context.Get(r, "accessToken").(*dal.AccessTokenRow)
+	accessTokenRow := r.Context().Value("accessToken").(*dal.AccessTokenRow)
 
-	dbs := context.Get(r, "dbs").(*config.DBConfig)
+	dbs := r.Context().Value("dbs").(*config.DBConfig)
 
 	dataJson, err := ioutil.ReadAll(r.Body)
 	if err != nil {

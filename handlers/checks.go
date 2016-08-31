@@ -9,7 +9,6 @@ import (
 	"strings"
 
 	"github.com/Sirupsen/logrus"
-	"github.com/gorilla/context"
 	"github.com/gorilla/csrf"
 	"github.com/gorilla/mux"
 
@@ -23,11 +22,11 @@ import (
 func GetChecks(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html")
 
-	dbs := context.Get(r, "dbs").(*config.DBConfig)
+	dbs := r.Context().Value("dbs").(*config.DBConfig)
 
-	currentUser := context.Get(r, "currentUser").(*dal.UserRow)
+	currentUser := r.Context().Value("currentUser").(*dal.UserRow)
 
-	currentCluster := context.Get(r, "currentCluster").(*dal.ClusterRow)
+	currentCluster := r.Context().Value("currentCluster").(*dal.ClusterRow)
 
 	// -----------------------------------
 	// Create channels to receive SQL rows
@@ -85,10 +84,10 @@ func GetChecks(w http.ResponseWriter, r *http.Request) {
 		Metrics        []*dal.MetricRow
 	}{
 		csrf.Token(r),
-		context.Get(r, "addr").(string),
+		r.Context().Value("addr").(string),
 		currentUser,
 		accessToken,
-		context.Get(r, "clusters").([]*dal.ClusterRow),
+		r.Context().Value("clusters").([]*dal.ClusterRow),
 		currentCluster,
 		checksWithError.Checks,
 		metricsWithError.Metrics,
@@ -111,11 +110,11 @@ func GetChecks(w http.ResponseWriter, r *http.Request) {
 }
 
 func PostChecks(w http.ResponseWriter, r *http.Request) {
-	dbs := context.Get(r, "dbs").(*config.DBConfig)
+	dbs := r.Context().Value("dbs").(*config.DBConfig)
 
 	w.Header().Set("Content-Type", "text/html")
 
-	currentCluster := context.Get(r, "currentCluster").(*dal.ClusterRow)
+	currentCluster := r.Context().Value("currentCluster").(*dal.ClusterRow)
 
 	intervalInSeconds := r.FormValue("IntervalInSeconds")
 	if intervalInSeconds == "" {
@@ -148,7 +147,7 @@ func PostChecks(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	bus := context.Get(r, "bus").(*messagebus.MessageBus)
+	bus := r.Context().Value("bus").(*messagebus.MessageBus)
 	go func() {
 		err := bus.Publish("checks-refetch", "true")
 		if err != nil {
@@ -165,7 +164,7 @@ func PostPutDeleteCheckID(w http.ResponseWriter, r *http.Request) {
 		method = "put"
 	}
 
-	bus := context.Get(r, "bus").(*messagebus.MessageBus)
+	bus := r.Context().Value("bus").(*messagebus.MessageBus)
 	go func() {
 		err := bus.Publish("checks-refetch", "true")
 		if err != nil {
@@ -181,7 +180,7 @@ func PostPutDeleteCheckID(w http.ResponseWriter, r *http.Request) {
 }
 
 func PutCheckID(w http.ResponseWriter, r *http.Request) {
-	dbs := context.Get(r, "dbs").(*config.DBConfig)
+	dbs := r.Context().Value("dbs").(*config.DBConfig)
 
 	id, err := getInt64SlugFromPath(w, r, "id")
 	if err != nil {
@@ -227,9 +226,9 @@ func DeleteCheckID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	dbs := context.Get(r, "dbs").(*config.DBConfig)
+	dbs := r.Context().Value("dbs").(*config.DBConfig)
 
-	currentCluster := context.Get(r, "currentCluster").(*dal.ClusterRow)
+	currentCluster := r.Context().Value("currentCluster").(*dal.ClusterRow)
 
 	_, err = dal.NewCheck(dbs.Core).DeleteByClusterIDAndID(nil, currentCluster.ID, id)
 	if err != nil {
@@ -241,7 +240,7 @@ func DeleteCheckID(w http.ResponseWriter, r *http.Request) {
 }
 
 func PostCheckIDSilence(w http.ResponseWriter, r *http.Request) {
-	dbs := context.Get(r, "dbs").(*config.DBConfig)
+	dbs := r.Context().Value("dbs").(*config.DBConfig)
 
 	id, err := getInt64SlugFromPath(w, r, "id")
 	if err != nil {
@@ -314,7 +313,7 @@ func newCheckTriggerFromForm(r *http.Request) (dal.CheckTrigger, error) {
 }
 
 func PostChecksTriggers(w http.ResponseWriter, r *http.Request) {
-	dbs := context.Get(r, "dbs").(*config.DBConfig)
+	dbs := r.Context().Value("dbs").(*config.DBConfig)
 
 	w.Header().Set("Content-Type", "text/html")
 
@@ -352,7 +351,7 @@ func PostChecksTriggers(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	bus := context.Get(r, "bus").(*messagebus.MessageBus)
+	bus := r.Context().Value("bus").(*messagebus.MessageBus)
 	go func() {
 		err := bus.Publish("checks-refetch", "true")
 		if err != nil {
@@ -369,7 +368,7 @@ func PostPutDeleteCheckTriggerID(w http.ResponseWriter, r *http.Request) {
 		method = "put"
 	}
 
-	bus := context.Get(r, "bus").(*messagebus.MessageBus)
+	bus := r.Context().Value("bus").(*messagebus.MessageBus)
 	go func() {
 		err := bus.Publish("checks-refetch", "true")
 		if err != nil {
@@ -411,7 +410,7 @@ func PutCheckTriggerID(w http.ResponseWriter, r *http.Request) {
 
 	trigger.ID = id
 
-	dbs := context.Get(r, "dbs").(*config.DBConfig)
+	dbs := r.Context().Value("dbs").(*config.DBConfig)
 
 	check := dal.NewCheck(dbs.Core)
 
@@ -452,7 +451,7 @@ func DeleteCheckTriggerID(w http.ResponseWriter, r *http.Request) {
 	trigger := dal.CheckTrigger{}
 	trigger.ID = id
 
-	dbs := context.Get(r, "dbs").(*config.DBConfig)
+	dbs := r.Context().Value("dbs").(*config.DBConfig)
 
 	check := dal.NewCheck(dbs.Core)
 
@@ -474,9 +473,9 @@ func DeleteCheckTriggerID(w http.ResponseWriter, r *http.Request) {
 func GetApiCheckIDResults(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	dbs := context.Get(r, "dbs").(*config.DBConfig)
+	dbs := r.Context().Value("dbs").(*config.DBConfig)
 
-	accessTokenRow := context.Get(r, "accessToken").(*dal.AccessTokenRow)
+	accessTokenRow := r.Context().Value("accessToken").(*dal.AccessTokenRow)
 
 	qParams := r.URL.Query()
 

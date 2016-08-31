@@ -105,12 +105,6 @@
 			"revisionTime": "2016-07-19T02:05:16Z"
 		},
 		{
-			"checksumSHA1": "iIUYZyoanCQQTUaWsu8b+iOSPt4=",
-			"path": "github.com/gorilla/context",
-			"revision": "aed02d124ae4a0e94fea4541c8effd05bf0c8296",
-			"revisionTime": "2016-05-25T20:33:19Z"
-		},
-		{
 			"checksumSHA1": "lQrWiegYo/wKL/wK/2avCbgg3Bg=",
 			"path": "github.com/gorilla/csrf",
 			"revision": "d03564e10380268a4669bb0e5eeeada84413ab51",

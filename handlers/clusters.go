@@ -9,7 +9,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/gorilla/context"
 	"github.com/gorilla/csrf"
 	"github.com/gorilla/sessions"
 
@@ -23,13 +22,13 @@ import (
 func GetClusters(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html")
 
-	dbs := context.Get(r, "dbs").(*config.DBConfig)
+	dbs := r.Context().Value("dbs").(*config.DBConfig)
 
-	currentUser := context.Get(r, "currentUser").(*dal.UserRow)
+	currentUser := r.Context().Value("currentUser").(*dal.UserRow)
 
-	clusters := context.Get(r, "clusters").([]*dal.ClusterRow)
+	clusters := r.Context().Value("clusters").([]*dal.ClusterRow)
 
-	currentCluster := context.Get(r, "currentCluster").(*dal.ClusterRow)
+	currentCluster := r.Context().Value("currentCluster").(*dal.ClusterRow)
 
 	accessTokens := make(map[int64][]*dal.AccessTokenRow)
 
@@ -76,9 +75,9 @@ func GetClusters(w http.ResponseWriter, r *http.Request) {
 
 // PostClusters creates a new cluster.
 func PostClusters(w http.ResponseWriter, r *http.Request) {
-	dbs := context.Get(r, "dbs").(*config.DBConfig)
+	dbs := r.Context().Value("dbs").(*config.DBConfig)
 
-	currentUser := context.Get(r, "currentUser").(*dal.UserRow)
+	currentUser := r.Context().Value("currentUser").(*dal.UserRow)
 
 	_, err := dal.NewCluster(dbs.Core).Create(nil, currentUser, r.FormValue("Name"))
 	if err != nil {
@@ -91,7 +90,7 @@ func PostClusters(w http.ResponseWriter, r *http.Request) {
 
 // PostClustersCurrent sets a cluster to be the current one on the UI.
 func PostClustersCurrent(w http.ResponseWriter, r *http.Request) {
-	cookieStore := context.Get(r, "cookieStore").(*sessions.CookieStore)
+	cookieStore := r.Context().Value("cookieStore").(*sessions.CookieStore)
 
 	session, _ := cookieStore.Get(r, "resourcedmaster-session")
 
@@ -102,7 +101,7 @@ func PostClustersCurrent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	clusterRows := context.Get(r, "clusters").([]*dal.ClusterRow)
+	clusterRows := r.Context().Value("clusters").([]*dal.ClusterRow)
 	for _, clusterRow := range clusterRows {
 		if clusterRow.ID == clusterID {
 			session.Values["currentCluster"] = clusterRow
@@ -139,7 +138,7 @@ func PostPutDeleteClusterID(w http.ResponseWriter, r *http.Request) {
 
 // PutClusterID updates a cluster's information.
 func PutClusterID(w http.ResponseWriter, r *http.Request) {
-	dbs := context.Get(r, "dbs").(*config.DBConfig)
+	dbs := r.Context().Value("dbs").(*config.DBConfig)
 
 	id, err := getInt64SlugFromPath(w, r, "id")
 	if err != nil {
@@ -182,7 +181,7 @@ func PutClusterID(w http.ResponseWriter, r *http.Request) {
 
 // DeleteClusterID deletes a cluster.
 func DeleteClusterID(w http.ResponseWriter, r *http.Request) {
-	dbs := context.Get(r, "dbs").(*config.DBConfig)
+	dbs := r.Context().Value("dbs").(*config.DBConfig)
 
 	id, err := getInt64SlugFromPath(w, r, "id")
 	if err != nil {
@@ -228,7 +227,7 @@ func PostPutDeleteClusterIDUsers(w http.ResponseWriter, r *http.Request) {
 
 // PutClusterIDUsers adds a user as a member to a particular cluster.
 func PutClusterIDUsers(w http.ResponseWriter, r *http.Request) {
-	dbs := context.Get(r, "dbs").(*config.DBConfig)
+	dbs := r.Context().Value("dbs").(*config.DBConfig)
 
 	id, err := getInt64SlugFromPath(w, r, "id")
 	if err != nil {
@@ -262,10 +261,10 @@ func PutClusterIDUsers(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 
-			mailer := context.Get(r, "mailer.GeneralConfig").(*mailer.Mailer)
+			mailer := r.Context().Value("mailer.GeneralConfig").(*mailer.Mailer)
 
-			vipAddr := context.Get(r, "vipAddr").(string)
-			vipProtocol := context.Get(r, "vipProtocol").(string)
+			vipAddr := r.Context().Value("vipAddr").(string)
+			vipProtocol := r.Context().Value("vipProtocol").(string)
 
 			url := fmt.Sprintf("%v://%v/signup?email=%v&token=%v", vipProtocol, vipAddr, email, userRow.EmailVerificationToken.String)
 
@@ -291,7 +290,7 @@ Your coleague has invited you to join cluster: %v. Click the following link to s
 
 // DeleteClusterIDUsers removes user's membership from a particular cluster.
 func DeleteClusterIDUsers(w http.ResponseWriter, r *http.Request) {
-	dbs := context.Get(r, "dbs").(*config.DBConfig)
+	dbs := r.Context().Value("dbs").(*config.DBConfig)
 
 	id, err := getInt64SlugFromPath(w, r, "id")
 	if err != nil {

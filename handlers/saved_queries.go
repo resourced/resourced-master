@@ -5,17 +5,15 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/gorilla/context"
-
 	"github.com/resourced/resourced-master/config"
 	"github.com/resourced/resourced-master/dal"
 	"github.com/resourced/resourced-master/libhttp"
 )
 
 func PostSavedQueries(w http.ResponseWriter, r *http.Request) {
-	dbs := context.Get(r, "dbs").(*config.DBConfig)
+	dbs := r.Context().Value("dbs").(*config.DBConfig)
 
-	currentUser := context.Get(r, "currentUser").(*dal.UserRow)
+	currentUser := r.Context().Value("currentUser").(*dal.UserRow)
 
 	accessTokenRow, err := dal.NewAccessToken(dbs.Core).GetByUserID(nil, currentUser.ID)
 	if err != nil {
@@ -59,11 +57,11 @@ func DeleteSavedQueriesID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	dbs := context.Get(r, "dbs").(*config.DBConfig)
+	dbs := r.Context().Value("dbs").(*config.DBConfig)
 
-	currentUser := context.Get(r, "currentUser").(*dal.UserRow)
+	currentUser := r.Context().Value("currentUser").(*dal.UserRow)
 
-	currentCluster := context.Get(r, "currentCluster").(*dal.ClusterRow)
+	currentCluster := r.Context().Value("currentCluster").(*dal.ClusterRow)
 
 	sq := dal.NewSavedQuery(dbs.Core)
 

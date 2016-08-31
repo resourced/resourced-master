@@ -7,7 +7,6 @@ import (
 	"io/ioutil"
 	"net/http"
 
-	"github.com/gorilla/context"
 	"github.com/gorilla/csrf"
 
 	"github.com/resourced/resourced-master/config"
@@ -18,11 +17,11 @@ import (
 func GetGraphs(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html")
 
-	currentUser := context.Get(r, "currentUser").(*dal.UserRow)
+	currentUser := r.Context().Value("currentUser").(*dal.UserRow)
 
-	currentCluster := context.Get(r, "currentCluster").(*dal.ClusterRow)
+	currentCluster := r.Context().Value("currentCluster").(*dal.ClusterRow)
 
-	dbs := context.Get(r, "dbs").(*config.DBConfig)
+	dbs := r.Context().Value("dbs").(*config.DBConfig)
 
 	graphs, err := dal.NewGraph(dbs.Core).AllByClusterID(nil, currentCluster.ID)
 	if err != nil {
@@ -39,9 +38,9 @@ func GetGraphs(w http.ResponseWriter, r *http.Request) {
 		Graphs         []*dal.GraphRow
 	}{
 		csrf.Token(r),
-		context.Get(r, "addr").(string),
+		r.Context().Value("addr").(string),
 		currentUser,
-		context.Get(r, "clusters").([]*dal.ClusterRow),
+		r.Context().Value("clusters").([]*dal.ClusterRow),
 		currentCluster,
 		graphs,
 	}
@@ -65,13 +64,13 @@ func GetGraphs(w http.ResponseWriter, r *http.Request) {
 func PostGraphs(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html")
 
-	currentCluster := context.Get(r, "currentCluster").(*dal.ClusterRow)
+	currentCluster := r.Context().Value("currentCluster").(*dal.ClusterRow)
 
 	name := r.FormValue("Name")
 	description := r.FormValue("Description")
 	range_ := r.FormValue("Range")
 
-	dbs := context.Get(r, "dbs").(*config.DBConfig)
+	dbs := r.Context().Value("dbs").(*config.DBConfig)
 
 	data := make(map[string]interface{})
 	data["name"] = name
@@ -102,11 +101,11 @@ func GetPostPutDeleteGraphsID(w http.ResponseWriter, r *http.Request) {
 func GetGraphsID(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html")
 
-	dbs := context.Get(r, "dbs").(*config.DBConfig)
+	dbs := r.Context().Value("dbs").(*config.DBConfig)
 
-	currentUser := context.Get(r, "currentUser").(*dal.UserRow)
+	currentUser := r.Context().Value("currentUser").(*dal.UserRow)
 
-	currentCluster := context.Get(r, "currentCluster").(*dal.ClusterRow)
+	currentCluster := r.Context().Value("currentCluster").(*dal.ClusterRow)
 
 	id, err := getInt64SlugFromPath(w, r, "id")
 	if err != nil {
@@ -179,10 +178,10 @@ func GetGraphsID(w http.ResponseWriter, r *http.Request) {
 		Metrics        []*dal.MetricRow
 	}{
 		csrf.Token(r),
-		context.Get(r, "addr").(string),
+		r.Context().Value("addr").(string),
 		currentUser,
 		accessToken,
-		context.Get(r, "clusters").([]*dal.ClusterRow),
+		r.Context().Value("clusters").([]*dal.ClusterRow),
 		currentCluster,
 		currentGraph,
 		graphsWithError.Graphs,
@@ -206,7 +205,7 @@ func GetGraphsID(w http.ResponseWriter, r *http.Request) {
 }
 
 func PutGraphsID(w http.ResponseWriter, r *http.Request) {
-	dbs := context.Get(r, "dbs").(*config.DBConfig)
+	dbs := r.Context().Value("dbs").(*config.DBConfig)
 
 	id, err := getInt64SlugFromPath(w, r, "id")
 	if err != nil {
@@ -254,9 +253,9 @@ func PutGraphsID(w http.ResponseWriter, r *http.Request) {
 }
 
 func DeleteGraphsID(w http.ResponseWriter, r *http.Request) {
-	dbs := context.Get(r, "dbs").(*config.DBConfig)
+	dbs := r.Context().Value("dbs").(*config.DBConfig)
 
-	currentCluster := context.Get(r, "currentCluster").(*dal.ClusterRow)
+	currentCluster := r.Context().Value("currentCluster").(*dal.ClusterRow)
 
 	id, err := getInt64SlugFromPath(w, r, "id")
 	if err != nil {
@@ -276,9 +275,9 @@ func DeleteGraphsID(w http.ResponseWriter, r *http.Request) {
 func PutApiGraphsIDMetrics(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	dbs := context.Get(r, "dbs").(*config.DBConfig)
+	dbs := r.Context().Value("dbs").(*config.DBConfig)
 
-	accessTokenRow := context.Get(r, "accessToken").(*dal.AccessTokenRow)
+	accessTokenRow := r.Context().Value("accessToken").(*dal.AccessTokenRow)
 
 	id, err := getInt64SlugFromPath(w, r, "id")
 	if err != nil {
