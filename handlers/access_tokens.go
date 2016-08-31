@@ -3,17 +3,15 @@ package handlers
 import (
 	"net/http"
 
-	"github.com/gorilla/context"
-
 	"github.com/resourced/resourced-master/config"
 	"github.com/resourced/resourced-master/dal"
 	"github.com/resourced/resourced-master/libhttp"
 )
 
 func PostAccessTokens(w http.ResponseWriter, r *http.Request) {
-	dbs := context.Get(r, "dbs").(*config.DBConfig)
+	dbs := r.Context().Value("dbs").(*config.DBConfig)
 
-	currentUser := context.Get(r, "currentUser").(*dal.UserRow)
+	currentUser := r.Context().Value("currentUser").(*dal.UserRow)
 
 	clusterID, err := getInt64SlugFromPath(w, r, "id")
 	if err != nil {
@@ -33,7 +31,7 @@ func PostAccessTokens(w http.ResponseWriter, r *http.Request) {
 }
 
 func PostAccessTokensLevel(w http.ResponseWriter, r *http.Request) {
-	dbs := context.Get(r, "dbs").(*config.DBConfig)
+	dbs := r.Context().Value("dbs").(*config.DBConfig)
 
 	tokenID, err := getInt64SlugFromPath(w, r, "id")
 	if err != nil {
@@ -56,7 +54,7 @@ func PostAccessTokensLevel(w http.ResponseWriter, r *http.Request) {
 }
 
 func PostAccessTokensEnabled(w http.ResponseWriter, r *http.Request) {
-	dbs := context.Get(r, "dbs").(*config.DBConfig)
+	dbs := r.Context().Value("dbs").(*config.DBConfig)
 
 	tokenID, err := getInt64SlugFromPath(w, r, "id")
 	if err != nil {
@@ -85,7 +83,7 @@ func PostAccessTokensEnabled(w http.ResponseWriter, r *http.Request) {
 }
 
 func PostAccessTokensDelete(w http.ResponseWriter, r *http.Request) {
-	dbs := context.Get(r, "dbs").(*config.DBConfig)
+	dbs := r.Context().Value("dbs").(*config.DBConfig)
 
 	tokenID, err := getInt64SlugFromPath(w, r, "id")
 	if err != nil {

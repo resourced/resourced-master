@@ -8,7 +8,6 @@ import (
 	"net/http"
 
 	"github.com/Sirupsen/logrus"
-	"github.com/gorilla/context"
 	"github.com/gorilla/csrf"
 
 	"github.com/resourced/resourced-master/config"
@@ -20,11 +19,11 @@ import (
 func GetHosts(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html")
 
-	currentUser := context.Get(r, "currentUser").(*dal.UserRow)
+	currentUser := r.Context().Value("currentUser").(*dal.UserRow)
 
-	currentCluster := context.Get(r, "currentCluster").(*dal.ClusterRow)
+	currentCluster := r.Context().Value("currentCluster").(*dal.ClusterRow)
 
-	dbs := context.Get(r, "dbs").(*config.DBConfig)
+	dbs := r.Context().Value("dbs").(*config.DBConfig)
 
 	query := r.URL.Query().Get("q")
 
@@ -100,10 +99,10 @@ func GetHosts(w http.ResponseWriter, r *http.Request) {
 		MetricsMap     map[string]int64
 	}{
 		csrf.Token(r),
-		context.Get(r, "addr").(string),
+		r.Context().Value("addr").(string),
 		currentUser,
 		accessToken,
-		context.Get(r, "clusters").([]*dal.ClusterRow),
+		r.Context().Value("clusters").([]*dal.ClusterRow),
 		currentCluster,
 		hostsWithError.Hosts,
 		savedQueriesWithError.SavedQueries,
@@ -129,11 +128,11 @@ func GetHosts(w http.ResponseWriter, r *http.Request) {
 func PostApiHosts(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	dbs := context.Get(r, "dbs").(*config.DBConfig)
+	dbs := r.Context().Value("dbs").(*config.DBConfig)
 
-	accessTokenRow := context.Get(r, "accessToken").(*dal.AccessTokenRow)
+	accessTokenRow := r.Context().Value("accessToken").(*dal.AccessTokenRow)
 
-	bus := context.Get(r, "bus").(*messagebus.MessageBus)
+	bus := r.Context().Value("bus").(*messagebus.MessageBus)
 
 	dataJson, err := ioutil.ReadAll(r.Body)
 	if err != nil {
@@ -220,9 +219,9 @@ func PostApiHosts(w http.ResponseWriter, r *http.Request) {
 func GetApiHosts(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	dbs := context.Get(r, "dbs").(*config.DBConfig)
+	dbs := r.Context().Value("dbs").(*config.DBConfig)
 
-	accessTokenRow := context.Get(r, "accessToken").(*dal.AccessTokenRow)
+	accessTokenRow := r.Context().Value("accessToken").(*dal.AccessTokenRow)
 
 	query := r.URL.Query().Get("q")
 	count := r.URL.Query().Get("count")

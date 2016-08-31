@@ -2,6 +2,8 @@ package application
 
 import (
 	"net/http"
+	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/carbocation/interpose"
@@ -186,7 +188,7 @@ func (app *Application) mux2() *chi.Mux {
 				r.Get("/15min", tollbooth.LimitFuncHandler(generalAPILimiter, handlers.GetApiTSMetrics15Min).(http.HandlerFunc))
 
 				r.Get("/hosts/:host", tollbooth.LimitFuncHandler(generalAPILimiter, handlers.GetApiTSMetricsByHost).(http.HandlerFunc))
-				r.Get("hosts/:host/15min", tollbooth.LimitFuncHandler(generalAPILimiter, handlers.GetApiTSMetricsByHost15Min).(http.HandlerFunc))
+				r.Get("/hosts/:host/15min", tollbooth.LimitFuncHandler(generalAPILimiter, handlers.GetApiTSMetricsByHost15Min).(http.HandlerFunc))
 			})
 		})
 
@@ -222,12 +224,16 @@ func (app *Application) mux2() *chi.Mux {
 			r.Post("/:key", tollbooth.LimitFuncHandler(generalAPILimiter, handlers.PostApiMetadataKey).(http.HandlerFunc))
 			r.Delete("/:key", tollbooth.LimitFuncHandler(generalAPILimiter, handlers.DeleteApiMetadataKey).(http.HandlerFunc))
 		})
-
 	})
+
+	// Path to /static files
+	workDir, _ := os.Getwd()
+	r.FileServer("/static", http.Dir(filepath.Join(workDir, "static")))
 
 	return r
 }
 
+// NOTE: Do not delete this until every handler is converted!
 // mux returns an instance of HTTP router with all the predefined rules.
 func (app *Application) mux() *mux.Router {
 	SetAccessTokens := middlewares.SetAccessTokens
@@ -354,10 +360,10 @@ func (app *Application) MiddlewareStruct() (*interpose.Middleware, error) {
 // NewHTTPServer returns an instance of HTTP server.
 func (app *Application) NewHTTPServer() (*graceful.Server, error) {
 	// Create HTTP middlewares
-	middle, err := app.MiddlewareStruct()
-	if err != nil {
-		return nil, err
-	}
+	// middle, err := app.MiddlewareStruct()
+	// if err != nil {
+	// 	return nil, err
+	// }
 
 	requestTimeout, err := time.ParseDuration(app.GeneralConfig.RequestShutdownTimeout)
 	if err != nil {
@@ -367,7 +373,7 @@ func (app *Application) NewHTTPServer() (*graceful.Server, error) {
 	// Create HTTP server
 	srv := &graceful.Server{
 		Timeout: requestTimeout,
-		Server:  &http.Server{Addr: app.GeneralConfig.Addr, Handler: middle},
+		Server:  &http.Server{Addr: app.GeneralConfig.Addr, Handler: app.mux2()},
 	}
 
 	return srv, nil

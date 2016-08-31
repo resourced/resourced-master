@@ -7,14 +7,13 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/gorilla/context"
-	"github.com/gorilla/mux"
+	"github.com/pressly/chi"
 
 	"github.com/resourced/resourced-master/dal"
 )
 
 func getInt64SlugFromPath(w http.ResponseWriter, r *http.Request, slug string) (int64, error) {
-	inString := mux.Vars(r)[slug]
+	inString := chi.URLParam(r, slug)
 	if inString == "" {
 		return -1, errors.New(fmt.Sprintf("%v cannot be empty.", slug))
 	}
@@ -28,7 +27,7 @@ func getInt64SlugFromPath(w http.ResponseWriter, r *http.Request, slug string) (
 }
 
 func getAccessToken(w http.ResponseWriter, r *http.Request, level string) (*dal.AccessTokenRow, error) {
-	accessTokensInterface := context.Get(r, "accessTokens")
+	accessTokensInterface := r.Context().Value("accessTokens")
 	if accessTokensInterface == nil {
 		return nil, errors.New("Failed to get access token because the full list of access tokens is nil.")
 	}

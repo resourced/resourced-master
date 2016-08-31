@@ -7,9 +7,8 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/gorilla/context"
-	"github.com/gorilla/mux"
 	"github.com/gorilla/sessions"
+	"github.com/pressly/chi"
 
 	"github.com/resourced/resourced-master/config"
 	"github.com/resourced/resourced-master/dal"
@@ -44,7 +43,7 @@ func GetSignup(w http.ResponseWriter, r *http.Request) {
 func PostSignup(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html")
 
-	dbs := context.Get(r, "dbs").(*config.DBConfig)
+	dbs := r.Context().Value("dbs").(*config.DBConfig)
 
 	email := r.FormValue("Email")
 	password := r.FormValue("Password")
@@ -104,10 +103,10 @@ func PostSignup(w http.ResponseWriter, r *http.Request) {
 	if !emailValidated {
 		go func(userRow *dal.UserRow) {
 			if userRow.EmailVerificationToken.String != "" {
-				mailer := context.Get(r, "mailer.GeneralConfig").(*mailer.Mailer)
+				mailer := r.Context().Value("mailer.GeneralConfig").(*mailer.Mailer)
 
-				vipAddr := context.Get(r, "vipAddr").(string)
-				vipProtocol := context.Get(r, "vipProtocol").(string)
+				vipAddr := r.Context().Value("vipAddr").(string)
+				vipProtocol := r.Context().Value("vipProtocol").(string)
 
 				url := fmt.Sprintf("%v://%v/users/email-verification/%v", vipProtocol, vipAddr, userRow.EmailVerificationToken.String)
 
@@ -138,7 +137,7 @@ func GetLoginWithoutSession(w http.ResponseWriter, r *http.Request) {
 func GetLogin(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html")
 
-	cookieStore := context.Get(r, "cookieStore").(*sessions.CookieStore)
+	cookieStore := r.Context().Value("cookieStore").(*sessions.CookieStore)
 
 	session, _ := cookieStore.Get(r, "resourcedmaster-session")
 
@@ -155,8 +154,8 @@ func GetLogin(w http.ResponseWriter, r *http.Request) {
 func PostLogin(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html")
 
-	dbs := context.Get(r, "dbs").(*config.DBConfig)
-	cookieStore := context.Get(r, "cookieStore").(*sessions.CookieStore)
+	dbs := r.Context().Value("dbs").(*config.DBConfig)
+	cookieStore := r.Context().Value("cookieStore").(*sessions.CookieStore)
 
 	email := r.FormValue("Email")
 	password := r.FormValue("Password")
@@ -199,9 +198,9 @@ func PutUsersID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	dbs := context.Get(r, "dbs").(*config.DBConfig)
+	dbs := r.Context().Value("dbs").(*config.DBConfig)
 
-	cookieStore := context.Get(r, "cookieStore").(*sessions.CookieStore)
+	cookieStore := r.Context().Value("cookieStore").(*sessions.CookieStore)
 
 	session, _ := cookieStore.Get(r, "resourcedmaster-session")
 
@@ -246,9 +245,9 @@ func DeleteUsersID(w http.ResponseWriter, r *http.Request) {
 func GetUsersEmailVerificationToken(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html")
 
-	dbs := context.Get(r, "dbs").(*config.DBConfig)
+	dbs := r.Context().Value("dbs").(*config.DBConfig)
 
-	emailVerificationToken := mux.Vars(r)["token"]
+	emailVerificationToken := chi.URLParam(r, "token")
 
 	_, err := dal.NewUser(dbs.Core).UpdateEmailVerification(nil, emailVerificationToken)
 	if err != nil {

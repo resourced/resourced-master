@@ -100,9 +100,7 @@ func SetMessageBus(bus *messagebus.MessageBus) func(http.Handler) http.Handler {
 // SetClusters sets clusters data in context based on logged in user ID.
 func SetClusters(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		ctx := r.Context()
-
-		cookieStore := ctx.Value("cookieStore").(*sessions.CookieStore)
+		cookieStore := r.Context().Value("cookieStore").(*sessions.CookieStore)
 		session, _ := cookieStore.Get(r, "resourcedmaster-session")
 		userRowInterface := session.Values["user"]
 
@@ -113,7 +111,7 @@ func SetClusters(next http.Handler) http.Handler {
 
 		userRow := userRowInterface.(*dal.UserRow)
 
-		dbs := ctx.Value("dbs").(*config.DBConfig)
+		dbs := r.Context().Value("dbs").(*config.DBConfig)
 
 		var clusterRows []*dal.ClusterRow
 		var err error
@@ -137,7 +135,7 @@ func SetClusters(next http.Handler) http.Handler {
 			return
 		}
 
-		r = r.WithContext(context.WithValue(ctx, "clusters", clusterRows))
+		r = r.WithContext(context.WithValue(r.Context(), "clusters", clusterRows))
 
 		// Set currentCluster if not previously set.
 		if len(clusterRows) > 0 {
@@ -157,7 +155,7 @@ func SetClusters(next http.Handler) http.Handler {
 		if currentClusterInterface != nil {
 			currentClusterRow := currentClusterInterface.(*dal.ClusterRow)
 
-			r = r.WithContext(context.WithValue(ctx, "currentCluster", currentClusterRow))
+			r = r.WithContext(context.WithValue(r.Context(), "currentCluster", currentClusterRow))
 		}
 
 		next.ServeHTTP(w, r)
@@ -167,11 +165,9 @@ func SetClusters(next http.Handler) http.Handler {
 // SetAccessTokens sets clusters data in context based on logged in user ID.
 func SetAccessTokens(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		ctx := r.Context()
+		dbs := r.Context().Value("dbs").(*config.DBConfig)
 
-		dbs := ctx.Value("dbs").(*config.DBConfig)
-
-		currentClusterInterface := ctx.Value("currentCluster")
+		currentClusterInterface := r.Context().Value("currentCluster")
 		if currentClusterInterface == nil {
 			libhttp.HandleErrorJson(w, errors.New("Unable to get access tokens because current cluster is nil."))
 			return
@@ -183,7 +179,7 @@ func SetAccessTokens(next http.Handler) http.Handler {
 			return
 		}
 
-		r = r.WithContext(context.WithValue(ctx, "accessTokens", accessTokenRows))
+		r = r.WithContext(context.WithValue(r.Context(), "accessTokens", accessTokenRows))
 
 		next.ServeHTTP(w, r)
 	})
@@ -192,14 +188,12 @@ func SetAccessTokens(next http.Handler) http.Handler {
 // MustLogin is a middleware that checks existence of current user.
 func MustLogin(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		ctx := r.Context()
-
-		cookieStore := ctx.Value("cookieStore").(*sessions.CookieStore)
+		cookieStore := r.Context().Value("cookieStore").(*sessions.CookieStore)
 		session, _ := cookieStore.Get(r, "resourcedmaster-session")
 		userRowInterface := session.Values["user"]
 
 		if userRowInterface == nil {
-			cookieStore := ctx.Value("cookieStore").(*sessions.CookieStore)
+			cookieStore := r.Context().Value("cookieStore").(*sessions.CookieStore)
 			session, err := cookieStore.Get(r, "resourcedmaster-session")
 			if err == nil {
 				delete(session.Values, "user")
@@ -210,7 +204,7 @@ func MustLogin(next http.Handler) http.Handler {
 			return
 		}
 
-		r = r.WithContext(context.WithValue(ctx, "currentUser", userRowInterface.(*dal.UserRow)))
+		r = r.WithContext(context.WithValue(r.Context(), "currentUser", userRowInterface.(*dal.UserRow)))
 
 		next.ServeHTTP(w, r)
 	})
@@ -219,8 +213,6 @@ func MustLogin(next http.Handler) http.Handler {
 // MustLoginApi is a middleware that checks /api login.
 func MustLoginApi(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		ctx := r.Context()
-
 		auth := r.Header.Get("Authorization")
 
 		if auth == "" {
@@ -234,7 +226,7 @@ func MustLoginApi(next http.Handler) http.Handler {
 			return
 		}
 
-		dbs := ctx.Value("dbs").(*config.DBConfig)
+		dbs := r.Context().Value("dbs").(*config.DBConfig)
 
 		accessTokenRow, err := dal.NewAccessToken(dbs.Core).GetByAccessToken(nil, accessTokenString)
 		if err != nil {
@@ -264,7 +256,7 @@ func MustLoginApi(next http.Handler) http.Handler {
 			return
 		}
 
-		r = r.WithContext(context.WithValue(ctx, "accessToken", accessTokenRow))
+		r = r.WithContext(context.WithValue(r.Context(), "accessToken", accessTokenRow))
 
 		next.ServeHTTP(w, r)
 	})
@@ -273,8 +265,6 @@ func MustLoginApi(next http.Handler) http.Handler {
 // MustLoginApiStream is a middleware that checks /api/.../stream login.
 func MustLoginApiStream(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		ctx := r.Context()
-
 		accessTokenString := r.URL.Query().Get("accessToken")
 
 		// Check the upper-case version
@@ -288,7 +278,7 @@ func MustLoginApiStream(next http.Handler) http.Handler {
 			return
 		}
 
-		dbs := ctx.Value("dbs").(*config.DBConfig)
+		dbs := r.Context().Value("dbs").(*config.DBConfig)
 
 		accessTokenRow, err := dal.NewAccessToken(dbs.Core).GetByAccessToken(nil, accessTokenString)
 		if err != nil {
@@ -305,7 +295,7 @@ func MustLoginApiStream(next http.Handler) http.Handler {
 			return
 		}
 
-		r = r.WithContext(context.WithValue(ctx, "accessToken", accessTokenRow))
+		r = r.WithContext(context.WithValue(r.Context(), "accessToken", accessTokenRow))
 
 		next.ServeHTTP(w, r)
 	})
@@ -313,15 +303,13 @@ func MustLoginApiStream(next http.Handler) http.Handler {
 
 func MustBeMember(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		ctx := r.Context()
-
-		currentClusterInterface := ctx.Value("currentCluster")
+		currentClusterInterface := r.Context().Value("currentCluster")
 		if currentClusterInterface == nil {
 			http.Redirect(w, r, "/login", 301)
 			return
 		}
 
-		currentUserInterface := ctx.Value("currentUser")
+		currentUserInterface := r.Context().Value("currentUser")
 		if currentUserInterface == nil {
 			http.Redirect(w, r, "/login", 301)
 			return
