@@ -5,7 +5,7 @@ import (
 	"io/ioutil"
 	"net/http"
 
-	"github.com/gorilla/mux"
+	"github.com/pressly/chi"
 
 	"github.com/resourced/resourced-master/config"
 	"github.com/resourced/resourced-master/dal"
@@ -47,8 +47,7 @@ func PostApiMetadataKey(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	vars := mux.Vars(r)
-	key := vars["key"]
+	key := chi.URLParam(r, "key")
 
 	metadataRow, err := dal.NewMetadata(dbs.Core).CreateOrUpdate(nil, accessTokenRow.ClusterID, key, dataJson)
 	if err != nil {
@@ -72,8 +71,7 @@ func DeleteApiMetadataKey(w http.ResponseWriter, r *http.Request) {
 
 	accessTokenRow := r.Context().Value("accessToken").(*dal.AccessTokenRow)
 
-	vars := mux.Vars(r)
-	key := vars["key"]
+	key := chi.URLParam(r, "key")
 
 	metadataRow, err := dal.NewMetadata(dbs.Core).DeleteByClusterIDAndKey(nil, accessTokenRow.ClusterID, key)
 	if err != nil {
@@ -97,8 +95,7 @@ func GetApiMetadataKey(w http.ResponseWriter, r *http.Request) {
 
 	accessTokenRow := r.Context().Value("accessToken").(*dal.AccessTokenRow)
 
-	vars := mux.Vars(r)
-	key := vars["key"]
+	key := chi.URLParam(r, "key")
 
 	metadataRow, err := dal.NewMetadata(dbs.Core).GetByClusterIDAndKey(nil, accessTokenRow.ClusterID, key)
 	if err != nil {

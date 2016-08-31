@@ -10,7 +10,7 @@ import (
 
 	"github.com/Sirupsen/logrus"
 	"github.com/gorilla/csrf"
-	"github.com/gorilla/mux"
+	"github.com/pressly/chi"
 
 	"github.com/resourced/resourced-master/config"
 	"github.com/resourced/resourced-master/dal"
@@ -182,7 +182,7 @@ func PostPutDeleteCheckID(w http.ResponseWriter, r *http.Request) {
 func PutCheckID(w http.ResponseWriter, r *http.Request) {
 	dbs := r.Context().Value("dbs").(*config.DBConfig)
 
-	id, err := getInt64SlugFromPath(w, r, "id")
+	id, err := getInt64SlugFromPath(w, r, "checkID")
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
@@ -220,7 +220,7 @@ func PutCheckID(w http.ResponseWriter, r *http.Request) {
 }
 
 func DeleteCheckID(w http.ResponseWriter, r *http.Request) {
-	id, err := getInt64SlugFromPath(w, r, "id")
+	id, err := getInt64SlugFromPath(w, r, "checkID")
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
@@ -242,7 +242,7 @@ func DeleteCheckID(w http.ResponseWriter, r *http.Request) {
 func PostCheckIDSilence(w http.ResponseWriter, r *http.Request) {
 	dbs := r.Context().Value("dbs").(*config.DBConfig)
 
-	id, err := getInt64SlugFromPath(w, r, "id")
+	id, err := getInt64SlugFromPath(w, r, "checkID")
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
@@ -317,7 +317,7 @@ func PostChecksTriggers(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "text/html")
 
-	checkIDString := mux.Vars(r)["checkid"]
+	checkIDString := chi.URLParam(r, "checkID")
 	if checkIDString == "" {
 		libhttp.HandleErrorJson(w, fmt.Errorf("id cannot be empty."))
 		return
@@ -384,19 +384,19 @@ func PostPutDeleteCheckTriggerID(w http.ResponseWriter, r *http.Request) {
 }
 
 func PutCheckTriggerID(w http.ResponseWriter, r *http.Request) {
-	checkIDString := mux.Vars(r)["checkid"]
+	checkIDString := chi.URLParam(r, "checkID")
 	if checkIDString == "" {
-		libhttp.HandleErrorJson(w, fmt.Errorf("id cannot be empty."))
+		libhttp.HandleErrorJson(w, fmt.Errorf("checkID cannot be empty."))
 		return
 	}
 
 	checkID, err := strconv.ParseInt(checkIDString, 10, 64)
 	if err != nil {
-		libhttp.HandleErrorJson(w, fmt.Errorf("id cannot be non numeric."))
+		libhttp.HandleErrorJson(w, fmt.Errorf("checkID cannot be non numeric."))
 		return
 	}
 
-	id, err := getInt64SlugFromPath(w, r, "id")
+	triggerID, err := getInt64SlugFromPath(w, r, "triggerID")
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
@@ -408,7 +408,7 @@ func PutCheckTriggerID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	trigger.ID = id
+	trigger.ID = triggerID
 
 	dbs := r.Context().Value("dbs").(*config.DBConfig)
 
@@ -430,26 +430,26 @@ func PutCheckTriggerID(w http.ResponseWriter, r *http.Request) {
 }
 
 func DeleteCheckTriggerID(w http.ResponseWriter, r *http.Request) {
-	checkIDString := mux.Vars(r)["checkid"]
+	checkIDString := chi.URLParam(r, "checkID")
 	if checkIDString == "" {
-		libhttp.HandleErrorJson(w, fmt.Errorf("id cannot be empty."))
+		libhttp.HandleErrorJson(w, fmt.Errorf("checkID cannot be empty."))
 		return
 	}
 
 	checkID, err := strconv.ParseInt(checkIDString, 10, 64)
 	if err != nil {
-		libhttp.HandleErrorJson(w, fmt.Errorf("id cannot be non numeric."))
+		libhttp.HandleErrorJson(w, fmt.Errorf("checkID cannot be non numeric."))
 		return
 	}
 
-	id, err := getInt64SlugFromPath(w, r, "id")
+	triggerID, err := getInt64SlugFromPath(w, r, "triggerID")
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
 	}
 
 	trigger := dal.CheckTrigger{}
-	trigger.ID = id
+	trigger.ID = triggerID
 
 	dbs := r.Context().Value("dbs").(*config.DBConfig)
 

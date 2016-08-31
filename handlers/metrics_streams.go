@@ -6,7 +6,7 @@ import (
 	"net/http"
 
 	"github.com/Sirupsen/logrus"
-	"github.com/gorilla/mux"
+	"github.com/pressly/chi"
 
 	"github.com/resourced/resourced-master/config"
 	"github.com/resourced/resourced-master/dal"
@@ -133,7 +133,7 @@ func ApiMetricIDStreams(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	host, foundHostVar := mux.Vars(r)["host"]
+	host := chi.URLParam(r, "host")
 
 	// Create a new channel for this connected client.
 	newClientChan := make(chan string)
@@ -187,8 +187,8 @@ func ApiMetricIDStreams(w http.ResponseWriter, r *http.Request) {
 			continue
 		}
 
-		// Make sure to only return metrics with matching hostname if foundHostVar == true.
-		if foundHostVar {
+		// Make sure to only return metrics with matching hostname if host value exists.
+		if host != "" {
 			hostnameInterface, ok := payload["Hostname"]
 			if ok {
 				if hostnameInterface.(string) == host {

@@ -7,7 +7,7 @@ import (
 	"strconv"
 
 	"github.com/Sirupsen/logrus"
-	"github.com/gorilla/mux"
+	"github.com/pressly/chi"
 
 	"github.com/resourced/resourced-master/config"
 	"github.com/resourced/resourced-master/dal"
@@ -17,10 +17,7 @@ import (
 func PostMetrics(w http.ResponseWriter, r *http.Request) {
 	dbs := r.Context().Value("dbs").(*config.DBConfig)
 
-	vars := mux.Vars(r)
-
-	clusterIDString := vars["clusterid"]
-	clusterID, err := strconv.ParseInt(clusterIDString, 10, 64)
+	clusterID, err := getInt64SlugFromPath(w, r, "clusterID")
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
@@ -73,7 +70,7 @@ func GetApiTSMetricsByHost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	host := mux.Vars(r)["host"]
+	host := chi.URLParam(r, "host")
 
 	metricRow, err := dal.NewMetric(dbs.Core).GetByID(nil, id)
 	if err != nil {
@@ -148,7 +145,7 @@ func GetApiTSMetricsByHost15Min(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	host := mux.Vars(r)["host"]
+	host := chi.URLParam(r, "host")
 
 	metricRow, err := dal.NewMetric(dbs.Core).GetByID(nil, id)
 	if err != nil {
@@ -337,16 +334,13 @@ func PutMetricID(w http.ResponseWriter, r *http.Request) {
 func DeleteMetricID(w http.ResponseWriter, r *http.Request) {
 	dbs := r.Context().Value("dbs").(*config.DBConfig)
 
-	vars := mux.Vars(r)
-
-	clusterIDString := vars["clusterid"]
-	clusterID, err := strconv.ParseInt(clusterIDString, 10, 64)
+	clusterID, err := getInt64SlugFromPath(w, r, "clusterID")
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
 	}
 
-	id, err := getInt64SlugFromPath(w, r, "id")
+	id, err := getInt64SlugFromPath(w, r, "metricID")
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return

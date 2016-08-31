@@ -111,12 +111,6 @@
 			"revisionTime": "2016-05-28T06:36:42Z"
 		},
 		{
-			"checksumSHA1": "wAECcPfr3w303Kc6PTqp66z2DZ4=",
-			"path": "github.com/gorilla/mux",
-			"revision": "bd09be08ed4377796d312df0a45314e11b8f5dc1",
-			"revisionTime": "2016-05-25T14:09:13Z"
-		},
-		{
 			"checksumSHA1": "nZoAsxDHOA8fLilA56HKvezLqNU=",
 			"path": "github.com/gorilla/securecookie",
 			"revision": "ff356348f74133a59d3e93aa24b5b4551b6fe90d",
