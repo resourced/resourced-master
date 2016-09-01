@@ -66,9 +66,11 @@ func (app *Application) mux() *chi.Mux {
 		r.Use(CSRF, middlewares.MustLogin, middlewares.SetClusters, middlewares.MustBeMember)
 		r.Post("/", handlers.PostSavedQueries)
 
-		r.Post("/:id", handlers.PostPutDeleteSavedQueriesID)
-		r.Put("/:id", handlers.PostPutDeleteSavedQueriesID)
-		r.Delete("/:id", handlers.PostPutDeleteSavedQueriesID)
+		r.Route("/:id", func(r chi.Router) {
+			r.Use(CSRF, middlewares.MustLogin, middlewares.SetClusters, middlewares.MustBeMember)
+			r.Post("/", handlers.PostPutDeleteSavedQueriesID)
+			r.Delete("/", handlers.PostPutDeleteSavedQueriesID)
+		})
 	})
 
 	r.Route("/graphs", func(r chi.Router) {
@@ -76,10 +78,13 @@ func (app *Application) mux() *chi.Mux {
 		r.Get("/", handlers.GetGraphs)
 		r.Post("/", handlers.PostGraphs)
 
-		r.Get("/:id", handlers.GetPostPutDeleteGraphsID)
-		r.Post("/:id", handlers.GetPostPutDeleteGraphsID)
-		r.Put("/:id", handlers.GetPostPutDeleteGraphsID)
-		r.Delete("/:id", handlers.GetPostPutDeleteGraphsID)
+		r.Route("/:id", func(r chi.Router) {
+			r.Use(CSRF, middlewares.MustLogin, middlewares.SetClusters, middlewares.MustBeMember, middlewares.SetAccessTokens)
+			r.Get("/", handlers.GetPostPutDeleteGraphsID)
+			r.Post("/", handlers.GetPostPutDeleteGraphsID)
+			r.Put("/", handlers.GetPostPutDeleteGraphsID)
+			r.Delete("/", handlers.GetPostPutDeleteGraphsID)
+		})
 	})
 
 	r.Route("/logs", func(r chi.Router) {
@@ -103,9 +108,13 @@ func (app *Application) mux() *chi.Mux {
 			r.Route("/triggers", func(r chi.Router) {
 				r.Use(CSRF, middlewares.MustLogin, middlewares.SetClusters, middlewares.MustBeMember)
 				r.Post("/", handlers.PostChecksTriggers)
-				r.Post("/:triggerID", handlers.PostPutDeleteCheckTriggerID)
-				r.Put("/:triggerID", handlers.PostPutDeleteCheckTriggerID)
-				r.Delete("/:triggerID", handlers.PostPutDeleteCheckTriggerID)
+
+				r.Route("/:triggerID", func(r chi.Router) {
+					r.Use(CSRF, middlewares.MustLogin, middlewares.SetClusters, middlewares.MustBeMember)
+					r.Post("/", handlers.PostPutDeleteCheckTriggerID)
+					r.Put("/", handlers.PostPutDeleteCheckTriggerID)
+					r.Delete("/", handlers.PostPutDeleteCheckTriggerID)
+				})
 			})
 		})
 	})
@@ -141,18 +150,22 @@ func (app *Application) mux() *chi.Mux {
 			r.Route("/metrics", func(r chi.Router) {
 				r.Use(CSRF, middlewares.MustLogin, middlewares.SetClusters, middlewares.MustBeMember)
 				r.Post("/", handlers.PostMetrics)
-				r.Post("/:metricID", handlers.PostPutDeleteMetricID)
-				r.Put("/:metricID", handlers.PostPutDeleteMetricID)
-				r.Delete("/:metricID", handlers.PostPutDeleteMetricID)
+
+				r.Route("/:metricID", func(r chi.Router) {
+					r.Use(CSRF, middlewares.MustLogin, middlewares.SetClusters, middlewares.MustBeMember)
+					r.Post("/", handlers.PostPutDeleteMetricID)
+					r.Put("/", handlers.PostPutDeleteMetricID)
+					r.Delete("/", handlers.PostPutDeleteMetricID)
+				})
 			})
 		})
 	})
 
-	r.Route("/access-tokens", func(r chi.Router) {
+	r.Route("/access-tokens/:id", func(r chi.Router) {
 		r.Use(CSRF, middlewares.MustLogin, middlewares.SetClusters, middlewares.MustBeMember)
-		r.Post("/:id/level", handlers.PostAccessTokensLevel)
-		r.Post("/:id/enabled", handlers.PostAccessTokensEnabled)
-		r.Post("/:id/delete", handlers.PostAccessTokensDelete)
+		r.Post("/level", handlers.PostAccessTokensLevel)
+		r.Post("/enabled", handlers.PostAccessTokensEnabled)
+		r.Post("/delete", handlers.PostAccessTokensDelete)
 	})
 
 	r.Route("/api", func(r chi.Router) {
@@ -162,9 +175,9 @@ func (app *Application) mux() *chi.Mux {
 			r.Post("/", handlers.PostApiHosts)
 		})
 
-		r.Route("/graphs", func(r chi.Router) {
+		r.Route("/graphs/:id", func(r chi.Router) {
 			r.Use(middlewares.MustLoginApi)
-			r.Put("/:id/metrics", tollbooth.LimitFuncHandler(generalAPILimiter, handlers.PutApiGraphsIDMetrics).(http.HandlerFunc))
+			r.Put("/metrics", tollbooth.LimitFuncHandler(generalAPILimiter, handlers.PutApiGraphsIDMetrics).(http.HandlerFunc))
 		})
 
 		r.Route("/metrics", func(r chi.Router) {
@@ -213,17 +226,21 @@ func (app *Application) mux() *chi.Mux {
 			r.Post("/", handlers.PostApiExecutors)
 		})
 
-		r.Route("/checks", func(r chi.Router) {
+		r.Route("/checks/:id", func(r chi.Router) {
 			r.Use(middlewares.MustLoginApi)
-			r.Get("/:id/results", tollbooth.LimitFuncHandler(generalAPILimiter, handlers.GetApiCheckIDResults).(http.HandlerFunc))
+			r.Get("/results", tollbooth.LimitFuncHandler(generalAPILimiter, handlers.GetApiCheckIDResults).(http.HandlerFunc))
 		})
 
 		r.Route("/metadata", func(r chi.Router) {
 			r.Use(middlewares.MustLoginApi)
 			r.Get("/", tollbooth.LimitFuncHandler(generalAPILimiter, handlers.GetApiMetadata).(http.HandlerFunc))
-			r.Get("/:key", tollbooth.LimitFuncHandler(generalAPILimiter, handlers.GetApiMetadataKey).(http.HandlerFunc))
-			r.Post("/:key", tollbooth.LimitFuncHandler(generalAPILimiter, handlers.PostApiMetadataKey).(http.HandlerFunc))
-			r.Delete("/:key", tollbooth.LimitFuncHandler(generalAPILimiter, handlers.DeleteApiMetadataKey).(http.HandlerFunc))
+
+			r.Route("/:key", func(r chi.Router) {
+				r.Use(middlewares.MustLoginApi)
+				r.Get("/", tollbooth.LimitFuncHandler(generalAPILimiter, handlers.GetApiMetadataKey).(http.HandlerFunc))
+				r.Post("/", tollbooth.LimitFuncHandler(generalAPILimiter, handlers.PostApiMetadataKey).(http.HandlerFunc))
+				r.Delete("/", tollbooth.LimitFuncHandler(generalAPILimiter, handlers.DeleteApiMetadataKey).(http.HandlerFunc))
+			})
 		})
 	})
 

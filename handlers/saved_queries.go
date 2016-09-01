@@ -37,17 +37,10 @@ func PostPutDeleteSavedQueriesID(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html")
 
 	method := r.FormValue("_method")
-	if method == "" || strings.ToLower(method) == "post" || strings.ToLower(method) == "put" {
-		PutSavedQueriesID(w, r)
-	} else if strings.ToLower(method) == "delete" {
+
+	if strings.ToLower(method) == "delete" {
 		DeleteSavedQueriesID(w, r)
 	}
-}
-
-func PutSavedQueriesID(w http.ResponseWriter, r *http.Request) {
-	err := errors.New("PUT method is not implemented.")
-	libhttp.HandleErrorJson(w, err)
-	return
 }
 
 func DeleteSavedQueriesID(w http.ResponseWriter, r *http.Request) {
@@ -79,5 +72,5 @@ func DeleteSavedQueriesID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	http.Redirect(w, r, "/", 301)
+	http.Redirect(w, r, r.Referer(), 301)
 }
