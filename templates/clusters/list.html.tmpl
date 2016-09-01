@@ -120,16 +120,18 @@
                                             <input type="hidden" name="Email" value="{{ $member.Email }}">
                                             <input type="hidden" name="Level" value="{{ $member.Level }}">
 
-                                            <input type="checkbox" name="Enabled" onclick="$(this).closest('form').submit();" {{ if $member.Enabled }} checked {{end}} {{ if  eq $member.Email $.CurrentUser.Email }} disabled {{end}}>
+                                            <input type="checkbox" name="Enabled" onclick="$(this).closest('form').submit();" {{ if $member.Enabled }} checked {{end}} {{ if eq $member.Email $.CurrentUser.Email }} disabled {{end}}>
                                         </form>
                                     </td>
                                     <td>
+                                        {{ if ne $member.Email $.CurrentUser.Email }}
                                         <form method="post" action="/clusters/{{ $cluster.ID }}/users">
                                             <input type="hidden" name="gorilla.csrf.Token" value="{{ $.CSRFToken }}">
                                             <input type="hidden" name="_method" value="delete">
                                             <input type="hidden" name="Email" value="{{ $member.Email }}">
                                             <button type="submit" class="btn btn-danger btn-block btn-xs">Delete</button>
                                         </form>
+                                        {{end}}
                                     </td>
                                 </tr>
                             {{ end }}

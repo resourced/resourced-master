@@ -13,7 +13,7 @@ func PostAccessTokens(w http.ResponseWriter, r *http.Request) {
 
 	currentUser := r.Context().Value("currentUser").(*dal.UserRow)
 
-	clusterID, err := getInt64SlugFromPath(w, r, "id")
+	clusterID, err := getInt64SlugFromPath(w, r, "clusterID")
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return

@@ -88,14 +88,13 @@ func PostClusters(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, r.Referer(), 301)
 }
 
-// PostClustersCurrent sets a cluster to be the current one on the UI.
-func PostClustersCurrent(w http.ResponseWriter, r *http.Request) {
+// PostClusterIDCurrent sets a cluster to be the current one on the UI.
+func PostClusterIDCurrent(w http.ResponseWriter, r *http.Request) {
 	cookieStore := r.Context().Value("cookieStore").(*sessions.CookieStore)
 
 	session, _ := cookieStore.Get(r, "resourcedmaster-session")
 
-	clusterIDString := r.FormValue("ClusterID")
-	clusterID, err := strconv.ParseInt(clusterIDString, 10, 64)
+	clusterID, err := getInt64SlugFromPath(w, r, "clusterID")
 	if err != nil {
 		http.Redirect(w, r, r.Referer(), 301)
 		return
@@ -140,7 +139,7 @@ func PostPutDeleteClusterID(w http.ResponseWriter, r *http.Request) {
 func PutClusterID(w http.ResponseWriter, r *http.Request) {
 	dbs := r.Context().Value("dbs").(*config.DBConfig)
 
-	id, err := getInt64SlugFromPath(w, r, "id")
+	clusterID, err := getInt64SlugFromPath(w, r, "clusterID")
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
@@ -170,7 +169,7 @@ func PutClusterID(w http.ResponseWriter, r *http.Request) {
 	data["name"] = name
 	data["data_retention"] = dataRetentionJSON
 
-	_, err = dal.NewCluster(dbs.Core).UpdateByID(nil, data, id)
+	_, err = dal.NewCluster(dbs.Core).UpdateByID(nil, data, clusterID)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
@@ -183,15 +182,17 @@ func PutClusterID(w http.ResponseWriter, r *http.Request) {
 func DeleteClusterID(w http.ResponseWriter, r *http.Request) {
 	dbs := r.Context().Value("dbs").(*config.DBConfig)
 
-	id, err := getInt64SlugFromPath(w, r, "id")
+	clusterID, err := getInt64SlugFromPath(w, r, "clusterID")
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
 	}
 
+	currentUser := r.Context().Value("currentUser").(*dal.UserRow)
+
 	cluster := dal.NewCluster(dbs.Core)
 
-	clustersByUser, err := cluster.AllByUserID(nil, id)
+	clustersByUser, err := cluster.AllByUserID(nil, currentUser.ID)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
@@ -202,7 +203,7 @@ func DeleteClusterID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err = cluster.DeleteByID(nil, id)
+	_, err = cluster.DeleteByID(nil, clusterID)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
@@ -229,7 +230,7 @@ func PostPutDeleteClusterIDUsers(w http.ResponseWriter, r *http.Request) {
 func PutClusterIDUsers(w http.ResponseWriter, r *http.Request) {
 	dbs := r.Context().Value("dbs").(*config.DBConfig)
 
-	id, err := getInt64SlugFromPath(w, r, "id")
+	clusterID, err := getInt64SlugFromPath(w, r, "clusterID")
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
@@ -255,7 +256,7 @@ func PutClusterIDUsers(w http.ResponseWriter, r *http.Request) {
 
 		// 2. Send email invite to user
 		if userRow.EmailVerificationToken.String != "" {
-			clusterRow, err := dal.NewCluster(dbs.Core).GetByID(nil, id)
+			clusterRow, err := dal.NewCluster(dbs.Core).GetByID(nil, clusterID)
 			if err != nil {
 				libhttp.HandleErrorJson(w, err)
 				return
@@ -279,7 +280,7 @@ Your coleague has invited you to join cluster: %v. Click the following link to s
 	}
 
 	// Add user as a member to this cluster
-	err = dal.NewCluster(dbs.Core).UpdateMember(nil, id, userRow, level, enabled)
+	err = dal.NewCluster(dbs.Core).UpdateMember(nil, clusterID, userRow, level, enabled)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
@@ -292,7 +293,7 @@ Your coleague has invited you to join cluster: %v. Click the following link to s
 func DeleteClusterIDUsers(w http.ResponseWriter, r *http.Request) {
 	dbs := r.Context().Value("dbs").(*config.DBConfig)
 
-	id, err := getInt64SlugFromPath(w, r, "id")
+	clusterID, err := getInt64SlugFromPath(w, r, "clusterID")
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
@@ -302,7 +303,7 @@ func DeleteClusterIDUsers(w http.ResponseWriter, r *http.Request) {
 
 	existingUser, _ := dal.NewUser(dbs.Core).GetByEmail(nil, email)
 	if existingUser != nil {
-		err := dal.NewCluster(dbs.Core).RemoveMember(nil, id, existingUser)
+		err := dal.NewCluster(dbs.Core).RemoveMember(nil, clusterID, existingUser)
 		if err != nil {
 			libhttp.HandleErrorJson(w, err)
 			return

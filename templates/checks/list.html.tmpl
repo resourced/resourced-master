@@ -368,11 +368,11 @@
                                         <option value="<="><=</option>
                                     </select>
 
-                                    <input name="ExpressionValue" type="number" style="width: 70px" value="1">
+                                    <input name="ExpressionValue" type="number" style="width: 70px" min="1" value="1">
                                 </span>
 
                                 <span class="expression-part expression-part-relative-host" style="display: none">
-                                    is <input name="ExpressionValue" type="number" style="width: 70px" value="200"> percent
+                                    is <input name="ExpressionValue" type="number" style="width: 70px" min="1" value="200"> percent
 
                                     <select name="ExpressionOperator">
                                         <option value=">">greater than</option>
@@ -381,7 +381,7 @@
 
                                     <br>
 
-                                    the previous <input name="ExpressionPrevRange" type="number" style="width: 70px" value="15"> minutes of
+                                    the previous <input name="ExpressionPrevRange" type="number" style="width: 70px" min="1" value="15"> minutes of
 
                                     <select name="ExpressionPrevAggr">
                                         <option value="avg">average</option>
@@ -405,15 +405,15 @@
                                         <option value="<">less than</option>
                                     </select>
 
-                                    <input name="ExpressionValue" type="number" style="width: 70px" value="1">
+                                    <input name="ExpressionValue" type="number" style="width: 70px" min="1" value="1">
 
                                     <br>
 
-                                    the last <input name="ExpressionPrevRange" type="number" style="width: 70px" value="15"> minutes
+                                    the last <input name="ExpressionPrevRange" type="number" style="width: 70px" min="1" value="15"> minutes
                                 </span>
 
                                 <span class="expression-part expression-part-ssh" style="display: none">
-                                    the port is <input name="ExpressionPort" type="number" value="22"> and
+                                    the port is <input name="ExpressionPort" type="number" min="1" value="22"> and
                                 </span>
 
                                 <span class="expression-part expression-part-http" style="display: none">
@@ -426,7 +426,7 @@
                                         <option value="DELETE">DELETE</option>
                                     </select>
 
-                                    on port <input name="ExpressionPort" type="number" style="width: 70px" value="80">
+                                    on port <input name="ExpressionPort" type="number" style="width: 70px" min="1" value="80">
 
                                     <br>
 
@@ -445,7 +445,7 @@
 
                                 <br class="expression-where">
 
-                                affecting at minimum <input name="ExpressionMinHost" type="number" style="width: 70px" value="1"> hosts.
+                                affecting at minimum <input name="ExpressionMinHost" type="number" style="width: 70px" min="1" value="1"> hosts.
                             </div>
                         </div>
                     </div>
@@ -703,7 +703,7 @@ $(document).ready(function() {
                         btn.addClass('with-text');
                     } else if(i == checkResults.length - 1) {
                         btn.text('older');
-                        btn.addClass('with-text');                    
+                        btn.addClass('with-text');
                     } else {
                         btn.removeClass('with-text');
                     }
@@ -804,12 +804,16 @@ $(document).on('click', '.red-green-block.btn', function (event) {
 
         var hostnameElements = [];
 
-        for(var j = 0; j < expression.Result.GoodHostnames.length; j++) {
-            hostnameElements.push('<span class="label label-success">' + expression.Result.GoodHostnames[j] + '</span>');
+        if(expression.Result.GoodHostnames) {
+            for(var j = 0; j < expression.Result.GoodHostnames.length; j++) {
+                hostnameElements.push('<span class="label label-success">' + expression.Result.GoodHostnames[j] + '</span>');
+            }
         }
 
-        for(var j = 0; j < expression.Result.BadHostnames.length; j++) {
-            hostnameElements.push('<span class="label label-danger">' + expression.Result.BadHostnames[j] + '</span>');            
+        if(expression.Result.BadHostnames) {
+            for(var j = 0; j < expression.Result.BadHostnames.length; j++) {
+                hostnameElements.push('<span class="label label-danger">' + expression.Result.BadHostnames[j] + '</span>');
+            }
         }
 
         modal.find('.modal-body').html('');

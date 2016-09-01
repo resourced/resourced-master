@@ -134,13 +134,16 @@ func (app *Application) mux() *chi.Mux {
 		r.Use(CSRF, middlewares.MustLogin, middlewares.SetClusters, middlewares.MustBeMember)
 		r.Get("/", handlers.GetClusters)
 		r.Post("/", handlers.PostClusters)
-		r.Post("/current", handlers.PostClustersCurrent)
 
 		r.Route("/:clusterID", func(r chi.Router) {
 			r.Use(CSRF, middlewares.MustLogin, middlewares.SetClusters, middlewares.MustBeMember)
 			r.Post("/", handlers.PostPutDeleteClusterID)
 			r.Put("/", handlers.PostPutDeleteClusterID)
 			r.Delete("/", handlers.PostPutDeleteClusterID)
+
+			r.Route("/current", func(r chi.Router) {
+				r.Post("/", handlers.PostClusterIDCurrent)
+			})
 
 			r.Post("/access-tokens", handlers.PostAccessTokens)
 			r.Post("/users", handlers.PostPutDeleteClusterIDUsers)

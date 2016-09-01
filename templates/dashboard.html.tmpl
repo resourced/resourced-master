@@ -239,7 +239,7 @@
         var clusterID = $li.data('cluster-id');
         var clusterName = $li.find('.name').text();
 
-        $.post('/clusters/current',{ 'ClusterID': clusterID, 'gorilla.csrf.Token': ResourcedMaster.globals.CSRFToken })
+        $.post('/clusters/' + clusterID + '/current',{ 'gorilla.csrf.Token': ResourcedMaster.globals.CSRFToken })
         .done(function() {
             window.location = '/';
         });
