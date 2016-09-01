@@ -123,10 +123,10 @@
 			"revisionTime": "2016-05-25T20:33:48Z"
 		},
 		{
-			"checksumSHA1": "QBufScxnJ/eosK64ysHKdfhQvXM=",
+			"checksumSHA1": "/bme7EZUgPHRcE433mhhCywTY0Y=",
 			"path": "github.com/gorilla/sessions",
-			"revision": "a4e6dd28f9e9274729417506b9bd0a6c3edb91ce",
-			"revisionTime": "2016-05-18T15:17:58Z"
+			"revision": "478cbfc73df023ca675fe89ea13a72b026fcced6",
+			"revisionTime": "2016-08-26T13:13:12Z"
 		},
 		{
 			"checksumSHA1": "KGNq4ztyTW9YXWGsjr8fatksuyw=",
