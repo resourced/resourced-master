@@ -116,6 +116,8 @@ func PostChecks(w http.ResponseWriter, r *http.Request) {
 
 	currentCluster := r.Context().Value("currentCluster").(*dal.ClusterRow)
 
+	errLogger := r.Context().Value("errLogger").(*logrus.Logger)
+
 	intervalInSeconds := r.FormValue("IntervalInSeconds")
 	if intervalInSeconds == "" {
 		intervalInSeconds = "60"
@@ -151,7 +153,7 @@ func PostChecks(w http.ResponseWriter, r *http.Request) {
 	go func() {
 		err := bus.Publish("checks-refetch", "true")
 		if err != nil {
-			logrus.Error(err)
+			errLogger.WithFields(logrus.Fields{"Error": err}).Error("Failed to publish checks-refetch message to message bus")
 		}
 	}()
 
@@ -159,6 +161,8 @@ func PostChecks(w http.ResponseWriter, r *http.Request) {
 }
 
 func PostPutDeleteCheckID(w http.ResponseWriter, r *http.Request) {
+	errLogger := r.Context().Value("errLogger").(*logrus.Logger)
+
 	method := r.FormValue("_method")
 	if method == "" {
 		method = "put"
@@ -168,7 +172,7 @@ func PostPutDeleteCheckID(w http.ResponseWriter, r *http.Request) {
 	go func() {
 		err := bus.Publish("checks-refetch", "true")
 		if err != nil {
-			logrus.Error(err)
+			errLogger.WithFields(logrus.Fields{"Error": err}).Error("Failed to publish checks-refetch message to message bus")
 		}
 	}()
 
@@ -315,6 +319,8 @@ func newCheckTriggerFromForm(r *http.Request) (dal.CheckTrigger, error) {
 func PostChecksTriggers(w http.ResponseWriter, r *http.Request) {
 	dbs := r.Context().Value("dbs").(*config.DBConfig)
 
+	errLogger := r.Context().Value("errLogger").(*logrus.Logger)
+
 	w.Header().Set("Content-Type", "text/html")
 
 	checkIDString := chi.URLParam(r, "checkID")
@@ -355,7 +361,7 @@ func PostChecksTriggers(w http.ResponseWriter, r *http.Request) {
 	go func() {
 		err := bus.Publish("checks-refetch", "true")
 		if err != nil {
-			logrus.Error(err)
+			errLogger.WithFields(logrus.Fields{"Error": err}).Error("Failed to publish checks-refetch message to message bus")
 		}
 	}()
 
@@ -363,6 +369,8 @@ func PostChecksTriggers(w http.ResponseWriter, r *http.Request) {
 }
 
 func PostPutDeleteCheckTriggerID(w http.ResponseWriter, r *http.Request) {
+	errLogger := r.Context().Value("errLogger").(*logrus.Logger)
+
 	method := r.FormValue("_method")
 	if method == "" {
 		method = "put"
@@ -372,7 +380,7 @@ func PostPutDeleteCheckTriggerID(w http.ResponseWriter, r *http.Request) {
 	go func() {
 		err := bus.Publish("checks-refetch", "true")
 		if err != nil {
-			logrus.Error(err)
+			errLogger.WithFields(logrus.Fields{"Error": err}).Error("Failed to publish checks-refetch message to message bus")
 		}
 	}()
 

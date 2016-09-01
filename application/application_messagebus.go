@@ -31,7 +31,7 @@ func (app *Application) MessageBusHandlers() map[string]func(msg string) {
 	peersHeartbeat := func(msg string) {
 		fullAddr := resourced_wire.ParseSingle(msg).PlainContent()
 		if strings.Contains(fullAddr, "Error") {
-			logrus.WithFields(logrus.Fields{
+			app.ErrLogger.WithFields(logrus.Fields{
 				"Method": "app.MessageBusHandlers",
 				"Error":  fullAddr,
 			}).Error("Error when parsing content from peers-heartbeat topic")
@@ -46,7 +46,7 @@ func (app *Application) MessageBusHandlers() map[string]func(msg string) {
 	checksRefetch := func(msg string) {
 		content := resourced_wire.ParseSingle(msg).PlainContent()
 		if strings.Contains(content, "Error") {
-			logrus.WithFields(logrus.Fields{
+			app.ErrLogger.WithFields(logrus.Fields{
 				"Method": "app.MessageBusHandlers",
 				"Error":  content,
 			}).Error("Error when parsing content from checks-refetch topic")
@@ -58,7 +58,7 @@ func (app *Application) MessageBusHandlers() map[string]func(msg string) {
 	metricStream := func(msg string) {
 		content := resourced_wire.ParseSingle(msg).JSONStringContent()
 		if strings.Contains(content, "Error") {
-			logrus.WithFields(logrus.Fields{
+			app.ErrLogger.WithFields(logrus.Fields{
 				"Method": "app.MessageBusHandlers",
 				"Error":  content,
 			}).Error("Error when parsing content from checks-refetch topic")
@@ -86,7 +86,7 @@ func (app *Application) SendHeartbeat() {
 	for range time.Tick(30 * time.Second) {
 		err := app.sendHeartbeatOnce()
 		if err != nil {
-			logrus.WithFields(logrus.Fields{
+			app.ErrLogger.WithFields(logrus.Fields{
 				"Method": "app.SendHeartbeat",
 				"Error":  err,
 			}).Error("Error when sending heartbeat every 30 seconds")

@@ -30,6 +30,11 @@ func CSRFMiddleware(useHTTPS bool, salt string) func(http.Handler) http.Handler 
 	return csrf.Protect([]byte(salt), CSRFOptions)
 }
 
+// SetLogger passes logger struct to every request handler
+func SetLogger(loggerType string, logger *logrus.Logger) func(http.Handler) http.Handler {
+	return chi_middleware.WithValue(loggerType, logger)
+}
+
 // SetAddr passes daemon host and port to every request handler
 func SetAddr(addr string) func(http.Handler) http.Handler {
 	if strings.HasPrefix(addr, ":") {

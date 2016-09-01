@@ -75,11 +75,11 @@ func New(configDir string) (*Application, error) {
 	app.MessageBus = bus
 
 	// Setup loggers
-	app.StdOutLogger = logrus.New()
-	app.StdOutLogger.Out = os.Stdout
+	app.OutLogger = logrus.New()
+	app.OutLogger.Out = os.Stdout
 
-	app.StdErrLogger = logrus.New()
-	app.StdErrLogger.Out = os.Stderr
+	app.ErrLogger = logrus.New()
+	app.ErrLogger.Out = os.Stderr
 
 	return app, err
 }
@@ -97,8 +97,8 @@ type Application struct {
 	MessageBus         *messagebus.MessageBus
 	Peers              *gocache.Cache
 	RefetchChecksChan  chan bool
-	StdOutLogger       *logrus.Logger
-	StdErrLogger       *logrus.Logger
+	OutLogger          *logrus.Logger
+	ErrLogger          *logrus.Logger
 	sync.RWMutex
 }
 

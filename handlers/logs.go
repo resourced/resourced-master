@@ -214,6 +214,8 @@ func PostApiLogs(w http.ResponseWriter, r *http.Request) {
 
 	accessTokenRow := r.Context().Value("accessToken").(*dal.AccessTokenRow)
 
+	errLogger := r.Context().Value("errLogger").(*logrus.Logger)
+
 	dataJson, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
@@ -231,7 +233,7 @@ func PostApiLogs(w http.ResponseWriter, r *http.Request) {
 	go func() {
 		err = dal.NewTSLog(dbs.GetTSLog(accessTokenRow.ClusterID)).CreateFromJSON(nil, accessTokenRow.ClusterID, dataJson, deletedFrom)
 		if err != nil {
-			logrus.Error(err)
+			errLogger.Error(err)
 		}
 	}()
 

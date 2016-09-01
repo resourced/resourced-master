@@ -35,7 +35,7 @@ func (app *Application) CheckAndRunTriggers() {
 				go func(checkRow *dal.CheckRow) {
 					checkDuration, err := time.ParseDuration(checkRow.Interval)
 					if err != nil {
-						logrus.WithFields(logrus.Fields{
+						app.ErrLogger.WithFields(logrus.Fields{
 							"ClusterID": checkRow.ClusterID,
 							"CheckID":   checkRow.ID,
 							"Error":     err,
@@ -47,7 +47,7 @@ func (app *Application) CheckAndRunTriggers() {
 						// 1. Evaluate all expressions in a check.
 						expressionResults, finalResult, err := checkRow.EvalExpressions(app.DBConfig)
 						if err != nil {
-							logrus.WithFields(logrus.Fields{
+							app.ErrLogger.WithFields(logrus.Fields{
 								"Method":    "checkRow.EvalExpressions",
 								"ClusterID": checkRow.ClusterID,
 								"CheckID":   checkRow.ID,
@@ -61,7 +61,7 @@ func (app *Application) CheckAndRunTriggers() {
 						// 2. Store the check result.
 						clusterRow, err := dal.NewCluster(app.DBConfig.Core).GetByID(nil, checkRow.ClusterID)
 						if err != nil {
-							logrus.WithFields(logrus.Fields{
+							app.ErrLogger.WithFields(logrus.Fields{
 								"Method":    "Cluster.GetByID",
 								"ClusterID": checkRow.ClusterID,
 								"CheckID":   checkRow.ID,
@@ -73,7 +73,7 @@ func (app *Application) CheckAndRunTriggers() {
 
 						err = dal.NewTSCheck(app.DBConfig.GetTSCheck(checkRow.ClusterID)).Create(nil, checkRow.ClusterID, checkRow.ID, finalResult, expressionResults, deletedFrom)
 						if err != nil {
-							logrus.WithFields(logrus.Fields{
+							app.ErrLogger.WithFields(logrus.Fields{
 								"Method":    "TSCheck.Create",
 								"ClusterID": checkRow.ClusterID,
 								"CheckID":   checkRow.ID,
@@ -85,7 +85,7 @@ func (app *Application) CheckAndRunTriggers() {
 						// 3. Run check's triggers.
 						err = checkRow.RunTriggers(app.GeneralConfig, app.DBConfig.Core, app.DBConfig.GetTSCheck(checkRow.ClusterID), app.Mailers["GeneralConfig.Checks"])
 						if err != nil {
-							logrus.WithFields(logrus.Fields{
+							app.ErrLogger.WithFields(logrus.Fields{
 								"Method":    "checkRow.RunTriggers",
 								"ClusterID": checkRow.ClusterID,
 								"CheckID":   checkRow.ID,

@@ -134,6 +134,8 @@ func PostApiHosts(w http.ResponseWriter, r *http.Request) {
 
 	bus := r.Context().Value("bus").(*messagebus.MessageBus)
 
+	errLogger := r.Context().Value("errLogger").(*logrus.Logger)
+
 	dataJson, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
@@ -150,14 +152,19 @@ func PostApiHosts(w http.ResponseWriter, r *http.Request) {
 	go func() {
 		metricsMap, err := dal.NewMetric(dbs.Core).AllByClusterIDAsMap(nil, hostRow.ClusterID)
 		if err != nil {
-			logrus.Error(err)
+			errLogger.WithFields(logrus.Fields{
+				"Error": err.Error(),
+			}).Error("Failed to get map of metrics by cluster id")
+
 			libhttp.HandleErrorJson(w, err)
 			return
 		}
 
 		clusterRow, err := dal.NewCluster(dbs.Core).GetByID(nil, hostRow.ClusterID)
 		if err != nil {
-			logrus.Error(err)
+			errLogger.WithFields(logrus.Fields{
+				"Error": err.Error(),
+			}).Error("Failed to get cluster by id")
 			return
 		}
 
@@ -167,21 +174,21 @@ func PostApiHosts(w http.ResponseWriter, r *http.Request) {
 		// Create ts_metrics row
 		err = dal.NewTSMetric(dbs.GetTSMetric(hostRow.ClusterID)).CreateByHostRow(nil, hostRow, metricsMap, tsMetricsDeletedFrom)
 		if err != nil {
-			logrus.Error(err)
+			errLogger.Error(err)
 			return
 		}
 
 		go func() {
 			selectAggrRows, err := dal.NewTSMetric(dbs.GetTSMetric(hostRow.ClusterID)).AggregateEveryXMinutes(nil, hostRow.ClusterID, 15)
 			if err != nil {
-				logrus.Error(err)
+				errLogger.Error(err)
 				return
 			}
 
 			// Create ts_metrics_aggr_15m rows.
 			err = dal.NewTSMetricAggr15m(dbs.GetTSMetricAggr15m(hostRow.ClusterID)).CreateByHostRow(nil, hostRow, metricsMap, selectAggrRows, tsMetricsAggr15mDeletedFrom)
 			if err != nil {
-				logrus.Error(err)
+				errLogger.Error(err)
 				return
 			}
 		}()
@@ -189,14 +196,14 @@ func PostApiHosts(w http.ResponseWriter, r *http.Request) {
 		go func() {
 			selectAggrRows, err := dal.NewTSMetric(dbs.GetTSMetric(hostRow.ClusterID)).AggregateEveryXMinutesPerHost(nil, hostRow.ClusterID, 15)
 			if err != nil {
-				logrus.Error(err)
+				errLogger.Error(err)
 				return
 			}
 
 			// Create ts_metrics_aggr_15m rows per host.
 			err = dal.NewTSMetricAggr15m(dbs.GetTSMetricAggr15m(hostRow.ClusterID)).CreateByHostRowPerHost(nil, hostRow, metricsMap, selectAggrRows, tsMetricsAggr15mDeletedFrom)
 			if err != nil {
-				logrus.Error(err)
+				errLogger.Error(err)
 				return
 			}
 		}()

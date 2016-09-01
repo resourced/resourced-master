@@ -50,6 +50,8 @@ func (app *Application) mux() *chi.Mux {
 	r.Use(middlewares.SetCookieStore(app.cookieStore))
 	r.Use(middlewares.SetMailers(app.Mailers))
 	r.Use(middlewares.SetMessageBus(app.MessageBus))
+	r.Use(middlewares.SetLogger("outLogger", app.OutLogger))
+	r.Use(middlewares.SetLogger("errLogger", app.ErrLogger))
 
 	r.Get("/signup", handlers.GetSignup)
 	r.Post("/signup", tollbooth.LimitFuncHandler(signupLimiter, handlers.PostSignup).(http.HandlerFunc))

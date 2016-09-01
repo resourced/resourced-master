@@ -28,7 +28,7 @@ func (app *Application) PruneAll() {
 
 			groupedClustersByDaemon, err := dal.NewCluster(app.DBConfig.Core).AllSplitToDaemons(nil, daemons)
 			if err != nil {
-				logrus.WithFields(logrus.Fields{
+				app.ErrLogger.WithFields(logrus.Fields{
 					"Method": "Cluster.AllSplitToDaemons",
 				}).Error(err)
 
@@ -43,7 +43,7 @@ func (app *Application) PruneAll() {
 		}
 
 		if err != nil {
-			logrus.WithFields(logrus.Fields{
+			app.ErrLogger.WithFields(logrus.Fields{
 				"Method": "Application.PruneAll",
 			}).Error(err)
 
@@ -89,16 +89,16 @@ func (app *Application) PruneTSCheckOnce(clusterID int64) (err error) {
 
 	latency := stopwatch.Measure(f)
 
-	logrusEntry := logrus.WithFields(logrus.Fields{
+	logFields := logrus.Fields{
 		"Method":              "Application.PruneTSCheckOnce",
 		"LatencyNanoSeconds":  latency,
 		"LatencyMicroSeconds": latency / 1000,
 		"LatencyMilliSeconds": latency / 1000 / 1000,
-	})
+	}
 	if err != nil {
-		logrusEntry.Error(err)
+		app.ErrLogger.WithFields(logFields).Error(err)
 	} else {
-		logrusEntry.Info("Latency measurement")
+		app.OutLogger.WithFields(logFields).Info("Latency measurement")
 	}
 
 	return err
@@ -112,16 +112,16 @@ func (app *Application) PruneTSMetricOnce(clusterID int64) (err error) {
 
 	latency := stopwatch.Measure(f)
 
-	logrusEntry := logrus.WithFields(logrus.Fields{
+	logFields := logrus.Fields{
 		"Method":              "Application.PruneTSMetricOnce",
 		"LatencyNanoSeconds":  latency,
 		"LatencyMicroSeconds": latency / 1000,
 		"LatencyMilliSeconds": latency / 1000 / 1000,
-	})
+	}
 	if err != nil {
-		logrusEntry.Error(err)
+		app.ErrLogger.WithFields(logFields).Error(err)
 	} else {
-		logrusEntry.Info("Latency measurement")
+		app.OutLogger.WithFields(logFields).Info("Latency measurement")
 	}
 
 	return err
@@ -135,16 +135,16 @@ func (app *Application) PruneTSMetricAggr15mOnce(clusterID int64) (err error) {
 
 	latency := stopwatch.Measure(f)
 
-	logrusEntry := logrus.WithFields(logrus.Fields{
+	logFields := logrus.Fields{
 		"Method":              "Application.PruneTSMetricAggr15mOnce",
 		"LatencyNanoSeconds":  latency,
 		"LatencyMicroSeconds": latency / 1000,
 		"LatencyMilliSeconds": latency / 1000 / 1000,
-	})
+	}
 	if err != nil {
-		logrusEntry.Error(err)
+		app.ErrLogger.WithFields(logFields).Error(err)
 	} else {
-		logrusEntry.Info("Latency measurement")
+		app.OutLogger.WithFields(logFields).Info("Latency measurement")
 	}
 
 	return err
@@ -158,16 +158,16 @@ func (app *Application) PruneTSEventOnce(clusterID int64) (err error) {
 
 	latency := stopwatch.Measure(f)
 
-	logrusEntry := logrus.WithFields(logrus.Fields{
+	logFields := logrus.Fields{
 		"Method":              "Application.PruneTSEventOnce",
 		"LatencyNanoSeconds":  latency,
 		"LatencyMicroSeconds": latency / 1000,
 		"LatencyMilliSeconds": latency / 1000 / 1000,
-	})
+	}
 	if err != nil {
-		logrusEntry.Error(err)
+		app.ErrLogger.WithFields(logFields).Error(err)
 	} else {
-		logrusEntry.Info("Latency measurement")
+		app.OutLogger.WithFields(logFields).Info("Latency measurement")
 	}
 
 	return err
@@ -181,16 +181,16 @@ func (app *Application) PruneTSExecutorLogOnce(clusterID int64) (err error) {
 
 	latency := stopwatch.Measure(f)
 
-	logrusEntry := logrus.WithFields(logrus.Fields{
+	logFields := logrus.Fields{
 		"Method":              "Application.PruneTSExecutorLogOnce",
 		"LatencyNanoSeconds":  latency,
 		"LatencyMicroSeconds": latency / 1000,
 		"LatencyMilliSeconds": latency / 1000 / 1000,
-	})
+	}
 	if err != nil {
-		logrusEntry.Error(err)
+		app.ErrLogger.WithFields(logFields).Error(err)
 	} else {
-		logrusEntry.Info("Latency measurement")
+		app.OutLogger.WithFields(logFields).Info("Latency measurement")
 	}
 
 	return err
@@ -204,16 +204,16 @@ func (app *Application) PruneTSLogOnce(clusterID int64) (err error) {
 
 	latency := stopwatch.Measure(f)
 
-	logrusEntry := logrus.WithFields(logrus.Fields{
+	logFields := logrus.Fields{
 		"Method":              "Application.PruneTSLogOnce",
 		"LatencyNanoSeconds":  latency,
 		"LatencyMicroSeconds": latency / 1000,
 		"LatencyMilliSeconds": latency / 1000 / 1000,
-	})
+	}
 	if err != nil {
-		logrusEntry.Error(err)
+		app.ErrLogger.WithFields(logFields).Error(err)
 	} else {
-		logrusEntry.Info("Latency measurement")
+		app.OutLogger.WithFields(logFields).Info("Latency measurement")
 	}
 
 	return err

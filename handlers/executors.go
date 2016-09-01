@@ -16,11 +16,13 @@ func PostApiExecutors(w http.ResponseWriter, r *http.Request) {
 
 	accessTokenRow := r.Context().Value("accessToken").(*dal.AccessTokenRow)
 
+	errLogger := r.Context().Value("errLogger").(*logrus.Logger)
+
 	dbs := r.Context().Value("dbs").(*config.DBConfig)
 
 	dataJson, err := ioutil.ReadAll(r.Body)
 	if err != nil {
-		logrus.WithFields(logrus.Fields{
+		errLogger.WithFields(logrus.Fields{
 			"Error": err.Error(),
 		}).Error("Failed to read JSON payload")
 
@@ -30,7 +32,7 @@ func PostApiExecutors(w http.ResponseWriter, r *http.Request) {
 
 	clusterRow, err := dal.NewCluster(dbs.Core).GetByID(nil, accessTokenRow.ClusterID)
 	if err != nil {
-		logrus.WithFields(logrus.Fields{
+		errLogger.WithFields(logrus.Fields{
 			"Error": err.Error(),
 		}).Error("Failed to get cluster by ID before storing executor logs")
 
@@ -42,7 +44,7 @@ func PostApiExecutors(w http.ResponseWriter, r *http.Request) {
 
 	err = dal.NewTSExecutorLog(dbs.GetTSExecutorLog(accessTokenRow.ClusterID)).CreateFromJSON(nil, accessTokenRow.ClusterID, dataJson, deletedFrom)
 	if err != nil {
-		logrus.WithFields(logrus.Fields{
+		errLogger.WithFields(logrus.Fields{
 			"Error": err.Error(),
 		}).Error("Failed to insert ts_executor_logs")
 

@@ -25,7 +25,7 @@ func (app *Application) NewMetricsRegistry(handlerInstruments map[string]chan in
 		go func(handlerName string, latencyChan chan int64) {
 			for {
 				for latency := range latencyChan {
-					logrus.WithFields(logrus.Fields{
+					app.OutLogger.WithFields(logrus.Fields{
 						"Handler": handlerName,
 						"Latency": latency,
 					}).Info("Capturing latency data")

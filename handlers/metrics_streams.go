@@ -30,6 +30,8 @@ func ApiMetricStreams(w http.ResponseWriter, r *http.Request) {
 
 	accessTokenRow := r.Context().Value("accessToken").(*dal.AccessTokenRow)
 
+	errLogger := r.Context().Value("errLogger").(*logrus.Logger)
+
 	// Create a new channel for this connected client.
 	newClientChan := make(chan string)
 
@@ -55,7 +57,7 @@ func ApiMetricStreams(w http.ResponseWriter, r *http.Request) {
 
 		err := json.Unmarshal([]byte(jsonContentString), &payload)
 		if err != nil {
-			logrus.WithFields(logrus.Fields{
+			errLogger.WithFields(logrus.Fields{
 				"Method": "ApiMetricStreams",
 				"Error":  err,
 			}).Errorf("Failed to unmarshal JSON payload")
@@ -64,7 +66,7 @@ func ApiMetricStreams(w http.ResponseWriter, r *http.Request) {
 
 		clusterIDInterface, ok := payload["ClusterID"]
 		if !ok {
-			logrus.WithFields(logrus.Fields{
+			errLogger.WithFields(logrus.Fields{
 				"Method": "ApiMetricStreams",
 			}).Errorf("ClusterID is missing from payload")
 			continue
@@ -80,7 +82,7 @@ func ApiMetricStreams(w http.ResponseWriter, r *http.Request) {
 		// Emit payload by MetricID
 		metricIDInterface, ok := payload["MetricID"]
 		if !ok {
-			logrus.WithFields(logrus.Fields{
+			errLogger.WithFields(logrus.Fields{
 				"Method": "ApiMetricStreams",
 			}).Errorf("MetricID is missing from payload")
 			continue
