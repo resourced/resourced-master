@@ -189,8 +189,8 @@ $(document).ready(function() {
     // -----------------------------------------------------
     // Set from and to unix timestamp from server-side.
     //
-    var to = {{ .To }} || ResourcedMaster.url.getParams('to') || ResourcedMaster.url.getParams('To');
-    var from = {{ .From }} || ResourcedMaster.url.getParams('from') || ResourcedMaster.url.getParams('From');
+    var to = ResourcedMaster.url.getParams('to') || ResourcedMaster.url.getParams('To') || {{ .To }};
+    var from = ResourcedMaster.url.getParams('from') || ResourcedMaster.url.getParams('From') || {{ .From }};
 
     // -----------------------------------------------------
     // Initialize daterange picker
@@ -199,8 +199,8 @@ $(document).ready(function() {
         var drpElem = $(this);
 
         var settings = jQuery.extend(true, {}, ResourcedMaster.daterange.defaultSettings);
-        settings.startDate = from;
-        settings.stopDate = to;
+        settings.startDate = new Date(from * 1000);
+        settings.stopDate = new Date(to * 1000);
 
         drpElem.daterangepicker(settings);
     });
