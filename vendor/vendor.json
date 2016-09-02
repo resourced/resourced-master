@@ -243,6 +243,12 @@
 			"revisionTime": "2016-08-29T19:42:49Z"
 		},
 		{
+			"checksumSHA1": "vAoC5OijLbXuzN14xuQJ/4smmHU=",
+			"path": "github.com/pressly/chi/middleware",
+			"revision": "9d7c97054ccb91c50561fc32e7089764a70f06fa",
+			"revisionTime": "2016-09-01T21:18:22Z"
+		},
+		{
 			"checksumSHA1": "69oDmck/6WoFdASUzyIbIFR7VmM=",
 			"path": "github.com/rcrowley/go-metrics",
 			"revision": "eeba7bd0dd01ace6e690fa833b3f22aaec29af43",
@@ -271,12 +277,6 @@
 			"path": "golang.org/x/crypto/blowfish",
 			"revision": "5bcd134fee4dd1475da17714aac19c0aa0142e2f",
 			"revisionTime": "2016-05-16T23:05:56Z"
-		},
-		{
-			"checksumSHA1": "7WASrg0PEueWDDRHkFhEEN6Qrms=",
-			"path": "golang.org/x/net/netutil",
-			"revision": "04557861f124410b768b1ba5bb3a91b705afbfc6",
-			"revisionTime": "2016-06-26T22:23:32Z"
 		},
 		{
 			"checksumSHA1": "w/oQQFHCnE+S+2g5D62nfY8aDuQ=",
