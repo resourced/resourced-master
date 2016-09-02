@@ -301,11 +301,18 @@ select {
     font-size: 8px;
     margin: 6px 4px 0 0;
 }
-#check-result-modal .expression {
-    margin-bottom: 12px;
+#check-result-modal .expression-result {
+    margin-bottom: 16px;
 }
-#check-result-modal .expression p {
-    margin-bottom: 4px;
+#check-result-modal .expression-result p {
+    margin-bottom: 1px;
+    font-size: 14px;
+}
+#check-result-modal .expression-result .btn {
+    width: 50px;
+}
+#check-result-modal .expression-result .label {
+    font-size: 9px;
 }
 
 @media(max-width:1200px) {
