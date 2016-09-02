@@ -151,6 +151,7 @@
 
             if(clusterID == ResourcedMaster.globals.currentCluster.ID) {
                 $('.nav-clusters .dropdown-toggle .name').text(ResourcedMaster.globals.currentCluster.Name);
+                $('.nav-clusters .dropdown-toggle .name').attr('title', ResourcedMaster.globals.currentCluster.Name);
             }
         });
 

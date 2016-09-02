@@ -735,7 +735,7 @@ $(document).on('click', '.btn-remove-expression', function() {
 
 $(document).on('click', '.btn-add-expression', function() {
     $('.expression-container').append($('#expression-boolean-operator-tmpl').html());
-    $('.expression-container').append('<div class="modal-body expression">' + $('.expression:first').html() + '</div>');
+    $('.expression-container').append('<div class="modal-body expression">' + $('.expression-container .expression:first').html() + '</div>');
 
     // Make sure the newly generated expression displays the correct type inside the <select> element.
     $('.expression-container .expression:last .expression-type').val(
@@ -784,6 +784,8 @@ $(document).on('click', '.red-green-block.btn', function (event) {
 
     var expressions = button.data('expressions');
 
+    modal.find('.modal-body').html('');
+
     for(var i = 0; i < expressions.length; i++) {
         var expression = expressions[i];
 
@@ -816,9 +818,8 @@ $(document).on('click', '.red-green-block.btn', function (event) {
             }
         }
 
-        modal.find('.modal-body').html('');
         modal.find('.modal-body').append(
-            '<div class="expression">' + buttonString +
+            '<div class="expression-result">' + buttonString +
             '<p>' + expressionText + '</p>' +
             hostnameElements.join('') +
             '</div>'
