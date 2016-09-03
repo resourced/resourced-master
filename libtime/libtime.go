@@ -27,3 +27,15 @@ func IsLeapYear(y int) bool {
 
 	return false
 }
+
+func FirstOfNextMonthUTC() time.Time {
+	now := time.Now().UTC()
+	currentYear, currentMonth, _ := now.Date()
+
+	nextMonth := currentMonth + 1
+	if nextMonth > 12 {
+		nextMonth = nextMonth - 12
+	}
+
+	return time.Date(currentYear, nextMonth, 1, 0, 0, 0, 0, now.Location()).UTC()
+}
