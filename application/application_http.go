@@ -33,7 +33,8 @@ func (app *Application) getHandlerInstrument(key string) chan int64 {
 	return instrument
 }
 
-func (app *Application) mux() *chi.Mux {
+// Mux routes HTTP requests to their appropriate handlers
+func (app *Application) Mux() *chi.Mux {
 	generalAPILimiter := tollbooth.NewLimiter(int64(app.GeneralConfig.RateLimiters.GeneralAPI), time.Second)
 	signupLimiter := tollbooth.NewLimiter(int64(app.GeneralConfig.RateLimiters.PostSignup), time.Second)
 
@@ -266,7 +267,7 @@ func (app *Application) NewHTTPServer() (*graceful.Server, error) {
 	// Create HTTP server
 	srv := &graceful.Server{
 		Timeout: requestTimeout,
-		Server:  &http.Server{Addr: app.GeneralConfig.Addr, Handler: app.mux()},
+		Server:  &http.Server{Addr: app.GeneralConfig.Addr, Handler: app.Mux()},
 	}
 
 	return srv, nil
