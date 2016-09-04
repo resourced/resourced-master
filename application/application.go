@@ -45,7 +45,7 @@ func New(configDir string) (*Application, error) {
 	app.DBConfig = dbConfig
 	app.cookieStore = sessions.NewCookieStore([]byte(app.GeneralConfig.CookieSecret))
 	app.Mailers = make(map[string]*mailer.Mailer)
-	app.HandlerInstruments = app.newHandlerInstruments()
+	app.HandlerInstruments = app.NewHandlerInstruments()
 	app.LatencyGauges = make(map[string]metrics.Gauge)
 	app.MetricsRegistry = app.NewMetricsRegistry(app.HandlerInstruments, app.LatencyGauges)
 	app.Peers = gocache.New(1*time.Minute, 10*time.Minute)

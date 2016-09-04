@@ -15,7 +15,8 @@ import (
 	"github.com/resourced/resourced-master/middlewares"
 )
 
-func (app *Application) newHandlerInstruments() map[string]chan int64 {
+// NewHandlerInstruments creates channels for recording latencies.
+func (app *Application) NewHandlerInstruments() map[string]chan int64 {
 	instruments := make(map[string]chan int64)
 	for _, key := range []string{"GetHosts", "GetLogs", "GetLogsExecutors"} {
 		instruments[key] = make(chan int64)
