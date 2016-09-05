@@ -58,6 +58,14 @@ func (h *HostRow) GetTags() map[string]string {
 	return tags
 }
 
+func (h *HostRow) GetClusterID() int64 {
+	return h.ClusterID
+}
+
+func (h *HostRow) GetHostname() string {
+	return h.Hostname
+}
+
 func (h *HostRow) DataAsFlatKeyValue() map[string]map[string]interface{} {
 	inputData := make(map[string]map[string]interface{})
 
@@ -111,6 +119,26 @@ func (h *Host) AllByClusterID(tx *sqlx.Tx, clusterID int64) ([]*HostRow, error) 
 	err := h.db.Select(&hosts, query, clusterID)
 
 	return hosts, err
+}
+
+// CountByClusterIDAndUpdatedInterval returns the count of all rows.
+func (h *Host) CountByClusterIDAndUpdatedInterval(tx *sqlx.Tx, clusterID int64, updatedInterval string) (int, error) {
+	query := fmt.Sprintf("SELECT COUNT(*) as count FROM %v WHERE cluster_id=$1 AND updated >= (NOW() at time zone 'utc' - INTERVAL '%v')", h.table, updatedInterval)
+	rows, err := h.db.Query(query, clusterID)
+	if err != nil {
+		return -1, err
+	}
+
+	var count int
+
+	for rows.Next() {
+		err := rows.Scan(&count)
+		if err != nil {
+			return -1, err
+		}
+	}
+
+	return count, nil
 }
 
 // AllByClusterIDAndUpdatedInterval returns all rows.
