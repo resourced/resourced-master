@@ -153,12 +153,6 @@
 			"revisionTime": "2015-03-30T01:41:32Z"
 		},
 		{
-			"checksumSHA1": "Lc5CWD5nzSttJNateoWlPgFE3Vw=",
-			"path": "github.com/justinas/alice",
-			"revision": "052b8b6c18edb9db317af86806d8e00ebaa94160",
-			"revisionTime": "2016-05-12T13:42:31Z"
-		},
-		{
 			"checksumSHA1": "QK3MNUdQwUBuznCHZcPijU/3DyI=",
 			"path": "github.com/lib/pq",
 			"revision": "4dd446efc17690bc53e154025146f73203b18309",

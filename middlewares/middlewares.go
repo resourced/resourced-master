@@ -11,7 +11,6 @@ import (
 	"github.com/didip/stopwatch"
 	"github.com/gorilla/csrf"
 	"github.com/gorilla/sessions"
-	"github.com/justinas/alice"
 	chi_middleware "github.com/pressly/chi/middleware"
 
 	"github.com/resourced/resourced-master/config"
@@ -338,16 +337,4 @@ func MustBeMember(next http.Handler) http.Handler {
 
 		next.ServeHTTP(w, r)
 	})
-}
-
-func MinimumMiddlewareChain(csrf func(http.Handler) http.Handler) alice.Chain {
-	return alice.New(csrf, MustLogin, SetClusters, MustBeMember)
-}
-
-func MinimumAPIMiddlewareChain() alice.Chain {
-	return alice.New(MustLoginApi)
-}
-
-func MinimumAPIStreamMiddlewareChain() alice.Chain {
-	return alice.New(MustLoginApiStream)
 }
