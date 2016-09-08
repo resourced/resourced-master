@@ -560,6 +560,81 @@ $(document).on('click', '.btn-hostquery-search', function() {
     })
 });
 
+$(document).on('click', '.red-green-block.btn', function (event) {
+    var button = $(this);
+
+    var modal = $('#check-result-modal');
+
+    modal.find('.modal-title').html(button.data('check-name') + ' Results');
+
+    modal.find('.final-result').text(new Date(button.data('created')));
+
+    // Reminder: if Result == true, that means treshold has been reached, which means bad.
+    if(button.data('result') == true) {
+        modal.find('.final-result').addClass('btn-danger');
+        modal.find('.final-result').removeClass('btn-success');
+    } else {
+        modal.find('.final-result').addClass('btn-success');
+        modal.find('.final-result').removeClass('btn-danger');
+    }
+
+    var expressions = button.data('expressions');
+
+    modal.find('.modal-body').html('');
+
+    // Populate modal content with expressions.
+    for(var i = 0; i < expressions.length; i++) {
+        var expression = expressions[i];
+
+        // Reminder: if Result == true, that means treshold has been reached, which means bad.
+        if(expression.Result.Value) {
+            var buttonString = '<button class="btn btn-xs btn-danger pull-right">BAD</button>';
+        } else {
+            var buttonString = '<button class="btn btn-xs btn-success pull-right">GOOD</button>';
+        }
+
+        if(expression.Type == 'BooleanOperator') {
+            modal.find('.modal-body').append(
+                '<div class="expression-boolean-operator">' + 
+                '<p>' + expression.Operator + '</p>' +
+                '</div>'
+            );            
+
+        } else {
+            var expressionText = expression.Type + ' where ' + expression.Metric + ' ' + expression.Operator + ' ' + expression.Value;
+
+            if(expression.Type == 'RelativeHostData') {
+                expressionText = expressionText + '%';
+            }
+
+            expressionText = expressionText + ' affecting at minimum ' + expression.MinHost + ' hosts';
+
+            var hostnameElements = [];
+
+            if(expression.Result.GoodHostnames) {
+                for(var j = 0; j < expression.Result.GoodHostnames.length; j++) {
+                    hostnameElements.push('<span class="label label-success">' + expression.Result.GoodHostnames[j] + '</span>');
+                }
+            }
+
+            if(expression.Result.BadHostnames) {
+                for(var j = 0; j < expression.Result.BadHostnames.length; j++) {
+                    hostnameElements.push('<span class="label label-danger">' + expression.Result.BadHostnames[j] + '</span>');
+                }
+            }
+
+            modal.find('.modal-body').append(
+                '<div class="expression-result">' + buttonString +
+                '<p>' + expressionText + '</p>' +
+                hostnameElements.join('') +
+                '</div>'
+            );            
+        }
+    }
+
+    modal.modal('toggle');
+});
+
 $('#checks-modal form .btn-primary').click(function() {
     if($('input[name="Name"]').val() == '') {
         return false;

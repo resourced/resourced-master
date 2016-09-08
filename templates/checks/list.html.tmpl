@@ -763,7 +763,6 @@ $(document).on('click', '.btn-hostquery-search', function() {
     })
 });
 
-
 $(document).on('click', '.red-green-block.btn', function (event) {
     var button = $(this);
 
@@ -786,6 +785,7 @@ $(document).on('click', '.red-green-block.btn', function (event) {
 
     modal.find('.modal-body').html('');
 
+    // Populate modal content with expressions.
     for(var i = 0; i < expressions.length; i++) {
         var expression = expressions[i];
 
@@ -796,34 +796,43 @@ $(document).on('click', '.red-green-block.btn', function (event) {
             var buttonString = '<button class="btn btn-xs btn-success pull-right">GOOD</button>';
         }
 
-        var expressionText = expression.Type + ' where ' + expression.Metric + ' ' + expression.Operator + ' ' + expression.Value;
+        if(expression.Type == 'BooleanOperator') {
+            modal.find('.modal-body').append(
+                '<div class="expression-boolean-operator">' + 
+                '<p>' + expression.Operator + '</p>' +
+                '</div>'
+            );            
 
-        if(expression.Type == 'RelativeHostData') {
-            expressionText = expressionText + '%';
-        }
+        } else {
+            var expressionText = expression.Type + ' where ' + expression.Metric + ' ' + expression.Operator + ' ' + expression.Value;
 
-        expressionText = expressionText + ' affecting at minimum ' + expression.MinHost + ' hosts';
-
-        var hostnameElements = [];
-
-        if(expression.Result.GoodHostnames) {
-            for(var j = 0; j < expression.Result.GoodHostnames.length; j++) {
-                hostnameElements.push('<span class="label label-success">' + expression.Result.GoodHostnames[j] + '</span>');
+            if(expression.Type == 'RelativeHostData') {
+                expressionText = expressionText + '%';
             }
-        }
 
-        if(expression.Result.BadHostnames) {
-            for(var j = 0; j < expression.Result.BadHostnames.length; j++) {
-                hostnameElements.push('<span class="label label-danger">' + expression.Result.BadHostnames[j] + '</span>');
+            expressionText = expressionText + ' affecting at minimum ' + expression.MinHost + ' hosts';
+
+            var hostnameElements = [];
+
+            if(expression.Result.GoodHostnames) {
+                for(var j = 0; j < expression.Result.GoodHostnames.length; j++) {
+                    hostnameElements.push('<span class="label label-success">' + expression.Result.GoodHostnames[j] + '</span>');
+                }
             }
-        }
 
-        modal.find('.modal-body').append(
-            '<div class="expression-result">' + buttonString +
-            '<p>' + expressionText + '</p>' +
-            hostnameElements.join('') +
-            '</div>'
-        );
+            if(expression.Result.BadHostnames) {
+                for(var j = 0; j < expression.Result.BadHostnames.length; j++) {
+                    hostnameElements.push('<span class="label label-danger">' + expression.Result.BadHostnames[j] + '</span>');
+                }
+            }
+
+            modal.find('.modal-body').append(
+                '<div class="expression-result">' + buttonString +
+                '<p>' + expressionText + '</p>' +
+                hostnameElements.join('') +
+                '</div>'
+            );            
+        }
     }
 
     modal.modal('toggle');

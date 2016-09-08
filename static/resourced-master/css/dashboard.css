@@ -297,12 +297,16 @@ select {
     font-size: 12px;
 }
 
+#check-result-modal .modal-body {
+    padding: 20px 0;
+}
 #check-result-modal .final-result {
     font-size: 8px;
     margin: 6px 4px 0 0;
 }
 #check-result-modal .expression-result {
     margin-bottom: 16px;
+    padding: 0 20px;
 }
 #check-result-modal .expression-result p {
     margin-bottom: 1px;
@@ -313,6 +317,15 @@ select {
 }
 #check-result-modal .expression-result .label {
     font-size: 9px;
+}
+
+#check-result-modal .expression-boolean-operator {
+    background: #485563;
+}
+#check-result-modal .expression-boolean-operator p {
+    text-align: center;
+    text-transform: uppercase;
+    font-size: 1.2em;
 }
 
 @media(max-width:1200px) {
