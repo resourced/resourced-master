@@ -44,7 +44,7 @@
         <div class="modal-content">
             <div class="modal-header">
                 <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-                <h4 class="modal-title" id="graphs-details-label">New/Update Graphs</h4>
+                <h4 class="modal-title" id="graphs-details-label">Graph Details</h4>
             </div>
 
             <form method="post" action="/graphs">
@@ -55,12 +55,12 @@
                     <div class="row form-group">
                         <div class="col-sm-12">
                             <label>Name</label>
-                            <input type="text" class="form-control" name="Name" value="">
+                            <input type="text" class="form-control" name="Name" disabled>
                         </div>
 
                         <div class="col-sm-12">
                             <label>Range</label>
-                            <select class="form-control" name="Range">
+                            <select class="form-control" name="Range" disabled>
                                 <option value="5 minutes">5 minutes</option>
                                 <option value="10 minutes">10 minutes</option>
                                 <option value="15 minutes">15 minutes</option>
@@ -81,7 +81,7 @@
 
                         <div class="col-sm-12">
                             <label>Description</label>
-                            <textarea class="form-control" name="Description" row="7" placeholder="Put keywords in here for easier search"></textarea>
+                            <textarea class="form-control" name="Description" row="7" placeholder="Put keywords in here for easier search" disabled></textarea>
                         </div>
                     </div>
                 </div>
@@ -145,19 +145,6 @@ $('#graphs-modal').on('show.bs.modal', function (event) {
     }
     if(range) {
         modal.find('select[name="Range"]').val(range);
-    }
-
-    if(id) {
-        modal.find('form').attr('action', '/graphs/' + id);
-        modal.find('.btn-danger').show();
-        modal.find('.modal-title').text('Update Graphs');
-    } else {
-        modal.find('input[name="Name"]').val('');
-        modal.find('textarea').val('');
-
-        modal.find('form').attr('action', '/graphs');
-        modal.find('.btn-danger').hide();
-        modal.find('.modal-title').text('New Graphs');
     }
 });
 </script>

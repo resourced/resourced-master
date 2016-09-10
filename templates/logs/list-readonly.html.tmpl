@@ -40,7 +40,10 @@ $(window).load(function() {
 // This catches keyup, onchange, and paste events.
 // cp search input to saved-queries input
 $('#search-input').bind("input propertychange", function(e) {
-    $('#saved-queries-input').val($(this).val());
+    var searchInput = $(this).val();
+
+    $(this).val(searchInput);
+    $('#saved-queries-input').val(searchInput);
 });
 </script>
 {{ end }}
