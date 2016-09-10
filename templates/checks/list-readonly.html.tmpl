@@ -23,9 +23,9 @@
     </div>
 
     {{ range $check := .Checks }}
-    <div class="row checks">
+    <div class="row checks" data-id="{{ $check.ID }}" data-name="{{ $check.Name }}">
         <div class="col-xs-12 col-lg-12">
-            <div class="pull-right" style="margin-top: 5px">
+            <div class="pull-right">
                 <div class="btn-group" role="group">
                     <form action="/checks/{{ $check.ID }}/silence" method="post" style="display: inline-block; float: left">
                         <input type="hidden" name="gorilla.csrf.Token" value="{{ $.CSRFToken }}">
@@ -51,6 +51,10 @@
                         Show Triggers
                     </button>
                 </div>
+            </div>
+
+            <div class="pull-right">
+                <div class="btn-group check-{{ $check.ID }}-results" role="group" data-id="{{ $check.ID }}"></div>
             </div>
 
             <h3>{{ $check.Name }}</h3>
@@ -126,6 +130,26 @@
             </div>
 
             <div class="modal-body table-responsive table-condensed">
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Check Result Modal -->
+<div class="modal fade" id="check-result-modal" tabindex="-1" role="dialog" aria-labelledby="check-result-label" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" data-dismiss="modal" aria-label="Close" aria-hidden="true" class="final-result btn btn-xs pull-right">
+                    GOOD
+                </button>
+                <h4 class="modal-title" id="check-result-label">Check Result</h4>
+            </div>
+
+            <div class="modal-body"></div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
             </div>
         </div>
     </div>
@@ -524,6 +548,50 @@ $(document).ready(function() {
     if($('.row.checks').length == 0) {
         $('#search-input').hide();
     }
+
+    // Fetch the last 10 results for every check
+    $('.row.checks').each(function() {
+        var checkID = $(this).data('id');
+        var checkName = $(this).data('name');
+
+        ResourcedMaster.checks.results.get(ResourcedMaster.globals.AccessToken, {
+            id: checkID,
+            successCallback: function(checkResults) {
+                var container = $('.check-' + checkID + '-results');
+
+                for(var i = 0; i < checkResults.length; i++) {
+                    var btn = $('<button class="red-green-block btn btn-skip-confirm"></button>');
+
+                    btn.attr('title', new Date(checkResults[i].Created));
+                    btn.data('expressions', checkResults[i].Expressions);
+                    btn.data('created', checkResults[i].Created);
+                    btn.data('check-id', checkResults[i].CheckID);
+                    btn.data('check-name', checkName);
+                    btn.data('cluster-id', checkResults[i].ClusterID);
+                    btn.data('result', checkResults[i].Result);
+
+                    // Reminder: if Result == true, that means treshold has been reached, which means bad.
+                    if(checkResults[i].Result) {
+                        btn.addClass('btn-danger');
+                    } else {
+                        btn.addClass('btn-success');
+                    }
+
+                    if(i == 0) {
+                        btn.text('newest');
+                        btn.addClass('with-text');
+                    } else if(i == checkResults.length - 1) {
+                        btn.text('older');
+                        btn.addClass('with-text');
+                    } else {
+                        btn.removeClass('with-text');
+                    }
+
+                    container.append(btn);
+                }
+            }
+        });
+    });
 });
 
 // Show or hide expression part appropriately
@@ -595,10 +663,10 @@ $(document).on('click', '.red-green-block.btn', function (event) {
 
         if(expression.Type == 'BooleanOperator') {
             modal.find('.modal-body').append(
-                '<div class="expression-boolean-operator">' + 
+                '<div class="expression-boolean-operator">' +
                 '<p>' + expression.Operator + '</p>' +
                 '</div>'
-            );            
+            );
 
         } else {
             var expressionText = expression.Type + ' where ' + expression.Metric + ' ' + expression.Operator + ' ' + expression.Value;
@@ -628,7 +696,7 @@ $(document).on('click', '.red-green-block.btn', function (event) {
                 '<p>' + expressionText + '</p>' +
                 hostnameElements.join('') +
                 '</div>'
-            );            
+            );
         }
     }
 
@@ -773,10 +841,11 @@ $('#triggers-modal').on('show.bs.modal', function (event) {
 
     $(this).find('.modal-body').html('<table class="table table-striped">' + $('#check-' + checkID + '-triggers').html() + '</table>');
 
-    $(this).find('table').tablesorter({
-        sortList: [[0,0], [1,0]]
-    });
+    if($(this).find('table tbody').children().length > 0) {
+        $(this).find('table').tablesorter({
+            sortList: [[0,0], [1,0]]
+        });
+    }
 });
-
 </script>
 {{end}}

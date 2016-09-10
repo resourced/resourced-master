@@ -29,7 +29,7 @@
     {{ range $check := .Checks }}
     <div class="row checks" data-id="{{ $check.ID }}" data-name="{{ $check.Name }}">
         <div class="col-xs-12 col-lg-12">
-            <div class="pull-right" style="margin-top: 5px; margin-left: 10px">
+            <div class="pull-right">
                 <div class="btn-group" role="group">
                     <form action="/checks/{{ $check.ID }}/silence" method="post" style="display: inline-block; float: left">
                         <input type="hidden" name="gorilla.csrf.Token" value="{{ $.CSRFToken }}">
@@ -63,7 +63,7 @@
                 </div>
             </div>
 
-            <div class="pull-right" style="margin-top: 5px">
+            <div class="pull-right">
                 <div class="btn-group check-{{ $check.ID }}-results" role="group" data-id="{{ $check.ID }}"></div>
             </div>
 
@@ -798,10 +798,10 @@ $(document).on('click', '.red-green-block.btn', function (event) {
 
         if(expression.Type == 'BooleanOperator') {
             modal.find('.modal-body').append(
-                '<div class="expression-boolean-operator">' + 
+                '<div class="expression-boolean-operator">' +
                 '<p>' + expression.Operator + '</p>' +
                 '</div>'
-            );            
+            );
 
         } else {
             var expressionText = expression.Type + ' where ' + expression.Metric + ' ' + expression.Operator + ' ' + expression.Value;
@@ -831,7 +831,7 @@ $(document).on('click', '.red-green-block.btn', function (event) {
                 '<p>' + expressionText + '</p>' +
                 hostnameElements.join('') +
                 '</div>'
-            );            
+            );
         }
     }
 
@@ -976,9 +976,11 @@ $('#triggers-modal').on('show.bs.modal', function (event) {
 
     $(this).find('.modal-body').html('<table class="table table-striped">' + $('#check-' + checkID + '-triggers').html() + '</table>');
 
-    $(this).find('table').tablesorter({
-        sortList: [[0,0], [1,0]]
-    });
+    if($(this).find('table tbody').children().length > 0) {
+        $(this).find('table').tablesorter({
+            sortList: [[0,0], [1,0]]
+        });
+    }
 });
 </script>
 {{end}}

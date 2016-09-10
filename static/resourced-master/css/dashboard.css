@@ -252,6 +252,10 @@ select {
     padding: 0;
 }
 
+.row.checks .pull-right {
+    margin-top: 5px;
+    margin-left: 10px;
+}
 .row.checks h3 {
     margin-top: 0;
 }
