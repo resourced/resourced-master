@@ -65,7 +65,6 @@
                         <th>Min Violations Reached</th>
                         <th>Max Violations Reached</th>
                         <th>Actions</th>
-                        <th></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -81,32 +80,6 @@
                         {{ else }}
                         <td>Send {{ $action.Transport }} to {{ $action.Email }}{{ $action.SMSPhone }}{{ $action.PagerDutyServiceKey }}</td>
                         {{ end }}
-
-                        <td>
-                            <div class="btn-group pull-right" role="group">
-                                <form action="/checks/{{ $check.ID }}/triggers/{{ $trigger.ID }}" method="post" onsubmit="return confirm('Are you sure you want to delete?');" style="display: inline-block">
-                                    <input type="hidden" name="gorilla.csrf.Token" value="{{ $.CSRFToken }}">
-                                    <input type="hidden" name="_method" value="delete">
-                                    <button type="submit" class="btn btn-danger btn-xs">Delete</button>
-                                </form>
-
-                                <button class="btn btn-success btn-xs pull-right" data-toggle="modal" data-target="#trigger-modal"
-                                    data-id="{{ $trigger.ID }}"
-                                    data-check-id="{{ $check.ID }}"
-                                    data-check-interval="{{ $check.Interval }}"
-                                    data-low-violations-count="{{ $trigger.LowViolationsCount }}"
-                                    data-high-violations-count="{{ $trigger.HighViolationsCount }}"
-                                    data-created-interval-minute="{{ $trigger.CreatedIntervalMinute }}"
-                                    data-action-transport="{{ $action.Transport }}"
-                                    data-action-email="{{ $action.Email }}"
-                                    data-action-sms-carrier="{{ $action.SMSCarrier }}"
-                                    data-action-sms-phone="{{ $action.SMSPhone }}"
-                                    data-action-pd-service-key="{{ $action.PagerDutyServiceKey }}"
-                                    data-action-pd-service-description="{{ $action.PagerDutyDescription }}">
-                                    Edit
-                                </button>
-                            </div>
-                        </td>
 
                         {{ end }}
                     </tr>
