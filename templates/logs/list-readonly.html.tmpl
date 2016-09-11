@@ -45,6 +45,19 @@ $('#search-input').bind("input propertychange", function(e) {
     $(this).val(searchInput);
     $('#saved-queries-input').val(searchInput);
 });
+
+// If search input does not start with "logline search",
+// make sure it does.
+$('#search-input').closest('form').on("submit", function(e) {
+    var searchInput = $('#search-input').val();
+
+    if(searchInput.indexOf('logline search') != 0) {
+        searchInput = "logline search '" + searchInput + "'";
+    }
+
+    $('#search-input').val(searchInput);
+    $('#saved-queries-input').val(searchInput);
+});
 </script>
 {{ end }}
 
