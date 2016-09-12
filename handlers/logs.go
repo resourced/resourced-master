@@ -157,7 +157,7 @@ func GetLogsExecutors(w http.ResponseWriter, r *http.Request) {
 		from = lastLogRow.Created.Add(-30 * time.Minute).Unix()
 	}
 
-	savedQueries, err := dal.NewSavedQuery(dbs.Core).AllByClusterIDAndType(nil, currentCluster.ID, "logs")
+	savedQueries, err := dal.NewSavedQuery(dbs.Core).AllByClusterIDAndType(nil, currentCluster.ID, "executor_logs")
 	if err != nil && err.Error() != "sql: no rows in result set" {
 		libhttp.HandleErrorJson(w, err)
 		return
