@@ -189,8 +189,8 @@ $(document).ready(function() {
     // -----------------------------------------------------
     // Set from and to unix timestamp from server-side.
     //
-    var to = {{ .To }};
-    var from = {{ .From }};
+    var to = ResourcedMaster.url.getParams('to') || ResourcedMaster.url.getParams('To') || {{ .To }};
+    var from = ResourcedMaster.url.getParams('from') || ResourcedMaster.url.getParams('From') || {{ .From }};
 
     // -----------------------------------------------------
     // Initialize daterange picker
