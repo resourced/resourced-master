@@ -145,14 +145,14 @@
                     <div class="row form-group">
                         <div class="col-sm-6">
                             <label>Name</label>
-                            <input type="text" class="form-control" name="Name" value="">
+                            <input type="text" class="form-control" name="Name" value="" disabled>
                         </div>
 
                         <div class="col-sm-6">
                             <label>Interval</label>
 
                             <div class="input-group">
-                                <input type="number" class="form-control" name="IntervalInSeconds" value="60" min="1">
+                                <input type="number" class="form-control" name="IntervalInSeconds" value="60" min="1" disabled>
                                 <span class="input-group-addon">seconds</span>
                             </div>
                         </div>
@@ -170,7 +170,7 @@
                             <label>Query for Hosts</label>
 
                             <div class="input-group">
-                                <input type="text" class="form-control" name="HostsQuery">
+                                <input type="text" class="form-control" name="HostsQuery" disabled>
                                 <span class="input-group-btn">
                                     <button class="btn btn-info btn-hostquery-search" type="button">Search</button>
                                 </span>
@@ -179,7 +179,7 @@
 
                         <div class="col-sm-12">
                             <label>or, provide explicit hosts</label>
-                            <textarea class="form-control" name="HostsList" row="10" placeholder="One host, one line"></textarea>
+                            <textarea class="form-control" name="HostsList" row="10" placeholder="One host, one line" disabled></textarea>
                         </div>
                     </div>
                 </div>
@@ -196,7 +196,7 @@
                             <div class="col-sm-12">
                                 Check
 
-                                <select class="expression-type" name="ExpressionType">
+                                <select class="expression-type" name="ExpressionType" disabled>
                                     <option value="RawHostData">raw host data</option>
                                     <option value="RelativeHostData">relative host data</option>
                                     <option value="LogData">log data</option>
@@ -210,7 +210,7 @@
 
                                 <span class="expression-where">where</span>
 
-                                <select class="expression-part expression-part-host-metrics">
+                                <select class="expression-part expression-part-host-metrics" disabled>
                                     {{ range $metric := .Metrics }}
                                     <option value="{{ $metric.Key }}">{{ $metric.Key }}</option>
                                     {{ end }}
@@ -225,11 +225,11 @@
                                         <option value="<="><=</option>
                                     </select>
 
-                                    <input name="ExpressionValue" type="number" style="width: 70px" value="1">
+                                    <input name="ExpressionValue" type="number" style="width: 70px" value="1" disabled>
                                 </span>
 
                                 <span class="expression-part expression-part-relative-host" style="display: none">
-                                    is <input name="ExpressionValue" type="number" style="width: 70px" value="200"> percent
+                                    is <input name="ExpressionValue" type="number" style="width: 70px" value="200" disabled> percent
 
                                     <select name="ExpressionOperator">
                                         <option value=">">greater than</option>
@@ -238,9 +238,9 @@
 
                                     <br>
 
-                                    the previous <input name="ExpressionPrevRange" type="number" style="width: 70px" value="15"> minutes of
+                                    the previous <input name="ExpressionPrevRange" type="number" style="width: 70px" value="15" disabled> minutes of
 
-                                    <select name="ExpressionPrevAggr">
+                                    <select name="ExpressionPrevAggr" disabled>
                                         <option value="avg">average</option>
                                         <option value="max">maximum</option>
                                         <option value="min">minimum</option>
@@ -257,12 +257,12 @@
 
                                     is
 
-                                    <select name="ExpressionOperator">
+                                    <select name="ExpressionOperator" disabled>
                                         <option value=">">greater than</option>
                                         <option value="<">less than</option>
                                     </select>
 
-                                    <input name="ExpressionValue" type="number" style="width: 70px" value="1">
+                                    <input name="ExpressionValue" type="number" style="width: 70px" value="1" disabled>
 
                                     <br>
 
@@ -276,33 +276,33 @@
                                 <span class="expression-part expression-part-http" style="display: none">
                                     method is
 
-                                    <select name="ExpressionHTTPMethod">
+                                    <select name="ExpressionHTTPMethod" disabled>
                                         <option value="GET">GET</option>
                                         <option value="POST">POST</option>
                                         <option value="PUT">PUT</option>
                                         <option value="DELETE">DELETE</option>
                                     </select>
 
-                                    on port <input name="ExpressionPort" type="number" style="width: 70px" value="80">
+                                    on port <input name="ExpressionPort" type="number" style="width: 70px" value="80" disabled>
 
                                     <br>
 
                                     using the following headers:
-                                    <textarea class="form-control" name="ExpressionHeaders" row="10" placeholder="key1=value1,key2=value2" style="margin-bottom: 10px"></textarea>
+                                    <textarea class="form-control" name="ExpressionHeaders" row="10" placeholder="key1=value1,key2=value2" style="margin-bottom: 10px" disabled></textarea>
 
                                     and body:
-                                    <textarea class="form-control" name="ExpressionHTTPBody" row="10" placeholder="content of HTTP body (optional)"></textarea>
+                                    <textarea class="form-control" name="ExpressionHTTPBody" row="10" placeholder="content of HTTP body (optional)" disabled></textarea>
 
                                     <br>
 
-                                    with username: <input name="ExpressionUsername" type="text">
+                                    with username: <input name="ExpressionUsername" type="text" disabled>
 
-                                    &nbsp;&nbsp;and password:&nbsp;&nbsp;<input name="ExpressionPassword" type="text">
+                                    &nbsp;&nbsp;and password:&nbsp;&nbsp;<input name="ExpressionPassword" type="text" disabled>
                                 </span>
 
                                 <br class="expression-where">
 
-                                affecting at minimum <input name="ExpressionMinHost" type="number" style="width: 70px" value="1"> hosts.
+                                affecting at minimum <input name="ExpressionMinHost" type="number" style="width: 70px" value="1" disabled> hosts.
                             </div>
                         </div>
                     </div>
