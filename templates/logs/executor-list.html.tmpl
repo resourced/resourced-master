@@ -199,8 +199,8 @@ $(document).ready(function() {
         var drpElem = $(this);
 
         var settings = jQuery.extend(true, {}, ResourcedMaster.daterange.defaultSettings);
-        settings.startDate = from;
-        settings.stopDate = to;
+        settings.startDate = new Date(from * 1000);
+        settings.stopDate = new Date(to * 1000);
 
         drpElem.daterangepicker(settings);
     });
