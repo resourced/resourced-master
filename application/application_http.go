@@ -94,7 +94,11 @@ func (app *Application) Mux() *chi.Mux {
 	r.Route("/logs", func(r chi.Router) {
 		r.Use(CSRF, middlewares.MustLogin, middlewares.SetClusters, middlewares.MustBeMember, middlewares.SetAccessTokens)
 		r.Get("/", stopwatch.LatencyFuncHandler(app.getHandlerInstrument("GetLogs"), []string{"GET"}, handlers.GetLogs).(http.HandlerFunc))
-		r.Get("/executors", stopwatch.LatencyFuncHandler(app.getHandlerInstrument("GetLogsExecutors"), []string{"GET"}, handlers.GetLogsExecutors).(http.HandlerFunc))
+
+		r.Route("/executors", func(r chi.Router) {
+			r.Use(CSRF, middlewares.MustLogin, middlewares.SetClusters, middlewares.MustBeMember, middlewares.SetAccessTokens)
+			r.Get("/", stopwatch.LatencyFuncHandler(app.getHandlerInstrument("GetLogsExecutors"), []string{"GET"}, handlers.GetLogsExecutors).(http.HandlerFunc))
+		})
 	})
 
 	r.Route("/checks", func(r chi.Router) {

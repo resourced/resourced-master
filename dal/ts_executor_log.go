@@ -110,10 +110,9 @@ func (ts *TSExecutorLog) AllByClusterIDAndRange(tx *sqlx.Tx, clusterID int64, fr
 
 	rows := []*TSExecutorLogRow{}
 	query := fmt.Sprintf(`SELECT * FROM %v WHERE cluster_id=$1 AND
-created >= to_timestamp($2) at time zone 'utc' AND
-created <= to_timestamp($3) at time zone 'utc' AND
-deleted >= to_timestamp($4) at time zone 'utc'
-ORDER BY created DESC`, ts.table)
+created >= to_timestamp($2) AND
+created <= to_timestamp($3) AND
+deleted >= to_timestamp($4) ORDER BY created DESC`, ts.table)
 
 	err := ts.db.Select(&rows, query, clusterID, from, to, deletedFrom)
 
@@ -132,9 +131,9 @@ func (ts *TSExecutorLog) AllByClusterIDRangeAndQuery(tx *sqlx.Tx, clusterID int6
 
 	rows := []*TSExecutorLogRow{}
 	query := fmt.Sprintf(`SELECT * FROM %v WHERE cluster_id=$1 AND
-created >= to_timestamp($2) at time zone 'utc' AND
-created <= to_timestamp($3) at time zone 'utc' AND
-deleted >= to_timestamp($4) at time zone 'utc' AND
+created >= to_timestamp($2) AND
+created <= to_timestamp($3) AND
+deleted >= to_timestamp($4) AND
 %v ORDER BY created DESC`, ts.table, pgQuery)
 
 	err := ts.db.Select(&rows, query, clusterID, from, to, deletedFrom)
