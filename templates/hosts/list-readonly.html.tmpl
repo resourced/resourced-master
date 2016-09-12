@@ -264,7 +264,7 @@ $('.row.hosts .toggler-body').on('switchChange.bootstrapSwitch', function(event,
     $.localStorage.set('UIStore', '.row.hosts .toggler-body[data-path="' + path + '"]', state);
 });
 
-$('#graph-modal').on('shown.bs.modal', function (event) {
+$(document).on('shown.bs.modal', '#graph-modal', function(event) {
     var button = $(event.relatedTarget);   // Button that triggered the modal
     var metricID = button.data('metric-id');
     var metricKey = button.data('metric-key');
@@ -273,15 +273,40 @@ $('#graph-modal').on('shown.bs.modal', function (event) {
     var from = ResourcedMaster.daterange.defaultSettings.startDate.utc().unix();
     var to = ResourcedMaster.daterange.defaultSettings.endDate.utc().unix();
 
+    var renderAggregate = (to - from) >= 21600;
+
     var renderOptions = {
-        'from': from,
-        'to': to,
-        'host': host,
-        'containerDOM': $('#graph-modal .graph-modal-container'),
-        'title': metricKey
+        from: from,
+        to: to,
+        host: host,
+        containerDOM: $('#graph-modal .graph-modal-container'),
+        title: metricKey,
+        onLoad: function() {
+            if(!renderAggregate) {
+                // Begin streaming Server Side Events after the graph is loaded
+                var series = this.series[0];
+
+                var es = new EventSource('/api/metrics/' + metricID + '/hosts/' + host + '/streams?accessToken=' + ResourcedMaster.globals.AccessToken);
+
+                es.addEventListener('metric|' + metricID + '|host|' + host, function(event) {
+                    if(event.data) {
+                        var datapoint = JSON.parse(event.data);
+
+                        // TODO: At this point, we know we are receiving data regularly,
+                        // but the chart is not rendering at the same interval.
+                        if(datapoint.MetricID == metricID && datapoint.Value) {
+                            series.addPoint([datapoint.CreatedMillisecond, datapoint.Value], true, true);
+                        }
+                    }
+                }, false);
+
+                // Attach EventSource object to the modal so we can close it as we close modal.
+                $('#graph-modal').data('eventsource', es);
+            }
+        }
     };
 
-    if((to - from) >= 21600) {
+    if(renderAggregate) {
         renderOptions.shortAggrInterval = '15min';
     }
 
@@ -298,7 +323,7 @@ $('#graph-modal').on('shown.bs.modal', function (event) {
 
 });
 
-$('#graph-modal').on('show.bs.modal', function (event) {
+$(document).on('show.bs.modal', '#graph-modal', function(event) {
     var button = $(event.relatedTarget);   // Button that triggered the modal
     var metricID = button.data('metric-id');
     var metricKey = button.data('metric-key');
@@ -318,15 +343,21 @@ $('#graph-modal').on('show.bs.modal', function (event) {
         var to = end.utc().unix();
 
         var renderOptions = {
-            'from': from,
-            'to': to,
-            'host': host,
-            'containerDOM': containerDOM,
-            'title': metricKey
+            from: from,
+            to: to,
+            host: host,
+            containerDOM: containerDOM,
+            title: metricKey
         };
 
         if((to - from) >= 21600) {
             renderOptions.shortAggrInterval = '15min';
+        }
+
+        // If we have an established EventSource, disconnect it.
+        var es = $('#graph-modal').data('eventsource');
+        if(es) {
+            es.close();
         }
 
         ResourcedMaster.metrics.renderOneChart(

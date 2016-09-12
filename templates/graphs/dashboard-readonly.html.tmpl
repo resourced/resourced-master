@@ -80,6 +80,36 @@ ResourcedMaster.globals.CurrentGraph = {
     Range: '{{ $.CurrentGraph.Range }}'
 };
 
+// Initialize EventSource in background.
+setTimeout(function() {
+    ResourcedMaster.globals.EventSource = new EventSource('/api/metrics/streams?accessToken=' + ResourcedMaster.globals.AccessToken);
+}, 5);
+
+function renderChartPreview() {
+    var lastMetric = ResourcedMaster.globals.Charts[ResourcedMaster.globals.Charts.length - 1];
+    var containerDOM = $('#add-chart-modal').find('.add-chart-modal-container');
+    var nowUnix = moment().utc().unix();
+
+    if(lastMetric) {
+        ResourcedMaster.metrics.renderOneChart(
+            ResourcedMaster.globals.AccessToken,
+            lastMetric['ID'],
+            ResourcedMaster.globals.TSEventLines,
+            ResourcedMaster.globals.TSEventLineColors,
+            ResourcedMaster.globals.TSEventBands,
+            ResourcedMaster.globals.TSEventBandColors,
+            ResourcedMaster.globals.TSEventBandTextColors,
+            {
+                'from': nowUnix - 900,
+                'to': nowUnix,
+                'containerDOM': containerDOM,
+                'height': ResourcedMaster.highcharts.defaultHeight + 6,
+                'title': lastMetric['Key']
+            }
+        );
+    }
+}
+
 function updateChartsOrderServerSide() {
     var charts = [];
 
@@ -115,46 +145,72 @@ function execWhenAllChartsRendered(numCharts) {
 
     if(ResourcedMaster.globals.ChartsRendered.length >= numCharts) {
         // Begin Packery Layout and enable Draggabily
-        var $container = $('.graphs-metrics-brick-layout');
+        var container = $('.graphs-metrics-brick-layout');
 
-        $container.packery({
+        container.packery({
             columnWidth: '.graphs-metrics-brick-layout .sizer',
             rowHeight: '.graphs-metrics-brick-layout .sizer',
             itemSelector: '.graphs-metrics-brick-layout .item',
             percentPosition: true
         });
 
-        // get item elements, jQuery-ify them
-        var $itemElems = $( $container.packery('getItemElements') );
-
-        $itemElems.each( function( i, gridItem ) {
-            var draggie = new Draggabilly( gridItem );
-            $container.packery( 'bindDraggabillyEvents', draggie );
+        $(container.packery('getItemElements')).each(function( i, gridItem ) {
+            var draggie = new Draggabilly( gridItem, {handle: '.panel-body'} );
+            container.packery( 'bindDraggabillyEvents', draggie );
         });
 
-        $container.off('dragItemPositioned').on('dragItemPositioned', updateChartsOrderServerSide);
+        container.off('dragItemPositioned').on('dragItemPositioned', updateChartsOrderServerSide);
         // -------------------------------------------
     }
 }
 
-function renderChartRange(numCharts, daterangepicker, from, to) {
+function renderChartRange(numCharts, daterangepicker, from, to, aggr) {
     var elem = daterangepicker.closest('.panel-heading');
     var metricID = elem.data('id');
     var metricKey = elem.data('key');
     var containerDOM = elem.siblings('.panel-body');
+
+    var renderAggregate = (to - from) >= 21600;
 
     var renderOptions = {
         from: from,
         to: to,
         containerDOM: containerDOM,
         title: metricKey,
+        aggr: aggr,
         onLoad: function() {
-            execWhenAllChartsRendered(numCharts);
+            if(!renderAggregate) {
+                // Begin streaming Server Side Events after the graph is loaded
+                var chart = this;
+
+                var series = this.series;
+
+                if(ResourcedMaster.globals.EventSource) {
+                    ResourcedMaster.globals.EventSource.addEventListener('metric|' + metricID, function(event) {
+                        if(event.data) {
+                            var datapoint = JSON.parse(event.data);
+
+                            for(var i = 0; i < series.length; i++) {
+                                if(series[i].name == datapoint.Hostname && datapoint.MetricID == metricID && datapoint.Value) {
+                                    series[i].addPoint([datapoint.CreatedMillisecond, datapoint.Value], false, true);
+                                }
+                            }
+                            chart.redraw();
+                        }
+                    }, false);
+                }
+
+                execWhenAllChartsRendered(numCharts);
+            }
         }
     };
 
-    if((to - from) >= 21600) {
+    if(renderAggregate) {
         renderOptions.shortAggrInterval = '15min';
+
+        elem.find('.aggregate-selector').show();
+    } else {
+        elem.find('.aggregate-selector').hide();
     }
 
     ResourcedMaster.metrics.renderOneChart(
@@ -176,7 +232,7 @@ function renderAllChart() {
         var from = drp.startDate.utc().unix();
         var to = drp.endDate.utc().unix();
 
-        renderChartRange($('.graphs-metrics-brick-layout .panel-heading').length, drpElem, from, to);
+        renderChartRange($('.graphs-metrics-brick-layout .panel-heading').length, drpElem, from, to, 'avg');
     });
 }
 
@@ -209,7 +265,7 @@ $(document).ready(function() {
             drpElem.daterangepicker(settings, function(start, end, label) {
                 var from = start.utc().unix();
                 var to = end.utc().unix();
-                renderChartRange($('input.daterange').length, drpElem, from, to);
+                renderChartRange($('input.daterange').length, drpElem, from, to, 'avg');
             });
         });
 
@@ -226,8 +282,55 @@ $(document).ready(function() {
     }).get();
 });
 
+// Save charts based on what user selected.
+$('.chart-keys option').click(function(event) {
+    var selectedCharts = [];
+
+    // Gather all chart JSON data
+    $('.chart-keys option:selected').each(function() {
+        var $option = $(this);
+        var jsonString = $option.val();
+        var val = JSON.parse(jsonString);
+
+        selectedCharts.push(val);
+    });
+
+    ResourcedMaster.globals.Charts = selectedCharts;
+
+    $('#add-chart-modal form input[name="MetricsWithOrder"]').val(
+        JSON.stringify(ResourcedMaster.globals.Charts)
+    );
+
+    renderChartPreview();
+});
+
+$('.aggregate-selector').change(function() {
+    var panelHeadingElem = $(this).closest('.panel-heading');
+    var drpElem = panelHeadingElem.find('.daterange');
+    var drp = drpElem.data('daterangepicker');
+    var from = drp.startDate.unix();
+    var to = drp.endDate.unix();
+
+    renderChartRange($('.graphs-metrics-brick-layout .panel-heading').length, drpElem, from, to, $(this).val());
+});
+
 $('.graphs-select').change(function() {
     window.location = '/graphs/' + $(this).val();
+});
+
+// Highlight charts that are already selected based on existing charts.
+$('#add-chart-modal').on('shown.bs.modal', function() {
+    $(this).find('.chart-keys option').each(function(index) {
+        var chartKeyOption = $(this);
+
+        $('.graphs-metrics-brick-layout .panel-heading').each(function(index) {
+            if(chartKeyOption.data('key') == $(this).data('key')) {
+                chartKeyOption.attr('selected', 'selected');
+            }
+        });
+    });
+
+    renderChartPreview();
 });
 
 $('#graph-lg-modal').on('shown.bs.modal', function (event) {
@@ -238,14 +341,38 @@ $('#graph-lg-modal').on('shown.bs.modal', function (event) {
     var from = ResourcedMaster.daterange.defaultSettings.startDate.utc().unix();
     var to = ResourcedMaster.daterange.defaultSettings.endDate.utc().unix();
 
+    var renderAggregate = (to - from) >= 21600;
+
     var renderOptions = {
-        'from': from,
-        'to': to,
-        'containerDOM': $('#graph-lg-modal .graph-lg-modal-container'),
-        'title': metricKey
+        from: from,
+        to: to,
+        containerDOM: $('#graph-lg-modal .graph-lg-modal-container'),
+        title: metricKey,
+        onLoad: function() {
+            if(!renderAggregate) {
+                // Begin streaming Server Side Events after the graph is loaded
+                var series = this.series;
+
+                if(ResourcedMaster.globals.EventSource) {
+                    ResourcedMaster.globals.EventSource.addEventListener('metric|' + metricID, function(event) {
+                        if(!renderAggregate && event.data) {
+                            var datapoint = JSON.parse(event.data);
+
+                            for(var i = 0; i < series.length; i++) {
+                                // TODO: At this point, we know we are receiving data regularly,
+                                // but the chart is not rendering at the same interval.
+                                if(series[i].name == datapoint.Hostname && datapoint.MetricID == metricID && datapoint.Value) {
+                                    series[i].addPoint([datapoint.CreatedMillisecond, datapoint.Value], true, true);
+                                }
+                            }
+                        }
+                    }, false);
+                }
+            }
+        }
     };
 
-    if((to - from) >= 21600) {
+    if(renderAggregate) {
         renderOptions.shortAggrInterval = '15min';
     }
 
@@ -280,10 +407,10 @@ $('#graph-lg-modal').on('show.bs.modal', function (event) {
         var to = end.utc().unix();
 
         var renderOptions = {
-            'from': from,
-            'to': to,
-            'containerDOM': containerDOM,
-            'title': metricKey
+            from: from,
+            to: to,
+            containerDOM: containerDOM,
+            title: metricKey
         };
 
         if((to - from) >= 21600) {
