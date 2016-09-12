@@ -2,9 +2,9 @@
 <nav class="navbar navbar-default">
     <div class="container">
         <div class="form-group form-group-search-and-save">
-            <form class="navbar-form navbar-left search-form" role="search" action="/logs" style="width: 100%">
+            <form class="navbar-form navbar-left search-form" role="search" action="/logs/executors" style="width: 100%">
                 <div class="input-group" style="width: 100%">
-                    <input id="search-input" name="q" type="text" class="form-control" placeholder="Syntax: logline search 'keyword1 & keyword2 | keyword3'. Press enter to search">
+                    <input id="search-input" name="q" type="text" class="form-control" placeholder="Syntax: logline search 'keyword1 & keyword2 | keyword3'. Press enter to search" style="width: 100%">
                     <input type="hidden" name="from" value="{{ $.From }}">
                     <input type="hidden" name="to" value="{{ $.To }}">
                 </div>
@@ -41,6 +41,19 @@ $(window).load(function() {
 // cp search input to saved-queries input
 $('#search-input').bind("input propertychange", function(e) {
     $('#saved-queries-input').val($(this).val());
+});
+
+// If search input does not start with "logline search",
+// make sure it does.
+$('#search-input').closest('form').on("submit", function(e) {
+    var searchInput = $('#search-input').val();
+
+    if(searchInput.indexOf('logline search') != 0) {
+        searchInput = "logline search '" + searchInput + "'";
+    }
+
+    $('#search-input').val(searchInput);
+    $('#saved-queries-input').val(searchInput);
 });
 </script>
 {{ end }}
@@ -87,7 +100,7 @@ $('#search-input').bind("input propertychange", function(e) {
     <div class="row">
         <div class="col-lg-12">
             <div class="page-header" style="padding-bottom: 0">
-                <div class="row pull-right pagination">
+                <div class="row pagination">
                     <div class="input-group">
                         <input class="form-control daterange" type="text" />
                         <span class ="input-group-btn">
@@ -110,7 +123,9 @@ $('#search-input').bind("input propertychange", function(e) {
     </div>
 
     <div class="row">
-        <ul class="logs-list"></ul>
+        <div class="col-lg-12">
+            <ul class="logs-list"></ul>
+        </div>
     </div>
 
     <div class="row footer">
@@ -119,7 +134,7 @@ $('#search-input').bind("input propertychange", function(e) {
         </div>
 
         <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12">
-            <div class="row pull-right">
+            <div class="row pagination">
                 <div class="input-group">
                     <input class="form-control daterange" type="text" />
                     <span class ="input-group-btn">
@@ -225,8 +240,17 @@ $(document).on('click', '.logs-list .hostname a, .logs-list .tags a', function(e
     e.preventDefault();
 
     var clause = $(this).data('clause');
-    $('#search-input').val($('#search-input').val() + ' AND ' + clause);
-    $('#saved-queries-input').val($('#search-input').val());
+
+    var searchInput = $('#search-input').val();
+
+    if(searchInput == '') {
+        searchInput = clause;
+    } else {
+        searchInput = searchInput + ' AND ' + clause;
+    }
+
+    $('#search-input').val(searchInput);
+    $('#saved-queries-input').val(searchInput);
 });
 
 $('.btn-pagination-prev').click(function(e) {

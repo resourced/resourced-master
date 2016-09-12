@@ -213,6 +213,9 @@ select {
     line-height: 0.1;
     text-align: center;
 }
+.container.logs .nav-tabs {
+    margin-top: 1em;
+}
 .container.logs .pagination {
     margin: 0;
 }
