@@ -1,23 +1,19 @@
 {{define "second-navbar"}}
-<nav class="navbar navbar-default">
+<nav class="navbar navbar-default hosts">
     <div class="container">
-        <div class="form-group form-group-search-and-save">
-            <form class="navbar-form navbar-left search-form" role="search" action="/">
-                <div class="input-group">
-                    <input id="search-input" name="q" type="text" class="form-control" placeholder="Press enter to search">
-                </div>
+        <div class="form-group">
+            <form class="navbar-form" role="search" action="/">
+                <input id="search-input" name="q" type="text" class="form-control" placeholder="Press enter to search">
             </form>
 
-            <form class="navbar-form navbar-left saved-queries-form" action="/saved-queries" method="post">
+            <form class="navbar-form" action="/saved-queries" method="post">
                 <input type="hidden" name="gorilla.csrf.Token" value="{{ $.CSRFToken }}">
                 <input id="saved-queries-input" name="SavedQuery" type="hidden">
                 <input name="Type" type="hidden" value="hosts">
 
-                <div class="input-group">
-                    <span class="input-group-btn">
-                        <button type="submit" class="btn btn-primary">Save Query</button>
-                    </span>
-                </div>
+                <span class="input-group-btn">
+                    <button type="submit" class="btn btn-primary btn-block">Save Query</button>
+                </span>
             </form>
         </div>
     </div>

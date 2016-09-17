@@ -30,13 +30,7 @@ select {
     padding: 0px 8px;
 }
 
-.form-group-search-and-save, .form-group-new-task {
-    width: 100%;
-}
-.form-group-search-and-save .search-form, .form-group-search-and-save .search-form .input-group {
-    width: 1030px;
-}
-.form-group-search-and-save.readonly .search-form, .form-group-search-and-save.readonly .search-form .input-group {
+.form-group-new-task {
     width: 100%;
 }
 
@@ -75,6 +69,7 @@ select {
 
 .navbar {
     margin-bottom: 0;
+    font-size: 10px;
 }
 .navbar form {
     padding: 0 1px;
@@ -113,6 +108,10 @@ select {
 
 .row.hosts {
     margin-bottom: 18px;
+}
+
+.navbar.hosts form {
+    width: 100%;
 }
 
 .hosts h3 {
@@ -155,6 +154,7 @@ select {
 }
 .container.graphs .page-header {
     margin-bottom: 14px;
+    border-bottom: none;
 }
 .container.graphs .row.graphs .btn {
     width: 57px;
@@ -275,6 +275,10 @@ select {
     padding: 0;
 }
 
+.container.checks .page-header {
+    border-bottom: none;
+}
+
 .row.checks .pull-right {
     margin-top: 5px;
     margin-left: 10px;
@@ -355,21 +359,13 @@ select {
     font-size: 1.2em;
 }
 
-@media(max-width:1200px) {
-    .form-group-search-and-save .search-form, .form-group-search-and-save .search-form .input-group {
-        width: 832px;
-    }
-
+@media(max-width:1320px) {
     .form-group-new-task .new-task-form .query {
         width: 560px;
     }
 }
 
 @media(max-width:990px) {
-    .form-group-search-and-save .search-form, .form-group-search-and-save .search-form .input-group {
-        width: 610px;
-    }
-
     .form-group-new-task .new-task-form .query {
         width: 360px;
     }
@@ -385,12 +381,6 @@ select {
 }
 
 @media(max-width:767px) {
-    .form-group-search-and-save .search-form, .form-group-search-and-save .search-form .input-group {
-        margin: 0;
-        padding: 0;
-        width: 100%;
-    }
-
     .form-group-new-task .new-task-form {
         margin: 0;
     }
