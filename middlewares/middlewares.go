@@ -127,11 +127,11 @@ func SetClusters(next http.Handler) http.Handler {
 		// Measure the latency of AllByUserID because it is called on every request.
 		latency := stopwatch.Measure(f)
 		logrus.WithFields(logrus.Fields{
-			"Method":              "Cluster.AllByUserID",
-			"UserID":              userRow.ID,
-			"LatencyNanoSeconds":  latency,
-			"LatencyMicroSeconds": latency / 1000,
-			"LatencyMilliSeconds": latency / 1000 / 1000,
+			"Method":       "Cluster.AllByUserID",
+			"UserID":       userRow.ID,
+			"NanoSeconds":  latency,
+			"MicroSeconds": latency / 1000,
+			"MilliSeconds": latency / 1000 / 1000,
 		}).Info("Latency measurement")
 
 		if err != nil {

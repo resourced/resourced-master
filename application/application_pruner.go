@@ -86,10 +86,10 @@ func (app *Application) PruneTSCheckOnce(clusterID int64) (err error) {
 	latency := stopwatch.Measure(f)
 
 	logFields := logrus.Fields{
-		"Method":              "Application.PruneTSCheckOnce",
-		"LatencyNanoSeconds":  latency,
-		"LatencyMicroSeconds": latency / 1000,
-		"LatencyMilliSeconds": latency / 1000 / 1000,
+		"Method":       "Application.PruneTSCheckOnce",
+		"NanoSeconds":  latency,
+		"MicroSeconds": latency / 1000,
+		"MilliSeconds": latency / 1000 / 1000,
 	}
 	if err != nil {
 		app.ErrLogger.WithFields(logFields).Error(err)
@@ -109,10 +109,10 @@ func (app *Application) PruneTSMetricOnce(clusterID int64) (err error) {
 	latency := stopwatch.Measure(f)
 
 	logFields := logrus.Fields{
-		"Method":              "Application.PruneTSMetricOnce",
-		"LatencyNanoSeconds":  latency,
-		"LatencyMicroSeconds": latency / 1000,
-		"LatencyMilliSeconds": latency / 1000 / 1000,
+		"Method":       "Application.PruneTSMetricOnce",
+		"NanoSeconds":  latency,
+		"MicroSeconds": latency / 1000,
+		"MilliSeconds": latency / 1000 / 1000,
 	}
 	if err != nil {
 		app.ErrLogger.WithFields(logFields).Error(err)
@@ -132,10 +132,10 @@ func (app *Application) PruneTSMetricAggr15mOnce(clusterID int64) (err error) {
 	latency := stopwatch.Measure(f)
 
 	logFields := logrus.Fields{
-		"Method":              "Application.PruneTSMetricAggr15mOnce",
-		"LatencyNanoSeconds":  latency,
-		"LatencyMicroSeconds": latency / 1000,
-		"LatencyMilliSeconds": latency / 1000 / 1000,
+		"Method":       "Application.PruneTSMetricAggr15mOnce",
+		"NanoSeconds":  latency,
+		"MicroSeconds": latency / 1000,
+		"MilliSeconds": latency / 1000 / 1000,
 	}
 	if err != nil {
 		app.ErrLogger.WithFields(logFields).Error(err)
@@ -155,10 +155,10 @@ func (app *Application) PruneTSEventOnce(clusterID int64) (err error) {
 	latency := stopwatch.Measure(f)
 
 	logFields := logrus.Fields{
-		"Method":              "Application.PruneTSEventOnce",
-		"LatencyNanoSeconds":  latency,
-		"LatencyMicroSeconds": latency / 1000,
-		"LatencyMilliSeconds": latency / 1000 / 1000,
+		"Method":       "Application.PruneTSEventOnce",
+		"NanoSeconds":  latency,
+		"MicroSeconds": latency / 1000,
+		"MilliSeconds": latency / 1000 / 1000,
 	}
 	if err != nil {
 		app.ErrLogger.WithFields(logFields).Error(err)
@@ -178,10 +178,10 @@ func (app *Application) PruneTSLogOnce(clusterID int64) (err error) {
 	latency := stopwatch.Measure(f)
 
 	logFields := logrus.Fields{
-		"Method":              "Application.PruneTSLogOnce",
-		"LatencyNanoSeconds":  latency,
-		"LatencyMicroSeconds": latency / 1000,
-		"LatencyMilliSeconds": latency / 1000 / 1000,
+		"Method":       "Application.PruneTSLogOnce",
+		"NanoSeconds":  latency,
+		"MicroSeconds": latency / 1000,
+		"MilliSeconds": latency / 1000 / 1000,
 	}
 	if err != nil {
 		app.ErrLogger.WithFields(logFields).Error(err)
