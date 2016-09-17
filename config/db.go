@@ -13,7 +13,6 @@ func NewDBConfig(generalConfig GeneralConfig) (*DBConfig, error) {
 	conf.TSMetricByClusterID = make(map[int64]*sqlx.DB)
 	conf.TSMetricAggr15mByClusterID = make(map[int64]*sqlx.DB)
 	conf.TSEventByClusterID = make(map[int64]*sqlx.DB)
-	conf.TSExecutorLogByClusterID = make(map[int64]*sqlx.DB)
 	conf.TSLogByClusterID = make(map[int64]*sqlx.DB)
 	conf.TSCheckByClusterID = make(map[int64]*sqlx.DB)
 
@@ -139,34 +138,6 @@ func NewDBConfig(generalConfig GeneralConfig) (*DBConfig, error) {
 	}
 
 	// ---------------------------------------------------------
-	// ts_executor_logs table
-	//
-	db, err = sqlx.Connect("postgres", generalConfig.ExecutorLogs.DSN)
-	if err != nil {
-		return nil, err
-	}
-	if generalConfig.ExecutorLogs.DBMaxOpenConnections > int64(0) {
-		db.DB.SetMaxOpenConns(int(generalConfig.ExecutorLogs.DBMaxOpenConnections))
-	}
-	conf.TSExecutorLog = db
-
-	for clusterIDString, dsn := range generalConfig.ExecutorLogs.DSNByClusterID {
-		clusterID, err := strconv.ParseInt(clusterIDString, 10, 64)
-		if err != nil {
-			return nil, err
-		}
-
-		db, err = sqlx.Connect("postgres", dsn)
-		if err != nil {
-			return nil, err
-		}
-		if generalConfig.ExecutorLogs.DBMaxOpenConnections > int64(0) {
-			db.DB.SetMaxOpenConns(int(generalConfig.ExecutorLogs.DBMaxOpenConnections))
-		}
-		conf.TSExecutorLogByClusterID[clusterID] = db
-	}
-
-	// ---------------------------------------------------------
 	// ts_logs table
 	//
 	db, err = sqlx.Connect("postgres", generalConfig.Logs.DSN)
@@ -236,8 +207,6 @@ type DBConfig struct {
 	TSMetricAggr15mByClusterID map[int64]*sqlx.DB
 	TSEvent                    *sqlx.DB
 	TSEventByClusterID         map[int64]*sqlx.DB
-	TSExecutorLog              *sqlx.DB
-	TSExecutorLogByClusterID   map[int64]*sqlx.DB
 	TSLog                      *sqlx.DB
 	TSLogByClusterID           map[int64]*sqlx.DB
 	TSCheck                    *sqlx.DB
@@ -275,15 +244,6 @@ func (dbconf *DBConfig) GetTSEvent(clusterID int64) *sqlx.DB {
 	conn, ok := dbconf.TSEventByClusterID[clusterID]
 	if !ok {
 		conn = dbconf.TSEvent
-	}
-
-	return conn
-}
-
-func (dbconf *DBConfig) GetTSExecutorLog(clusterID int64) *sqlx.DB {
-	conn, ok := dbconf.TSExecutorLogByClusterID[clusterID]
-	if !ok {
-		conn = dbconf.TSExecutorLog
 	}
 
 	return conn

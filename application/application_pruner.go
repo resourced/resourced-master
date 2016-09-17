@@ -69,10 +69,6 @@ func (app *Application) PruneAll() {
 			}(cluster)
 
 			go func(cluster *dal.ClusterRow) {
-				app.PruneTSExecutorLogOnce(cluster.ID)
-			}(cluster)
-
-			go func(cluster *dal.ClusterRow) {
 				app.PruneTSLogOnce(cluster.ID)
 			}(cluster)
 		}
@@ -160,29 +156,6 @@ func (app *Application) PruneTSEventOnce(clusterID int64) (err error) {
 
 	logFields := logrus.Fields{
 		"Method":              "Application.PruneTSEventOnce",
-		"LatencyNanoSeconds":  latency,
-		"LatencyMicroSeconds": latency / 1000,
-		"LatencyMilliSeconds": latency / 1000 / 1000,
-	}
-	if err != nil {
-		app.ErrLogger.WithFields(logFields).Error(err)
-	} else {
-		app.OutLogger.WithFields(logFields).Info("Latency measurement")
-	}
-
-	return err
-}
-
-// PruneTSExecutorLogOnce deletes old ts_executor_logs data.
-func (app *Application) PruneTSExecutorLogOnce(clusterID int64) (err error) {
-	f := func() {
-		err = dal.NewTSExecutorLog(app.DBConfig.TSExecutorLog).DeleteDeleted(nil, clusterID)
-	}
-
-	latency := stopwatch.Measure(f)
-
-	logFields := logrus.Fields{
-		"Method":              "Application.PruneTSExecutorLogOnce",
 		"LatencyNanoSeconds":  latency,
 		"LatencyMicroSeconds": latency / 1000,
 		"LatencyMilliSeconds": latency / 1000 / 1000,

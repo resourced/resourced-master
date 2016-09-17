@@ -18,7 +18,7 @@ import (
 // NewHandlerInstruments creates channels for recording latencies.
 func (app *Application) NewHandlerInstruments() map[string]chan int64 {
 	instruments := make(map[string]chan int64)
-	for _, key := range []string{"GetHosts", "GetLogs", "GetLogsExecutors"} {
+	for _, key := range []string{"GetHosts", "GetLogs"} {
 		instruments[key] = make(chan int64)
 	}
 	return instruments
@@ -94,11 +94,6 @@ func (app *Application) Mux() *chi.Mux {
 	r.Route("/logs", func(r chi.Router) {
 		r.Use(CSRF, middlewares.MustLogin, middlewares.SetClusters, middlewares.MustBeMember, middlewares.SetAccessTokens)
 		r.Get("/", stopwatch.LatencyFuncHandler(app.getHandlerInstrument("GetLogs"), []string{"GET"}, handlers.GetLogs).(http.HandlerFunc))
-
-		r.Route("/executors", func(r chi.Router) {
-			r.Use(CSRF, middlewares.MustLogin, middlewares.SetClusters, middlewares.MustBeMember, middlewares.SetAccessTokens)
-			r.Get("/", stopwatch.LatencyFuncHandler(app.getHandlerInstrument("GetLogsExecutors"), []string{"GET"}, handlers.GetLogsExecutors).(http.HandlerFunc))
-		})
 	})
 
 	r.Route("/checks", func(r chi.Router) {
@@ -229,12 +224,6 @@ func (app *Application) Mux() *chi.Mux {
 			r.Use(middlewares.MustLoginApi)
 			r.Get("/", tollbooth.LimitFuncHandler(generalAPILimiter, handlers.GetApiLogs).(http.HandlerFunc))
 			r.Post("/", handlers.PostApiLogs)
-			r.Get("/executors", tollbooth.LimitFuncHandler(generalAPILimiter, handlers.GetApiLogsExecutors).(http.HandlerFunc))
-		})
-
-		r.Route("/executors", func(r chi.Router) {
-			r.Use(middlewares.MustLoginApi)
-			r.Post("/", handlers.PostApiExecutors)
 		})
 
 		r.Route("/checks/:id", func(r chi.Router) {
