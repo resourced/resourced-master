@@ -14,7 +14,7 @@ func (app *Application) NewMetricsRegistry(handlerInstruments map[string]chan in
 
 	for handlerName, _ := range handlerInstruments {
 		latencyGauges[handlerName] = metrics.NewGauge()
-		r.Register("requests."+handlerName, latencyGauges[handlerName])
+		r.Register("requests."+handlerName+".ns", latencyGauges[handlerName])
 	}
 
 	go metrics.CaptureDebugGCStats(r, time.Second*60)
@@ -23,15 +23,15 @@ func (app *Application) NewMetricsRegistry(handlerInstruments map[string]chan in
 	// Capture request handlers latency
 	for handlerName, latencyChan := range handlerInstruments {
 		go func(handlerName string, latencyChan chan int64) {
-			for {
-				for latency := range latencyChan {
-					app.OutLogger.WithFields(logrus.Fields{
-						"Handler": handlerName,
-						"Latency": latency,
-					}).Info("Capturing latency data")
+			for latency := range latencyChan {
+				app.OutLogger.WithFields(logrus.Fields{
+					"Handler": handlerName,
+					"Latency": latency,
+				}).Info("Capturing latency data")
 
-					latencyGauges[handlerName].Update(latency)
-				}
+				app.RLock()
+				latencyGauges[handlerName].Update(latency)
+				app.RUnlock()
 			}
 		}(handlerName, latencyChan)
 	}

@@ -18,7 +18,7 @@ import (
 // NewHandlerInstruments creates channels for recording latencies.
 func (app *Application) NewHandlerInstruments() map[string]chan int64 {
 	instruments := make(map[string]chan int64)
-	for _, key := range []string{"GetHosts", "GetLogs"} {
+	for _, key := range []string{"GetHosts", "GetGraphs", "GetLogs", "GetChecks"} {
 		instruments[key] = make(chan int64)
 	}
 	return instruments
@@ -79,7 +79,7 @@ func (app *Application) Mux() *chi.Mux {
 
 	r.Route("/graphs", func(r chi.Router) {
 		r.Use(CSRF, middlewares.MustLogin, middlewares.SetClusters, middlewares.MustBeMember, middlewares.SetAccessTokens)
-		r.Get("/", handlers.GetGraphs)
+		r.Get("/", stopwatch.LatencyFuncHandler(app.getHandlerInstrument("GetGraphs"), []string{"GET"}, handlers.GetGraphs).(http.HandlerFunc))
 		r.Post("/", handlers.PostGraphs)
 
 		r.Route("/:id", func(r chi.Router) {
@@ -98,7 +98,7 @@ func (app *Application) Mux() *chi.Mux {
 
 	r.Route("/checks", func(r chi.Router) {
 		r.Use(CSRF, middlewares.MustLogin, middlewares.SetClusters, middlewares.MustBeMember, middlewares.SetAccessTokens)
-		r.Get("/", handlers.GetChecks)
+		r.Get("/", stopwatch.LatencyFuncHandler(app.getHandlerInstrument("GetChecks"), []string{"GET"}, handlers.GetChecks).(http.HandlerFunc))
 		r.Post("/", handlers.PostChecks)
 
 		r.Route("/:checkID", func(r chi.Router) {
