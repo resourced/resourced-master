@@ -1,26 +1,33 @@
 {{define "second-navbar"}}
 <nav class="navbar navbar-default">
     <div class="container">
-        <div class="form-group form-group-search-and-save">
-            <form class="navbar-form navbar-left search-form" role="search" action="/logs">
-                <div class="input-group">
-                    <input id="search-input" name="q" type="text" class="form-control" placeholder="Syntax: logline search 'keyword1 & keyword2 | keyword3'. Press enter to search">
-                    <input type="hidden" name="from" value="{{ $.From }}">
-                    <input type="hidden" name="to" value="{{ $.To }}">
-                </div>
+        <div class="row pagination form-group">
+            <form class="search-form" role="search" action="/logs">
+                <input id="search-input" name="q" type="text" class="form-control" placeholder="Syntax: logline search 'keyword1 & keyword2 | keyword3'. Press enter to search">
+                <input type="hidden" name="from" value="{{ $.From }}">
+                <input type="hidden" name="to" value="{{ $.To }}">
             </form>
 
-            <form class="navbar-form navbar-left saved-queries-form" action="/saved-queries" method="post">
+            <div class="input-group">
+                <input class="form-control daterange" type="text" />
+                <span class ="input-group-btn">
+                    <a type="button" class="btn btn-primary btn-pagination-prev" href=""><span aria-hidden="true" class="glyphicon glyphicon-arrow-left"></span></a>
+                    <a type="button" class="btn btn-primary btn-pagination-next" href=""><span aria-hidden="true" class="glyphicon glyphicon-arrow-right"></span></a>
+                </span>
+            </div>
+
+            <form action="/saved-queries" method="post" style="margin-top: 10px">
                 <input type="hidden" name="gorilla.csrf.Token" value="{{ $.CSRFToken }}">
                 <input id="saved-queries-input" name="SavedQuery" type="hidden">
                 <input name="Type" type="hidden" value="logs">
 
                 <div class="input-group">
                     <span class="input-group-btn">
-                        <button type="submit" class="btn btn-primary">Save Query</button>
+                        <button type="submit" class="btn btn-primary btn-block">Save Query</button>
                     </span>
                 </div>
             </form>
+
         </div>
     </div>
 </nav>
@@ -115,27 +122,6 @@ $('#search-input').closest('form').on("submit", function(e) {
 
 <!-- Logs -->
 <div class="container logs">
-    <div class="row">
-        <div class="col-lg-12">
-            <div class="page-header" style="padding-bottom: 0">
-                <div class="row pagination">
-                    <div class="input-group">
-                        <input class="form-control daterange" type="text" />
-                        <span class ="input-group-btn">
-                            <a type="button" class="btn btn-primary btn-pagination-prev" href=""><span aria-hidden="true" class="glyphicon glyphicon-arrow-left"></span></a>
-                            <a type="button" class="btn btn-primary btn-pagination-next" href=""><span aria-hidden="true" class="glyphicon glyphicon-arrow-right"></span></a>
-                        </span>
-                    </div>
-                </div>
-
-                <ul class="nav nav-tabs">
-                    <li role="presentation" class="tabs logs-tab"><a href="/logs">Logs</a></li>
-                    <li role="presentation" class="tabs executor-logs-tab"><a href="/logs/executors">Executor Logs</a></li>
-                </ul>
-            </div>
-        </div>
-    </div>
-
     <div class="from-to-marker">
         <small class="time-unix-to-local">{{ $.From }}</small> - <small class="time-unix-to-local">{{ $.To }}</small>
     </div>

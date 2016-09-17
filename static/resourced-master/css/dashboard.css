@@ -218,6 +218,12 @@ select {
     line-height: 1.0;
 }
 
+.container.logs {
+    margin-top: 20px;
+}
+.container.logs .search-form {
+    width: 100%;
+}
 .container.logs .label {
     font-size: 60%;
 }
@@ -382,15 +388,6 @@ select {
     .form-group-search-and-save .search-form, .form-group-search-and-save .search-form .input-group {
         margin: 0;
         padding: 0;
-        width: 100%;
-    }
-
-    .saved-queries-form {
-        margin: 0;
-        padding: 0;
-    }
-
-    .saved-queries-form .btn {
         width: 100%;
     }
 
