@@ -77,3 +77,11 @@ func FlattenPhone(phone string) string {
 
 	return result
 }
+
+func JSONToText(input string) string {
+	result := strings.Replace(input, "{", "", 1)
+	result = strings.Replace(input, "}", "", 1)
+	result = strings.Replace(input, `"`, "", -1)
+
+	return result
+}

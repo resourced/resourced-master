@@ -4,12 +4,14 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/Sirupsen/logrus"
 	"github.com/jmoiron/sqlx"
 	sqlx_types "github.com/jmoiron/sqlx/types"
 
+	"github.com/resourced/resourced-master/libstring"
 	"github.com/resourced/resourced-master/querybuilder"
 )
 
@@ -104,17 +106,24 @@ func (ts *TSLog) Create(tx *sqlx.Tx, clusterID int64, hostname string, tags map[
 			created = loglinePayload.Created
 		}
 
+		content := loglinePayload.Content
+
+		// Format JSON to regular text
+		if strings.HasPrefix(content, "{") && strings.HasSuffix(content, "}") {
+			content = libstring.JSONToText(content)
+		}
+
 		logFields := logrus.Fields{
 			"Method":    "TSLog.Create",
 			"Query":     query,
 			"ClusterID": clusterID,
 			"Hostname":  hostname,
-			"Logline":   loglinePayload.Content,
+			"Logline":   content,
 			"Filename":  filename,
 			"Tags":      string(tagsInJson),
 		}
 
-		_, err = prepared.Exec(clusterID, hostname, loglinePayload.Content, filename, tagsInJson, time.Unix(created, 0).UTC(), time.Unix(deletedFrom, 0).UTC())
+		_, err = prepared.Exec(clusterID, hostname, content, filename, tagsInJson, time.Unix(created, 0).UTC(), time.Unix(deletedFrom, 0).UTC())
 		if err != nil {
 			logFields["Error"] = err.Error()
 			logrus.WithFields(logFields).Error("Failed to execute insert query")
