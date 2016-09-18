@@ -108,7 +108,7 @@
                                             <input type="hidden" name="Email" value="{{ $member.Email }}">
                                             <input type="hidden" name="Enabled" value="{{ if $member.Enabled }}on{{end}}">
 
-                                            <select name="Level" onchange="$(this).closest('form').submit();" style="color: #000">
+                                            <select name="Level" onchange="$(this).closest('form').submit();" style="color: #000" {{ if eq $member.Email $.CurrentUser.Email }} disabled {{end}}>
                                                 <option value="read" {{if eq $member.Level "read"}} selected {{end}}>Read</option>
                                                 <option value="write" {{if eq $member.Level "write"}} selected {{end}}>Write</option>
                                             </select>

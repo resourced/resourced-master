@@ -180,7 +180,7 @@
     });
 
     // Always validate input[type=email] on every page.
-    $(document).on('keyup', 'input[type="email"]', function(event) {
+    $(document).on('keyup change', 'input[type="email"]', function(event) {
         var form = $(this).closest('form');
         var btn = form.find('.btn-primary');
 
