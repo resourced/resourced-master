@@ -152,6 +152,13 @@ select {
 .container.graphs h2, .container.checks h2 {
     display: none;
 }
+.container.graphs .jumbotron, .container.checks .jumbotron {
+    padding: 35px 60px;
+}
+.container.graphs .jumbotron h2, .container.checks .jumbotron h2 {
+    margin-top: 6px;
+    display: block;
+}
 .container.graphs .page-header {
     margin-bottom: 14px;
     border-bottom: none;

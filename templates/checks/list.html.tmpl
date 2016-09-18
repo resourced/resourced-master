@@ -2,12 +2,11 @@
 {{ end }}
 
 {{define "content"}}
-<!-- Checks -->
 <div class="container checks">
     {{ if eq (len .Metrics) 0 }}
     <div class="jumbotron" style="margin-top: 40px">
         <h2>Unable to create a check without metrics data</h2>
-        <p>You can start collecting metrics by pressing <a class="btn btn-success btn-sm" href="/">Chart Metric?</a> button under Hosts tab.</p>
+        <p style="margin-bottom: 0">You can start collecting metrics by pressing <a class="btn btn-success btn-sm" href="/">Chart Metric?</a> button under Hosts tab.</p>
     </div>
 
     {{ else }}
