@@ -63,6 +63,7 @@ type GeneralConfig struct {
 	VIPAddr                 string
 	VIPProtocol             string
 	EnablePeriodicPruneJobs bool
+	JustAPI                 bool
 
 	LocalAgent struct {
 		GraphiteTCPPort       string

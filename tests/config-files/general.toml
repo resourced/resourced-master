@@ -25,6 +25,8 @@ VIPProtocol = "http"
 # and create your own cronjob to drop tables instead.
 EnablePeriodicPruneJobs = true
 
+# When set to true, master daemon will not serve HTML UI, just API.
+JustAPI = false
 
 [LocalAgent]
 # Master will report its own metrics to localhost:{GraphiteTCPPort}

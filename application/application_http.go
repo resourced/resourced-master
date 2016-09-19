@@ -55,124 +55,126 @@ func (app *Application) Mux() *chi.Mux {
 	r.Use(middlewares.SetLogger("outLogger", app.OutLogger))
 	r.Use(middlewares.SetLogger("errLogger", app.ErrLogger))
 
-	r.Get("/signup", handlers.GetSignup)
-	r.Post("/signup", tollbooth.LimitFuncHandler(signupLimiter, handlers.PostSignup).(http.HandlerFunc))
+	if !app.GeneralConfig.JustAPI {
+		r.Get("/signup", handlers.GetSignup)
+		r.Post("/signup", tollbooth.LimitFuncHandler(signupLimiter, handlers.PostSignup).(http.HandlerFunc))
 
-	r.Get("/login", stopwatch.LatencyFuncHandler(app.getHandlerInstrument("GetLogin"), []string{"GET"}, handlers.GetLogin).(http.HandlerFunc))
-	r.Post("/login", handlers.PostLogin)
+		r.Get("/login", stopwatch.LatencyFuncHandler(app.getHandlerInstrument("GetLogin"), []string{"GET"}, handlers.GetLogin).(http.HandlerFunc))
+		r.Post("/login", handlers.PostLogin)
 
-	r.Route("/", func(r chi.Router) {
-		r.Use(CSRF, middlewares.MustLogin, middlewares.SetClusters, middlewares.MustBeMember, middlewares.SetAccessTokens)
-		r.Get("/", stopwatch.LatencyFuncHandler(app.getHandlerInstrument("GetHosts"), []string{"GET"}, handlers.GetHosts).(http.HandlerFunc))
-	})
-
-	r.Route("/saved-queries", func(r chi.Router) {
-		r.Use(CSRF, middlewares.MustLogin, middlewares.SetClusters, middlewares.MustBeMember)
-		r.Post("/", handlers.PostSavedQueries)
-
-		r.Route("/:id", func(r chi.Router) {
-			r.Use(CSRF, middlewares.MustLogin, middlewares.SetClusters, middlewares.MustBeMember)
-			r.Post("/", handlers.PostPutDeleteSavedQueriesID)
-			r.Delete("/", handlers.PostPutDeleteSavedQueriesID)
-		})
-	})
-
-	r.Route("/graphs", func(r chi.Router) {
-		r.Use(CSRF, middlewares.MustLogin, middlewares.SetClusters, middlewares.MustBeMember, middlewares.SetAccessTokens)
-		r.Get("/", stopwatch.LatencyFuncHandler(app.getHandlerInstrument("GetGraphs"), []string{"GET"}, handlers.GetGraphs).(http.HandlerFunc))
-		r.Post("/", handlers.PostGraphs)
-
-		r.Route("/:id", func(r chi.Router) {
+		r.Route("/", func(r chi.Router) {
 			r.Use(CSRF, middlewares.MustLogin, middlewares.SetClusters, middlewares.MustBeMember, middlewares.SetAccessTokens)
-			r.Get("/", stopwatch.LatencyFuncHandler(app.getHandlerInstrument("GetGraphsID"), []string{"GET"}, handlers.GetPostPutDeleteGraphsID).(http.HandlerFunc))
-			r.Post("/", handlers.GetPostPutDeleteGraphsID)
-			r.Put("/", handlers.GetPostPutDeleteGraphsID)
-			r.Delete("/", handlers.GetPostPutDeleteGraphsID)
+			r.Get("/", stopwatch.LatencyFuncHandler(app.getHandlerInstrument("GetHosts"), []string{"GET"}, handlers.GetHosts).(http.HandlerFunc))
 		})
-	})
 
-	r.Route("/logs", func(r chi.Router) {
-		r.Use(CSRF, middlewares.MustLogin, middlewares.SetClusters, middlewares.MustBeMember, middlewares.SetAccessTokens)
-		r.Get("/", stopwatch.LatencyFuncHandler(app.getHandlerInstrument("GetLogs"), []string{"GET"}, handlers.GetLogs).(http.HandlerFunc))
-	})
-
-	r.Route("/checks", func(r chi.Router) {
-		r.Use(CSRF, middlewares.MustLogin, middlewares.SetClusters, middlewares.MustBeMember, middlewares.SetAccessTokens)
-		r.Get("/", stopwatch.LatencyFuncHandler(app.getHandlerInstrument("GetChecks"), []string{"GET"}, handlers.GetChecks).(http.HandlerFunc))
-		r.Post("/", handlers.PostChecks)
-
-		r.Route("/:checkID", func(r chi.Router) {
+		r.Route("/saved-queries", func(r chi.Router) {
 			r.Use(CSRF, middlewares.MustLogin, middlewares.SetClusters, middlewares.MustBeMember)
-			r.Post("/", handlers.PostPutDeleteCheckID)
-			r.Put("/", handlers.PostPutDeleteCheckID)
-			r.Delete("/", handlers.PostPutDeleteCheckID)
-			r.Post("/silence", handlers.PostCheckIDSilence)
+			r.Post("/", handlers.PostSavedQueries)
 
-			r.Route("/triggers", func(r chi.Router) {
+			r.Route("/:id", func(r chi.Router) {
 				r.Use(CSRF, middlewares.MustLogin, middlewares.SetClusters, middlewares.MustBeMember)
-				r.Post("/", handlers.PostChecksTriggers)
+				r.Post("/", handlers.PostPutDeleteSavedQueriesID)
+				r.Delete("/", handlers.PostPutDeleteSavedQueriesID)
+			})
+		})
 
-				r.Route("/:triggerID", func(r chi.Router) {
+		r.Route("/graphs", func(r chi.Router) {
+			r.Use(CSRF, middlewares.MustLogin, middlewares.SetClusters, middlewares.MustBeMember, middlewares.SetAccessTokens)
+			r.Get("/", stopwatch.LatencyFuncHandler(app.getHandlerInstrument("GetGraphs"), []string{"GET"}, handlers.GetGraphs).(http.HandlerFunc))
+			r.Post("/", handlers.PostGraphs)
+
+			r.Route("/:id", func(r chi.Router) {
+				r.Use(CSRF, middlewares.MustLogin, middlewares.SetClusters, middlewares.MustBeMember, middlewares.SetAccessTokens)
+				r.Get("/", stopwatch.LatencyFuncHandler(app.getHandlerInstrument("GetGraphsID"), []string{"GET"}, handlers.GetPostPutDeleteGraphsID).(http.HandlerFunc))
+				r.Post("/", handlers.GetPostPutDeleteGraphsID)
+				r.Put("/", handlers.GetPostPutDeleteGraphsID)
+				r.Delete("/", handlers.GetPostPutDeleteGraphsID)
+			})
+		})
+
+		r.Route("/logs", func(r chi.Router) {
+			r.Use(CSRF, middlewares.MustLogin, middlewares.SetClusters, middlewares.MustBeMember, middlewares.SetAccessTokens)
+			r.Get("/", stopwatch.LatencyFuncHandler(app.getHandlerInstrument("GetLogs"), []string{"GET"}, handlers.GetLogs).(http.HandlerFunc))
+		})
+
+		r.Route("/checks", func(r chi.Router) {
+			r.Use(CSRF, middlewares.MustLogin, middlewares.SetClusters, middlewares.MustBeMember, middlewares.SetAccessTokens)
+			r.Get("/", stopwatch.LatencyFuncHandler(app.getHandlerInstrument("GetChecks"), []string{"GET"}, handlers.GetChecks).(http.HandlerFunc))
+			r.Post("/", handlers.PostChecks)
+
+			r.Route("/:checkID", func(r chi.Router) {
+				r.Use(CSRF, middlewares.MustLogin, middlewares.SetClusters, middlewares.MustBeMember)
+				r.Post("/", handlers.PostPutDeleteCheckID)
+				r.Put("/", handlers.PostPutDeleteCheckID)
+				r.Delete("/", handlers.PostPutDeleteCheckID)
+				r.Post("/silence", handlers.PostCheckIDSilence)
+
+				r.Route("/triggers", func(r chi.Router) {
 					r.Use(CSRF, middlewares.MustLogin, middlewares.SetClusters, middlewares.MustBeMember)
-					r.Post("/", handlers.PostPutDeleteCheckTriggerID)
-					r.Put("/", handlers.PostPutDeleteCheckTriggerID)
-					r.Delete("/", handlers.PostPutDeleteCheckTriggerID)
+					r.Post("/", handlers.PostChecksTriggers)
+
+					r.Route("/:triggerID", func(r chi.Router) {
+						r.Use(CSRF, middlewares.MustLogin, middlewares.SetClusters, middlewares.MustBeMember)
+						r.Post("/", handlers.PostPutDeleteCheckTriggerID)
+						r.Put("/", handlers.PostPutDeleteCheckTriggerID)
+						r.Delete("/", handlers.PostPutDeleteCheckTriggerID)
+					})
 				})
 			})
 		})
-	})
 
-	r.Route("/users", func(r chi.Router) {
-		r.Route("/:id", func(r chi.Router) {
-			r.Use(CSRF, middlewares.MustLogin, middlewares.SetClusters, middlewares.MustBeMember)
-			r.Post("/", handlers.PostPutDeleteUsersID)
-			r.Put("/", handlers.PostPutDeleteUsersID)
-			r.Delete("/", handlers.PostPutDeleteUsersID)
-		})
-
-		r.Get("/email-verification/:token", handlers.GetUsersEmailVerificationToken)
-	})
-
-	r.Route("/clusters", func(r chi.Router) {
-		r.Use(CSRF, middlewares.MustLogin, middlewares.SetClusters, middlewares.MustBeMember)
-		r.Get("/", handlers.GetClusters)
-		r.Post("/", handlers.PostClusters)
-
-		r.Route("/:clusterID", func(r chi.Router) {
-			r.Use(CSRF, middlewares.MustLogin, middlewares.SetClusters, middlewares.MustBeMember)
-			r.Post("/", handlers.PostPutDeleteClusterID)
-			r.Put("/", handlers.PostPutDeleteClusterID)
-			r.Delete("/", handlers.PostPutDeleteClusterID)
-
-			r.Route("/current", func(r chi.Router) {
-				r.Post("/", handlers.PostClusterIDCurrent)
+		r.Route("/users", func(r chi.Router) {
+			r.Route("/:id", func(r chi.Router) {
+				r.Use(CSRF, middlewares.MustLogin, middlewares.SetClusters, middlewares.MustBeMember)
+				r.Post("/", handlers.PostPutDeleteUsersID)
+				r.Put("/", handlers.PostPutDeleteUsersID)
+				r.Delete("/", handlers.PostPutDeleteUsersID)
 			})
 
-			r.Post("/access-tokens", handlers.PostAccessTokens)
-			r.Post("/users", handlers.PostPutDeleteClusterIDUsers)
-			r.Put("/users", handlers.PostPutDeleteClusterIDUsers)
-			r.Delete("/users", handlers.PostPutDeleteClusterIDUsers)
+			r.Get("/email-verification/:token", handlers.GetUsersEmailVerificationToken)
+		})
 
-			r.Route("/metrics", func(r chi.Router) {
+		r.Route("/clusters", func(r chi.Router) {
+			r.Use(CSRF, middlewares.MustLogin, middlewares.SetClusters, middlewares.MustBeMember)
+			r.Get("/", handlers.GetClusters)
+			r.Post("/", handlers.PostClusters)
+
+			r.Route("/:clusterID", func(r chi.Router) {
 				r.Use(CSRF, middlewares.MustLogin, middlewares.SetClusters, middlewares.MustBeMember)
-				r.Post("/", handlers.PostMetrics)
+				r.Post("/", handlers.PostPutDeleteClusterID)
+				r.Put("/", handlers.PostPutDeleteClusterID)
+				r.Delete("/", handlers.PostPutDeleteClusterID)
 
-				r.Route("/:metricID", func(r chi.Router) {
+				r.Route("/current", func(r chi.Router) {
+					r.Post("/", handlers.PostClusterIDCurrent)
+				})
+
+				r.Post("/access-tokens", handlers.PostAccessTokens)
+				r.Post("/users", handlers.PostPutDeleteClusterIDUsers)
+				r.Put("/users", handlers.PostPutDeleteClusterIDUsers)
+				r.Delete("/users", handlers.PostPutDeleteClusterIDUsers)
+
+				r.Route("/metrics", func(r chi.Router) {
 					r.Use(CSRF, middlewares.MustLogin, middlewares.SetClusters, middlewares.MustBeMember)
-					r.Post("/", handlers.PostPutDeleteMetricID)
-					r.Put("/", handlers.PostPutDeleteMetricID)
-					r.Delete("/", handlers.PostPutDeleteMetricID)
+					r.Post("/", handlers.PostMetrics)
+
+					r.Route("/:metricID", func(r chi.Router) {
+						r.Use(CSRF, middlewares.MustLogin, middlewares.SetClusters, middlewares.MustBeMember)
+						r.Post("/", handlers.PostPutDeleteMetricID)
+						r.Put("/", handlers.PostPutDeleteMetricID)
+						r.Delete("/", handlers.PostPutDeleteMetricID)
+					})
 				})
 			})
 		})
-	})
 
-	r.Route("/access-tokens/:id", func(r chi.Router) {
-		r.Use(CSRF, middlewares.MustLogin, middlewares.SetClusters, middlewares.MustBeMember)
-		r.Post("/level", handlers.PostAccessTokensLevel)
-		r.Post("/enabled", handlers.PostAccessTokensEnabled)
-		r.Post("/delete", handlers.PostAccessTokensDelete)
-	})
+		r.Route("/access-tokens/:id", func(r chi.Router) {
+			r.Use(CSRF, middlewares.MustLogin, middlewares.SetClusters, middlewares.MustBeMember)
+			r.Post("/level", handlers.PostAccessTokensLevel)
+			r.Post("/enabled", handlers.PostAccessTokensEnabled)
+			r.Post("/delete", handlers.PostAccessTokensDelete)
+		})
+	}
 
 	r.Route("/api", func(r chi.Router) {
 		r.Route("/hosts", func(r chi.Router) {
@@ -252,8 +254,10 @@ func (app *Application) Mux() *chi.Mux {
 	})
 
 	// Path to /static files
-	workDir, _ := os.Getwd()
-	r.FileServer("/static", http.Dir(filepath.Join(workDir, "static")))
+	if !app.GeneralConfig.JustAPI {
+		workDir, _ := os.Getwd()
+		r.FileServer("/static", http.Dir(filepath.Join(workDir, "static")))
+	}
 
 	return r
 }
