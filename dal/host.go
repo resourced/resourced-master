@@ -25,15 +25,11 @@ func NewHost(db *sqlx.DB) *Host {
 }
 
 type AgentResourcePayload struct {
-	Data     map[string]interface{}
-	GoStruct string `json:",omitempty"`
-	Host     struct {
+	Data map[string]interface{}
+	Host struct {
 		Name string
 		Tags map[string]string
 	}
-	Interval string `json:",omitempty"`
-	Path     string
-	UnixNano float64 `json:",omitempty"`
 }
 
 type HostRowsWithError struct {
@@ -221,32 +217,25 @@ func (h *Host) GetByHostname(tx *sqlx.Tx, hostname string) (*HostRow, error) {
 }
 
 func (h *Host) parseAgentResourcePayload(tx *sqlx.Tx, accessTokenRow *AccessTokenRow, jsonData []byte) (map[string]interface{}, error) {
-	resourcedPayloads := make(map[string]*AgentResourcePayload)
+	resourcedPayload := AgentResourcePayload{}
 
-	err := json.Unmarshal(jsonData, &resourcedPayloads)
+	err := json.Unmarshal(jsonData, &resourcedPayload)
 	if err != nil {
 		return nil, err
 	}
 
-	resourcedPayloadJustData := make(map[string]map[string]interface{})
-
 	data := make(map[string]interface{})
 	data["access_token_id"] = accessTokenRow.ID
 	data["cluster_id"] = accessTokenRow.ClusterID
+	data["hostname"] = resourcedPayload.Host.Name
 
-	for path, resourcedPayload := range resourcedPayloads {
-		data["hostname"] = resourcedPayload.Host.Name
-
-		tagsInJson, err := json.Marshal(resourcedPayload.Host.Tags)
-		if err != nil {
-			continue
-		}
-		data["tags"] = tagsInJson
-
-		resourcedPayloadJustData[path] = resourcedPayload.Data
+	tagsInJson, err := json.Marshal(resourcedPayload.Host.Tags)
+	if err != nil {
+		return nil, err
 	}
+	data["tags"] = tagsInJson
 
-	resourcedPayloadJustJson, err := json.Marshal(resourcedPayloadJustData)
+	resourcedPayloadJustJson, err := json.Marshal(resourcedPayload.Data)
 	if err != nil {
 		return nil, err
 	}
