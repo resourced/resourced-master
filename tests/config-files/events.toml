@@ -1,7 +1,7 @@
 [Events]
 DSN = "postgres://localhost:5432/resourced-master-ts-events?sslmode=disable"
 
-DBMaxOpenConnections = 50
+DBMaxOpenConnections = 2
 
 # DataRetention defines how long time series data are kept.
 # The unit is defined in days.

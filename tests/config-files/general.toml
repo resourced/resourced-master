@@ -7,7 +7,7 @@ LogLevel = "info"
 # DSN to core PostgreSQL database
 DSN = "postgres://localhost:5432/resourced-master?sslmode=disable"
 
-DBMaxOpenConnections = 50
+DBMaxOpenConnections = 2
 
 # How long the HTTP server will wait for requests to drain before shutdown
 RequestShutdownTimeout = "1s"
@@ -25,7 +25,7 @@ VIPProtocol = "http"
 # and create your own cronjob to drop tables instead.
 EnablePeriodicPruneJobs = true
 
-# When set to true, master daemon will not serve HTML UI, just API.
+# When set to true, master daemon will not serve the HTML UI, just API.
 JustAPI = false
 
 [LocalAgent]

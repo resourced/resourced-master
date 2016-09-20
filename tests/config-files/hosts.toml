@@ -1,7 +1,7 @@
 [Hosts]
 DSN = "postgres://localhost:5432/resourced-master-hosts?sslmode=disable"
 
-DBMaxOpenConnections = 50
+DBMaxOpenConnections = 2
 
 # Optimization Setting: Enable this option if you have clusters with huge number of servers.
 # This setting allows you to store hosts data on a separate PostgreSQL database by cluster_id.

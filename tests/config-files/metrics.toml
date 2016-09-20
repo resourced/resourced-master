@@ -1,7 +1,7 @@
 [Metrics]
 DSN = "postgres://localhost:5432/resourced-master-ts-metrics?sslmode=disable"
 
-DBMaxOpenConnections = 50
+DBMaxOpenConnections = 2
 
 # DataRetention defines how long time series data are kept.
 # The unit is defined in days.
@@ -16,7 +16,7 @@ DataRetention = 7
 [MetricsAggr15m]
 DSN = "postgres://localhost:5432/resourced-master-ts-metrics?sslmode=disable"
 
-DBMaxOpenConnections = 50
+DBMaxOpenConnections = 2
 
 # DataRetention defines how long time series data are kept.
 # The unit is defined in days.
