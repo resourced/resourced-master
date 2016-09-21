@@ -279,6 +279,18 @@
 			"revisionTime": "2016-06-14T22:52:37Z"
 		},
 		{
+			"checksumSHA1": "XdxvIIqZLQ67wuI4ngmvwHkj6XE=",
+			"path": "gopkg.in/airbrake/gobrake.v2",
+			"revision": "31c8ff1fb8b79a6947e6565e9a6df535f98a6b94",
+			"revisionTime": "2016-04-02T08:12:50Z"
+		},
+		{
+			"checksumSHA1": "YV5g4hWLzjjsc8bi/iMIw7/gAnU=",
+			"path": "gopkg.in/gemnasium/logrus-airbrake-hook.v2",
+			"revision": "31e6fd4bd5a98d8ee7673d24bc54ec73c31810dd",
+			"revisionTime": "2015-10-06T01:16:14Z"
+		},
+		{
 			"checksumSHA1": "8aQixD/F+3cpTTjSJdIyu5GioLc=",
 			"path": "gopkg.in/tylerb/graceful.v1",
 			"revision": "c838c13b2beeea4f4f54496da96a3a6ae567c37a",
