@@ -52,7 +52,7 @@ func checkHostExpressionSetupForTest(t *testing.T) map[string]interface{} {
 	h := newHostForTest(t)
 	defer h.db.Close()
 
-	hostRow, err := h.CreateOrUpdate(nil, tokenRow, []byte(fmt.Sprintf(`{"/stuff": {"Data": {"Score": 100}, "Host": {"Name": "%v", "Tags": {"aaa": "bbb"}}}}`, hostname)))
+	hostRow, err := h.CreateOrUpdate(nil, tokenRow, []byte(fmt.Sprintf(`{"Host": {"Name": "%v", "Tags": {"aaa": "bbb"}}, "Data": {"/stuff": {"Score": 100}}}`, hostname)))
 	if err != nil {
 		t.Errorf("Creating a new host should work. Error: %v", err)
 	}
@@ -468,7 +468,7 @@ func TestCheckEvalLogDataExpression(t *testing.T) {
 	}
 
 	// Create TSLog
-	dataJSONString := fmt.Sprintf(`{"Host": {"Name": "%v", "Tags": {}}, "Data": {"Filename":"", "Loglines": ["aaa", "bbb"]}}`, hostname)
+	dataJSONString := fmt.Sprintf(`{"Host": {"Name": "%v", "Tags": {}}, "Data": {"Filename":"", "Loglines": [{"Created": %v, "Content": "aaa"}, {"Created": %v, "Content": "bbb"}]}}`, hostname, time.Now().Unix()+int64(900), time.Now().Unix()+int64(900))
 
 	err = newTSLogForTest(t).CreateFromJSON(nil, setupRows["clusterRow"].(*ClusterRow).ID, []byte(dataJSONString), time.Now().Unix()+int64(900))
 	if err != nil {
@@ -480,17 +480,18 @@ func TestCheckEvalLogDataExpression(t *testing.T) {
 
 	// EvalLogDataExpression with valid expression.
 	// This is a basic happy path test.
+	// Count of log lines containing aaa should be > 0
 	expression := CheckExpression{}
 	expression.Search = "aaa"
 	expression.Operator = ">"
-	expression.MinHost = 1
 	expression.Value = float64(0)
+	expression.MinHost = 1
 	expression.PrevRange = 15
 
 	expression = checkRow.EvalLogDataExpression(newDBConfigForTest(t), nil, expression)
 	if expression.Result.Value != true {
 		// The result should be true. The count of logs with "aaa" string is indeed greater than 0, which means that this expression must fail.
-		t.Fatalf("Expression result is not %v %v", expression.Operator, expression.Value)
+		t.Fatalf("Counting log lines containing %v is expected to be %v %v. Value: %v", expression.Search, expression.Operator, expression.Value, expression.Result.Value)
 	}
 
 	// ----------------------------------------------------------------------
@@ -654,8 +655,8 @@ func TestCheckEvalHTTPExpression(t *testing.T) {
 
 	expression = checkRow.EvalHTTPExpression(nil, expression)
 	if expression.Result.Value != false {
-		// To make this test pass, you should run Master daemon on localhost 55655.
-		t.Fatalf("Expression should not fail checking HTTP on port %v", expression.Port)
+		// To make this test pass, you should run Master daemon on localhost:55655
+		t.Fatalf("Expression should not fail checking HTTP on port %v. To make this test pass, you should run Master daemon on localhost:55655", expression.Port)
 	}
 
 	// ----------------------------------------------------------------------
@@ -723,7 +724,7 @@ func TestBuildEmailTriggerContent(t *testing.T) {
 		t.Fatalf("Fetching a TSCheck should not fail. Error: %v", err)
 	}
 
-	content, err := checkRow.BuildEmailTriggerContent(lastViolation, "..")
+	_, err = checkRow.BuildEmailTriggerContent(lastViolation, "..")
 	if err != nil {
 		t.Fatalf("Generating the content of email alert should not fail. Error: %v", err)
 	}

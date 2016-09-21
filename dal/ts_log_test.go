@@ -40,7 +40,7 @@ func TestTSLogCreateValue(t *testing.T) {
 	hostname, _ := os.Hostname()
 
 	// Create TSLog
-	dataJSONString := fmt.Sprintf(`{"Host": {"Name": "%v", "Tags": {}}, "Data": {"Filename":"", "Loglines": ["aaa", "bbb"]}}`, hostname)
+	dataJSONString := fmt.Sprintf(`{"Host": {"Name": "%v", "Tags": {}}, "Data": {"Filename":"", "Loglines": [{"Created": 123, "Content": "aaa"}, {"Created": 123, "Content": "bbb"}]}}`, hostname)
 
 	err = newTSLogForTest(t).CreateFromJSON(nil, clusterRow.ID, []byte(dataJSONString), time.Now().Unix()+int64(900))
 	if err != nil {

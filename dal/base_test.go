@@ -28,7 +28,6 @@ func newDBConfigForTest(t *testing.T) *config.DBConfig {
 	conf.TSMetric = conf.Core
 	conf.TSMetricAggr15m = conf.Core
 	conf.TSEvent = conf.Core
-	conf.TSExecutorLog = conf.Core
 	conf.TSLog = conf.Core
 	conf.TSCheck = conf.Core
 
