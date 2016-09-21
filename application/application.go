@@ -67,13 +67,6 @@ func New(configDir string) (*Application, error) {
 		app.Mailers["GeneralConfig.Checks"] = mailer
 	}
 
-	// Create MessageBus
-	bus, err := app.NewMessageBus(app.GeneralConfig)
-	if err != nil {
-		return nil, err
-	}
-	app.MessageBus = bus
-
 	// Setup loggers
 	app.OutLogger = logrus.New()
 	app.OutLogger.Out = os.Stdout

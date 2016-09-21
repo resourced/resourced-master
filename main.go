@@ -52,6 +52,13 @@ func main() {
 
 	switch parsedCLIArgs {
 	case "server":
+		// Create MessageBus
+		bus, err := app.NewMessageBus(app.GeneralConfig)
+		if err != nil {
+			logrus.Fatal(err)
+		}
+		app.MessageBus = bus
+
 		go app.MessageBus.ManageClients()
 
 		go app.MessageBus.OnReceive(app.MessageBusHandlers())
