@@ -206,7 +206,7 @@ func parseStatement(statement string) string {
 
 	// Querying data.
 	// Operators: >=, <=, =, <, >
-	// Expected output: data #>> '{/free,Swap,Free}' = '0'
+	// Expected output: data #>> '{/free,Swap.Free}' = '0'
 	if strings.HasPrefix(statement, "/") {
 		operator := ""
 
@@ -225,7 +225,8 @@ func parseStatement(statement string) string {
 		if operator != "" {
 			parts := strings.Split(statement, operator)
 
-			pgJsonPath := strings.Replace(parts[0], ".", ",", -1)
+			// On metric key, replace only the first dot because we flatten every metric key stored in hosts JSON data.
+			pgJsonPath := strings.Replace(parts[0], ".", ",", 1)
 			pgJsonPath = strings.TrimSpace(pgJsonPath)
 
 			value := parts[len(parts)-1]

@@ -129,7 +129,7 @@ func TestParseJsonTraversal(t *testing.T) {
 	toBeTested := `/free.Memory.Free > 10000000`
 
 	output := Parse(toBeTested)
-	if output != `data #>> '{/free,Memory,Free}' > '10000000'` {
+	if output != `data #>> '{/free,Memory.Free}' > '10000000'` {
 		t.Errorf("Failed to generate data query. Output: %v", output)
 	}
 }
@@ -138,7 +138,7 @@ func TestParseAnd(t *testing.T) {
 	toBeTested := `tags.aaa = bbb AND Hostname~^"brotato" AND /free.Memory.Free > 10000000`
 
 	output := Parse(toBeTested)
-	if output != `tags #>> '{aaa}' = 'bbb' and hostname LIKE 'brotato%' and data #>> '{/free,Memory,Free}' > '10000000'` {
+	if output != `tags #>> '{aaa}' = 'bbb' and hostname LIKE 'brotato%' and data #>> '{/free,Memory.Free}' > '10000000'` {
 		t.Errorf("Failed to generate mixed of tags,hostname, and data query. Output: %v", output)
 	}
 }
