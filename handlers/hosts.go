@@ -27,6 +27,12 @@ func GetHosts(w http.ResponseWriter, r *http.Request) {
 
 	query := r.URL.Query().Get("q")
 
+	accessToken, err := getAccessToken(w, r, "read")
+	if err != nil {
+		libhttp.HandleErrorHTML(w, err, 500)
+		return
+	}
+
 	// -----------------------------------
 	// Create channels to receive SQL rows
 	// -----------------------------------
@@ -63,27 +69,27 @@ func GetHosts(w http.ResponseWriter, r *http.Request) {
 	// -----------------------------------
 	// Wait for channels to return results
 	// -----------------------------------
+	hasError := false
+
 	hostsWithError := <-hostsChan
 	if hostsWithError.Error != nil && hostsWithError.Error.Error() != "sql: no rows in result set" {
 		libhttp.HandleErrorHTML(w, hostsWithError.Error, 500)
-		return
+		hasError = true
 	}
 
 	savedQueriesWithError := <-savedQueriesChan
 	if savedQueriesWithError.Error != nil && savedQueriesWithError.Error.Error() != "sql: no rows in result set" {
 		libhttp.HandleErrorHTML(w, savedQueriesWithError.Error, 500)
-		return
+		hasError = true
 	}
 
 	metricsMapWithError := <-metricsMapChan
 	if metricsMapWithError.Error != nil {
 		libhttp.HandleErrorHTML(w, metricsMapWithError.Error, 500)
-		return
+		hasError = true
 	}
 
-	accessToken, err := getAccessToken(w, r, "read")
-	if err != nil {
-		libhttp.HandleErrorHTML(w, err, 500)
+	if hasError {
 		return
 	}
 
