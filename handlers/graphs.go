@@ -113,6 +113,12 @@ func GetGraphsID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	accessToken, err := getAccessToken(w, r, "read")
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
+
 	// -----------------------------------
 	// Create channels to receive SQL rows
 	// -----------------------------------
@@ -140,10 +146,12 @@ func GetGraphsID(w http.ResponseWriter, r *http.Request) {
 	// -----------------------------------
 	// Wait for channels to return results
 	// -----------------------------------
+	hasError := false
+
 	metricsWithError := <-metricsChan
 	if metricsWithError.Error != nil {
 		libhttp.HandleErrorJson(w, metricsWithError.Error)
-		return
+		hasError = true
 	}
 
 	var currentGraph *dal.GraphRow
@@ -157,12 +165,10 @@ func GetGraphsID(w http.ResponseWriter, r *http.Request) {
 		}
 	} else {
 		libhttp.HandleErrorJson(w, graphsWithError.Error)
-		return
+		hasError = true
 	}
 
-	accessToken, err := getAccessToken(w, r, "read")
-	if err != nil {
-		libhttp.HandleErrorJson(w, err)
+	if hasError {
 		return
 	}
 

@@ -28,6 +28,12 @@ func GetChecks(w http.ResponseWriter, r *http.Request) {
 
 	currentCluster := r.Context().Value("currentCluster").(*dal.ClusterRow)
 
+	accessToken, err := getAccessToken(w, r, "read")
+	if err != nil {
+		libhttp.HandleErrorHTML(w, err, 500)
+		return
+	}
+
 	// -----------------------------------
 	// Create channels to receive SQL rows
 	// -----------------------------------
@@ -55,21 +61,21 @@ func GetChecks(w http.ResponseWriter, r *http.Request) {
 	// -----------------------------------
 	// Wait for channels to return results
 	// -----------------------------------
+	hasError := false
+
 	checksWithError := <-checksChan
 	if checksWithError.Error != nil && checksWithError.Error.Error() != "sql: no rows in result set" {
 		libhttp.HandleErrorHTML(w, checksWithError.Error, 500)
-		return
+		hasError = true
 	}
 
 	metricsWithError := <-metricsChan
 	if metricsWithError.Error != nil && metricsWithError.Error.Error() != "sql: no rows in result set" {
 		libhttp.HandleErrorHTML(w, metricsWithError.Error, 500)
-		return
+		hasError = true
 	}
 
-	accessToken, err := getAccessToken(w, r, "read")
-	if err != nil {
-		libhttp.HandleErrorHTML(w, err, 500)
+	if hasError {
 		return
 	}
 
