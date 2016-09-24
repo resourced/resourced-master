@@ -77,15 +77,15 @@ func main() {
 		go app.PruneAll()
 
 		// Publish metrics to local agent, which is a graphite endpoint.
-		addr, err := net.ResolveTCPAddr("tcp", "localhost:"+app.GeneralConfig.LocalAgent.GraphiteTCPPort)
-		if err != nil {
-			logrus.Fatal(err)
-		}
-		statsInterval, err := time.ParseDuration(app.GeneralConfig.LocalAgent.ReportMetricsInterval)
-		if err != nil {
-			logrus.Fatal(err)
-		}
-		go metrics_graphite.Graphite(app.MetricsRegistry, statsInterval, "ResourcedMaster", addr)
+		go func() {
+			statsInterval, err := time.ParseDuration(app.GeneralConfig.LocalAgent.ReportMetricsInterval)
+			if err == nil {
+				addr, err := net.ResolveTCPAddr("tcp", "localhost:"+app.GeneralConfig.LocalAgent.GraphiteTCPPort)
+				if err == nil {
+					go metrics_graphite.Graphite(app.MetricsRegistry, statsInterval, "ResourcedMaster", addr)
+				}
+			}
+		}()
 
 		// Create HTTP server
 		srv, err := app.NewHTTPServer()
