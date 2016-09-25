@@ -220,7 +220,7 @@
         $('.nav-tabs').removeClass('active');
 
         var path = window.location.pathname;
-        if(path == '/') {
+        if(path == '/' || path.indexOf('/hosts') > -1) {
             $('.nav-hosts').addClass('active');
         } else if(path.indexOf('/graphs') > -1) {
             $('.nav-graphs').addClass('active');

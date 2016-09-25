@@ -5,10 +5,13 @@ CREATE TABLE hosts (
     hostname TEXT NOT NULL,
     updated TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT (NOW() at time zone 'utc'),
     tags JSONB,
+    master_tags JSONB DEFAULT '{}',
     data JSONB
 );
 
+CREATE INDEX idx_hosts_cluster_id on hosts (cluster_id);
 CREATE INDEX idx_hosts_name on hosts (hostname);
 CREATE INDEX idx_hosts_tags ON hosts USING gin(tags);
+CREATE INDEX idx_hosts_master_tags ON hosts USING gin(master_tags);
 CREATE INDEX idx_hosts_data ON hosts USING gin(data);
 CREATE INDEX idx_hosts_updated on hosts (updated);

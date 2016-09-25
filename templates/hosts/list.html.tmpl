@@ -118,20 +118,64 @@ $('#search-input').bind('input propertychange', function(e) {
             <div>
                 <div class="pull-right">
                     <small class="updated-timestamp time-unix-to-local">{{ $host.Updated.Unix }}</small>
-                    <a href="/hosts/{{ $host.ID }}" class="btn btn-xs btn-info pull-right">Details</a>
+                    <a href="/hosts/{{ $host.ID }}" class="btn btn-xs btn-success pull-right">Details</a>
                 </div>
 
                 <h3>{{ $host.Hostname }}</h3>
             </div>
 
-            {{ range $tagKey, $tagValue := $host.GetTags }}
-            <a class="label label-primary" href="/?q=tags.{{ $tagKey }} %3D {{ $tagValue }}">{{ $tagKey }} : {{ $tagValue }}</a>
-            {{ end }}
+            <div>
+                <div class="pull-right">
+                    <button class="btn btn-xs btn-success pull-right" data-toggle="modal" data-target="#tags-modal" data-id="{{ $host.ID }}" data-master-tags="{{ $host.MasterTags.String }}">
+                        New Tags
+                    </button>
+                </div>
+
+                {{ range $tagKey, $tagValue := $host.GetTags }}
+                <a class="label label-default" href="/?q=tags.{{ $tagKey }} %3D {{ $tagValue }}">{{ $tagKey }} : {{ $tagValue }}</a>
+                {{ end }}
+
+                {{ range $tagKey, $tagValue := $host.GetMasterTags }}
+                <a class="label label-info" href="/?q=tags.{{ $tagKey }} %3D {{ $tagValue }}">{{ $tagKey }} : {{ $tagValue }}</a>
+                {{ end }}
+            </div>
         </div>
     </div>
     {{ end }}
 </div>
 {{ end }}
+
+<!-- Tags Modal -->
+<div class="modal fade" id="tags-modal" tabindex="-1" role="dialog" aria-labelledby="tags-details-label" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                <h4 class="modal-title" id="tags-details-label">Server-side Tags</h4>
+            </div>
+
+            <form method="post" action="/hosts/:id/master-tags">
+                <input type="hidden" name="gorilla.csrf.Token" value="{{ $.CSRFToken }}">
+                <input type="hidden" name="_method" value="post">
+
+                <div class="modal-body">
+                    <div class="row form-group">
+                        <div class="col-sm-12">
+                            <small class="pull-right" style="font-size: 9px; font-style: italic; margin-top: 6px">(Format: key:value separated by newline)</small>
+                            <label>Tags</label>
+                            <textarea class="form-control" name="MasterTags" style="height: 300px" placeholder="Format: key:value separated by newline"></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                    <button type="submit" class="btn btn-primary">Save</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 
 <script>
 ResourcedMaster.globals.AccessToken = '{{ $.AccessToken.Token }}';
@@ -165,6 +209,28 @@ $('.container.saved-queries .toggler-header').on('switchChange.bootstrapSwitch',
     }
 
     $.localStorage.set('UIStore', '.container.saved-queries .toggler-header', state);
+});
+
+$('#tags-modal').on('show.bs.modal', function (event) {
+    var button = $(event.relatedTarget);   // Button that triggered the modal
+    var id = button.data('id');
+    var masterTags = button.data('master-tags');
+
+    var modal = $(this);
+
+    if(masterTags) {
+        var masterTagsString = '';
+
+        for (var key in masterTags) {
+            masterTagsString = masterTagsString + key + ':' + masterTags[key] + '\n';
+        }
+
+        modal.find('textarea').val(masterTagsString);
+    }
+
+    if(id) {
+        modal.find('form').attr('action', '/hosts/' + id + '/master-tags');
+    }
 });
 </script>
 {{end}}

@@ -6,6 +6,8 @@ import (
 	"html/template"
 	"io/ioutil"
 	"net/http"
+	"strconv"
+	"strings"
 
 	"github.com/Sirupsen/logrus"
 	"github.com/gorilla/csrf"
@@ -222,6 +224,47 @@ func GetHostsID(w http.ResponseWriter, r *http.Request) {
 	}
 
 	tmpl.Execute(w, data)
+}
+
+func PostHostsIDMasterTags(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "text/html")
+
+	currentCluster := r.Context().Value("currentCluster").(*dal.ClusterRow)
+
+	dbs := r.Context().Value("dbs").(*config.DBConfig)
+
+	id, err := getInt64SlugFromPath(w, r, "id")
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
+
+	masterTagsKVs := strings.Split(r.FormValue("MasterTags"), "\n")
+
+	masterTags := make(map[string]interface{})
+
+	for _, masterTagsKV := range masterTagsKVs {
+		masterTagsKVSlice := strings.Split(masterTagsKV, ":")
+		if len(masterTagsKVSlice) >= 2 {
+			tagKey := strings.Replace(strings.TrimSpace(masterTagsKVSlice[0]), " ", "-", -1)
+			tagValueString := strings.TrimSpace(masterTagsKVSlice[1])
+
+			tagValueFloat, err := strconv.ParseFloat(tagValueString, 64)
+			if err == nil {
+				masterTags[strings.TrimSpace(tagKey)] = tagValueFloat
+			} else {
+				masterTags[strings.TrimSpace(tagKey)] = tagValueString
+			}
+		}
+	}
+
+	err = dal.NewHost(dbs.GetHost(currentCluster.ID)).UpdateMasterTagsByID(nil, id, masterTags)
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
+
+	http.Redirect(w, r, r.Referer(), 301)
 }
 
 func PostApiHosts(w http.ResponseWriter, r *http.Request) {

@@ -74,6 +74,8 @@ func (app *Application) Mux() *chi.Mux {
 			r.Route("/:id", func(r chi.Router) {
 				r.Use(CSRF, middlewares.MustLogin, middlewares.SetClusters, middlewares.MustBeMember, middlewares.SetAccessTokens)
 				r.Get("/", handlers.GetHostsID)
+
+				r.Post("/master-tags", handlers.PostHostsIDMasterTags)
 			})
 		})
 

@@ -109,6 +109,9 @@ select {
 .row.hosts {
     margin-bottom: 18px;
 }
+.row.hosts .btn {
+    width: 60px;
+}
 
 .navbar.hosts form {
     width: 100%;

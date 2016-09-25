@@ -44,12 +44,20 @@ type HostRow struct {
 	Hostname      string              `db:"hostname"`
 	Updated       time.Time           `db:"updated"`
 	Tags          sqlx_types.JSONText `db:"tags"`
+	MasterTags    sqlx_types.JSONText `db:"master_tags"`
 	Data          sqlx_types.JSONText `db:"data"`
 }
 
 func (h *HostRow) GetTags() map[string]string {
 	tags := make(map[string]string)
 	h.Tags.Unmarshal(&tags)
+
+	return tags
+}
+
+func (h *HostRow) GetMasterTags() map[string]interface{} {
+	tags := make(map[string]interface{})
+	h.MasterTags.Unmarshal(&tags)
 
 	return tags
 }
@@ -154,7 +162,8 @@ func (h *Host) AllCompactByClusterIDAndQuery(tx *sqlx.Tx, clusterID int64, resou
 	}
 
 	hosts := []*HostRow{}
-	query := fmt.Sprintf("SELECT id, cluster_id, access_token_id, hostname, updated, tags FROM %v WHERE cluster_id=$1 AND %v", h.table, pgQuery)
+	query := fmt.Sprintf("SELECT id, cluster_id, access_token_id, hostname, updated, tags, master_tags FROM %v WHERE cluster_id=$1 AND %v", h.table, pgQuery)
+
 	err := h.db.Select(&hosts, query, clusterID)
 
 	return hosts, err
@@ -279,4 +288,18 @@ func (h *Host) CreateOrUpdate(tx *sqlx.Tx, accessTokenRow *AccessTokenRow, jsonD
 	}
 
 	return hostRow, nil
+}
+
+// UpdateMasterTagsByID updates master tags by ID.
+func (h *Host) UpdateMasterTagsByID(tx *sqlx.Tx, id int64, tags map[string]interface{}) error {
+	tagsJSON, err := json.Marshal(tags)
+	if err != nil {
+		return err
+	}
+
+	data := make(map[string]interface{})
+	data["master_tags"] = tagsJSON
+
+	_, err = h.UpdateByID(tx, data, id)
+	return err
 }

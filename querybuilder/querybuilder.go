@@ -130,7 +130,7 @@ func parseStatement(statement string) string {
 			value = strings.TrimSpace(value)
 			value = libstring.StripChars(value, `"'`)
 
-			return fmt.Sprintf("tags #>> '{%v}' %v '%v'", pgJsonPath, operator, value)
+			return fmt.Sprintf("(tags #>> '{%v}' %v '%v' OR master_tags #>> '{%v}' %v '%v')", pgJsonPath, operator, value, pgJsonPath, operator, value)
 		}
 	}
 
