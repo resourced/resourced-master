@@ -80,7 +80,7 @@ func TestHostCRUD(t *testing.T) {
 	}
 
 	// SELECT * FROM hosts by query
-	_, err = h.AllByClusterIDAndQuery(nil, clusterRow.ID, `/stuff.Score = 100`)
+	_, err = h.AllCompactByClusterIDAndQuery(nil, clusterRow.ID, `/stuff.Score = 100`)
 	if err != nil {
 		t.Fatalf("Selecting all hosts by query should not fail. Error: %v", err)
 	}

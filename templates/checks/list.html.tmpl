@@ -11,6 +11,16 @@
 
     {{ else }}
 
+    {{ if eq (len .Checks) 0 }}
+    <div class="jumbotron" style="margin-top: 40px">
+        <button class="btn btn-primary pull-right" data-toggle="modal" data-backdrop="static" data-target="#checks-modal">
+            Click here to create one
+        </button>
+
+        <h2>You have not created a check yet.</h2>
+    </div>
+    {{ else }}
+
     <div class="row">
         <div class="col-lg-12">
             <div class="page-header">
@@ -128,6 +138,8 @@
             </table>
         </div>
     </div>
+    {{ end }}
+
     {{ end }}
 
     {{ end }}

@@ -42,18 +42,117 @@ func GetHosts(w http.ResponseWriter, r *http.Request) {
 	savedQueriesChan := make(chan *dal.SavedQueryRowsWithError)
 	defer close(savedQueriesChan)
 
+	// --------------------------
+	// Fetch SQL rows in parallel
+	// --------------------------
+	go func(currentCluster *dal.ClusterRow, query string) {
+		hostsWithError := &dal.HostRowsWithError{}
+		hostsWithError.Hosts, hostsWithError.Error = dal.NewHost(dbs.GetHost(currentCluster.ID)).AllCompactByClusterIDAndQuery(nil, currentCluster.ID, query)
+		hostsChan <- hostsWithError
+	}(currentCluster, query)
+
+	go func(currentCluster *dal.ClusterRow) {
+		savedQueriesWithError := &dal.SavedQueryRowsWithError{}
+		savedQueriesWithError.SavedQueries, savedQueriesWithError.Error = dal.NewSavedQuery(dbs.Core).AllByClusterIDAndType(nil, currentCluster.ID, "hosts")
+		savedQueriesChan <- savedQueriesWithError
+	}(currentCluster)
+
+	// -----------------------------------
+	// Wait for channels to return results
+	// -----------------------------------
+	hasError := false
+
+	hostsWithError := <-hostsChan
+	if hostsWithError.Error != nil && hostsWithError.Error.Error() != "sql: no rows in result set" {
+		libhttp.HandleErrorHTML(w, hostsWithError.Error, 500)
+		hasError = true
+	}
+
+	savedQueriesWithError := <-savedQueriesChan
+	if savedQueriesWithError.Error != nil && savedQueriesWithError.Error.Error() != "sql: no rows in result set" {
+		libhttp.HandleErrorHTML(w, savedQueriesWithError.Error, 500)
+		hasError = true
+	}
+
+	if hasError {
+		return
+	}
+
+	data := struct {
+		CSRFToken      string
+		Addr           string
+		CurrentUser    *dal.UserRow
+		AccessToken    *dal.AccessTokenRow
+		Clusters       []*dal.ClusterRow
+		CurrentCluster *dal.ClusterRow
+		Hosts          []*dal.HostRow
+		SavedQueries   []*dal.SavedQueryRow
+	}{
+		csrf.Token(r),
+		r.Context().Value("addr").(string),
+		currentUser,
+		accessToken,
+		r.Context().Value("clusters").([]*dal.ClusterRow),
+		currentCluster,
+		hostsWithError.Hosts,
+		savedQueriesWithError.SavedQueries,
+	}
+
+	var tmpl *template.Template
+
+	currentUserPermission := currentCluster.GetLevelByUserID(currentUser.ID)
+	if currentUserPermission == "read" {
+		tmpl, err = template.ParseFiles("templates/dashboard.html.tmpl", "templates/hosts/list-readonly.html.tmpl")
+	} else {
+		tmpl, err = template.ParseFiles("templates/dashboard.html.tmpl", "templates/hosts/list.html.tmpl")
+	}
+	if err != nil {
+		libhttp.HandleErrorHTML(w, err, 500)
+		return
+	}
+
+	tmpl.Execute(w, data)
+}
+
+func GetHostsID(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "text/html")
+
+	currentUser := r.Context().Value("currentUser").(*dal.UserRow)
+
+	currentCluster := r.Context().Value("currentCluster").(*dal.ClusterRow)
+
+	dbs := r.Context().Value("dbs").(*config.DBConfig)
+
+	id, err := getInt64SlugFromPath(w, r, "id")
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
+
+	accessToken, err := getAccessToken(w, r, "read")
+	if err != nil {
+		libhttp.HandleErrorHTML(w, err, 500)
+		return
+	}
+
+	host, err := dal.NewHost(dbs.GetHost(currentCluster.ID)).GetByID(nil, id)
+	if err != nil {
+		libhttp.HandleErrorHTML(w, err, 500)
+		return
+	}
+
+	// -----------------------------------
+	// Create channels to receive SQL rows
+	// -----------------------------------
+	savedQueriesChan := make(chan *dal.SavedQueryRowsWithError)
+	defer close(savedQueriesChan)
+
 	metricsMapChan := make(chan *dal.MetricsMapWithError)
 	defer close(metricsMapChan)
 
 	// --------------------------
 	// Fetch SQL rows in parallel
 	// --------------------------
-	go func(currentCluster *dal.ClusterRow, query string) {
-		hostsWithError := &dal.HostRowsWithError{}
-		hostsWithError.Hosts, hostsWithError.Error = dal.NewHost(dbs.GetHost(currentCluster.ID)).AllByClusterIDAndQuery(nil, currentCluster.ID, query)
-		hostsChan <- hostsWithError
-	}(currentCluster, query)
-
 	go func(currentCluster *dal.ClusterRow) {
 		savedQueriesWithError := &dal.SavedQueryRowsWithError{}
 		savedQueriesWithError.SavedQueries, savedQueriesWithError.Error = dal.NewSavedQuery(dbs.Core).AllByClusterIDAndType(nil, currentCluster.ID, "hosts")
@@ -70,12 +169,6 @@ func GetHosts(w http.ResponseWriter, r *http.Request) {
 	// Wait for channels to return results
 	// -----------------------------------
 	hasError := false
-
-	hostsWithError := <-hostsChan
-	if hostsWithError.Error != nil && hostsWithError.Error.Error() != "sql: no rows in result set" {
-		libhttp.HandleErrorHTML(w, hostsWithError.Error, 500)
-		hasError = true
-	}
 
 	savedQueriesWithError := <-savedQueriesChan
 	if savedQueriesWithError.Error != nil && savedQueriesWithError.Error.Error() != "sql: no rows in result set" {
@@ -100,7 +193,7 @@ func GetHosts(w http.ResponseWriter, r *http.Request) {
 		AccessToken    *dal.AccessTokenRow
 		Clusters       []*dal.ClusterRow
 		CurrentCluster *dal.ClusterRow
-		Hosts          []*dal.HostRow
+		Host           *dal.HostRow
 		SavedQueries   []*dal.SavedQueryRow
 		MetricsMap     map[string]int64
 	}{
@@ -110,7 +203,7 @@ func GetHosts(w http.ResponseWriter, r *http.Request) {
 		accessToken,
 		r.Context().Value("clusters").([]*dal.ClusterRow),
 		currentCluster,
-		hostsWithError.Hosts,
+		host,
 		savedQueriesWithError.SavedQueries,
 		metricsMapWithError.MetricsMap,
 	}
@@ -119,9 +212,9 @@ func GetHosts(w http.ResponseWriter, r *http.Request) {
 
 	currentUserPermission := currentCluster.GetLevelByUserID(currentUser.ID)
 	if currentUserPermission == "read" {
-		tmpl, err = template.ParseFiles("templates/dashboard.html.tmpl", "templates/hosts/list-readonly.html.tmpl")
+		tmpl, err = template.ParseFiles("templates/dashboard.html.tmpl", "templates/hosts/each-readonly.html.tmpl")
 	} else {
-		tmpl, err = template.ParseFiles("templates/dashboard.html.tmpl", "templates/hosts/list.html.tmpl")
+		tmpl, err = template.ParseFiles("templates/dashboard.html.tmpl", "templates/hosts/each.html.tmpl")
 	}
 	if err != nil {
 		libhttp.HandleErrorHTML(w, err, 500)
@@ -239,7 +332,7 @@ func GetApiHosts(w http.ResponseWriter, r *http.Request) {
 	query := r.URL.Query().Get("q")
 	count := r.URL.Query().Get("count")
 
-	hosts, err := dal.NewHost(dbs.GetHost(accessTokenRow.ClusterID)).AllByClusterIDAndQuery(nil, accessTokenRow.ClusterID, query)
+	hosts, err := dal.NewHost(dbs.GetHost(accessTokenRow.ClusterID)).AllCompactByClusterIDAndQuery(nil, accessTokenRow.ClusterID, query)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return

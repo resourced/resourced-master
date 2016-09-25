@@ -67,6 +67,16 @@ func (app *Application) Mux() *chi.Mux {
 			r.Get("/", stopwatch.LatencyFuncHandler(app.getHandlerInstrument("GetHosts"), []string{"GET"}, handlers.GetHosts).(http.HandlerFunc))
 		})
 
+		r.Route("/hosts", func(r chi.Router) {
+			r.Use(CSRF, middlewares.MustLogin, middlewares.SetClusters, middlewares.MustBeMember, middlewares.SetAccessTokens)
+			r.Get("/", stopwatch.LatencyFuncHandler(app.getHandlerInstrument("GetHosts"), []string{"GET"}, handlers.GetHosts).(http.HandlerFunc))
+
+			r.Route("/:id", func(r chi.Router) {
+				r.Use(CSRF, middlewares.MustLogin, middlewares.SetClusters, middlewares.MustBeMember, middlewares.SetAccessTokens)
+				r.Get("/", handlers.GetHostsID)
+			})
+		})
+
 		r.Route("/saved-queries", func(r chi.Router) {
 			r.Use(CSRF, middlewares.MustLogin, middlewares.SetClusters, middlewares.MustBeMember)
 			r.Post("/", handlers.PostSavedQueries)

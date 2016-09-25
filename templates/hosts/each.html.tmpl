@@ -1,0 +1,429 @@
+{{define "second-navbar"}}
+<nav class="navbar navbar-default hosts">
+    <div class="container">
+        <div class="form-group">
+            <form class="navbar-form" role="search" action="/">
+                <input id="search-input" name="q" type="text" class="form-control" placeholder="Press enter to search">
+            </form>
+
+            <form class="navbar-form" action="/saved-queries" method="post">
+                <input type="hidden" name="gorilla.csrf.Token" value="{{ $.CSRFToken }}">
+                <input id="saved-queries-input" name="SavedQuery" type="hidden">
+                <input name="Type" type="hidden" value="hosts">
+
+                <span class="input-group-btn">
+                    <button type="submit" class="btn btn-primary btn-block">Save Query</button>
+                </span>
+            </form>
+        </div>
+    </div>
+</nav>
+
+<script>
+$(window).load(function() {
+    var key = 'q';
+    var value = '';
+    var sPageURL = window.location.search.substring(1);
+    var sURLVariables = sPageURL.split('&');
+
+    for (var i = 0; i < sURLVariables.length; i++) {
+        var sParameterName = sURLVariables[i].split('=');
+        if (sParameterName[0] == key) {
+            value = sParameterName[1];
+        }
+    }
+
+    value = value.replace(/\+/g, ' ');
+
+    if(value != '') {
+        $('[name="q"]').val(decodeURIComponent(value));
+    }
+
+    // On load, cp search input to saved-queries input.
+    $('#saved-queries-input').val($('#search-input').val());
+});
+
+// This catches keyup, onchange, and paste events.
+// cp search input to saved-queries input
+$('#search-input').bind('input propertychange', function(e) {
+    $('#saved-queries-input').val($(this).val());
+});
+</script>
+{{ end }}
+
+{{define "content"}}
+<!-- Saved Queries -->
+<div class="container saved-queries">
+    <div class="row">
+        <div class="col-lg-12">
+            <div class="page-header">
+                <div class="pull-right">
+                    <small class="updated-queries-toggle">Show All</small>
+                    <input type="checkbox" class="toggler toggler-header pull-right" data-size="mini">
+                </div>
+
+                <h2>Saved Queries</h2>
+            </div>
+        </div>
+    </div>
+
+    {{ range $i, $savedQuery := .SavedQueries }}
+    <div class="row saved-queries" style="{{ if lt $i 5 }}display: block{{ else }}display: none{{ end }}">
+        <div class="col-xs-12 col-lg-12">
+            <div>
+                <div class="pull-right">
+                    <a href="?q={{ $savedQuery.Query }}" type="submit" class="btn btn-default">
+                        <span class="glyphicon glyphicon-search" aria-hidden="true"></span>
+                    </a>
+
+                    <a href="//{{ $.AccessToken.Token }}:@{{ $.Addr }}/api/hosts?q={{ $savedQuery.Query }}" type="submit" class="btn btn-success">
+                       JSON
+                    </a>
+
+                    <form action="/saved-queries/{{ $savedQuery.ID }}" method="post">
+                        <input type="hidden" name="gorilla.csrf.Token" value="{{ $.CSRFToken }}">
+                        <input type="hidden" name="_method" value="delete">
+                        <button type="submit" class="btn btn-danger">Delete</button>
+                    </form>
+                </div>
+
+                <h3>{{ $savedQuery.Query }}</h3>
+            </div>
+        </div>
+    </div>
+    {{ end }}
+</div>
+
+<div class="container hosts">
+    <div class="row">
+        <div class="col-lg-12">
+            <div class="page-header">
+                <h2>Hosts</h2>
+            </div>
+        </div>
+    </div>
+
+    <div class="row hosts hosts-{{ $.Host.ID }}">
+        <div class="col-xs-12 col-lg-12">
+            <div>
+                <div class="pull-right">
+                    <small class="updated-timestamp time-unix-to-local">{{ $.Host.Updated.Unix }}</small>
+                </div>
+
+                <h3>{{ $.Host.Hostname }}</h3>
+            </div>
+
+            {{ range $tagKey, $tagValue := $.Host.GetTags }}
+            <a class="label label-primary" href="/?q=tags.{{ $tagKey }} %3D {{ $tagValue }}">{{ $tagKey }} : {{ $tagValue }}</a>
+            {{ end }}
+
+            <div class="details">
+                {{ range $path, $data := $.Host.DataAsFlatKeyValue }}
+                <div class="detail-header" data-path="{{ $path }}">
+                    <div class="pull-right">
+                        <input type="checkbox" class="toggler toggler-body pull-right" data-size="mini" data-path="{{ $path }}" checked>
+                    </div>
+
+                    <h4>{{ $path }}</h4>
+                </div>
+
+                <div class="detail-body table-responsive table-condensed" data-path="{{ $path }}" style="display: none">
+                    <table class="table table-striped">
+                        <thead></thead>
+                        <tbody>
+                            {{ range $key, $value := $data }}
+                            <tr>
+                                <td>{{ $key }}</td>
+                                <td class="host-value">{{ $value }}</td>
+                                <td class="graph-column-btn">
+                                    <div class="btn-group chart-metric-or-not" role="group" data-key="{{ $key }}">
+                                        {{ if (ne 0 (index $.MetricsMap (print $path "." $key))) }}
+                                        <form class="pull-left delete-metric-form" action="/clusters/{{ $.Host.ClusterID }}/metrics/{{ index $.MetricsMap (print $path "." $key) }}"
+                                            method="post" data-host-id="{{ $.Host.ID }}" data-key="{{ $key }}">
+                                            <input type="hidden" name="gorilla.csrf.Token" value="{{ $.CSRFToken }}">
+                                            <input type="hidden" name="_method" value="delete">
+                                            <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+                                        </form>
+
+                                        <button class="btn btn-success btn-sm active" data-toggle="modal" data-target="#graph-modal"
+                                            data-metric-id="{{ index $.MetricsMap (print $path "." $key) }}",
+                                            data-metric-key="{{ print $path "." $key }}"
+                                            data-host="{{ $.Host.Hostname }}">
+                                            <span class="glyphicon glyphicon-stats" aria-hidden="true"></span>
+                                        </button>
+
+                                        {{ else }}
+                                        <form class="chart-metric-form" action="/clusters/{{ $.Host.ClusterID }}/metrics" method="post" data-host-id="{{ $.Host.ID }}" data-key="{{ $key }}">
+                                            <input type="hidden" name="gorilla.csrf.Token" value="{{ $.CSRFToken }}">
+                                            <input type="hidden" name="Key" value="{{ $path }}.{{ $key }}">
+                                            <button type="submit" class="btn btn-success btn-sm btn-do-chart-metric">Chart Metric?</button>
+                                        </form>
+                                        {{ end }}
+                                    </div>
+                                </td>
+                            </tr>
+                            {{ end }}
+                        </tbody>
+                    </table>
+                </div>
+                {{ end }}
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<!-- Chart Modal -->
+<div class="modal fade" id="graph-modal" tabindex="-1" role="dialog" aria-labelledby="graph-label" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <input class="form-control daterange" type="text" />
+            </div>
+
+            <div class="modal-body">
+                <div class="graph-modal-container"></div>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+ResourcedMaster.globals.AccessToken = '{{ $.AccessToken.Token }}';
+
+$(document).ready(function() {
+    ResourcedMaster.metrics.get1dayEvents();
+
+    $('.toggler').bootstrapSwitch();
+
+    // Hide Saved Queries container if there are no save queries.
+    if($('.row.saved-queries').length == 0) {
+        $('.container.saved-queries').hide();
+    }
+
+    // Show all saved-queries if toggler is set to on.
+    $('.container.saved-queries .toggler-header').each(function() {
+        var elem = $(this);
+
+        if($.localStorage.get('UIStore', '.container.saved-queries .toggler-header')) {
+            elem.bootstrapSwitch('state', true, true);
+            elem.closest('.container.saved-queries').find('.row.saved-queries').show();
+        }
+    });
+
+    // Show row/path details if toggler is set to on.
+    $('.row.hosts .toggler-body').each(function() {
+        var elem = $(this);
+        var path = elem.data('path');
+
+        if($.localStorage.get('UIStore', '.row.hosts .toggler-body[data-path="' + path + '"]') == true) {
+            elem.bootstrapSwitch('state', true, true);
+            elem.closest('.detail-header').siblings('.detail-body[data-path="' + path + '"]').show();
+        } else {
+            elem.bootstrapSwitch('state', false, false);
+            elem.closest('.detail-header').siblings('.detail-body[data-path="' + path + '"]').hide();
+        }
+    });
+
+    $('.row.hosts .host-value').each(function() {
+        var elem = $(this);
+        var val = elem.text();
+
+        if(isNaN(val)) {
+            elem.siblings('.graph-column-btn').find('.btn-group').hide();
+        } else {
+            elem.text(Number(val));
+        }
+    });
+});
+
+$('.container.saved-queries .toggler-header').on('switchChange.bootstrapSwitch', function(event, state) {
+    if(state) {
+        $(this).closest('.container.saved-queries').find('.row.saved-queries').show();
+    } else {
+        $(this).closest('.container.saved-queries').find('.row.saved-queries:gt(4)').hide();
+    }
+
+    $.localStorage.set('UIStore', '.container.saved-queries .toggler-header', state);
+});
+
+$('.row.hosts .toggler-body').on('switchChange.bootstrapSwitch', function(event, state) {
+    var detailHeader = $(this).closest('.detail-header');
+    var path = detailHeader.data('path');
+
+    detailHeader.siblings('.detail-body[data-path="' + path + '"]').toggle();
+
+    $.localStorage.set('UIStore', '.row.hosts .toggler-body[data-path="' + path + '"]', state);
+});
+
+// Ajaxify .chart-metric-form submission.
+$(document).on('submit', '.chart-metric-form', function(event) {
+    event.preventDefault();
+
+    var form = $(this);
+    var hostID = form.data('host-id');
+    var key = form.data('key');
+
+    $.ajax({
+        type: form.attr('method'),
+        url: form.attr('action'),
+        data: form.serialize(),
+        success: function(newHTMLString) {
+            var newHTML = $(newHTMLString);
+            var tobeReplacedSelector = '.hosts-' + hostID + ' .chart-metric-or-not[data-key="' + key + '"]';
+            var tobeReplaced = $(tobeReplacedSelector);
+            var replacer = newHTML.find(tobeReplacedSelector);
+
+            if(tobeReplaced && replacer) {
+                $(tobeReplaced).replaceWith(replacer.get(0).outerHTML);
+            }
+        }
+    });
+});
+
+// Ajaxify .delete-metric-form submission.
+$(document).on('submit', '.delete-metric-form', function(event) {
+    event.preventDefault();
+
+    var form = $(this);
+    var hostID = form.data('host-id');
+    var key = form.data('key');
+
+    $.ajax({
+        type: form.attr('method'),
+        url: form.attr('action'),
+        data: form.serialize(),
+        success: function(newHTMLString) {
+            var newHTML = $(newHTMLString);
+            var tobeReplacedSelector = '.hosts-' + hostID + ' .chart-metric-or-not[data-key="' + key + '"]';
+            var tobeReplaced = $(tobeReplacedSelector);
+            var replacer = newHTML.find(tobeReplacedSelector);
+
+            if(tobeReplaced && replacer) {
+                $(tobeReplaced).replaceWith(replacer.get(0).outerHTML);
+            }
+        }
+    });
+});
+
+$(document).on('hidden.bs.modal', '#graph-modal', function() {
+    var es = $('#graph-modal').data('eventsource');
+    if(es) {
+        es.close();
+    }
+})
+
+$(document).on('shown.bs.modal', '#graph-modal', function(event) {
+    var button = $(event.relatedTarget);   // Button that triggered the modal
+    var metricID = button.data('metric-id');
+    var metricKey = button.data('metric-key');
+    var host = button.data('host');
+
+    var from = ResourcedMaster.daterange.defaultSettings.startDate.utc().unix();
+    var to = ResourcedMaster.daterange.defaultSettings.endDate.utc().unix();
+
+    var renderAggregate = (to - from) >= 21600;
+
+    var renderOptions = {
+        from: from,
+        to: to,
+        host: host,
+        containerDOM: $('#graph-modal .graph-modal-container'),
+        title: metricKey,
+        onLoad: function() {
+            if(!renderAggregate) {
+                // Begin streaming Server Side Events after the graph is loaded
+                var series = this.series[0];
+
+                var es = new EventSource('/api/metrics/' + metricID + '/hosts/' + host + '/streams?accessToken=' + ResourcedMaster.globals.AccessToken);
+
+                es.addEventListener('metric|' + metricID + '|host|' + host, function(event) {
+                    if(event.data) {
+                        var datapoint = JSON.parse(event.data);
+
+                        // TODO: At this point, we know we are receiving data regularly,
+                        // but the chart is not rendering at the same interval.
+                        if(datapoint.MetricID == metricID && datapoint.Value) {
+                            series.addPoint([datapoint.CreatedMillisecond, datapoint.Value], true, true);
+                        }
+                    }
+                }, false);
+
+                // Attach EventSource object to the modal so we can close it as we close modal.
+                $('#graph-modal').data('eventsource', es);
+            }
+        }
+    };
+
+    if(renderAggregate) {
+        renderOptions.shortAggrInterval = '15min';
+    }
+
+    ResourcedMaster.metrics.renderOneChart(
+        ResourcedMaster.globals.AccessToken,
+        metricID,
+        ResourcedMaster.globals.TSEventLines,
+        ResourcedMaster.globals.TSEventLineColors,
+        ResourcedMaster.globals.TSEventBands,
+        ResourcedMaster.globals.TSEventBandColors,
+        ResourcedMaster.globals.TSEventBandTextColors,
+        renderOptions
+    );
+
+});
+
+$(document).on('show.bs.modal', '#graph-modal', function(event) {
+    var button = $(event.relatedTarget);   // Button that triggered the modal
+    var metricID = button.data('metric-id');
+    var metricKey = button.data('metric-key');
+    var host = button.data('host');
+
+    var modal = $(this);
+    modal.data('metric-id', metricID);
+    modal.data('metric-key', metricKey);
+    modal.data('host', host);
+
+    var containerDOM = modal.find('.graph-modal-container');
+
+    var drpElem = modal.find('.daterange');
+
+    drpElem.daterangepicker(ResourcedMaster.daterange.defaultSettings, function(start, end, label) {
+        var from = start.utc().unix();
+        var to = end.utc().unix();
+
+        var renderOptions = {
+            from: from,
+            to: to,
+            host: host,
+            containerDOM: containerDOM,
+            title: metricKey
+        };
+
+        if((to - from) >= 21600) {
+            renderOptions.shortAggrInterval = '15min';
+        }
+
+        // If we have an established EventSource, disconnect it.
+        var es = $('#graph-modal').data('eventsource');
+        if(es) {
+            es.close();
+        }
+
+        ResourcedMaster.metrics.renderOneChart(
+            ResourcedMaster.globals.AccessToken,
+            metricID,
+            ResourcedMaster.globals.TSEventLines,
+            ResourcedMaster.globals.TSEventLineColors,
+            ResourcedMaster.globals.TSEventBands,
+            ResourcedMaster.globals.TSEventBandColors,
+            ResourcedMaster.globals.TSEventBandTextColors,
+            renderOptions
+        );
+    });
+});
+</script>
+{{end}}
