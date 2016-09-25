@@ -67,7 +67,7 @@ $('#search-input').bind("input propertychange", function(e) {
 $('#search-input').closest('form').on("submit", function(e) {
     var searchInput = $('#search-input').val();
 
-    if(searchInput.indexOf('logline search') != 0) {
+    if(searchInput.indexOf('logline search') != 0 && searchInput.indexOf('tags.') != 0 && searchInput.indexOf('hostname=') != 0) {
         searchInput = "logline search '" + searchInput + "'";
     }
 
