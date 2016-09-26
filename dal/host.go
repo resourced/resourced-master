@@ -154,15 +154,15 @@ func (h *Host) AllByClusterIDAndUpdatedInterval(tx *sqlx.Tx, clusterID int64, up
 	return hosts, err
 }
 
-// AllCompactByClusterIDAndQuery returns all rows by resourced query.
-func (h *Host) AllCompactByClusterIDAndQuery(tx *sqlx.Tx, clusterID int64, resourcedQuery string) ([]*HostRow, error) {
+// AllCompactByClusterIDQueryAndUpdatedInterval returns all rows by resourced query.
+func (h *Host) AllCompactByClusterIDQueryAndUpdatedInterval(tx *sqlx.Tx, clusterID int64, resourcedQuery, updatedInterval string) ([]*HostRow, error) {
 	pgQuery := querybuilder.Parse(resourcedQuery)
 	if pgQuery == "" {
 		return h.AllByClusterID(tx, clusterID)
 	}
 
 	hosts := []*HostRow{}
-	query := fmt.Sprintf("SELECT id, cluster_id, access_token_id, hostname, updated, tags, master_tags FROM %v WHERE cluster_id=$1 AND %v", h.table, pgQuery)
+	query := fmt.Sprintf("SELECT id, cluster_id, access_token_id, hostname, updated, tags, master_tags FROM %v WHERE cluster_id=$1 AND updated >= (NOW() at time zone 'utc' - INTERVAL '%v') AND %v", h.table, updatedInterval, pgQuery)
 
 	err := h.db.Select(&hosts, query, clusterID)
 

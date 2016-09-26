@@ -29,6 +29,11 @@ func GetHosts(w http.ResponseWriter, r *http.Request) {
 
 	query := r.URL.Query().Get("q")
 
+	interval := strings.TrimSpace(r.URL.Query().Get("interval"))
+	if interval == "" {
+		interval = "1h"
+	}
+
 	accessToken, err := getAccessToken(w, r, "read")
 	if err != nil {
 		libhttp.HandleErrorHTML(w, err, 500)
@@ -49,7 +54,7 @@ func GetHosts(w http.ResponseWriter, r *http.Request) {
 	// --------------------------
 	go func(currentCluster *dal.ClusterRow, query string) {
 		hostsWithError := &dal.HostRowsWithError{}
-		hostsWithError.Hosts, hostsWithError.Error = dal.NewHost(dbs.GetHost(currentCluster.ID)).AllCompactByClusterIDAndQuery(nil, currentCluster.ID, query)
+		hostsWithError.Hosts, hostsWithError.Error = dal.NewHost(dbs.GetHost(currentCluster.ID)).AllCompactByClusterIDQueryAndUpdatedInterval(nil, currentCluster.ID, query, interval)
 		hostsChan <- hostsWithError
 	}(currentCluster, query)
 
@@ -374,8 +379,13 @@ func GetApiHosts(w http.ResponseWriter, r *http.Request) {
 
 	query := r.URL.Query().Get("q")
 	count := r.URL.Query().Get("count")
+	interval := strings.TrimSpace(r.URL.Query().Get("interval"))
 
-	hosts, err := dal.NewHost(dbs.GetHost(accessTokenRow.ClusterID)).AllCompactByClusterIDAndQuery(nil, accessTokenRow.ClusterID, query)
+	if interval == "" {
+		interval = "1h"
+	}
+
+	hosts, err := dal.NewHost(dbs.GetHost(accessTokenRow.ClusterID)).AllCompactByClusterIDQueryAndUpdatedInterval(nil, accessTokenRow.ClusterID, query, interval)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return

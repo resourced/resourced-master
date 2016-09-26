@@ -3,6 +3,8 @@
     <div class="container">
         <div class="form-group">
             <form class="navbar-form" role="search" action="/">
+                <input type="hidden" name="interval">
+
                 <div class="col-lg-9 col-md-9 col-sm-8 col-xs-6" style="padding: 0">
                     <input id="search-input" name="q" type="text" class="form-control" placeholder="Press enter to search">
                 </div>
@@ -10,27 +12,19 @@
                 <div class="col-lg-2 col-md-2 col-sm-2 col-xs-4" style="padding: 0">
                     <div class="input-group">
                         <span class="input-group-addon">last</span>
-                        <input type="number" class="form-control col-lg-6" value="1">
+                        <input name="intervalNumber" type="number" class="form-control col-lg-6" value="1">
                     </div>
                 </div>
 
                 <div class="col-lg-1 col-md-1 col-sm-2 col-xs-2" style="padding: 0">
-                    <select class="form-control" style="width: 100%">
+                    <select class="form-control" style="width: 100%" name="intervalUnit">
                         <option value="m">minutes</option>
                         <option value="h" selected>hours</option>
                     </select>
                 </div>
             </form>
 
-            <form class="navbar-form" action="/saved-queries" method="post">
-                <input type="hidden" name="gorilla.csrf.Token" value="{{ $.CSRFToken }}">
-                <input id="saved-queries-input" name="SavedQuery" type="hidden">
-                <input name="Type" type="hidden" value="hosts">
-
-                <span class="input-group-btn">
-                    <button type="submit" class="btn btn-primary btn-block">Save Query</button>
-                </span>
-            </form>
+            <button type="submit" class="btn btn-primary btn-block">Search</button>
         </div>
     </div>
 </nav>
@@ -53,10 +47,19 @@ $(window).load(function() {
 
     if(value != '') {
         $('[name="q"]').val(decodeURIComponent(value));
+        $('form[action="/saved-queries"]').removeClass('hidden');
     }
 
     // On load, cp search input to saved-queries input.
     $('#saved-queries-input').val($('#search-input').val());
+});
+
+$('input[name="intervalNumber"]').bind('input propertychange', function(e) {
+    $('input[name="interval"]').val($('input[name="intervalNumber"]').val() + $('input[name="intervalUnit"]').val());
+});
+
+$('input[name="intervalUnit"]').bind('input propertychange', function(e) {
+    $('input[name="interval"]').val($('input[name="intervalNumber"]').val() + $('input[name="intervalUnit"]').val());
 });
 
 // This catches keyup, onchange, and paste events.
@@ -76,6 +79,14 @@ $('#search-input').bind('input propertychange', function(e) {
                 <div class="pull-right">
                     <small class="updated-queries-toggle">Show All</small>
                     <input type="checkbox" class="toggler toggler-header pull-right" data-size="mini">
+
+                    <form class="navbar-form hidden" action="/saved-queries" method="post" style="padding-right: 0">
+                        <input type="hidden" name="gorilla.csrf.Token" value="{{ $.CSRFToken }}">
+                        <input id="saved-queries-input" name="SavedQuery" type="hidden">
+                        <input name="Type" type="hidden" value="hosts">
+
+                        <button type="submit" class="btn btn-primary">Save Current Query</button>
+                    </form>
                 </div>
 
                 <h2>Saved Queries</h2>
