@@ -3,7 +3,23 @@
     <div class="container">
         <div class="form-group">
             <form class="navbar-form" role="search" action="/">
-                <input id="search-input" name="q" type="text" class="form-control" placeholder="Press enter to search">
+                <div class="col-lg-9 col-md-9 col-sm-8 col-xs-6" style="padding: 0">
+                    <input id="search-input" name="q" type="text" class="form-control" placeholder="Press enter to search">
+                </div>
+
+                <div class="col-lg-2 col-md-2 col-sm-2 col-xs-4" style="padding: 0">
+                    <div class="input-group">
+                        <span class="input-group-addon">last</span>
+                        <input type="number" class="form-control col-lg-6" value="1">
+                    </div>
+                </div>
+
+                <div class="col-lg-1 col-md-1 col-sm-2 col-xs-2" style="padding: 0">
+                    <select class="form-control" style="width: 100%">
+                        <option value="m">minutes</option>
+                        <option value="h" selected>hours</option>
+                    </select>
+                </div>
             </form>
 
             <form class="navbar-form" action="/saved-queries" method="post">
