@@ -11,32 +11,52 @@
 
 <script>
 $(window).load(function() {
-    var key = "q";
-    var value = "";
-    var sPageURL = window.location.search.substring(1);
-    var sURLVariables = sPageURL.split('&');
-
-    for (var i = 0; i < sURLVariables.length; i++) {
-        var sParameterName = sURLVariables[i].split('=');
-        if (sParameterName[0] == key) {
-            value = sParameterName[1];
-        }
-    }
-
-    value = value.replace(/\+/g, " ");
-
-    if(value != "") {
-        $('[name="q"]').val(decodeURIComponent(value));
+    var qValue = ResourcedMaster.url.getParams('q');
+    qValue = qValue.replace(/\+/g, ' ');
+    if(qValue != '') {
+        $('[name="q"]').val(decodeURIComponent(qValue));
+        $('form[action="/saved-queries"]').removeClass('hidden');
     }
 
     // On load, cp search input to saved-queries input.
     $('#saved-queries-input').val($('#search-input').val());
+
+    var interval = ResourcedMaster.url.getParams('interval');
+
+    if(interval) {
+        if(interval.endsWith('h')) {
+            $('select[name="intervalUnit"]').val('h');
+        } else if (interval.endsWith('m')) {
+            $('select[name="intervalUnit"]').val('m');
+        }
+
+        var intervalNumber = parseInt(interval);
+        if(intervalNumber && intervalNumber > 0) {
+            $('input[name="intervalNumber"]').val(intervalNumber);
+        }
+    }
 });
 
 // This catches keyup, onchange, and paste events.
 // cp search input to saved-queries input
 $('#search-input').bind("input propertychange", function(e) {
     $('#saved-queries-input').val($(this).val());
+});
+
+$('form[role="search"]').submit(function(e) {
+    e.preventDefault();
+    var query = $(this).find('input[name="q"]').val();
+    var intervalNumber = $(this).find('input[name="intervalNumber"]').val();
+    var intervalUnit = $(this).find('select[name="intervalUnit"]').val();
+
+    if(!intervalNumber) {
+        intervalNumber = '1';
+    }
+    if(!intervalUnit) {
+        intervalUnit = h;
+    }
+
+    document.location = '/?q=' + query + '&interval=' + intervalNumber + intervalUnit;
 });
 </script>
 {{ end }}
@@ -143,6 +163,18 @@ $(document).ready(function() {
             elem.closest('.container.saved-queries').find('.row.saved-queries').show();
         }
     });
+});
+
+$('.row.hosts .label').click(function(e) {
+    e.preventDefault();
+
+    var href = $(this).attr('href');
+    var interval = ResourcedMaster.url.getParams('interval');
+
+    if(interval) {
+        href = href + '&interval=' + interval;
+    }
+    document.location = href;
 });
 
 $('.container.saved-queries .toggler-header').on('switchChange.bootstrapSwitch', function(event, state) {
