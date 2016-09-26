@@ -11,8 +11,8 @@
 
 <script>
 $(window).load(function() {
-    var key = "q";
-    var value = "";
+    var key = 'q';
+    var value = '';
     var sPageURL = window.location.search.substring(1);
     var sURLVariables = sPageURL.split('&');
 
@@ -23,9 +23,9 @@ $(window).load(function() {
         }
     }
 
-    value = value.replace(/\+/g, " ");
+    value = value.replace(/\+/g, ' ');
 
-    if(value != "") {
+    if(value != '') {
         $('[name="q"]').val(decodeURIComponent(value));
     }
 
@@ -35,7 +35,7 @@ $(window).load(function() {
 
 // This catches keyup, onchange, and paste events.
 // cp search input to saved-queries input
-$('#search-input').bind("input propertychange", function(e) {
+$('#search-input').bind('input propertychange', function(e) {
     $('#saved-queries-input').val($(this).val());
 });
 </script>
@@ -78,15 +78,6 @@ $('#search-input').bind("input propertychange", function(e) {
     {{ end }}
 </div>
 
-{{ if eq (len .Hosts) 0 }}
-<div class="container" style="margin-top: 40px">
-    <div class="jumbotron">
-        <h2 style="margin-top: 0">Welcome to ResourceD</h2>
-        <p>If you haven't already, configure your agents using access tokens defined <a href="/clusters">here</a>.</p>
-    </div>
-</div>
-{{ else }}
-<!-- Hosts -->
 <div class="container hosts">
     <div class="row">
         <div class="col-lg-12">
@@ -96,23 +87,26 @@ $('#search-input').bind("input propertychange", function(e) {
         </div>
     </div>
 
-    {{ range $host := .Hosts }}
-    <div class="row hosts">
+    <div class="row hosts hosts-{{ $.Host.ID }}">
         <div class="col-xs-12 col-lg-12">
             <div>
                 <div class="pull-right">
-                    <small class="updated-timestamp time-unix-to-local">{{ $host.Updated.Unix }}</small>
+                    <small class="updated-timestamp time-unix-to-local">{{ $.Host.Updated.Unix }}</small>
                 </div>
 
-                <h3>{{ $host.Hostname }}</h3>
+                <h3>{{ $.Host.Hostname }}</h3>
             </div>
 
-            {{ range $tagKey, $tagValue := $host.GetTags }}
-            <a class="label label-primary" href="/?q=tags.{{ $tagKey }} %3D {{ $tagValue }}">{{ $tagKey }} : {{ $tagValue }}</a>
+            {{ range $tagKey, $tagValue := $.Host.GetTags }}
+            <a class="label label-default" href="/?q=tags.{{ $tagKey }} %3D {{ $tagValue }}">{{ $tagKey }} : {{ $tagValue }}</a>
+            {{ end }}
+
+            {{ range $tagKey, $tagValue := $.Host.GetMasterTags }}
+            <a class="label label-info" href="/?q=tags.{{ $tagKey }} %3D {{ $tagValue }}">{{ $tagKey }} : {{ $tagValue }}</a>
             {{ end }}
 
             <div class="details">
-                {{ range $path, $data := $host.DataAsFlatKeyValue }}
+                {{ range $path, $data := $.Host.DataAsFlatKeyValue }}
                 <div class="detail-header" data-path="{{ $path }}">
                     <div class="pull-right">
                         <input type="checkbox" class="toggler toggler-body pull-right" data-size="mini" data-path="{{ $path }}" checked>
@@ -130,12 +124,12 @@ $('#search-input').bind("input propertychange", function(e) {
                                 <td>{{ $key }}</td>
                                 <td class="host-value">{{ $value }}</td>
                                 <td class="graph-column-btn">
-                                    <div class="btn-group" role="group">
+                                    <div class="btn-group chart-metric-or-not" role="group" data-key="{{ $key }}">
                                         {{ if (ne 0 (index $.MetricsMap (print $path "." $key))) }}
                                         <button class="btn btn-success btn-sm active" data-toggle="modal" data-target="#graph-modal"
                                             data-metric-id="{{ index $.MetricsMap (print $path "." $key) }}",
                                             data-metric-key="{{ print $path "." $key }}"
-                                            data-host="{{ $host.Hostname }}">
+                                            data-host="{{ $.Host.Hostname }}">
                                             <span class="glyphicon glyphicon-stats" aria-hidden="true"></span>
                                         </button>
                                         {{ end }}
@@ -151,7 +145,6 @@ $('#search-input').bind("input propertychange", function(e) {
 
         </div>
     </div>
-    {{ end }}
 </div>
 
 <!-- Chart Modal -->
@@ -172,7 +165,6 @@ $('#search-input').bind("input propertychange", function(e) {
         </div>
     </div>
 </div>
-{{ end }}
 
 <script>
 ResourcedMaster.globals.AccessToken = '{{ $.AccessToken.Token }}';
@@ -234,13 +226,20 @@ $('.container.saved-queries .toggler-header').on('switchChange.bootstrapSwitch',
 });
 
 $('.row.hosts .toggler-body').on('switchChange.bootstrapSwitch', function(event, state) {
-    var $detailHeader = $(this).closest('.detail-header');
-    var path = $detailHeader.data('path');
+    var detailHeader = $(this).closest('.detail-header');
+    var path = detailHeader.data('path');
 
-    $detailHeader.siblings('.detail-body[data-path="' + path + '"]').toggle();
+    detailHeader.siblings('.detail-body[data-path="' + path + '"]').toggle();
 
     $.localStorage.set('UIStore', '.row.hosts .toggler-body[data-path="' + path + '"]', state);
 });
+
+$(document).on('hidden.bs.modal', '#graph-modal', function() {
+    var es = $('#graph-modal').data('eventsource');
+    if(es) {
+        es.close();
+    }
+})
 
 $(document).on('shown.bs.modal', '#graph-modal', function(event) {
     var button = $(event.relatedTarget);   // Button that triggered the modal
