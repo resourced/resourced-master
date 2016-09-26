@@ -43,9 +43,9 @@ type HostRow struct {
 	ClusterID     int64               `db:"cluster_id"`
 	Hostname      string              `db:"hostname"`
 	Updated       time.Time           `db:"updated"`
-	Tags          sqlx_types.JSONText `db:"tags"`
-	MasterTags    sqlx_types.JSONText `db:"master_tags"`
-	Data          sqlx_types.JSONText `db:"data"`
+	Tags          sqlx_types.JSONText `db:"tags" json:",omitempty"`
+	MasterTags    sqlx_types.JSONText `db:"master_tags" json:",omitempty"`
+	Data          sqlx_types.JSONText `db:"data" json:",omitempty"`
 }
 
 func (h *HostRow) GetTags() map[string]string {
