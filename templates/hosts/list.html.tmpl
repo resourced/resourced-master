@@ -239,7 +239,7 @@ $(document).ready(function() {
     });
 });
 
-$('.row.hosts .label').click(function(e) {
+$('.row.hosts .label, .row.saved-queries a').click(function(e) {
     e.preventDefault();
 
     var href = $(this).attr('href');
@@ -247,7 +247,10 @@ $('.row.hosts .label').click(function(e) {
 
     if(interval) {
         href = href + '&interval=' + interval;
+    } else {
+        href = href + '&interval=1h';
     }
+
     document.location = href;
 });
 
