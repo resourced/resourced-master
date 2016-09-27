@@ -5,11 +5,7 @@
 <div class="container graphs">
     {{ if eq (len .Graphs) 0 }}
     <div class="jumbotron" style="margin-top: 40px">
-        <button class="btn btn-primary btn-lg pull-right" data-toggle="modal" data-target="#graphs-modal">
-            Click here to create one
-        </button>
-
-        <h2>You have not created a dashboard yet.</h2>
+        <h2>There are no dashboard created.</h2>
     </div>
 
     {{ else }}
