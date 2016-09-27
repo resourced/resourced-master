@@ -32,8 +32,9 @@
 <script>
 $(window).load(function() {
     var qValue = ResourcedMaster.url.getParams('q');
-    qValue = qValue.replace(/\+/g, ' ');
-    if(qValue != '') {
+    if(qValue) {
+        qValue = qValue.replace(/\+/g, ' ');
+
         $('[name="q"]').val(decodeURIComponent(qValue));
         $('form[action="/saved-queries"]').removeClass('hidden');
     }
@@ -102,7 +103,7 @@ $('form[role="search"]').submit(function(e) {
         <div class="col-xs-12 col-lg-12">
             <div>
                 <div class="pull-right">
-                    <a href="?q={{ $savedQuery.Query }}" type="submit" class="btn btn-default">
+                    <a href="/?q={{ $savedQuery.Query }}" type="submit" class="btn btn-default">
                         <span class="glyphicon glyphicon-search" aria-hidden="true"></span>
                     </a>
 
@@ -223,7 +224,7 @@ $(document).ready(function() {
     $('.container.saved-queries .toggler-header').each(function() {
         var elem = $(this);
 
-        if(!$.localStorage.isEmpty('UIStore') && $.localStorage.get('UIStore', '.container.saved-queries .toggler-header')) {
+        if($.localStorage.isSet('UIStore', '.container.saved-queries .toggler-header')) {
             elem.bootstrapSwitch('state', true, true);
             elem.closest('.container.saved-queries').find('.row.saved-queries').show();
         }

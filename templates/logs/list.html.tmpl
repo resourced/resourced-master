@@ -174,7 +174,7 @@ $(document).ready(function() {
     $('.container.saved-queries .toggler-header').each(function() {
         var elem = $(this);
 
-        if(!$.localStorage.isEmpty('UIStore') && $.localStorage.get('UIStore', '.container.saved-queries .toggler-header')) {
+        if($.localStorage.isSet('UIStore', '.container.saved-queries .toggler-header')) {
             elem.bootstrapSwitch('state', true, true);
             elem.closest('.container.saved-queries').find('.row.saved-queries').show();
         }
