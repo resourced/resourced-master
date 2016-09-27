@@ -34,7 +34,6 @@ $(window).load(function() {
     var qValue = ResourcedMaster.url.getParams('q');
     if(qValue) {
         qValue = qValue.replace(/\+/g, ' ');
-
         $('[name="q"]').val(decodeURIComponent(qValue));
         $('form[action="/saved-queries"]').removeClass('hidden');
     }
@@ -132,7 +131,7 @@ $('form[role="search"]').submit(function(e) {
     <div class="row">
         <div class="col-lg-12">
             <div class="page-header">
-                <h2>Hosts</h2>
+                <h2><a href="/hosts">Hosts</a></h2>
             </div>
         </div>
     </div>
@@ -146,7 +145,9 @@ $('form[role="search"]').submit(function(e) {
                     <a href="/hosts/{{ $host.ID }}" class="btn btn-xs btn-success pull-right">Details</a>
                 </div>
 
-                <h3>{{ $host.Hostname }}</h3>
+                <div class="host-name">
+                    <h3><a href="/hosts/{{ $host.ID}}" %>{{ $host.Hostname }}</a></h3>
+                </div>
             </div>
 
             {{ range $tagKey, $tagValue := $host.GetTags }}
@@ -158,6 +159,7 @@ $('form[role="search"]').submit(function(e) {
             {{ end }}
         </div>
     </div>
+    <hr>
     {{ end }}
 </div>
 {{ end }}

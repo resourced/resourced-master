@@ -123,7 +123,7 @@ $('form[role="search"]').submit(function(e) {
     <div class="row">
         <div class="col-lg-12">
             <div class="page-header">
-                <h2>Hosts</h2>
+                <h2><a href="/hosts">Hosts</a></h2>
             </div>
         </div>
     </div>
@@ -135,7 +135,9 @@ $('form[role="search"]').submit(function(e) {
                     <small class="updated-timestamp time-unix-to-local">{{ $.Host.Updated.Unix }}</small>
                 </div>
 
-                <h3>{{ $.Host.Hostname }}</h3>
+                <div class="host-name">
+                    <h3><a href="/hosts/{{ $.Host.ID}}" %>{{ $.Host.Hostname }}</a></h3>
+                </div>
             </div>
 
             {{ range $tagKey, $tagValue := $.Host.GetTags }}
