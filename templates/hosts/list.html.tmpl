@@ -145,7 +145,7 @@ $('form[role="search"]').submit(function(e) {
     <div class="row">
         <div class="col-lg-12">
             <div class="page-header">
-                <h2>Hosts</h2>
+                <h2><a href="/hosts">Hosts</a></h2>
             </div>
         </div>
     </div>
@@ -159,13 +159,15 @@ $('form[role="search"]').submit(function(e) {
                     <a href="/hosts/{{ $host.ID }}" class="btn btn-xs btn-success pull-right">Details</a>
                 </div>
 
-                <h3>{{ $host.Hostname }}</h3>
+                <div class="host-name">
+                    <h3><a href="/hosts/{{ $host.ID}}" %>{{ $host.Hostname }}</a></h3>
+                </div>
             </div>
 
             <div>
                 <div class="pull-right">
                     <button class="btn btn-xs btn-success pull-right" data-toggle="modal" data-target="#tags-modal" data-id="{{ $host.ID }}" data-master-tags="{{ $host.MasterTags.String }}">
-                        New Tags
+                        Edit Tags
                     </button>
                 </div>
 
@@ -179,6 +181,7 @@ $('form[role="search"]').submit(function(e) {
             </div>
         </div>
     </div>
+    <hr>
     {{ end }}
 </div>
 {{ end }}
