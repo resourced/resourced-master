@@ -31,7 +31,57 @@ func PostMetrics(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	http.Redirect(w, r, "/", 301)
+	http.Redirect(w, r, r.Referer(), 301)
+}
+
+// PostPutDeleteMetricID handles POST, PUT, and DELETE
+func PostPutDeleteMetricID(w http.ResponseWriter, r *http.Request) {
+	method := r.FormValue("_method")
+	if method == "" {
+		method = "put"
+	}
+
+	if method == "post" || method == "put" {
+		PutMetricID(w, r)
+	} else if method == "delete" {
+		DeleteMetricID(w, r)
+	}
+}
+
+// PutMetricID is not supported
+func PutMetricID(w http.ResponseWriter, r *http.Request) {
+	http.Redirect(w, r, r.Referer(), 301)
+}
+
+// DeleteMetricID deletes metrics by ID
+func DeleteMetricID(w http.ResponseWriter, r *http.Request) {
+	dbs := r.Context().Value("dbs").(*config.DBConfig)
+
+	clusterID, err := getInt64SlugFromPath(w, r, "clusterID")
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
+
+	id, err := getInt64SlugFromPath(w, r, "metricID")
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
+
+	_, err = dal.NewMetric(dbs.Core).DeleteByClusterIDAndID(nil, clusterID, id)
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
+
+	err = dal.NewGraph(dbs.Core).DeleteMetricFromGraphs(nil, clusterID, id)
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
+
+	http.Redirect(w, r, r.Referer(), 301)
 }
 
 func GetApiTSMetricsByHost(w http.ResponseWriter, r *http.Request) {
@@ -311,54 +361,4 @@ func GetApiTSMetrics15Min(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Write(hcMetricsJSON)
-}
-
-// PostPutDeleteMetricID handles POST, PUT, and DELETE
-func PostPutDeleteMetricID(w http.ResponseWriter, r *http.Request) {
-	method := r.FormValue("_method")
-	if method == "" {
-		method = "put"
-	}
-
-	if method == "post" || method == "put" {
-		PutMetricID(w, r)
-	} else if method == "delete" {
-		DeleteMetricID(w, r)
-	}
-}
-
-// PutMetricID is not supported
-func PutMetricID(w http.ResponseWriter, r *http.Request) {
-	http.Redirect(w, r, "/", 301)
-}
-
-// DeleteMetricID deletes metrics by ID
-func DeleteMetricID(w http.ResponseWriter, r *http.Request) {
-	dbs := r.Context().Value("dbs").(*config.DBConfig)
-
-	clusterID, err := getInt64SlugFromPath(w, r, "clusterID")
-	if err != nil {
-		libhttp.HandleErrorJson(w, err)
-		return
-	}
-
-	id, err := getInt64SlugFromPath(w, r, "metricID")
-	if err != nil {
-		libhttp.HandleErrorJson(w, err)
-		return
-	}
-
-	_, err = dal.NewMetric(dbs.Core).DeleteByClusterIDAndID(nil, clusterID, id)
-	if err != nil {
-		libhttp.HandleErrorJson(w, err)
-		return
-	}
-
-	err = dal.NewGraph(dbs.Core).DeleteMetricFromGraphs(nil, clusterID, id)
-	if err != nil {
-		libhttp.HandleErrorJson(w, err)
-		return
-	}
-
-	http.Redirect(w, r, "/", 301)
 }

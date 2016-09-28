@@ -113,7 +113,7 @@ select {
 .row.hosts {
     margin-bottom: 18px;
 }
-.row.hosts .btn {
+.row.hosts .btn-header {
     width: 60px;
 }
 

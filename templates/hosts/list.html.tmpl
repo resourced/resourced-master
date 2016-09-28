@@ -157,7 +157,7 @@ $('form[role="search"]').submit(function(e) {
             <div>
                 <div class="pull-right">
                     <small class="updated-timestamp time-unix-to-local">{{ $host.Updated.Unix }}</small>
-                    <a href="/hosts/{{ $host.ID }}" class="btn btn-xs btn-success pull-right">Details</a>
+                    <a href="/hosts/{{ $host.ID }}" class="btn btn-xs btn-success btn-header pull-right">Details</a>
                 </div>
 
                 <div class="host-name">
@@ -167,7 +167,7 @@ $('form[role="search"]').submit(function(e) {
 
             <div>
                 <div class="pull-right">
-                    <button class="btn btn-xs btn-success pull-right" data-toggle="modal" data-target="#tags-modal" data-id="{{ $host.ID }}" data-master-tags="{{ $host.MasterTags.String }}">
+                    <button class="btn btn-xs btn-success btn-header pull-right" data-toggle="modal" data-target="#tags-modal" data-id="{{ $host.ID }}" data-master-tags="{{ $host.MasterTags.String }}">
                         Edit Tags
                     </button>
                 </div>
