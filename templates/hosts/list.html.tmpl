@@ -151,6 +151,7 @@ $('form[role="search"]').submit(function(e) {
     </div>
 
     {{ range $host := .Hosts }}
+    {{ if ne $host.Hostname "" }}
     <div class="row hosts hosts-{{ $host.ID }}">
         <div class="col-xs-12 col-lg-12">
             <div>
@@ -182,6 +183,7 @@ $('form[role="search"]').submit(function(e) {
         </div>
     </div>
     <hr>
+    {{ end }}
     {{ end }}
 </div>
 {{ end }}
