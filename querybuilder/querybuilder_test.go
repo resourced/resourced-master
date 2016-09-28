@@ -11,8 +11,10 @@ func TestParseTags(t *testing.T) {
 
 	for _, testString := range toBeTested {
 		output := Parse(testString)
-		if output != `tags #>> '{aaa}' = 'bbb'` {
-			t.Errorf("Failed to generate tags query. Output: %v", output)
+		expected := `(tags #>> '{aaa}' = 'bbb' OR master_tags #>> '{aaa}' = 'bbb')`
+
+		if output != expected {
+			t.Errorf("Failed to generate tags query. Output: %v, Expected: %v", output, expected)
 		}
 	}
 }
@@ -122,23 +124,53 @@ func TestParseHostnameMatchRegexCaseSensitive(t *testing.T) {
 	}
 }
 
-func TestParseJsonTraversal(t *testing.T) {
+func TestParseJsonTraversalFloatComparison(t *testing.T) {
 	// Example JSON:
 	// {"/free": {"Swap": {"Free": 0, "Used": 0, "Total": 0}, "Memory": {"Free": 1346609152, "Used": 7243325440, "Total": 8589934592, "ActualFree": 3666075648, "ActualUsed": 4923858944}}}
 
 	toBeTested := `/free.Memory.Free > 10000000`
-
 	output := Parse(toBeTested)
-	if output != `data #>> '{/free,Memory.Free}' > '10000000'` {
-		t.Errorf("Failed to generate data query. Output: %v", output)
+	expected := `(data #>> '{/free,Memory.Free}')::float8 > 10000000`
+
+	if output != expected {
+		t.Errorf("Failed to generate data query. Output: %v, Expected: %v", output, expected)
+	}
+}
+
+func TestParseJsonTraversalStringComparison(t *testing.T) {
+	toBeTested := `/Uname.Shell ~ "Darwin"`
+	output := Parse(toBeTested)
+	expected := `data #>> '{/Uname,Shell}' ~ 'Darwin'`
+
+	if output != expected {
+		t.Errorf("Failed to generate data query. Output: %v, Expected: %v", output, expected)
+	}
+}
+
+func TestParseJsonTraversalEquality(t *testing.T) {
+	toBeTested := `/Uname.Shell = "Darwin"`
+	output := Parse(toBeTested)
+	expected := `data #>> '{/Uname,Shell}' = 'Darwin'`
+
+	if output != expected {
+		t.Errorf("Failed to generate data query. Output: %v, Expected: %v", output, expected)
+	}
+
+	toBeTested = `/free.Memory.Free = 10000000`
+	output = Parse(toBeTested)
+	expected = `data #>> '{/free,Memory.Free}' = '10000000'`
+
+	if output != expected {
+		t.Errorf("Failed to generate data query. Output: %v, Expected: %v", output, expected)
 	}
 }
 
 func TestParseAnd(t *testing.T) {
 	toBeTested := `tags.aaa = bbb AND Hostname~^"brotato" AND /free.Memory.Free > 10000000`
-
 	output := Parse(toBeTested)
-	if output != `tags #>> '{aaa}' = 'bbb' and hostname LIKE 'brotato%' and data #>> '{/free,Memory.Free}' > '10000000'` {
-		t.Errorf("Failed to generate mixed of tags,hostname, and data query. Output: %v", output)
+	expected := `(tags #>> '{aaa}' = 'bbb' OR master_tags #>> '{aaa}' = 'bbb') and hostname LIKE 'brotato%' and (data #>> '{/free,Memory.Free}')::float8 > 10000000`
+
+	if output != expected {
+		t.Errorf("Failed to generate mixed of tags,hostname, and data query. Output: %v, Expected: %v", output, expected)
 	}
 }
