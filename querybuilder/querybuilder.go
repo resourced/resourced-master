@@ -205,21 +205,21 @@ func parseStatement(statement string) string {
 	}
 
 	// Querying data.
-	// Operators: >=, <=, =, <, >
-	// Expected output: data #>> '{/free,Swap.Free}' = '0'
+	// Operators for floating point data: >=, <=, =, <, >
+	//     Expected output: (data #>> '{/free,Memory.TotalGB}')::float8
+	// Operators for string data:
+	//     "!~*" : Does not match regular expression, case insensitive.
+	//     "!~"  : Does not match regular expression, case sensitive.
+	//     "~*"  : Matches regular expression, case insensitive.
+	//     "~^"  : Starts with, case sensitive.
+	//     "~"   : Matches regular expression, case sensitive.
 	if strings.HasPrefix(statement, "/") {
 		operator := ""
 
-		if strings.Contains(statement, ">=") {
-			operator = ">="
-		} else if strings.Contains(statement, "<=") {
-			operator = "<="
-		} else if strings.Contains(statement, "=") {
-			operator = "="
-		} else if strings.Contains(statement, "<") {
-			operator = ">"
-		} else if strings.Contains(statement, ">") {
-			operator = ">"
+		for _, op := range []string{">=", "<=", "=", "<", ">", "!~*", "!~", "~*", "~^", "~"} {
+			if strings.Contains(statement, op) {
+				operator = op
+			}
 		}
 
 		if operator != "" {
@@ -233,7 +233,13 @@ func parseStatement(statement string) string {
 			value = strings.TrimSpace(value)
 			value = libstring.StripChars(value, `"'`)
 
-			return fmt.Sprintf("data #>> '{%v}' %v '%v'", pgJsonPath, operator, value)
+			// The following operators should be able to handle string data types.
+			if operator == "=" || operator == "!~*" || operator == "!~" || operator == "~*" || operator == "~^" || operator == "~" {
+				return fmt.Sprintf("data #>> '{%v}' %v '%v'", pgJsonPath, operator, value)
+			}
+
+			// Example: (data #>> '{/free,Memory.TotalGB}')::float8
+			return fmt.Sprintf("(data #>> '{%v}')::float8 %v %v", pgJsonPath, operator, value)
 		}
 	}
 
