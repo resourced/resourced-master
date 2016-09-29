@@ -219,6 +219,7 @@ func parseStatement(statement string) string {
 		for _, op := range []string{">=", "<=", "=", "<", ">", "!~*", "!~", "~*", "~^", "~"} {
 			if strings.Contains(statement, op) {
 				operator = op
+				break
 			}
 		}
 
