@@ -48,6 +48,18 @@ func main() {
 		logrus.Fatal(err)
 	}
 
+	if app.GeneralConfig.LogLevel == "debug" {
+		logrus.SetLevel(logrus.DebugLevel)
+	} else if app.GeneralConfig.LogLevel == "error" {
+		logrus.SetLevel(logrus.ErrorLevel)
+	} else if app.GeneralConfig.LogLevel == "fatal" {
+		logrus.SetLevel(logrus.FatalLevel)
+	} else if app.GeneralConfig.LogLevel == "panic" {
+		logrus.SetLevel(logrus.PanicLevel)
+	} else {
+		logrus.SetLevel(logrus.InfoLevel)
+	}
+
 	switch parsedCLIArgs {
 	case "server":
 		// Create MessageBus
