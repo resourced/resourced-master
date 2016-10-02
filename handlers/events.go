@@ -9,8 +9,8 @@ import (
 	"strconv"
 
 	"github.com/resourced/resourced-master/config"
-	"github.com/resourced/resourced-master/dal"
 	"github.com/resourced/resourced-master/libhttp"
+	"github.com/resourced/resourced-master/models/pg"
 )
 
 func GetApiEventsLine(w http.ResponseWriter, r *http.Request) {
@@ -18,7 +18,7 @@ func GetApiEventsLine(w http.ResponseWriter, r *http.Request) {
 
 	dbs := r.Context().Value("dbs").(*config.DBConfig)
 
-	accessTokenRow := r.Context().Value("accessToken").(*dal.AccessTokenRow)
+	accessTokenRow := r.Context().Value("accessToken").(*pg.AccessTokenRow)
 
 	qParams := r.URL.Query()
 
@@ -45,7 +45,7 @@ func GetApiEventsLine(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	clusterRow, err := dal.NewCluster(dbs.Core).GetByID(nil, accessTokenRow.ClusterID)
+	clusterRow, err := pg.NewCluster(dbs.Core).GetByID(nil, accessTokenRow.ClusterID)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
@@ -53,7 +53,7 @@ func GetApiEventsLine(w http.ResponseWriter, r *http.Request) {
 
 	deletedFrom := clusterRow.GetDeletedFromUNIXTimestampForSelect("ts_events")
 
-	rows, err := dal.NewTSEvent(dbs.GetTSEvent(accessTokenRow.ClusterID)).AllLinesByClusterIDAndCreatedFromRangeForHighchart(nil, accessTokenRow.ClusterID, from, to, deletedFrom)
+	rows, err := pg.NewTSEvent(dbs.GetTSEvent(accessTokenRow.ClusterID)).AllLinesByClusterIDAndCreatedFromRangeForHighchart(nil, accessTokenRow.ClusterID, from, to, deletedFrom)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
@@ -73,7 +73,7 @@ func GetApiEventsBand(w http.ResponseWriter, r *http.Request) {
 
 	dbs := r.Context().Value("dbs").(*config.DBConfig)
 
-	accessTokenRow := r.Context().Value("accessToken").(*dal.AccessTokenRow)
+	accessTokenRow := r.Context().Value("accessToken").(*pg.AccessTokenRow)
 
 	qParams := r.URL.Query()
 
@@ -100,7 +100,7 @@ func GetApiEventsBand(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	clusterRow, err := dal.NewCluster(dbs.Core).GetByID(nil, accessTokenRow.ClusterID)
+	clusterRow, err := pg.NewCluster(dbs.Core).GetByID(nil, accessTokenRow.ClusterID)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
@@ -108,7 +108,7 @@ func GetApiEventsBand(w http.ResponseWriter, r *http.Request) {
 
 	deletedFrom := clusterRow.GetDeletedFromUNIXTimestampForSelect("ts_events")
 
-	rows, err := dal.NewTSEvent(dbs.GetTSEvent(accessTokenRow.ClusterID)).AllBandsByClusterIDAndCreatedFromRangeForHighchart(nil, accessTokenRow.ClusterID, from, to, deletedFrom)
+	rows, err := pg.NewTSEvent(dbs.GetTSEvent(accessTokenRow.ClusterID)).AllBandsByClusterIDAndCreatedFromRangeForHighchart(nil, accessTokenRow.ClusterID, from, to, deletedFrom)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
@@ -128,7 +128,7 @@ func PostApiEvents(w http.ResponseWriter, r *http.Request) {
 
 	dbs := r.Context().Value("dbs").(*config.DBConfig)
 
-	accessTokenRow := r.Context().Value("accessToken").(*dal.AccessTokenRow)
+	accessTokenRow := r.Context().Value("accessToken").(*pg.AccessTokenRow)
 
 	dataJson, err := ioutil.ReadAll(r.Body)
 	if err != nil {
@@ -136,17 +136,17 @@ func PostApiEvents(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	clusterRow, err := dal.NewCluster(dbs.Core).GetByID(nil, accessTokenRow.ClusterID)
+	clusterRow, err := pg.NewCluster(dbs.Core).GetByID(nil, accessTokenRow.ClusterID)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
 	}
 
-	id := dal.NewTSEvent(dbs.Core).NewExplicitID()
+	id := pg.NewTSEvent(dbs.Core).NewExplicitID()
 
 	deletedFrom := clusterRow.GetDeletedFromUNIXTimestampForInsert("ts_events")
 
-	tsEventRow, err := dal.NewTSEvent(dbs.GetTSEvent(accessTokenRow.ClusterID)).CreateFromJSON(nil, id, accessTokenRow.ClusterID, dataJson, deletedFrom)
+	tsEventRow, err := pg.NewTSEvent(dbs.GetTSEvent(accessTokenRow.ClusterID)).CreateFromJSON(nil, id, accessTokenRow.ClusterID, dataJson, deletedFrom)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
@@ -166,7 +166,7 @@ func DeleteApiEventsID(w http.ResponseWriter, r *http.Request) {
 
 	dbs := r.Context().Value("dbs").(*config.DBConfig)
 
-	accessTokenRow := r.Context().Value("accessToken").(*dal.AccessTokenRow)
+	accessTokenRow := r.Context().Value("accessToken").(*pg.AccessTokenRow)
 
 	id, err := getInt64SlugFromPath(w, r, "id")
 	if err != nil {
@@ -174,7 +174,7 @@ func DeleteApiEventsID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err = dal.NewTSEvent(dbs.GetTSEvent(accessTokenRow.ClusterID)).DeleteByClusterIDAndID(nil, accessTokenRow.ClusterID, id)
+	_, err = pg.NewTSEvent(dbs.GetTSEvent(accessTokenRow.ClusterID)).DeleteByClusterIDAndID(nil, accessTokenRow.ClusterID, id)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return

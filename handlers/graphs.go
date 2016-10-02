@@ -10,20 +10,20 @@ import (
 	"github.com/gorilla/csrf"
 
 	"github.com/resourced/resourced-master/config"
-	"github.com/resourced/resourced-master/dal"
 	"github.com/resourced/resourced-master/libhttp"
+	"github.com/resourced/resourced-master/models/pg"
 )
 
 func GetGraphs(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html")
 
-	currentUser := r.Context().Value("currentUser").(*dal.UserRow)
+	currentUser := r.Context().Value("currentUser").(*pg.UserRow)
 
-	currentCluster := r.Context().Value("currentCluster").(*dal.ClusterRow)
+	currentCluster := r.Context().Value("currentCluster").(*pg.ClusterRow)
 
 	dbs := r.Context().Value("dbs").(*config.DBConfig)
 
-	graphs, err := dal.NewGraph(dbs.Core).AllByClusterID(nil, currentCluster.ID)
+	graphs, err := pg.NewGraph(dbs.Core).AllByClusterID(nil, currentCluster.ID)
 	if err != nil {
 		libhttp.HandleErrorHTML(w, err, 500)
 		return
@@ -32,15 +32,15 @@ func GetGraphs(w http.ResponseWriter, r *http.Request) {
 	data := struct {
 		CSRFToken      string
 		Addr           string
-		CurrentUser    *dal.UserRow
-		Clusters       []*dal.ClusterRow
-		CurrentCluster *dal.ClusterRow
-		Graphs         []*dal.GraphRow
+		CurrentUser    *pg.UserRow
+		Clusters       []*pg.ClusterRow
+		CurrentCluster *pg.ClusterRow
+		Graphs         []*pg.GraphRow
 	}{
 		csrf.Token(r),
 		r.Context().Value("addr").(string),
 		currentUser,
-		r.Context().Value("clusters").([]*dal.ClusterRow),
+		r.Context().Value("clusters").([]*pg.ClusterRow),
 		currentCluster,
 		graphs,
 	}
@@ -64,7 +64,7 @@ func GetGraphs(w http.ResponseWriter, r *http.Request) {
 func PostGraphs(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html")
 
-	currentCluster := r.Context().Value("currentCluster").(*dal.ClusterRow)
+	currentCluster := r.Context().Value("currentCluster").(*pg.ClusterRow)
 
 	name := r.FormValue("Name")
 	description := r.FormValue("Description")
@@ -77,7 +77,7 @@ func PostGraphs(w http.ResponseWriter, r *http.Request) {
 	data["description"] = description
 	data["range"] = range_
 
-	_, err := dal.NewGraph(dbs.Core).Create(nil, currentCluster.ID, data)
+	_, err := pg.NewGraph(dbs.Core).Create(nil, currentCluster.ID, data)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
@@ -103,9 +103,9 @@ func GetGraphsID(w http.ResponseWriter, r *http.Request) {
 
 	dbs := r.Context().Value("dbs").(*config.DBConfig)
 
-	currentUser := r.Context().Value("currentUser").(*dal.UserRow)
+	currentUser := r.Context().Value("currentUser").(*pg.UserRow)
 
-	currentCluster := r.Context().Value("currentCluster").(*dal.ClusterRow)
+	currentCluster := r.Context().Value("currentCluster").(*pg.ClusterRow)
 
 	id, err := getInt64SlugFromPath(w, r, "id")
 	if err != nil {
@@ -122,24 +122,24 @@ func GetGraphsID(w http.ResponseWriter, r *http.Request) {
 	// -----------------------------------
 	// Create channels to receive SQL rows
 	// -----------------------------------
-	metricsChan := make(chan *dal.MetricRowsWithError)
+	metricsChan := make(chan *pg.MetricRowsWithError)
 	defer close(metricsChan)
 
-	graphsChan := make(chan *dal.GraphRowsWithError)
+	graphsChan := make(chan *pg.GraphRowsWithError)
 	defer close(graphsChan)
 
 	// --------------------------
 	// Fetch SQL rows in parallel
 	// --------------------------
-	go func(currentCluster *dal.ClusterRow, id int64) {
-		graphsWithError := &dal.GraphRowsWithError{}
-		graphsWithError.Graphs, graphsWithError.Error = dal.NewGraph(dbs.Core).AllByClusterID(nil, currentCluster.ID)
+	go func(currentCluster *pg.ClusterRow, id int64) {
+		graphsWithError := &pg.GraphRowsWithError{}
+		graphsWithError.Graphs, graphsWithError.Error = pg.NewGraph(dbs.Core).AllByClusterID(nil, currentCluster.ID)
 		graphsChan <- graphsWithError
 	}(currentCluster, id)
 
-	go func(currentCluster *dal.ClusterRow) {
-		metricsWithError := &dal.MetricRowsWithError{}
-		metricsWithError.Metrics, metricsWithError.Error = dal.NewMetric(dbs.Core).AllByClusterID(nil, currentCluster.ID)
+	go func(currentCluster *pg.ClusterRow) {
+		metricsWithError := &pg.MetricRowsWithError{}
+		metricsWithError.Metrics, metricsWithError.Error = pg.NewMetric(dbs.Core).AllByClusterID(nil, currentCluster.ID)
 		metricsChan <- metricsWithError
 	}(currentCluster)
 
@@ -154,7 +154,7 @@ func GetGraphsID(w http.ResponseWriter, r *http.Request) {
 		hasError = true
 	}
 
-	var currentGraph *dal.GraphRow
+	var currentGraph *pg.GraphRow
 	graphsWithError := <-graphsChan
 	if graphsWithError.Error == nil {
 		for _, graph := range graphsWithError.Graphs {
@@ -175,19 +175,19 @@ func GetGraphsID(w http.ResponseWriter, r *http.Request) {
 	data := struct {
 		CSRFToken      string
 		Addr           string
-		CurrentUser    *dal.UserRow
-		AccessToken    *dal.AccessTokenRow
-		Clusters       []*dal.ClusterRow
-		CurrentCluster *dal.ClusterRow
-		CurrentGraph   *dal.GraphRow
-		Graphs         []*dal.GraphRow
-		Metrics        []*dal.MetricRow
+		CurrentUser    *pg.UserRow
+		AccessToken    *pg.AccessTokenRow
+		Clusters       []*pg.ClusterRow
+		CurrentCluster *pg.ClusterRow
+		CurrentGraph   *pg.GraphRow
+		Graphs         []*pg.GraphRow
+		Metrics        []*pg.MetricRow
 	}{
 		csrf.Token(r),
 		r.Context().Value("addr").(string),
 		currentUser,
 		accessToken,
-		r.Context().Value("clusters").([]*dal.ClusterRow),
+		r.Context().Value("clusters").([]*pg.ClusterRow),
 		currentCluster,
 		currentGraph,
 		graphsWithError.Graphs,
@@ -248,7 +248,7 @@ func PutGraphsID(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if len(data) > 0 {
-		_, err = dal.NewGraph(dbs.Core).UpdateByID(nil, data, id)
+		_, err = pg.NewGraph(dbs.Core).UpdateByID(nil, data, id)
 		if err != nil {
 			libhttp.HandleErrorJson(w, err)
 			return
@@ -261,7 +261,7 @@ func PutGraphsID(w http.ResponseWriter, r *http.Request) {
 func DeleteGraphsID(w http.ResponseWriter, r *http.Request) {
 	dbs := r.Context().Value("dbs").(*config.DBConfig)
 
-	currentCluster := r.Context().Value("currentCluster").(*dal.ClusterRow)
+	currentCluster := r.Context().Value("currentCluster").(*pg.ClusterRow)
 
 	id, err := getInt64SlugFromPath(w, r, "id")
 	if err != nil {
@@ -269,7 +269,7 @@ func DeleteGraphsID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err = dal.NewGraph(dbs.Core).DeleteByClusterIDAndID(nil, currentCluster.ID, id)
+	_, err = pg.NewGraph(dbs.Core).DeleteByClusterIDAndID(nil, currentCluster.ID, id)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
@@ -283,7 +283,7 @@ func PutApiGraphsIDMetrics(w http.ResponseWriter, r *http.Request) {
 
 	dbs := r.Context().Value("dbs").(*config.DBConfig)
 
-	accessTokenRow := r.Context().Value("accessToken").(*dal.AccessTokenRow)
+	accessTokenRow := r.Context().Value("accessToken").(*pg.AccessTokenRow)
 
 	id, err := getInt64SlugFromPath(w, r, "id")
 	if err != nil {
@@ -297,7 +297,7 @@ func PutApiGraphsIDMetrics(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	row, err := dal.NewGraph(dbs.Core).UpdateMetricsByClusterIDAndID(nil, accessTokenRow.ClusterID, id, dataJSON)
+	row, err := pg.NewGraph(dbs.Core).UpdateMetricsByClusterIDAndID(nil, accessTokenRow.ClusterID, id, dataJSON)
 
 	rowJSON, err := json.Marshal(row)
 	if err != nil {

@@ -14,10 +14,10 @@ import (
 	chi_middleware "github.com/pressly/chi/middleware"
 
 	"github.com/resourced/resourced-master/config"
-	"github.com/resourced/resourced-master/dal"
 	"github.com/resourced/resourced-master/libhttp"
 	"github.com/resourced/resourced-master/mailer"
 	"github.com/resourced/resourced-master/messagebus"
+	"github.com/resourced/resourced-master/models/pg"
 )
 
 // CSRFMiddleware is a constructor that creates github.com/gorilla/csrf.CSRF struct
@@ -113,15 +113,15 @@ func SetClusters(next http.Handler) http.Handler {
 			return
 		}
 
-		userRow := userRowInterface.(*dal.UserRow)
+		userRow := userRowInterface.(*pg.UserRow)
 
 		dbs := r.Context().Value("dbs").(*config.DBConfig)
 
-		var clusterRows []*dal.ClusterRow
+		var clusterRows []*pg.ClusterRow
 		var err error
 
 		f := func() {
-			clusterRows, err = dal.NewCluster(dbs.Core).AllByUserID(nil, userRow.ID)
+			clusterRows, err = pg.NewCluster(dbs.Core).AllByUserID(nil, userRow.ID)
 		}
 
 		// Measure the latency of AllByUserID because it is called on every request.
@@ -157,7 +157,7 @@ func SetClusters(next http.Handler) http.Handler {
 
 		currentClusterInterface := session.Values["currentCluster"]
 		if currentClusterInterface != nil {
-			currentClusterRow := currentClusterInterface.(*dal.ClusterRow)
+			currentClusterRow := currentClusterInterface.(*pg.ClusterRow)
 
 			r = r.WithContext(context.WithValue(r.Context(), "currentCluster", currentClusterRow))
 		}
@@ -177,7 +177,7 @@ func SetAccessTokens(next http.Handler) http.Handler {
 			return
 		}
 
-		accessTokenRows, err := dal.NewAccessToken(dbs.Core).AllByClusterID(nil, currentClusterInterface.(*dal.ClusterRow).ID)
+		accessTokenRows, err := pg.NewAccessToken(dbs.Core).AllByClusterID(nil, currentClusterInterface.(*pg.ClusterRow).ID)
 		if err != nil {
 			libhttp.HandleErrorJson(w, err)
 			return
@@ -208,7 +208,7 @@ func MustLogin(next http.Handler) http.Handler {
 			return
 		}
 
-		r = r.WithContext(context.WithValue(r.Context(), "currentUser", userRowInterface.(*dal.UserRow)))
+		r = r.WithContext(context.WithValue(r.Context(), "currentUser", userRowInterface.(*pg.UserRow)))
 
 		next.ServeHTTP(w, r)
 	})
@@ -232,7 +232,7 @@ func MustLoginApi(next http.Handler) http.Handler {
 
 		dbs := r.Context().Value("dbs").(*config.DBConfig)
 
-		accessTokenRow, err := dal.NewAccessToken(dbs.Core).GetByAccessToken(nil, accessTokenString)
+		accessTokenRow, err := pg.NewAccessToken(dbs.Core).GetByAccessToken(nil, accessTokenString)
 		if err != nil {
 			libhttp.BasicAuthUnauthorized(w, nil)
 			return
@@ -284,7 +284,7 @@ func MustLoginApiStream(next http.Handler) http.Handler {
 
 		dbs := r.Context().Value("dbs").(*config.DBConfig)
 
-		accessTokenRow, err := dal.NewAccessToken(dbs.Core).GetByAccessToken(nil, accessTokenString)
+		accessTokenRow, err := pg.NewAccessToken(dbs.Core).GetByAccessToken(nil, accessTokenString)
 		if err != nil {
 			libhttp.BasicAuthUnauthorized(w, nil)
 			return
@@ -319,8 +319,8 @@ func MustBeMember(next http.Handler) http.Handler {
 			return
 		}
 
-		currentCluster := currentClusterInterface.(*dal.ClusterRow)
-		currentUser := currentUserInterface.(*dal.UserRow)
+		currentCluster := currentClusterInterface.(*pg.ClusterRow)
+		currentUser := currentUserInterface.(*pg.UserRow)
 		foundCurrentUser := false
 
 		for _, member := range currentCluster.GetMembers() {

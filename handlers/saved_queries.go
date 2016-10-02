@@ -6,16 +6,16 @@ import (
 	"strings"
 
 	"github.com/resourced/resourced-master/config"
-	"github.com/resourced/resourced-master/dal"
 	"github.com/resourced/resourced-master/libhttp"
+	"github.com/resourced/resourced-master/models/pg"
 )
 
 func PostSavedQueries(w http.ResponseWriter, r *http.Request) {
 	dbs := r.Context().Value("dbs").(*config.DBConfig)
 
-	currentUser := r.Context().Value("currentUser").(*dal.UserRow)
+	currentUser := r.Context().Value("currentUser").(*pg.UserRow)
 
-	accessTokenRow, err := dal.NewAccessToken(dbs.Core).GetByUserID(nil, currentUser.ID)
+	accessTokenRow, err := pg.NewAccessToken(dbs.Core).GetByUserID(nil, currentUser.ID)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
@@ -24,7 +24,7 @@ func PostSavedQueries(w http.ResponseWriter, r *http.Request) {
 	savedQueryType := r.FormValue("Type")
 	savedQuery := r.FormValue("SavedQuery")
 
-	_, err = dal.NewSavedQuery(dbs.Core).CreateOrUpdate(nil, accessTokenRow, savedQueryType, savedQuery)
+	_, err = pg.NewSavedQuery(dbs.Core).CreateOrUpdate(nil, accessTokenRow, savedQueryType, savedQuery)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
@@ -52,11 +52,11 @@ func DeleteSavedQueriesID(w http.ResponseWriter, r *http.Request) {
 
 	dbs := r.Context().Value("dbs").(*config.DBConfig)
 
-	currentUser := r.Context().Value("currentUser").(*dal.UserRow)
+	currentUser := r.Context().Value("currentUser").(*pg.UserRow)
 
-	currentCluster := r.Context().Value("currentCluster").(*dal.ClusterRow)
+	currentCluster := r.Context().Value("currentCluster").(*pg.ClusterRow)
 
-	sq := dal.NewSavedQuery(dbs.Core)
+	sq := pg.NewSavedQuery(dbs.Core)
 
 	savedQueryRow, err := sq.GetByID(nil, savedQueryID)
 

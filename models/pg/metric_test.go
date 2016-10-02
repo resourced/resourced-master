@@ -1,4 +1,4 @@
-package dal
+package pg
 
 import (
 	"testing"
@@ -6,12 +6,13 @@ import (
 	_ "github.com/lib/pq"
 )
 
-func newAccessTokenForTest(t *testing.T) *AccessToken {
-	return NewAccessToken(newDbForTest(t))
+func newMetricForTest(t *testing.T) *Metric {
+	return NewMetric(newDbForTest(t))
 }
 
-func TestAccessTokenCRUD(t *testing.T) {
+func TestMetricCRUD(t *testing.T) {
 	u := newUserForTest(t)
+	defer u.db.Close()
 
 	// Signup
 	userRow, err := u.Signup(nil, newEmailForTest(), "abc123", "abc123")
@@ -26,6 +27,7 @@ func TestAccessTokenCRUD(t *testing.T) {
 	}
 
 	cl := newClusterForTest(t)
+	defer cl.db.Close()
 
 	// Create cluster for user
 	clusterRow, err := cl.Create(nil, userRow, "cluster-name")
@@ -36,30 +38,21 @@ func TestAccessTokenCRUD(t *testing.T) {
 		t.Fatalf("Cluster ID should be assign properly. clusterRow.ID: %v", clusterRow.ID)
 	}
 
-	at := newAccessTokenForTest(t)
+	// Create Metric
+	m := newMetricForTest(t)
+	defer m.db.Close()
 
-	// Create access token
-	tokenRow, err := at.Create(nil, userRow.ID, clusterRow.ID, "write")
+	metricRow, err := m.CreateOrUpdate(nil, clusterRow.ID, "/test.metric.key")
 	if err != nil {
-		t.Fatalf("Creating a token should work. Error: %v", err)
+		t.Fatalf("Creating a Metric should work. Error: %v", err)
 	}
-	if tokenRow.ID <= 0 {
-		t.Fatalf("AccessToken ID should be assign properly. tokenRow.ID: %v", tokenRow.ID)
-	}
-
-	// SELECT * FROM access_tokens
-	tokenRowFromDb, err := at.GetByClusterID(nil, clusterRow.ID)
-	if err != nil {
-		t.Fatalf("Selecting recently created access_tokens should not fail. Error: %v", err)
-	}
-	if tokenRow.ClusterID != tokenRowFromDb.ClusterID {
-		t.Fatalf("Fetched the wrong access token")
+	if metricRow.ID <= 0 {
+		t.Fatalf("Metric ID should be assign properly. MetricRow.ID: %v", metricRow.ID)
 	}
 
-	// DELETE FROM access_tokens WHERE id=...
-	_, err = at.DeleteByID(nil, tokenRow.ID)
+	_, err = m.DeleteByID(nil, metricRow.ID)
 	if err != nil {
-		t.Fatalf("Deleting access_tokens by id should not fail. Error: %v", err)
+		t.Fatalf("Deleting Metrics by id should not fail. Error: %v", err)
 	}
 
 	// DELETE FROM clusters WHERE id=...

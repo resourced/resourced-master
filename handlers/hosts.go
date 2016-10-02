@@ -13,17 +13,17 @@ import (
 	"github.com/gorilla/csrf"
 
 	"github.com/resourced/resourced-master/config"
-	"github.com/resourced/resourced-master/dal"
 	"github.com/resourced/resourced-master/libhttp"
 	"github.com/resourced/resourced-master/messagebus"
+	"github.com/resourced/resourced-master/models/pg"
 )
 
 func GetHosts(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html")
 
-	currentUser := r.Context().Value("currentUser").(*dal.UserRow)
+	currentUser := r.Context().Value("currentUser").(*pg.UserRow)
 
-	currentCluster := r.Context().Value("currentCluster").(*dal.ClusterRow)
+	currentCluster := r.Context().Value("currentCluster").(*pg.ClusterRow)
 
 	dbs := r.Context().Value("dbs").(*config.DBConfig)
 
@@ -43,24 +43,24 @@ func GetHosts(w http.ResponseWriter, r *http.Request) {
 	// -----------------------------------
 	// Create channels to receive SQL rows
 	// -----------------------------------
-	hostsChan := make(chan *dal.HostRowsWithError)
+	hostsChan := make(chan *pg.HostRowsWithError)
 	defer close(hostsChan)
 
-	savedQueriesChan := make(chan *dal.SavedQueryRowsWithError)
+	savedQueriesChan := make(chan *pg.SavedQueryRowsWithError)
 	defer close(savedQueriesChan)
 
 	// --------------------------
 	// Fetch SQL rows in parallel
 	// --------------------------
-	go func(currentCluster *dal.ClusterRow, query string) {
-		hostsWithError := &dal.HostRowsWithError{}
-		hostsWithError.Hosts, hostsWithError.Error = dal.NewHost(dbs.GetHost(currentCluster.ID)).AllCompactByClusterIDQueryAndUpdatedInterval(nil, currentCluster.ID, query, interval)
+	go func(currentCluster *pg.ClusterRow, query string) {
+		hostsWithError := &pg.HostRowsWithError{}
+		hostsWithError.Hosts, hostsWithError.Error = pg.NewHost(dbs.GetHost(currentCluster.ID)).AllCompactByClusterIDQueryAndUpdatedInterval(nil, currentCluster.ID, query, interval)
 		hostsChan <- hostsWithError
 	}(currentCluster, query)
 
-	go func(currentCluster *dal.ClusterRow) {
-		savedQueriesWithError := &dal.SavedQueryRowsWithError{}
-		savedQueriesWithError.SavedQueries, savedQueriesWithError.Error = dal.NewSavedQuery(dbs.Core).AllByClusterIDAndType(nil, currentCluster.ID, "hosts")
+	go func(currentCluster *pg.ClusterRow) {
+		savedQueriesWithError := &pg.SavedQueryRowsWithError{}
+		savedQueriesWithError.SavedQueries, savedQueriesWithError.Error = pg.NewSavedQuery(dbs.Core).AllByClusterIDAndType(nil, currentCluster.ID, "hosts")
 		savedQueriesChan <- savedQueriesWithError
 	}(currentCluster)
 
@@ -88,18 +88,18 @@ func GetHosts(w http.ResponseWriter, r *http.Request) {
 	data := struct {
 		CSRFToken      string
 		Addr           string
-		CurrentUser    *dal.UserRow
-		AccessToken    *dal.AccessTokenRow
-		Clusters       []*dal.ClusterRow
-		CurrentCluster *dal.ClusterRow
-		Hosts          []*dal.HostRow
-		SavedQueries   []*dal.SavedQueryRow
+		CurrentUser    *pg.UserRow
+		AccessToken    *pg.AccessTokenRow
+		Clusters       []*pg.ClusterRow
+		CurrentCluster *pg.ClusterRow
+		Hosts          []*pg.HostRow
+		SavedQueries   []*pg.SavedQueryRow
 	}{
 		csrf.Token(r),
 		r.Context().Value("addr").(string),
 		currentUser,
 		accessToken,
-		r.Context().Value("clusters").([]*dal.ClusterRow),
+		r.Context().Value("clusters").([]*pg.ClusterRow),
 		currentCluster,
 		hostsWithError.Hosts,
 		savedQueriesWithError.SavedQueries,
@@ -124,9 +124,9 @@ func GetHosts(w http.ResponseWriter, r *http.Request) {
 func GetHostsID(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html")
 
-	currentUser := r.Context().Value("currentUser").(*dal.UserRow)
+	currentUser := r.Context().Value("currentUser").(*pg.UserRow)
 
-	currentCluster := r.Context().Value("currentCluster").(*dal.ClusterRow)
+	currentCluster := r.Context().Value("currentCluster").(*pg.ClusterRow)
 
 	dbs := r.Context().Value("dbs").(*config.DBConfig)
 
@@ -142,7 +142,7 @@ func GetHostsID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	host, err := dal.NewHost(dbs.GetHost(currentCluster.ID)).GetByID(nil, id)
+	host, err := pg.NewHost(dbs.GetHost(currentCluster.ID)).GetByID(nil, id)
 	if err != nil {
 		libhttp.HandleErrorHTML(w, err, 500)
 		return
@@ -151,24 +151,24 @@ func GetHostsID(w http.ResponseWriter, r *http.Request) {
 	// -----------------------------------
 	// Create channels to receive SQL rows
 	// -----------------------------------
-	savedQueriesChan := make(chan *dal.SavedQueryRowsWithError)
+	savedQueriesChan := make(chan *pg.SavedQueryRowsWithError)
 	defer close(savedQueriesChan)
 
-	metricsMapChan := make(chan *dal.MetricsMapWithError)
+	metricsMapChan := make(chan *pg.MetricsMapWithError)
 	defer close(metricsMapChan)
 
 	// --------------------------
 	// Fetch SQL rows in parallel
 	// --------------------------
-	go func(currentCluster *dal.ClusterRow) {
-		savedQueriesWithError := &dal.SavedQueryRowsWithError{}
-		savedQueriesWithError.SavedQueries, savedQueriesWithError.Error = dal.NewSavedQuery(dbs.Core).AllByClusterIDAndType(nil, currentCluster.ID, "hosts")
+	go func(currentCluster *pg.ClusterRow) {
+		savedQueriesWithError := &pg.SavedQueryRowsWithError{}
+		savedQueriesWithError.SavedQueries, savedQueriesWithError.Error = pg.NewSavedQuery(dbs.Core).AllByClusterIDAndType(nil, currentCluster.ID, "hosts")
 		savedQueriesChan <- savedQueriesWithError
 	}(currentCluster)
 
-	go func(currentCluster *dal.ClusterRow) {
-		metricsMapWithError := &dal.MetricsMapWithError{}
-		metricsMapWithError.MetricsMap, metricsMapWithError.Error = dal.NewMetric(dbs.Core).AllByClusterIDAsMap(nil, currentCluster.ID)
+	go func(currentCluster *pg.ClusterRow) {
+		metricsMapWithError := &pg.MetricsMapWithError{}
+		metricsMapWithError.MetricsMap, metricsMapWithError.Error = pg.NewMetric(dbs.Core).AllByClusterIDAsMap(nil, currentCluster.ID)
 		metricsMapChan <- metricsMapWithError
 	}(currentCluster)
 
@@ -196,19 +196,19 @@ func GetHostsID(w http.ResponseWriter, r *http.Request) {
 	data := struct {
 		CSRFToken      string
 		Addr           string
-		CurrentUser    *dal.UserRow
-		AccessToken    *dal.AccessTokenRow
-		Clusters       []*dal.ClusterRow
-		CurrentCluster *dal.ClusterRow
-		Host           *dal.HostRow
-		SavedQueries   []*dal.SavedQueryRow
+		CurrentUser    *pg.UserRow
+		AccessToken    *pg.AccessTokenRow
+		Clusters       []*pg.ClusterRow
+		CurrentCluster *pg.ClusterRow
+		Host           *pg.HostRow
+		SavedQueries   []*pg.SavedQueryRow
 		MetricsMap     map[string]int64
 	}{
 		csrf.Token(r),
 		r.Context().Value("addr").(string),
 		currentUser,
 		accessToken,
-		r.Context().Value("clusters").([]*dal.ClusterRow),
+		r.Context().Value("clusters").([]*pg.ClusterRow),
 		currentCluster,
 		host,
 		savedQueriesWithError.SavedQueries,
@@ -234,7 +234,7 @@ func GetHostsID(w http.ResponseWriter, r *http.Request) {
 func PostHostsIDMasterTags(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html")
 
-	currentCluster := r.Context().Value("currentCluster").(*dal.ClusterRow)
+	currentCluster := r.Context().Value("currentCluster").(*pg.ClusterRow)
 
 	dbs := r.Context().Value("dbs").(*config.DBConfig)
 
@@ -263,7 +263,7 @@ func PostHostsIDMasterTags(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	err = dal.NewHost(dbs.GetHost(currentCluster.ID)).UpdateMasterTagsByID(nil, id, masterTags)
+	err = pg.NewHost(dbs.GetHost(currentCluster.ID)).UpdateMasterTagsByID(nil, id, masterTags)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
@@ -277,7 +277,7 @@ func PostApiHosts(w http.ResponseWriter, r *http.Request) {
 
 	dbs := r.Context().Value("dbs").(*config.DBConfig)
 
-	accessTokenRow := r.Context().Value("accessToken").(*dal.AccessTokenRow)
+	accessTokenRow := r.Context().Value("accessToken").(*pg.AccessTokenRow)
 
 	bus := r.Context().Value("bus").(*messagebus.MessageBus)
 
@@ -289,7 +289,7 @@ func PostApiHosts(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	hostRow, err := dal.NewHost(dbs.GetHost(accessTokenRow.ClusterID)).CreateOrUpdate(nil, accessTokenRow, dataJson)
+	hostRow, err := pg.NewHost(dbs.GetHost(accessTokenRow.ClusterID)).CreateOrUpdate(nil, accessTokenRow, dataJson)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
@@ -297,7 +297,7 @@ func PostApiHosts(w http.ResponseWriter, r *http.Request) {
 
 	// Asynchronously write timeseries data
 	go func() {
-		metricsMap, err := dal.NewMetric(dbs.Core).AllByClusterIDAsMap(nil, hostRow.ClusterID)
+		metricsMap, err := pg.NewMetric(dbs.Core).AllByClusterIDAsMap(nil, hostRow.ClusterID)
 		if err != nil {
 			errLogger.WithFields(logrus.Fields{
 				"Error": err.Error(),
@@ -307,7 +307,7 @@ func PostApiHosts(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		clusterRow, err := dal.NewCluster(dbs.Core).GetByID(nil, hostRow.ClusterID)
+		clusterRow, err := pg.NewCluster(dbs.Core).GetByID(nil, hostRow.ClusterID)
 		if err != nil {
 			errLogger.WithFields(logrus.Fields{
 				"Error": err.Error(),
@@ -319,21 +319,21 @@ func PostApiHosts(w http.ResponseWriter, r *http.Request) {
 		tsMetricsAggr15mDeletedFrom := clusterRow.GetDeletedFromUNIXTimestampForInsert("ts_metrics_aggr_15m")
 
 		// Create ts_metrics row
-		err = dal.NewTSMetric(dbs.GetTSMetric(hostRow.ClusterID)).CreateByHostRow(nil, hostRow, metricsMap, tsMetricsDeletedFrom)
+		err = pg.NewTSMetric(dbs.GetTSMetric(hostRow.ClusterID)).CreateByHostRow(nil, hostRow, metricsMap, tsMetricsDeletedFrom)
 		if err != nil {
 			errLogger.Error(err)
 			return
 		}
 
 		go func() {
-			selectAggrRows, err := dal.NewTSMetric(dbs.GetTSMetric(hostRow.ClusterID)).AggregateEveryXMinutes(nil, hostRow.ClusterID, 15)
+			selectAggrRows, err := pg.NewTSMetric(dbs.GetTSMetric(hostRow.ClusterID)).AggregateEveryXMinutes(nil, hostRow.ClusterID, 15)
 			if err != nil {
 				errLogger.Error(err)
 				return
 			}
 
 			// Create ts_metrics_aggr_15m rows.
-			err = dal.NewTSMetricAggr15m(dbs.GetTSMetricAggr15m(hostRow.ClusterID)).CreateByHostRow(nil, hostRow, metricsMap, selectAggrRows, tsMetricsAggr15mDeletedFrom)
+			err = pg.NewTSMetricAggr15m(dbs.GetTSMetricAggr15m(hostRow.ClusterID)).CreateByHostRow(nil, hostRow, metricsMap, selectAggrRows, tsMetricsAggr15mDeletedFrom)
 			if err != nil {
 				errLogger.Error(err)
 				return
@@ -341,14 +341,14 @@ func PostApiHosts(w http.ResponseWriter, r *http.Request) {
 		}()
 
 		go func() {
-			selectAggrRows, err := dal.NewTSMetric(dbs.GetTSMetric(hostRow.ClusterID)).AggregateEveryXMinutesPerHost(nil, hostRow.ClusterID, 15)
+			selectAggrRows, err := pg.NewTSMetric(dbs.GetTSMetric(hostRow.ClusterID)).AggregateEveryXMinutesPerHost(nil, hostRow.ClusterID, 15)
 			if err != nil {
 				errLogger.Error(err)
 				return
 			}
 
 			// Create ts_metrics_aggr_15m rows per host.
-			err = dal.NewTSMetricAggr15m(dbs.GetTSMetricAggr15m(hostRow.ClusterID)).CreateByHostRowPerHost(nil, hostRow, metricsMap, selectAggrRows, tsMetricsAggr15mDeletedFrom)
+			err = pg.NewTSMetricAggr15m(dbs.GetTSMetricAggr15m(hostRow.ClusterID)).CreateByHostRowPerHost(nil, hostRow, metricsMap, selectAggrRows, tsMetricsAggr15mDeletedFrom)
 			if err != nil {
 				errLogger.Error(err)
 				return
@@ -375,7 +375,7 @@ func GetApiHosts(w http.ResponseWriter, r *http.Request) {
 
 	dbs := r.Context().Value("dbs").(*config.DBConfig)
 
-	accessTokenRow := r.Context().Value("accessToken").(*dal.AccessTokenRow)
+	accessTokenRow := r.Context().Value("accessToken").(*pg.AccessTokenRow)
 
 	query := r.URL.Query().Get("q")
 	count := r.URL.Query().Get("count")
@@ -385,7 +385,7 @@ func GetApiHosts(w http.ResponseWriter, r *http.Request) {
 		interval = "1h"
 	}
 
-	hosts, err := dal.NewHost(dbs.GetHost(accessTokenRow.ClusterID)).AllCompactByClusterIDQueryAndUpdatedInterval(nil, accessTokenRow.ClusterID, query, interval)
+	hosts, err := pg.NewHost(dbs.GetHost(accessTokenRow.ClusterID)).AllCompactByClusterIDQueryAndUpdatedInterval(nil, accessTokenRow.ClusterID, query, interval)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return

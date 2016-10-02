@@ -1,5 +1,5 @@
 // Package dal is the Data Access Layer between the Application and PostgreSQL database.
-package dal
+package pg
 
 import (
 	"database/sql"

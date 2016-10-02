@@ -9,7 +9,7 @@ import (
 
 	"github.com/pressly/chi"
 
-	"github.com/resourced/resourced-master/dal"
+	"github.com/resourced/resourced-master/models/pg"
 )
 
 func getInt64SlugFromPath(w http.ResponseWriter, r *http.Request, slug string) (int64, error) {
@@ -26,13 +26,13 @@ func getInt64SlugFromPath(w http.ResponseWriter, r *http.Request, slug string) (
 	return data, nil
 }
 
-func getAccessToken(w http.ResponseWriter, r *http.Request, level string) (*dal.AccessTokenRow, error) {
+func getAccessToken(w http.ResponseWriter, r *http.Request, level string) (*pg.AccessTokenRow, error) {
 	accessTokensInterface := r.Context().Value("accessTokens")
 	if accessTokensInterface == nil {
 		return nil, errors.New("Failed to get access token because the full list of access tokens is nil.")
 	}
 
-	for _, accessToken := range accessTokensInterface.([]*dal.AccessTokenRow) {
+	for _, accessToken := range accessTokensInterface.([]*pg.AccessTokenRow) {
 		if level == "read" {
 			return accessToken, nil
 

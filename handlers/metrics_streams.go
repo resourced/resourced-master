@@ -9,9 +9,9 @@ import (
 	"github.com/pressly/chi"
 
 	"github.com/resourced/resourced-master/config"
-	"github.com/resourced/resourced-master/dal"
 	"github.com/resourced/resourced-master/libhttp"
 	"github.com/resourced/resourced-master/messagebus"
+	"github.com/resourced/resourced-master/models/pg"
 )
 
 func ApiMetricStreams(w http.ResponseWriter, r *http.Request) {
@@ -28,7 +28,7 @@ func ApiMetricStreams(w http.ResponseWriter, r *http.Request) {
 
 	bus := r.Context().Value("bus").(*messagebus.MessageBus)
 
-	accessTokenRow := r.Context().Value("accessToken").(*dal.AccessTokenRow)
+	accessTokenRow := r.Context().Value("accessToken").(*pg.AccessTokenRow)
 
 	errLogger := r.Context().Value("errLogger").(*logrus.Logger)
 
@@ -121,7 +121,7 @@ func ApiMetricIDStreams(w http.ResponseWriter, r *http.Request) {
 
 	bus := r.Context().Value("bus").(*messagebus.MessageBus)
 
-	accessTokenRow := r.Context().Value("accessToken").(*dal.AccessTokenRow)
+	accessTokenRow := r.Context().Value("accessToken").(*pg.AccessTokenRow)
 
 	metricID, err := getInt64SlugFromPath(w, r, "id")
 	if err != nil {
@@ -129,7 +129,7 @@ func ApiMetricIDStreams(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	metricRow, err := dal.NewMetric(dbs.Core).GetByID(nil, metricID)
+	metricRow, err := pg.NewMetric(dbs.Core).GetByID(nil, metricID)
 	if err != nil {
 		libhttp.HandleErrorHTML(w, err, 500)
 		return

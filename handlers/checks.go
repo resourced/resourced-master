@@ -13,10 +13,10 @@ import (
 	"github.com/pressly/chi"
 
 	"github.com/resourced/resourced-master/config"
-	"github.com/resourced/resourced-master/dal"
 	"github.com/resourced/resourced-master/libhttp"
 	"github.com/resourced/resourced-master/libslice"
 	"github.com/resourced/resourced-master/messagebus"
+	"github.com/resourced/resourced-master/models/pg"
 )
 
 func GetChecks(w http.ResponseWriter, r *http.Request) {
@@ -24,9 +24,9 @@ func GetChecks(w http.ResponseWriter, r *http.Request) {
 
 	dbs := r.Context().Value("dbs").(*config.DBConfig)
 
-	currentUser := r.Context().Value("currentUser").(*dal.UserRow)
+	currentUser := r.Context().Value("currentUser").(*pg.UserRow)
 
-	currentCluster := r.Context().Value("currentCluster").(*dal.ClusterRow)
+	currentCluster := r.Context().Value("currentCluster").(*pg.ClusterRow)
 
 	accessToken, err := getAccessToken(w, r, "read")
 	if err != nil {
@@ -37,24 +37,24 @@ func GetChecks(w http.ResponseWriter, r *http.Request) {
 	// -----------------------------------
 	// Create channels to receive SQL rows
 	// -----------------------------------
-	checksChan := make(chan *dal.CheckRowsWithError)
+	checksChan := make(chan *pg.CheckRowsWithError)
 	defer close(checksChan)
 
-	metricsChan := make(chan *dal.MetricRowsWithError)
+	metricsChan := make(chan *pg.MetricRowsWithError)
 	defer close(metricsChan)
 
 	// --------------------------
 	// Fetch SQL rows in parallel
 	// --------------------------
-	go func(currentCluster *dal.ClusterRow) {
-		checksWithError := &dal.CheckRowsWithError{}
-		checksWithError.Checks, checksWithError.Error = dal.NewCheck(dbs.Core).AllByClusterID(nil, currentCluster.ID)
+	go func(currentCluster *pg.ClusterRow) {
+		checksWithError := &pg.CheckRowsWithError{}
+		checksWithError.Checks, checksWithError.Error = pg.NewCheck(dbs.Core).AllByClusterID(nil, currentCluster.ID)
 		checksChan <- checksWithError
 	}(currentCluster)
 
-	go func(currentCluster *dal.ClusterRow) {
-		metricsWithError := &dal.MetricRowsWithError{}
-		metricsWithError.Metrics, metricsWithError.Error = dal.NewMetric(dbs.Core).AllByClusterID(nil, currentCluster.ID)
+	go func(currentCluster *pg.ClusterRow) {
+		metricsWithError := &pg.MetricRowsWithError{}
+		metricsWithError.Metrics, metricsWithError.Error = pg.NewMetric(dbs.Core).AllByClusterID(nil, currentCluster.ID)
 		metricsChan <- metricsWithError
 	}(currentCluster)
 
@@ -82,18 +82,18 @@ func GetChecks(w http.ResponseWriter, r *http.Request) {
 	data := struct {
 		CSRFToken      string
 		Addr           string
-		CurrentUser    *dal.UserRow
-		AccessToken    *dal.AccessTokenRow
-		Clusters       []*dal.ClusterRow
-		CurrentCluster *dal.ClusterRow
-		Checks         []*dal.CheckRow
-		Metrics        []*dal.MetricRow
+		CurrentUser    *pg.UserRow
+		AccessToken    *pg.AccessTokenRow
+		Clusters       []*pg.ClusterRow
+		CurrentCluster *pg.ClusterRow
+		Checks         []*pg.CheckRow
+		Metrics        []*pg.MetricRow
 	}{
 		csrf.Token(r),
 		r.Context().Value("addr").(string),
 		currentUser,
 		accessToken,
-		r.Context().Value("clusters").([]*dal.ClusterRow),
+		r.Context().Value("clusters").([]*pg.ClusterRow),
 		currentCluster,
 		checksWithError.Checks,
 		metricsWithError.Metrics,
@@ -120,7 +120,7 @@ func PostChecks(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "text/html")
 
-	currentCluster := r.Context().Value("currentCluster").(*dal.ClusterRow)
+	currentCluster := r.Context().Value("currentCluster").(*pg.ClusterRow)
 
 	errLogger := r.Context().Value("errLogger").(*logrus.Logger)
 
@@ -149,7 +149,7 @@ func PostChecks(w http.ResponseWriter, r *http.Request) {
 	data["last_result_hosts"] = []byte("[]")
 	data["last_result_expressions"] = []byte("[]")
 
-	_, err = dal.NewCheck(dbs.Core).Create(nil, currentCluster.ID, data)
+	_, err = pg.NewCheck(dbs.Core).Create(nil, currentCluster.ID, data)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
@@ -220,7 +220,7 @@ func PutCheckID(w http.ResponseWriter, r *http.Request) {
 	data["hosts_list"] = hostsListJSON
 	data["expressions"] = r.FormValue("Expressions")
 
-	_, err = dal.NewCheck(dbs.Core).UpdateByID(nil, data, id)
+	_, err = pg.NewCheck(dbs.Core).UpdateByID(nil, data, id)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
@@ -238,9 +238,9 @@ func DeleteCheckID(w http.ResponseWriter, r *http.Request) {
 
 	dbs := r.Context().Value("dbs").(*config.DBConfig)
 
-	currentCluster := r.Context().Value("currentCluster").(*dal.ClusterRow)
+	currentCluster := r.Context().Value("currentCluster").(*pg.ClusterRow)
 
-	_, err = dal.NewCheck(dbs.Core).DeleteByClusterIDAndID(nil, currentCluster.ID, id)
+	_, err = pg.NewCheck(dbs.Core).DeleteByClusterIDAndID(nil, currentCluster.ID, id)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
@@ -258,7 +258,7 @@ func PostCheckIDSilence(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	check := dal.NewCheck(dbs.Core)
+	check := pg.NewCheck(dbs.Core)
 
 	checkRow, err := check.GetByID(nil, id)
 	if err != nil {
@@ -278,11 +278,11 @@ func PostCheckIDSilence(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, r.Referer(), 301)
 }
 
-func newCheckTriggerFromForm(r *http.Request) (dal.CheckTrigger, error) {
+func newCheckTriggerFromForm(r *http.Request) (pg.CheckTrigger, error) {
 	lowViolationsCountString := r.FormValue("LowViolationsCount")
 	lowViolationsCount, err := strconv.ParseInt(lowViolationsCountString, 10, 64)
 	if err != nil {
-		return dal.CheckTrigger{}, err
+		return pg.CheckTrigger{}, err
 	}
 
 	// Set highViolationsCount arbitrarily high by default.
@@ -292,7 +292,7 @@ func newCheckTriggerFromForm(r *http.Request) (dal.CheckTrigger, error) {
 	if highViolationsCountString != "" {
 		highViolationsCount, err = strconv.ParseInt(highViolationsCountString, 10, 64)
 		if err != nil {
-			return dal.CheckTrigger{}, err
+			return pg.CheckTrigger{}, err
 		}
 	}
 
@@ -301,11 +301,11 @@ func newCheckTriggerFromForm(r *http.Request) (dal.CheckTrigger, error) {
 	if createdIntervalMinuteString != "" {
 		createdIntervalMinute, err = strconv.ParseInt(createdIntervalMinuteString, 10, 64)
 		if err != nil {
-			return dal.CheckTrigger{}, err
+			return pg.CheckTrigger{}, err
 		}
 	}
 
-	action := dal.CheckTriggerAction{}
+	action := pg.CheckTriggerAction{}
 	action.Transport = r.FormValue("ActionTransport")
 	action.Email = r.FormValue("ActionEmail")
 	action.SMSCarrier = r.FormValue("ActionSMSCarrier")
@@ -313,7 +313,7 @@ func newCheckTriggerFromForm(r *http.Request) (dal.CheckTrigger, error) {
 	action.PagerDutyServiceKey = r.FormValue("ActionPagerDutyServiceKey")
 	action.PagerDutyDescription = r.FormValue("ActionPagerDutyDescription")
 
-	trigger := dal.CheckTrigger{}
+	trigger := pg.CheckTrigger{}
 	trigger.LowViolationsCount = lowViolationsCount
 	trigger.HighViolationsCount = highViolationsCount
 	trigger.CreatedIntervalMinute = createdIntervalMinute
@@ -347,7 +347,7 @@ func PostChecksTriggers(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	check := dal.NewCheck(dbs.Core)
+	check := pg.NewCheck(dbs.Core)
 
 	trigger.ID = check.NewExplicitID()
 
@@ -426,7 +426,7 @@ func PutCheckTriggerID(w http.ResponseWriter, r *http.Request) {
 
 	dbs := r.Context().Value("dbs").(*config.DBConfig)
 
-	check := dal.NewCheck(dbs.Core)
+	check := pg.NewCheck(dbs.Core)
 
 	checkRow, err := check.GetByID(nil, checkID)
 	if err != nil {
@@ -462,12 +462,12 @@ func DeleteCheckTriggerID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	trigger := dal.CheckTrigger{}
+	trigger := pg.CheckTrigger{}
 	trigger.ID = triggerID
 
 	dbs := r.Context().Value("dbs").(*config.DBConfig)
 
-	check := dal.NewCheck(dbs.Core)
+	check := pg.NewCheck(dbs.Core)
 
 	checkRow, err := check.GetByID(nil, checkID)
 	if err != nil {
@@ -489,7 +489,7 @@ func GetApiCheckIDResults(w http.ResponseWriter, r *http.Request) {
 
 	dbs := r.Context().Value("dbs").(*config.DBConfig)
 
-	accessTokenRow := r.Context().Value("accessToken").(*dal.AccessTokenRow)
+	accessTokenRow := r.Context().Value("accessToken").(*pg.AccessTokenRow)
 
 	qParams := r.URL.Query()
 
@@ -508,7 +508,7 @@ func GetApiCheckIDResults(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	checkRow, err := dal.NewCheck(dbs.Core).GetByID(nil, id)
+	checkRow, err := pg.NewCheck(dbs.Core).GetByID(nil, id)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
@@ -519,7 +519,7 @@ func GetApiCheckIDResults(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tsCheckRows, err := dal.NewTSCheck(dbs.GetTSCheck(checkRow.ClusterID)).LastByClusterIDCheckIDAndLimit(nil, checkRow.ClusterID, checkRow.ID, limit)
+	tsCheckRows, err := pg.NewTSCheck(dbs.GetTSCheck(checkRow.ClusterID)).LastByClusterIDCheckIDAndLimit(nil, checkRow.ClusterID, checkRow.ID, limit)
 
 	tsCheckRowsJSON, err := json.Marshal(tsCheckRows)
 	if err != nil {

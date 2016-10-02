@@ -5,13 +5,13 @@ import (
 
 	"github.com/Sirupsen/logrus"
 
-	"github.com/resourced/resourced-master/dal"
+	"github.com/resourced/resourced-master/models/pg"
 )
 
 // CheckAndRunTriggers pulls list of all checks, distributed evenly across N master daemons,
 // evaluates the checks and run triggers when conditions are met.
 func (app *Application) CheckAndRunTriggers() {
-	checkRowsChan := make(chan []*dal.CheckRow)
+	checkRowsChan := make(chan []*pg.CheckRow)
 
 	// Fetch Checks data, split by number of daemons, every time there's a value in app.RefetchChecksChan
 	go func() {
@@ -23,7 +23,7 @@ func (app *Application) CheckAndRunTriggers() {
 					daemons = append(daemons, hostAndPort)
 				}
 
-				groupedCheckRows, _ := dal.NewCheck(app.DBConfig.Core).AllSplitToDaemons(nil, daemons)
+				groupedCheckRows, _ := pg.NewCheck(app.DBConfig.Core).AllSplitToDaemons(nil, daemons)
 				checkRowsChan <- groupedCheckRows[app.FullAddr()]
 			}
 		}
@@ -32,7 +32,7 @@ func (app *Application) CheckAndRunTriggers() {
 	go func() {
 		for checkRows := range checkRowsChan {
 			for _, checkRow := range checkRows {
-				go func(checkRow *dal.CheckRow) {
+				go func(checkRow *pg.CheckRow) {
 					checkDuration, err := time.ParseDuration(checkRow.Interval)
 					if err != nil {
 						app.ErrLogger.WithFields(logrus.Fields{
@@ -59,7 +59,7 @@ func (app *Application) CheckAndRunTriggers() {
 						}
 
 						// 2. Store the check result.
-						clusterRow, err := dal.NewCluster(app.DBConfig.Core).GetByID(nil, checkRow.ClusterID)
+						clusterRow, err := pg.NewCluster(app.DBConfig.Core).GetByID(nil, checkRow.ClusterID)
 						if err != nil {
 							app.ErrLogger.WithFields(logrus.Fields{
 								"Method":    "Cluster.GetByID",
@@ -71,7 +71,7 @@ func (app *Application) CheckAndRunTriggers() {
 
 						deletedFrom := clusterRow.GetDeletedFromUNIXTimestampForInsert("ts_checks")
 
-						err = dal.NewTSCheck(app.DBConfig.GetTSCheck(checkRow.ClusterID)).Create(nil, checkRow.ClusterID, checkRow.ID, finalResult, expressionResults, deletedFrom)
+						err = pg.NewTSCheck(app.DBConfig.GetTSCheck(checkRow.ClusterID)).Create(nil, checkRow.ClusterID, checkRow.ID, finalResult, expressionResults, deletedFrom)
 						if err != nil {
 							app.ErrLogger.WithFields(logrus.Fields{
 								"Method":    "TSCheck.Create",

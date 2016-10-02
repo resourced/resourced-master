@@ -13,9 +13,9 @@ import (
 	"github.com/gorilla/sessions"
 
 	"github.com/resourced/resourced-master/config"
-	"github.com/resourced/resourced-master/dal"
 	"github.com/resourced/resourced-master/libhttp"
 	"github.com/resourced/resourced-master/mailer"
+	"github.com/resourced/resourced-master/models/pg"
 )
 
 // GetClusters displays the /clusters UI.
@@ -24,16 +24,16 @@ func GetClusters(w http.ResponseWriter, r *http.Request) {
 
 	dbs := r.Context().Value("dbs").(*config.DBConfig)
 
-	currentUser := r.Context().Value("currentUser").(*dal.UserRow)
+	currentUser := r.Context().Value("currentUser").(*pg.UserRow)
 
-	clusters := r.Context().Value("clusters").([]*dal.ClusterRow)
+	clusters := r.Context().Value("clusters").([]*pg.ClusterRow)
 
-	currentCluster := r.Context().Value("currentCluster").(*dal.ClusterRow)
+	currentCluster := r.Context().Value("currentCluster").(*pg.ClusterRow)
 
-	accessTokens := make(map[int64][]*dal.AccessTokenRow)
+	accessTokens := make(map[int64][]*pg.AccessTokenRow)
 
 	for _, cluster := range clusters {
-		accessTokensSlice, err := dal.NewAccessToken(dbs.Core).AllByClusterID(nil, cluster.ID)
+		accessTokensSlice, err := pg.NewAccessToken(dbs.Core).AllByClusterID(nil, cluster.ID)
 		if err != nil {
 			libhttp.HandleErrorHTML(w, err, 500)
 			return
@@ -44,10 +44,10 @@ func GetClusters(w http.ResponseWriter, r *http.Request) {
 
 	data := struct {
 		CSRFToken      string
-		CurrentUser    *dal.UserRow
-		Clusters       []*dal.ClusterRow
-		CurrentCluster *dal.ClusterRow
-		AccessTokens   map[int64][]*dal.AccessTokenRow
+		CurrentUser    *pg.UserRow
+		Clusters       []*pg.ClusterRow
+		CurrentCluster *pg.ClusterRow
+		AccessTokens   map[int64][]*pg.AccessTokenRow
 	}{
 		csrf.Token(r),
 		currentUser,
@@ -77,9 +77,9 @@ func GetClusters(w http.ResponseWriter, r *http.Request) {
 func PostClusters(w http.ResponseWriter, r *http.Request) {
 	dbs := r.Context().Value("dbs").(*config.DBConfig)
 
-	currentUser := r.Context().Value("currentUser").(*dal.UserRow)
+	currentUser := r.Context().Value("currentUser").(*pg.UserRow)
 
-	_, err := dal.NewCluster(dbs.Core).Create(nil, currentUser, r.FormValue("Name"))
+	_, err := pg.NewCluster(dbs.Core).Create(nil, currentUser, r.FormValue("Name"))
 	if err != nil {
 		libhttp.HandleErrorHTML(w, err, 500)
 		return
@@ -100,7 +100,7 @@ func PostClusterIDCurrent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	clusterRows := r.Context().Value("clusters").([]*dal.ClusterRow)
+	clusterRows := r.Context().Value("clusters").([]*pg.ClusterRow)
 	for _, clusterRow := range clusterRows {
 		if clusterRow.ID == clusterID {
 			session.Values["currentCluster"] = clusterRow
@@ -169,7 +169,7 @@ func PutClusterID(w http.ResponseWriter, r *http.Request) {
 	data["name"] = name
 	data["data_retention"] = dataRetentionJSON
 
-	_, err = dal.NewCluster(dbs.Core).UpdateByID(nil, data, clusterID)
+	_, err = pg.NewCluster(dbs.Core).UpdateByID(nil, data, clusterID)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
@@ -188,9 +188,9 @@ func DeleteClusterID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	currentUser := r.Context().Value("currentUser").(*dal.UserRow)
+	currentUser := r.Context().Value("currentUser").(*pg.UserRow)
 
-	cluster := dal.NewCluster(dbs.Core)
+	cluster := pg.NewCluster(dbs.Core)
 
 	clustersByUser, err := cluster.AllByUserID(nil, currentUser.ID)
 	if err != nil {
@@ -244,11 +244,11 @@ func PutClusterIDUsers(w http.ResponseWriter, r *http.Request) {
 		enabled = true
 	}
 
-	userRow, err := dal.NewUser(dbs.Core).GetByEmail(nil, email)
+	userRow, err := pg.NewUser(dbs.Core).GetByEmail(nil, email)
 	if err != nil && strings.Contains(err.Error(), "no rows in result set") {
 
 		// 1. Create a user with temporary password
-		userRow, err = dal.NewUser(dbs.Core).SignupRandomPassword(nil, email)
+		userRow, err = pg.NewUser(dbs.Core).SignupRandomPassword(nil, email)
 		if err != nil {
 			libhttp.HandleErrorJson(w, err)
 			return
@@ -256,7 +256,7 @@ func PutClusterIDUsers(w http.ResponseWriter, r *http.Request) {
 
 		// 2. Send email invite to user
 		if userRow.EmailVerificationToken.String != "" {
-			clusterRow, err := dal.NewCluster(dbs.Core).GetByID(nil, clusterID)
+			clusterRow, err := pg.NewCluster(dbs.Core).GetByID(nil, clusterID)
 			if err != nil {
 				libhttp.HandleErrorJson(w, err)
 				return
@@ -280,7 +280,7 @@ Your coleague has invited you to join cluster: %v. Click the following link to s
 	}
 
 	// Add user as a member to this cluster
-	err = dal.NewCluster(dbs.Core).UpdateMember(nil, clusterID, userRow, level, enabled)
+	err = pg.NewCluster(dbs.Core).UpdateMember(nil, clusterID, userRow, level, enabled)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
@@ -301,9 +301,9 @@ func DeleteClusterIDUsers(w http.ResponseWriter, r *http.Request) {
 
 	email := r.FormValue("Email")
 
-	existingUser, _ := dal.NewUser(dbs.Core).GetByEmail(nil, email)
+	existingUser, _ := pg.NewUser(dbs.Core).GetByEmail(nil, email)
 	if existingUser != nil {
-		err := dal.NewCluster(dbs.Core).RemoveMember(nil, clusterID, existingUser)
+		err := pg.NewCluster(dbs.Core).RemoveMember(nil, clusterID, existingUser)
 		if err != nil {
 			libhttp.HandleErrorJson(w, err)
 			return

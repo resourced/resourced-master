@@ -12,7 +12,7 @@ import (
 	gocache "github.com/patrickmn/go-cache"
 
 	"github.com/resourced/resourced-master/application"
-	"github.com/resourced/resourced-master/dal"
+	"github.com/resourced/resourced-master/models/pg"
 )
 
 var (
@@ -26,8 +26,8 @@ var (
 )
 
 func init() {
-	gob.Register(&dal.UserRow{})
-	gob.Register(&dal.ClusterRow{})
+	gob.Register(&pg.UserRow{})
+	gob.Register(&pg.ClusterRow{})
 }
 
 func main() {

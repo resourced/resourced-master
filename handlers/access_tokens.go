@@ -4,14 +4,14 @@ import (
 	"net/http"
 
 	"github.com/resourced/resourced-master/config"
-	"github.com/resourced/resourced-master/dal"
 	"github.com/resourced/resourced-master/libhttp"
+	"github.com/resourced/resourced-master/models/pg"
 )
 
 func PostAccessTokens(w http.ResponseWriter, r *http.Request) {
 	dbs := r.Context().Value("dbs").(*config.DBConfig)
 
-	currentUser := r.Context().Value("currentUser").(*dal.UserRow)
+	currentUser := r.Context().Value("currentUser").(*pg.UserRow)
 
 	clusterID, err := getInt64SlugFromPath(w, r, "clusterID")
 	if err != nil {
@@ -21,7 +21,7 @@ func PostAccessTokens(w http.ResponseWriter, r *http.Request) {
 
 	level := r.FormValue("Level")
 
-	_, err = dal.NewAccessToken(dbs.Core).Create(nil, currentUser.ID, clusterID, level)
+	_, err = pg.NewAccessToken(dbs.Core).Create(nil, currentUser.ID, clusterID, level)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
@@ -44,7 +44,7 @@ func PostAccessTokensLevel(w http.ResponseWriter, r *http.Request) {
 	data := make(map[string]interface{})
 	data["level"] = level
 
-	_, err = dal.NewAccessToken(dbs.Core).UpdateByID(nil, data, tokenID)
+	_, err = pg.NewAccessToken(dbs.Core).UpdateByID(nil, data, tokenID)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
@@ -62,7 +62,7 @@ func PostAccessTokensEnabled(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	at := dal.NewAccessToken(dbs.Core)
+	at := pg.NewAccessToken(dbs.Core)
 
 	accessTokenRow, err := at.GetByID(nil, tokenID)
 	if err != nil {
@@ -91,7 +91,7 @@ func PostAccessTokensDelete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err = dal.NewAccessToken(dbs.Core).DeleteByID(nil, tokenID)
+	_, err = pg.NewAccessToken(dbs.Core).DeleteByID(nil, tokenID)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return

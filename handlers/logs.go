@@ -13,16 +13,16 @@ import (
 	"github.com/gorilla/csrf"
 
 	"github.com/resourced/resourced-master/config"
-	"github.com/resourced/resourced-master/dal"
 	"github.com/resourced/resourced-master/libhttp"
+	"github.com/resourced/resourced-master/models/pg"
 )
 
 func GetLogs(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html")
 
-	currentUser := r.Context().Value("currentUser").(*dal.UserRow)
+	currentUser := r.Context().Value("currentUser").(*pg.UserRow)
 
-	currentCluster := r.Context().Value("currentCluster").(*dal.ClusterRow)
+	currentCluster := r.Context().Value("currentCluster").(*pg.ClusterRow)
 
 	dbs := r.Context().Value("dbs").(*config.DBConfig)
 
@@ -41,11 +41,11 @@ func GetLogs(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Fetch the last log row if any of the from/to are missing.
-	var lastLogRow *dal.TSLogRow
+	var lastLogRow *pg.TSLogRow
 	var err error
 
 	if fromString == "" || toString == "" {
-		lastLogRow, err = dal.NewTSLog(dbs.GetTSLog(currentCluster.ID)).LastByClusterID(nil, currentCluster.ID)
+		lastLogRow, err = pg.NewTSLog(dbs.GetTSLog(currentCluster.ID)).LastByClusterID(nil, currentCluster.ID)
 		if err != nil && err.Error() != "sql: no rows in result set" {
 			libhttp.HandleErrorJson(w, err)
 			return
@@ -62,7 +62,7 @@ func GetLogs(w http.ResponseWriter, r *http.Request) {
 		from = lastLogRow.Created.Add(-30 * time.Minute).Unix()
 	}
 
-	savedQueries, err := dal.NewSavedQuery(dbs.Core).AllByClusterIDAndType(nil, currentCluster.ID, "logs")
+	savedQueries, err := pg.NewSavedQuery(dbs.Core).AllByClusterIDAndType(nil, currentCluster.ID, "logs")
 	if err != nil && err.Error() != "sql: no rows in result set" {
 		libhttp.HandleErrorJson(w, err)
 		return
@@ -77,11 +77,11 @@ func GetLogs(w http.ResponseWriter, r *http.Request) {
 	data := struct {
 		CSRFToken      string
 		Addr           string
-		CurrentUser    *dal.UserRow
-		AccessToken    *dal.AccessTokenRow
-		Clusters       []*dal.ClusterRow
-		CurrentCluster *dal.ClusterRow
-		SavedQueries   []*dal.SavedQueryRow
+		CurrentUser    *pg.UserRow
+		AccessToken    *pg.AccessTokenRow
+		Clusters       []*pg.ClusterRow
+		CurrentCluster *pg.ClusterRow
+		SavedQueries   []*pg.SavedQueryRow
 		From           int64
 		To             int64
 	}{
@@ -89,7 +89,7 @@ func GetLogs(w http.ResponseWriter, r *http.Request) {
 		r.Context().Value("addr").(string),
 		currentUser,
 		accessToken,
-		r.Context().Value("clusters").([]*dal.ClusterRow),
+		r.Context().Value("clusters").([]*pg.ClusterRow),
 		currentCluster,
 		savedQueries,
 		from,
@@ -117,7 +117,7 @@ func PostApiLogs(w http.ResponseWriter, r *http.Request) {
 
 	dbs := r.Context().Value("dbs").(*config.DBConfig)
 
-	accessTokenRow := r.Context().Value("accessToken").(*dal.AccessTokenRow)
+	accessTokenRow := r.Context().Value("accessToken").(*pg.AccessTokenRow)
 
 	errLogger := r.Context().Value("errLogger").(*logrus.Logger)
 
@@ -127,7 +127,7 @@ func PostApiLogs(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	clusterRow, err := dal.NewCluster(dbs.Core).GetByID(nil, accessTokenRow.ClusterID)
+	clusterRow, err := pg.NewCluster(dbs.Core).GetByID(nil, accessTokenRow.ClusterID)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
@@ -136,7 +136,7 @@ func PostApiLogs(w http.ResponseWriter, r *http.Request) {
 	deletedFrom := clusterRow.GetDeletedFromUNIXTimestampForInsert("ts_logs")
 
 	go func() {
-		err = dal.NewTSLog(dbs.GetTSLog(accessTokenRow.ClusterID)).CreateFromJSON(nil, accessTokenRow.ClusterID, dataJson, deletedFrom)
+		err = pg.NewTSLog(dbs.GetTSLog(accessTokenRow.ClusterID)).CreateFromJSON(nil, accessTokenRow.ClusterID, dataJson, deletedFrom)
 		if err != nil {
 			errLogger.Error(err)
 		}
@@ -150,7 +150,7 @@ func GetApiLogs(w http.ResponseWriter, r *http.Request) {
 
 	dbs := r.Context().Value("dbs").(*config.DBConfig)
 
-	accessTokenRow := r.Context().Value("accessToken").(*dal.AccessTokenRow)
+	accessTokenRow := r.Context().Value("accessToken").(*pg.AccessTokenRow)
 
 	qParams := r.URL.Query()
 
@@ -167,11 +167,11 @@ func GetApiLogs(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Fetch the last log row if any of the from/to are missing.
-	var lastLogRow *dal.TSLogRow
+	var lastLogRow *pg.TSLogRow
 	var err error
 
 	if fromString == "" || toString == "" {
-		lastLogRow, err = dal.NewTSLog(dbs.GetTSLog(accessTokenRow.ClusterID)).LastByClusterID(nil, accessTokenRow.ClusterID)
+		lastLogRow, err = pg.NewTSLog(dbs.GetTSLog(accessTokenRow.ClusterID)).LastByClusterID(nil, accessTokenRow.ClusterID)
 		if err != nil && err.Error() != "sql: no rows in result set" {
 			libhttp.HandleErrorJson(w, err)
 			return
@@ -188,7 +188,7 @@ func GetApiLogs(w http.ResponseWriter, r *http.Request) {
 		from = lastLogRow.Created.Add(-30 * time.Minute).Unix()
 	}
 
-	clusterRow, err := dal.NewCluster(dbs.Core).GetByID(nil, accessTokenRow.ClusterID)
+	clusterRow, err := pg.NewCluster(dbs.Core).GetByID(nil, accessTokenRow.ClusterID)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
@@ -196,7 +196,7 @@ func GetApiLogs(w http.ResponseWriter, r *http.Request) {
 
 	deletedFrom := clusterRow.GetDeletedFromUNIXTimestampForSelect("ts_logs")
 
-	tsLogs, err := dal.NewTSLog(dbs.GetTSLog(accessTokenRow.ClusterID)).AllByClusterIDRangeAndQuery(
+	tsLogs, err := pg.NewTSLog(dbs.GetTSLog(accessTokenRow.ClusterID)).AllByClusterIDRangeAndQuery(
 		nil,
 		accessTokenRow.ClusterID,
 		int64(math.Min(float64(from), float64(to))),

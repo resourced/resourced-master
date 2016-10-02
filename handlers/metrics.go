@@ -10,8 +10,8 @@ import (
 	"github.com/pressly/chi"
 
 	"github.com/resourced/resourced-master/config"
-	"github.com/resourced/resourced-master/dal"
 	"github.com/resourced/resourced-master/libhttp"
+	"github.com/resourced/resourced-master/models/pg"
 )
 
 func PostMetrics(w http.ResponseWriter, r *http.Request) {
@@ -25,7 +25,7 @@ func PostMetrics(w http.ResponseWriter, r *http.Request) {
 
 	key := r.FormValue("Key")
 
-	_, err = dal.NewMetric(dbs.Core).CreateOrUpdate(nil, clusterID, key)
+	_, err = pg.NewMetric(dbs.Core).CreateOrUpdate(nil, clusterID, key)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
@@ -69,13 +69,13 @@ func DeleteMetricID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err = dal.NewMetric(dbs.Core).DeleteByClusterIDAndID(nil, clusterID, id)
+	_, err = pg.NewMetric(dbs.Core).DeleteByClusterIDAndID(nil, clusterID, id)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
 	}
 
-	err = dal.NewGraph(dbs.Core).DeleteMetricFromGraphs(nil, clusterID, id)
+	err = pg.NewGraph(dbs.Core).DeleteMetricFromGraphs(nil, clusterID, id)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
@@ -124,14 +124,14 @@ func GetApiTSMetricsByHost(w http.ResponseWriter, r *http.Request) {
 
 	host := chi.URLParam(r, "host")
 
-	metricRow, err := dal.NewMetric(dbs.Core).GetByID(nil, id)
+	metricRow, err := pg.NewMetric(dbs.Core).GetByID(nil, id)
 	if err != nil {
 		errLogger.WithFields(logrus.Fields{"Error": err}).Error("Failed to fetch metric row")
 		libhttp.HandleErrorJson(w, err)
 		return
 	}
 
-	clusterRow, err := dal.NewCluster(dbs.Core).GetByID(nil, metricRow.ClusterID)
+	clusterRow, err := pg.NewCluster(dbs.Core).GetByID(nil, metricRow.ClusterID)
 	if err != nil {
 		errLogger.WithFields(logrus.Fields{"Error": err}).Error("Failed to fetch cluster row")
 		libhttp.HandleErrorJson(w, err)
@@ -140,7 +140,7 @@ func GetApiTSMetricsByHost(w http.ResponseWriter, r *http.Request) {
 
 	deletedFrom := clusterRow.GetDeletedFromUNIXTimestampForSelect("ts_metrics")
 
-	hcMetrics, err := dal.NewTSMetric(dbs.GetTSMetric(metricRow.ClusterID)).AllByMetricIDHostAndRangeForHighchart(nil, metricRow.ClusterID, id, host, from, to, deletedFrom)
+	hcMetrics, err := pg.NewTSMetric(dbs.GetTSMetric(metricRow.ClusterID)).AllByMetricIDHostAndRangeForHighchart(nil, metricRow.ClusterID, id, host, from, to, deletedFrom)
 	if err != nil {
 		errLogger.WithFields(logrus.Fields{"Error": err}).Error("Failed to fetch metrics rows")
 		libhttp.HandleErrorJson(w, err)
@@ -199,13 +199,13 @@ func GetApiTSMetricsByHost15Min(w http.ResponseWriter, r *http.Request) {
 
 	host := chi.URLParam(r, "host")
 
-	metricRow, err := dal.NewMetric(dbs.Core).GetByID(nil, id)
+	metricRow, err := pg.NewMetric(dbs.Core).GetByID(nil, id)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
 	}
 
-	clusterRow, err := dal.NewCluster(dbs.Core).GetByID(nil, metricRow.ClusterID)
+	clusterRow, err := pg.NewCluster(dbs.Core).GetByID(nil, metricRow.ClusterID)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
@@ -213,7 +213,7 @@ func GetApiTSMetricsByHost15Min(w http.ResponseWriter, r *http.Request) {
 
 	deletedFrom := clusterRow.GetDeletedFromUNIXTimestampForSelect("ts_metrics_aggr_15m")
 
-	hcMetrics, err := dal.NewTSMetricAggr15m(dbs.GetTSMetricAggr15m(metricRow.ClusterID)).AllByMetricIDHostAndRangeForHighchart(nil, metricRow.ClusterID, id, host, from, to, deletedFrom, aggr)
+	hcMetrics, err := pg.NewTSMetricAggr15m(dbs.GetTSMetricAggr15m(metricRow.ClusterID)).AllByMetricIDHostAndRangeForHighchart(nil, metricRow.ClusterID, id, host, from, to, deletedFrom, aggr)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
@@ -264,13 +264,13 @@ func GetApiTSMetrics(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	metricRow, err := dal.NewMetric(dbs.Core).GetByID(nil, id)
+	metricRow, err := pg.NewMetric(dbs.Core).GetByID(nil, id)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
 	}
 
-	clusterRow, err := dal.NewCluster(dbs.Core).GetByID(nil, metricRow.ClusterID)
+	clusterRow, err := pg.NewCluster(dbs.Core).GetByID(nil, metricRow.ClusterID)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
@@ -278,7 +278,7 @@ func GetApiTSMetrics(w http.ResponseWriter, r *http.Request) {
 
 	deletedFrom := clusterRow.GetDeletedFromUNIXTimestampForSelect("ts_metrics")
 
-	hcMetrics, err := dal.NewTSMetric(dbs.GetTSMetric(metricRow.ClusterID)).AllByMetricIDAndRangeForHighchart(nil, metricRow.ClusterID, id, from, to, deletedFrom)
+	hcMetrics, err := pg.NewTSMetric(dbs.GetTSMetric(metricRow.ClusterID)).AllByMetricIDAndRangeForHighchart(nil, metricRow.ClusterID, id, from, to, deletedFrom)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
@@ -334,13 +334,13 @@ func GetApiTSMetrics15Min(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	metricRow, err := dal.NewMetric(dbs.Core).GetByID(nil, id)
+	metricRow, err := pg.NewMetric(dbs.Core).GetByID(nil, id)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
 	}
 
-	clusterRow, err := dal.NewCluster(dbs.Core).GetByID(nil, metricRow.ClusterID)
+	clusterRow, err := pg.NewCluster(dbs.Core).GetByID(nil, metricRow.ClusterID)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
@@ -348,7 +348,7 @@ func GetApiTSMetrics15Min(w http.ResponseWriter, r *http.Request) {
 
 	deletedFrom := clusterRow.GetDeletedFromUNIXTimestampForSelect("ts_metrics")
 
-	hcMetrics, err := dal.NewTSMetricAggr15m(dbs.GetTSMetricAggr15m(metricRow.ClusterID)).AllByMetricIDAndRangeForHighchart(nil, metricRow.ClusterID, id, from, to, deletedFrom, aggr)
+	hcMetrics, err := pg.NewTSMetricAggr15m(dbs.GetTSMetricAggr15m(metricRow.ClusterID)).AllByMetricIDAndRangeForHighchart(nil, metricRow.ClusterID, id, from, to, deletedFrom, aggr)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
