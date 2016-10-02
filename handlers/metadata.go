@@ -15,7 +15,7 @@ import (
 func GetApiMetadata(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	dbs := r.Context().Value("dbs").(*config.PGDBConfig)
+	dbs := r.Context().Value("pg-dbs").(*config.PGDBConfig)
 
 	accessTokenRow := r.Context().Value("accessToken").(*pg.AccessTokenRow)
 
@@ -37,7 +37,7 @@ func GetApiMetadata(w http.ResponseWriter, r *http.Request) {
 func PostApiMetadataKey(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	dbs := r.Context().Value("dbs").(*config.PGDBConfig)
+	dbs := r.Context().Value("pg-dbs").(*config.PGDBConfig)
 
 	accessTokenRow := r.Context().Value("accessToken").(*pg.AccessTokenRow)
 
@@ -67,7 +67,7 @@ func PostApiMetadataKey(w http.ResponseWriter, r *http.Request) {
 func DeleteApiMetadataKey(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	dbs := r.Context().Value("dbs").(*config.PGDBConfig)
+	dbs := r.Context().Value("pg-dbs").(*config.PGDBConfig)
 
 	accessTokenRow := r.Context().Value("accessToken").(*pg.AccessTokenRow)
 
@@ -91,7 +91,7 @@ func DeleteApiMetadataKey(w http.ResponseWriter, r *http.Request) {
 func GetApiMetadataKey(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	dbs := r.Context().Value("dbs").(*config.PGDBConfig)
+	dbs := r.Context().Value("pg-dbs").(*config.PGDBConfig)
 
 	accessTokenRow := r.Context().Value("accessToken").(*pg.AccessTokenRow)
 

@@ -22,7 +22,7 @@ import (
 func GetChecks(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html")
 
-	dbs := r.Context().Value("dbs").(*config.PGDBConfig)
+	dbs := r.Context().Value("pg-dbs").(*config.PGDBConfig)
 
 	currentUser := r.Context().Value("currentUser").(*pg.UserRow)
 
@@ -116,7 +116,7 @@ func GetChecks(w http.ResponseWriter, r *http.Request) {
 }
 
 func PostChecks(w http.ResponseWriter, r *http.Request) {
-	dbs := r.Context().Value("dbs").(*config.PGDBConfig)
+	dbs := r.Context().Value("pg-dbs").(*config.PGDBConfig)
 
 	w.Header().Set("Content-Type", "text/html")
 
@@ -190,7 +190,7 @@ func PostPutDeleteCheckID(w http.ResponseWriter, r *http.Request) {
 }
 
 func PutCheckID(w http.ResponseWriter, r *http.Request) {
-	dbs := r.Context().Value("dbs").(*config.PGDBConfig)
+	dbs := r.Context().Value("pg-dbs").(*config.PGDBConfig)
 
 	id, err := getInt64SlugFromPath(w, r, "checkID")
 	if err != nil {
@@ -236,7 +236,7 @@ func DeleteCheckID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	dbs := r.Context().Value("dbs").(*config.PGDBConfig)
+	dbs := r.Context().Value("pg-dbs").(*config.PGDBConfig)
 
 	currentCluster := r.Context().Value("currentCluster").(*pg.ClusterRow)
 
@@ -250,7 +250,7 @@ func DeleteCheckID(w http.ResponseWriter, r *http.Request) {
 }
 
 func PostCheckIDSilence(w http.ResponseWriter, r *http.Request) {
-	dbs := r.Context().Value("dbs").(*config.PGDBConfig)
+	dbs := r.Context().Value("pg-dbs").(*config.PGDBConfig)
 
 	id, err := getInt64SlugFromPath(w, r, "checkID")
 	if err != nil {
@@ -323,7 +323,7 @@ func newCheckTriggerFromForm(r *http.Request) (pg.CheckTrigger, error) {
 }
 
 func PostChecksTriggers(w http.ResponseWriter, r *http.Request) {
-	dbs := r.Context().Value("dbs").(*config.PGDBConfig)
+	dbs := r.Context().Value("pg-dbs").(*config.PGDBConfig)
 
 	errLogger := r.Context().Value("errLogger").(*logrus.Logger)
 
@@ -424,7 +424,7 @@ func PutCheckTriggerID(w http.ResponseWriter, r *http.Request) {
 
 	trigger.ID = triggerID
 
-	dbs := r.Context().Value("dbs").(*config.PGDBConfig)
+	dbs := r.Context().Value("pg-dbs").(*config.PGDBConfig)
 
 	check := pg.NewCheck(dbs.Core)
 
@@ -465,7 +465,7 @@ func DeleteCheckTriggerID(w http.ResponseWriter, r *http.Request) {
 	trigger := pg.CheckTrigger{}
 	trigger.ID = triggerID
 
-	dbs := r.Context().Value("dbs").(*config.PGDBConfig)
+	dbs := r.Context().Value("pg-dbs").(*config.PGDBConfig)
 
 	check := pg.NewCheck(dbs.Core)
 
@@ -487,7 +487,7 @@ func DeleteCheckTriggerID(w http.ResponseWriter, r *http.Request) {
 func GetApiCheckIDResults(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	dbs := r.Context().Value("dbs").(*config.PGDBConfig)
+	dbs := r.Context().Value("pg-dbs").(*config.PGDBConfig)
 
 	accessTokenRow := r.Context().Value("accessToken").(*pg.AccessTokenRow)
 

@@ -2,6 +2,7 @@ package config
 
 import (
 	"strconv"
+	"strings"
 
 	"github.com/jmoiron/sqlx"
 )
@@ -16,181 +17,207 @@ func NewPGDBConfig(generalConfig GeneralConfig) (*PGDBConfig, error) {
 	conf.TSLogByClusterID = make(map[int64]*sqlx.DB)
 	conf.TSCheckByClusterID = make(map[int64]*sqlx.DB)
 
-	db, err := sqlx.Connect("postgres", generalConfig.DSN)
-	if err != nil {
-		return nil, err
+	if strings.HasPrefix(generalConfig.DSN, "postgres") {
+		db, err := sqlx.Connect("postgres", generalConfig.DSN)
+		if err != nil {
+			return nil, err
+		}
+		if generalConfig.DBMaxOpenConnections > int64(0) {
+			db.DB.SetMaxOpenConns(int(generalConfig.DBMaxOpenConnections))
+		}
+		conf.Core = db
 	}
-	if generalConfig.DBMaxOpenConnections > int64(0) {
-		db.DB.SetMaxOpenConns(int(generalConfig.DBMaxOpenConnections))
-	}
-	conf.Core = db
 
 	// ---------------------------------------------------------
 	// hosts table
 	//
-	db, err = sqlx.Connect("postgres", generalConfig.Hosts.DSN)
-	if err != nil {
-		return nil, err
-	}
-	if generalConfig.Hosts.DBMaxOpenConnections > int64(0) {
-		db.DB.SetMaxOpenConns(int(generalConfig.Hosts.DBMaxOpenConnections))
-	}
-	conf.Host = db
-
-	for clusterIDString, dsn := range generalConfig.Hosts.DSNByClusterID {
-		clusterID, err := strconv.ParseInt(clusterIDString, 10, 64)
-		if err != nil {
-			return nil, err
-		}
-
-		db, err = sqlx.Connect("postgres", dsn)
+	if strings.HasPrefix(generalConfig.Hosts.DSN, "postgres") {
+		db, err := sqlx.Connect("postgres", generalConfig.Hosts.DSN)
 		if err != nil {
 			return nil, err
 		}
 		if generalConfig.Hosts.DBMaxOpenConnections > int64(0) {
 			db.DB.SetMaxOpenConns(int(generalConfig.Hosts.DBMaxOpenConnections))
 		}
-		conf.HostByClusterID[clusterID] = db
+		conf.Host = db
+	}
+
+	for clusterIDString, dsn := range generalConfig.Hosts.DSNByClusterID {
+		if strings.HasPrefix(dsn, "postgres") {
+			clusterID, err := strconv.ParseInt(clusterIDString, 10, 64)
+			if err != nil {
+				return nil, err
+			}
+
+			db, err := sqlx.Connect("postgres", dsn)
+			if err != nil {
+				return nil, err
+			}
+			if generalConfig.Hosts.DBMaxOpenConnections > int64(0) {
+				db.DB.SetMaxOpenConns(int(generalConfig.Hosts.DBMaxOpenConnections))
+			}
+			conf.HostByClusterID[clusterID] = db
+		}
 	}
 
 	// ---------------------------------------------------------
 	// ts_metrics table
 	//
-	db, err = sqlx.Connect("postgres", generalConfig.Metrics.DSN)
-	if err != nil {
-		return nil, err
-	}
-	if generalConfig.Metrics.DBMaxOpenConnections > int64(0) {
-		db.DB.SetMaxOpenConns(int(generalConfig.Metrics.DBMaxOpenConnections))
-	}
-	conf.TSMetric = db
-
-	for clusterIDString, dsn := range generalConfig.Metrics.DSNByClusterID {
-		clusterID, err := strconv.ParseInt(clusterIDString, 10, 64)
-		if err != nil {
-			return nil, err
-		}
-
-		db, err = sqlx.Connect("postgres", dsn)
+	if strings.HasPrefix(generalConfig.Metrics.DSN, "postgres") {
+		db, err := sqlx.Connect("postgres", generalConfig.Metrics.DSN)
 		if err != nil {
 			return nil, err
 		}
 		if generalConfig.Metrics.DBMaxOpenConnections > int64(0) {
 			db.DB.SetMaxOpenConns(int(generalConfig.Metrics.DBMaxOpenConnections))
 		}
-		conf.TSMetricByClusterID[clusterID] = db
+		conf.TSMetric = db
+	}
+
+	for clusterIDString, dsn := range generalConfig.Metrics.DSNByClusterID {
+		if strings.HasPrefix(dsn, "postgres") {
+			clusterID, err := strconv.ParseInt(clusterIDString, 10, 64)
+			if err != nil {
+				return nil, err
+			}
+
+			db, err := sqlx.Connect("postgres", dsn)
+			if err != nil {
+				return nil, err
+			}
+			if generalConfig.Metrics.DBMaxOpenConnections > int64(0) {
+				db.DB.SetMaxOpenConns(int(generalConfig.Metrics.DBMaxOpenConnections))
+			}
+			conf.TSMetricByClusterID[clusterID] = db
+		}
 	}
 
 	// ---------------------------------------------------------
 	// ts_metrics_aggr_15m table
 	//
-	db, err = sqlx.Connect("postgres", generalConfig.MetricsAggr15m.DSN)
-	if err != nil {
-		return nil, err
-	}
-	if generalConfig.MetricsAggr15m.DBMaxOpenConnections > int64(0) {
-		db.DB.SetMaxOpenConns(int(generalConfig.MetricsAggr15m.DBMaxOpenConnections))
-	}
-	conf.TSMetricAggr15m = db
-
-	for clusterIDString, dsn := range generalConfig.MetricsAggr15m.DSNByClusterID {
-		clusterID, err := strconv.ParseInt(clusterIDString, 10, 64)
-		if err != nil {
-			return nil, err
-		}
-
-		db, err = sqlx.Connect("postgres", dsn)
+	if strings.HasPrefix(generalConfig.MetricsAggr15m.DSN, "postgres") {
+		db, err := sqlx.Connect("postgres", generalConfig.MetricsAggr15m.DSN)
 		if err != nil {
 			return nil, err
 		}
 		if generalConfig.MetricsAggr15m.DBMaxOpenConnections > int64(0) {
 			db.DB.SetMaxOpenConns(int(generalConfig.MetricsAggr15m.DBMaxOpenConnections))
 		}
-		conf.TSMetricAggr15mByClusterID[clusterID] = db
+		conf.TSMetricAggr15m = db
+	}
+
+	for clusterIDString, dsn := range generalConfig.MetricsAggr15m.DSNByClusterID {
+		if strings.HasPrefix(dsn, "postgres") {
+			clusterID, err := strconv.ParseInt(clusterIDString, 10, 64)
+			if err != nil {
+				return nil, err
+			}
+
+			db, err := sqlx.Connect("postgres", dsn)
+			if err != nil {
+				return nil, err
+			}
+			if generalConfig.MetricsAggr15m.DBMaxOpenConnections > int64(0) {
+				db.DB.SetMaxOpenConns(int(generalConfig.MetricsAggr15m.DBMaxOpenConnections))
+			}
+			conf.TSMetricAggr15mByClusterID[clusterID] = db
+		}
 	}
 
 	// ---------------------------------------------------------
 	// ts_events table
 	//
-	db, err = sqlx.Connect("postgres", generalConfig.Events.DSN)
-	if err != nil {
-		return nil, err
-	}
-	if generalConfig.Events.DBMaxOpenConnections > int64(0) {
-		db.DB.SetMaxOpenConns(int(generalConfig.Events.DBMaxOpenConnections))
-	}
-	conf.TSEvent = db
-
-	for clusterIDString, dsn := range generalConfig.Events.DSNByClusterID {
-		clusterID, err := strconv.ParseInt(clusterIDString, 10, 64)
-		if err != nil {
-			return nil, err
-		}
-
-		db, err = sqlx.Connect("postgres", dsn)
+	if strings.HasPrefix(generalConfig.Events.DSN, "postgres") {
+		db, err := sqlx.Connect("postgres", generalConfig.Events.DSN)
 		if err != nil {
 			return nil, err
 		}
 		if generalConfig.Events.DBMaxOpenConnections > int64(0) {
 			db.DB.SetMaxOpenConns(int(generalConfig.Events.DBMaxOpenConnections))
 		}
-		conf.TSEventByClusterID[clusterID] = db
+		conf.TSEvent = db
+	}
+
+	for clusterIDString, dsn := range generalConfig.Events.DSNByClusterID {
+		if strings.HasPrefix(dsn, "postgres") {
+			clusterID, err := strconv.ParseInt(clusterIDString, 10, 64)
+			if err != nil {
+				return nil, err
+			}
+
+			db, err := sqlx.Connect("postgres", dsn)
+			if err != nil {
+				return nil, err
+			}
+			if generalConfig.Events.DBMaxOpenConnections > int64(0) {
+				db.DB.SetMaxOpenConns(int(generalConfig.Events.DBMaxOpenConnections))
+			}
+			conf.TSEventByClusterID[clusterID] = db
+		}
 	}
 
 	// ---------------------------------------------------------
 	// ts_logs table
 	//
-	db, err = sqlx.Connect("postgres", generalConfig.Logs.DSN)
-	if err != nil {
-		return nil, err
-	}
-	if generalConfig.Logs.DBMaxOpenConnections > int64(0) {
-		db.DB.SetMaxOpenConns(int(generalConfig.Logs.DBMaxOpenConnections))
-	}
-	conf.TSLog = db
-
-	for clusterIDString, dsn := range generalConfig.Logs.DSNByClusterID {
-		clusterID, err := strconv.ParseInt(clusterIDString, 10, 64)
-		if err != nil {
-			return nil, err
-		}
-
-		db, err = sqlx.Connect("postgres", dsn)
+	if strings.HasPrefix(generalConfig.Logs.DSN, "postgres") {
+		db, err := sqlx.Connect("postgres", generalConfig.Logs.DSN)
 		if err != nil {
 			return nil, err
 		}
 		if generalConfig.Logs.DBMaxOpenConnections > int64(0) {
 			db.DB.SetMaxOpenConns(int(generalConfig.Logs.DBMaxOpenConnections))
 		}
-		conf.TSLogByClusterID[clusterID] = db
+		conf.TSLog = db
+	}
+
+	for clusterIDString, dsn := range generalConfig.Logs.DSNByClusterID {
+		if strings.HasPrefix(dsn, "postgres") {
+			clusterID, err := strconv.ParseInt(clusterIDString, 10, 64)
+			if err != nil {
+				return nil, err
+			}
+
+			db, err := sqlx.Connect("postgres", dsn)
+			if err != nil {
+				return nil, err
+			}
+			if generalConfig.Logs.DBMaxOpenConnections > int64(0) {
+				db.DB.SetMaxOpenConns(int(generalConfig.Logs.DBMaxOpenConnections))
+			}
+			conf.TSLogByClusterID[clusterID] = db
+		}
 	}
 
 	// ---------------------------------------------------------
 	// ts_checks table
 	//
-	db, err = sqlx.Connect("postgres", generalConfig.Checks.DSN)
-	if err != nil {
-		return nil, err
-	}
-	if generalConfig.Checks.DBMaxOpenConnections > int64(0) {
-		db.DB.SetMaxOpenConns(int(generalConfig.Checks.DBMaxOpenConnections))
-	}
-	conf.TSCheck = db
-
-	for clusterIDString, dsn := range generalConfig.Checks.DSNByClusterID {
-		clusterID, err := strconv.ParseInt(clusterIDString, 10, 64)
-		if err != nil {
-			return nil, err
-		}
-
-		db, err = sqlx.Connect("postgres", dsn)
+	if strings.HasPrefix(generalConfig.Checks.DSN, "postgres") {
+		db, err := sqlx.Connect("postgres", generalConfig.Checks.DSN)
 		if err != nil {
 			return nil, err
 		}
 		if generalConfig.Checks.DBMaxOpenConnections > int64(0) {
 			db.DB.SetMaxOpenConns(int(generalConfig.Checks.DBMaxOpenConnections))
 		}
-		conf.TSCheckByClusterID[clusterID] = db
+		conf.TSCheck = db
+	}
+
+	for clusterIDString, dsn := range generalConfig.Checks.DSNByClusterID {
+		if strings.HasPrefix(dsn, "postgres") {
+			clusterID, err := strconv.ParseInt(clusterIDString, 10, 64)
+			if err != nil {
+				return nil, err
+			}
+
+			db, err := sqlx.Connect("postgres", dsn)
+			if err != nil {
+				return nil, err
+			}
+			if generalConfig.Checks.DBMaxOpenConnections > int64(0) {
+				db.DB.SetMaxOpenConns(int(generalConfig.Checks.DBMaxOpenConnections))
+			}
+			conf.TSCheckByClusterID[clusterID] = db
+		}
 	}
 
 	return conf, nil

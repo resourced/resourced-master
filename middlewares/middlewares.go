@@ -55,11 +55,11 @@ func SetVIPProtocol(vipProtocol string) func(http.Handler) http.Handler {
 	return chi_middleware.WithValue("vipProtocol", vipProtocol)
 }
 
-// SetDBs passes all database connections to every request handler
-func SetDBs(dbConfig *config.PGDBConfig) func(http.Handler) http.Handler {
+// SetPGDBs passes all database connections to every request handler
+func SetPGDBs(dbConfig *config.PGDBConfig) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			r = r.WithContext(context.WithValue(r.Context(), "dbs", dbConfig))
+			r = r.WithContext(context.WithValue(r.Context(), "pg-dbs", dbConfig))
 
 			next.ServeHTTP(w, r)
 		})
@@ -115,7 +115,7 @@ func SetClusters(next http.Handler) http.Handler {
 
 		userRow := userRowInterface.(*pg.UserRow)
 
-		dbs := r.Context().Value("dbs").(*config.PGDBConfig)
+		dbs := r.Context().Value("pg-dbs").(*config.PGDBConfig)
 
 		var clusterRows []*pg.ClusterRow
 		var err error
@@ -169,7 +169,7 @@ func SetClusters(next http.Handler) http.Handler {
 // SetAccessTokens sets clusters data in context based on logged in user ID.
 func SetAccessTokens(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		dbs := r.Context().Value("dbs").(*config.PGDBConfig)
+		dbs := r.Context().Value("pg-dbs").(*config.PGDBConfig)
 
 		currentClusterInterface := r.Context().Value("currentCluster")
 		if currentClusterInterface == nil {
@@ -230,7 +230,7 @@ func MustLoginApi(next http.Handler) http.Handler {
 			return
 		}
 
-		dbs := r.Context().Value("dbs").(*config.PGDBConfig)
+		dbs := r.Context().Value("pg-dbs").(*config.PGDBConfig)
 
 		accessTokenRow, err := pg.NewAccessToken(dbs.Core).GetByAccessToken(nil, accessTokenString)
 		if err != nil {
@@ -282,7 +282,7 @@ func MustLoginApiStream(next http.Handler) http.Handler {
 			return
 		}
 
-		dbs := r.Context().Value("dbs").(*config.PGDBConfig)
+		dbs := r.Context().Value("pg-dbs").(*config.PGDBConfig)
 
 		accessTokenRow, err := pg.NewAccessToken(dbs.Core).GetByAccessToken(nil, accessTokenString)
 		if err != nil {

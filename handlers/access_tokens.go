@@ -9,7 +9,7 @@ import (
 )
 
 func PostAccessTokens(w http.ResponseWriter, r *http.Request) {
-	dbs := r.Context().Value("dbs").(*config.PGDBConfig)
+	dbs := r.Context().Value("pg-dbs").(*config.PGDBConfig)
 
 	currentUser := r.Context().Value("currentUser").(*pg.UserRow)
 
@@ -31,7 +31,7 @@ func PostAccessTokens(w http.ResponseWriter, r *http.Request) {
 }
 
 func PostAccessTokensLevel(w http.ResponseWriter, r *http.Request) {
-	dbs := r.Context().Value("dbs").(*config.PGDBConfig)
+	dbs := r.Context().Value("pg-dbs").(*config.PGDBConfig)
 
 	tokenID, err := getInt64SlugFromPath(w, r, "id")
 	if err != nil {
@@ -54,7 +54,7 @@ func PostAccessTokensLevel(w http.ResponseWriter, r *http.Request) {
 }
 
 func PostAccessTokensEnabled(w http.ResponseWriter, r *http.Request) {
-	dbs := r.Context().Value("dbs").(*config.PGDBConfig)
+	dbs := r.Context().Value("pg-dbs").(*config.PGDBConfig)
 
 	tokenID, err := getInt64SlugFromPath(w, r, "id")
 	if err != nil {
@@ -83,7 +83,7 @@ func PostAccessTokensEnabled(w http.ResponseWriter, r *http.Request) {
 }
 
 func PostAccessTokensDelete(w http.ResponseWriter, r *http.Request) {
-	dbs := r.Context().Value("dbs").(*config.PGDBConfig)
+	dbs := r.Context().Value("pg-dbs").(*config.PGDBConfig)
 
 	tokenID, err := getInt64SlugFromPath(w, r, "id")
 	if err != nil {

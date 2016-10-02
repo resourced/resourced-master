@@ -22,7 +22,7 @@ import (
 func GetClusters(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html")
 
-	dbs := r.Context().Value("dbs").(*config.PGDBConfig)
+	dbs := r.Context().Value("pg-dbs").(*config.PGDBConfig)
 
 	currentUser := r.Context().Value("currentUser").(*pg.UserRow)
 
@@ -75,7 +75,7 @@ func GetClusters(w http.ResponseWriter, r *http.Request) {
 
 // PostClusters creates a new cluster.
 func PostClusters(w http.ResponseWriter, r *http.Request) {
-	dbs := r.Context().Value("dbs").(*config.PGDBConfig)
+	dbs := r.Context().Value("pg-dbs").(*config.PGDBConfig)
 
 	currentUser := r.Context().Value("currentUser").(*pg.UserRow)
 
@@ -137,7 +137,7 @@ func PostPutDeleteClusterID(w http.ResponseWriter, r *http.Request) {
 
 // PutClusterID updates a cluster's information.
 func PutClusterID(w http.ResponseWriter, r *http.Request) {
-	dbs := r.Context().Value("dbs").(*config.PGDBConfig)
+	dbs := r.Context().Value("pg-dbs").(*config.PGDBConfig)
 
 	clusterID, err := getInt64SlugFromPath(w, r, "clusterID")
 	if err != nil {
@@ -180,7 +180,7 @@ func PutClusterID(w http.ResponseWriter, r *http.Request) {
 
 // DeleteClusterID deletes a cluster.
 func DeleteClusterID(w http.ResponseWriter, r *http.Request) {
-	dbs := r.Context().Value("dbs").(*config.PGDBConfig)
+	dbs := r.Context().Value("pg-dbs").(*config.PGDBConfig)
 
 	clusterID, err := getInt64SlugFromPath(w, r, "clusterID")
 	if err != nil {
@@ -228,7 +228,7 @@ func PostPutDeleteClusterIDUsers(w http.ResponseWriter, r *http.Request) {
 
 // PutClusterIDUsers adds a user as a member to a particular cluster.
 func PutClusterIDUsers(w http.ResponseWriter, r *http.Request) {
-	dbs := r.Context().Value("dbs").(*config.PGDBConfig)
+	dbs := r.Context().Value("pg-dbs").(*config.PGDBConfig)
 
 	clusterID, err := getInt64SlugFromPath(w, r, "clusterID")
 	if err != nil {
@@ -291,7 +291,7 @@ Your coleague has invited you to join cluster: %v. Click the following link to s
 
 // DeleteClusterIDUsers removes user's membership from a particular cluster.
 func DeleteClusterIDUsers(w http.ResponseWriter, r *http.Request) {
-	dbs := r.Context().Value("dbs").(*config.PGDBConfig)
+	dbs := r.Context().Value("pg-dbs").(*config.PGDBConfig)
 
 	clusterID, err := getInt64SlugFromPath(w, r, "clusterID")
 	if err != nil {

@@ -117,7 +117,7 @@ func ApiMetricIDStreams(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	dbs := r.Context().Value("dbs").(*config.PGDBConfig)
+	dbs := r.Context().Value("pg-dbs").(*config.PGDBConfig)
 
 	bus := r.Context().Value("bus").(*messagebus.MessageBus)
 
