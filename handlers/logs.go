@@ -24,7 +24,7 @@ func GetLogs(w http.ResponseWriter, r *http.Request) {
 
 	currentCluster := r.Context().Value("currentCluster").(*pg.ClusterRow)
 
-	dbs := r.Context().Value("dbs").(*config.DBConfig)
+	dbs := r.Context().Value("dbs").(*config.PGDBConfig)
 
 	qParams := r.URL.Query()
 
@@ -115,7 +115,7 @@ func GetLogs(w http.ResponseWriter, r *http.Request) {
 func PostApiLogs(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	dbs := r.Context().Value("dbs").(*config.DBConfig)
+	dbs := r.Context().Value("dbs").(*config.PGDBConfig)
 
 	accessTokenRow := r.Context().Value("accessToken").(*pg.AccessTokenRow)
 
@@ -148,7 +148,7 @@ func PostApiLogs(w http.ResponseWriter, r *http.Request) {
 func GetApiLogs(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	dbs := r.Context().Value("dbs").(*config.DBConfig)
+	dbs := r.Context().Value("dbs").(*config.PGDBConfig)
 
 	accessTokenRow := r.Context().Value("accessToken").(*pg.AccessTokenRow)
 

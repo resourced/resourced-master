@@ -29,7 +29,7 @@ func New(configDir string) (*Application, error) {
 		return nil, err
 	}
 
-	dbConfig, err := config.NewDBConfig(generalConfig)
+	dbConfig, err := config.NewPGDBConfig(generalConfig)
 	if err != nil {
 		return nil, err
 	}
@@ -42,7 +42,7 @@ func New(configDir string) (*Application, error) {
 	app := &Application{}
 	app.Hostname = hostname
 	app.GeneralConfig = generalConfig
-	app.DBConfig = dbConfig
+	app.PGDBConfig = dbConfig
 	app.cookieStore = sessions.NewCookieStore([]byte(app.GeneralConfig.CookieSecret))
 	app.Mailers = make(map[string]*mailer.Mailer)
 	app.HandlerInstruments = app.NewHandlerInstruments()
@@ -81,7 +81,7 @@ func New(configDir string) (*Application, error) {
 type Application struct {
 	Hostname           string
 	GeneralConfig      config.GeneralConfig
-	DBConfig           *config.DBConfig
+	PGDBConfig         *config.PGDBConfig
 	cookieStore        *sessions.CookieStore
 	Mailers            map[string]*mailer.Mailer
 	HandlerInstruments map[string]chan int64

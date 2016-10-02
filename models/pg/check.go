@@ -295,7 +295,7 @@ func (checkRow *CheckRow) GetExpressions() ([]CheckExpression, error) {
 // 1st value: List of all CheckExpression containing results.
 // 2nd value: The value of all expressions.
 // 3rd value: Error
-func (checkRow *CheckRow) EvalExpressions(dbs *config.DBConfig) ([]CheckExpression, bool, error) {
+func (checkRow *CheckRow) EvalExpressions(dbs *config.PGDBConfig) ([]CheckExpression, bool, error) {
 	var hostRows []*HostRow
 	var err error
 
@@ -432,7 +432,7 @@ func (checkRow *CheckRow) EvalRawHostDataExpression(hostRows []*HostRow, express
 	return expression
 }
 
-func (checkRow *CheckRow) EvalRelativeHostDataExpression(dbs *config.DBConfig, hostRows []*HostRow, expression CheckExpression) CheckExpression {
+func (checkRow *CheckRow) EvalRelativeHostDataExpression(dbs *config.PGDBConfig, hostRows []*HostRow, expression CheckExpression) CheckExpression {
 	if hostRows == nil || len(hostRows) <= 0 {
 		expression.Result.Value = true
 		expression.Result.Message = "There are no hosts to check"
@@ -519,7 +519,7 @@ func (checkRow *CheckRow) EvalRelativeHostDataExpression(dbs *config.DBConfig, h
 	return expression
 }
 
-func (checkRow *CheckRow) EvalLogDataExpression(dbs *config.DBConfig, hostRows []*HostRow, expression CheckExpression) CheckExpression {
+func (checkRow *CheckRow) EvalLogDataExpression(dbs *config.PGDBConfig, hostRows []*HostRow, expression CheckExpression) CheckExpression {
 	hostnames, err := checkRow.GetHostsList()
 	if err != nil {
 		expression.Result.Value = false

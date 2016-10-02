@@ -23,7 +23,7 @@ func (app *Application) CheckAndRunTriggers() {
 					daemons = append(daemons, hostAndPort)
 				}
 
-				groupedCheckRows, _ := pg.NewCheck(app.DBConfig.Core).AllSplitToDaemons(nil, daemons)
+				groupedCheckRows, _ := pg.NewCheck(app.PGDBConfig.Core).AllSplitToDaemons(nil, daemons)
 				checkRowsChan <- groupedCheckRows[app.FullAddr()]
 			}
 		}
@@ -45,7 +45,7 @@ func (app *Application) CheckAndRunTriggers() {
 
 					for range time.Tick(checkDuration) {
 						// 1. Evaluate all expressions in a check.
-						expressionResults, finalResult, err := checkRow.EvalExpressions(app.DBConfig)
+						expressionResults, finalResult, err := checkRow.EvalExpressions(app.PGDBConfig)
 						if err != nil {
 							app.ErrLogger.WithFields(logrus.Fields{
 								"Method":    "checkRow.EvalExpressions",
@@ -59,7 +59,7 @@ func (app *Application) CheckAndRunTriggers() {
 						}
 
 						// 2. Store the check result.
-						clusterRow, err := pg.NewCluster(app.DBConfig.Core).GetByID(nil, checkRow.ClusterID)
+						clusterRow, err := pg.NewCluster(app.PGDBConfig.Core).GetByID(nil, checkRow.ClusterID)
 						if err != nil {
 							app.ErrLogger.WithFields(logrus.Fields{
 								"Method":    "Cluster.GetByID",
@@ -71,7 +71,7 @@ func (app *Application) CheckAndRunTriggers() {
 
 						deletedFrom := clusterRow.GetDeletedFromUNIXTimestampForInsert("ts_checks")
 
-						err = pg.NewTSCheck(app.DBConfig.GetTSCheck(checkRow.ClusterID)).Create(nil, checkRow.ClusterID, checkRow.ID, finalResult, expressionResults, deletedFrom)
+						err = pg.NewTSCheck(app.PGDBConfig.GetTSCheck(checkRow.ClusterID)).Create(nil, checkRow.ClusterID, checkRow.ID, finalResult, expressionResults, deletedFrom)
 						if err != nil {
 							app.ErrLogger.WithFields(logrus.Fields{
 								"Method":    "TSCheck.Create",
@@ -83,7 +83,7 @@ func (app *Application) CheckAndRunTriggers() {
 						}
 
 						// 3. Run check's triggers.
-						err = checkRow.RunTriggers(app.GeneralConfig, app.DBConfig.Core, app.DBConfig.GetTSCheck(checkRow.ClusterID), app.Mailers["GeneralConfig.Checks"])
+						err = checkRow.RunTriggers(app.GeneralConfig, app.PGDBConfig.Core, app.PGDBConfig.GetTSCheck(checkRow.ClusterID), app.Mailers["GeneralConfig.Checks"])
 						if err != nil {
 							app.ErrLogger.WithFields(logrus.Fields{
 								"Method":    "checkRow.RunTriggers",

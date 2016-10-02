@@ -21,7 +21,7 @@ func GetGraphs(w http.ResponseWriter, r *http.Request) {
 
 	currentCluster := r.Context().Value("currentCluster").(*pg.ClusterRow)
 
-	dbs := r.Context().Value("dbs").(*config.DBConfig)
+	dbs := r.Context().Value("dbs").(*config.PGDBConfig)
 
 	graphs, err := pg.NewGraph(dbs.Core).AllByClusterID(nil, currentCluster.ID)
 	if err != nil {
@@ -70,7 +70,7 @@ func PostGraphs(w http.ResponseWriter, r *http.Request) {
 	description := r.FormValue("Description")
 	range_ := r.FormValue("Range")
 
-	dbs := r.Context().Value("dbs").(*config.DBConfig)
+	dbs := r.Context().Value("dbs").(*config.PGDBConfig)
 
 	data := make(map[string]interface{})
 	data["name"] = name
@@ -101,7 +101,7 @@ func GetPostPutDeleteGraphsID(w http.ResponseWriter, r *http.Request) {
 func GetGraphsID(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html")
 
-	dbs := r.Context().Value("dbs").(*config.DBConfig)
+	dbs := r.Context().Value("dbs").(*config.PGDBConfig)
 
 	currentUser := r.Context().Value("currentUser").(*pg.UserRow)
 
@@ -211,7 +211,7 @@ func GetGraphsID(w http.ResponseWriter, r *http.Request) {
 }
 
 func PutGraphsID(w http.ResponseWriter, r *http.Request) {
-	dbs := r.Context().Value("dbs").(*config.DBConfig)
+	dbs := r.Context().Value("dbs").(*config.PGDBConfig)
 
 	id, err := getInt64SlugFromPath(w, r, "id")
 	if err != nil {
@@ -259,7 +259,7 @@ func PutGraphsID(w http.ResponseWriter, r *http.Request) {
 }
 
 func DeleteGraphsID(w http.ResponseWriter, r *http.Request) {
-	dbs := r.Context().Value("dbs").(*config.DBConfig)
+	dbs := r.Context().Value("dbs").(*config.PGDBConfig)
 
 	currentCluster := r.Context().Value("currentCluster").(*pg.ClusterRow)
 
@@ -281,7 +281,7 @@ func DeleteGraphsID(w http.ResponseWriter, r *http.Request) {
 func PutApiGraphsIDMetrics(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	dbs := r.Context().Value("dbs").(*config.DBConfig)
+	dbs := r.Context().Value("dbs").(*config.PGDBConfig)
 
 	accessTokenRow := r.Context().Value("accessToken").(*pg.AccessTokenRow)
 

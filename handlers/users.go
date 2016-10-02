@@ -43,7 +43,7 @@ func GetSignup(w http.ResponseWriter, r *http.Request) {
 func PostSignup(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html")
 
-	dbs := r.Context().Value("dbs").(*config.DBConfig)
+	dbs := r.Context().Value("dbs").(*config.PGDBConfig)
 
 	email := r.FormValue("Email")
 	password := r.FormValue("Password")
@@ -154,7 +154,7 @@ func GetLogin(w http.ResponseWriter, r *http.Request) {
 func PostLogin(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html")
 
-	dbs := r.Context().Value("dbs").(*config.DBConfig)
+	dbs := r.Context().Value("dbs").(*config.PGDBConfig)
 	cookieStore := r.Context().Value("cookieStore").(*sessions.CookieStore)
 
 	email := r.FormValue("Email")
@@ -198,7 +198,7 @@ func PutUsersID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	dbs := r.Context().Value("dbs").(*config.DBConfig)
+	dbs := r.Context().Value("dbs").(*config.PGDBConfig)
 
 	cookieStore := r.Context().Value("cookieStore").(*sessions.CookieStore)
 
@@ -245,7 +245,7 @@ func DeleteUsersID(w http.ResponseWriter, r *http.Request) {
 func GetUsersEmailVerificationToken(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html")
 
-	dbs := r.Context().Value("dbs").(*config.DBConfig)
+	dbs := r.Context().Value("dbs").(*config.PGDBConfig)
 
 	emailVerificationToken := chi.URLParam(r, "token")
 

@@ -11,7 +11,7 @@ import (
 )
 
 func PostSavedQueries(w http.ResponseWriter, r *http.Request) {
-	dbs := r.Context().Value("dbs").(*config.DBConfig)
+	dbs := r.Context().Value("dbs").(*config.PGDBConfig)
 
 	currentUser := r.Context().Value("currentUser").(*pg.UserRow)
 
@@ -50,7 +50,7 @@ func DeleteSavedQueriesID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	dbs := r.Context().Value("dbs").(*config.DBConfig)
+	dbs := r.Context().Value("dbs").(*config.PGDBConfig)
 
 	currentUser := r.Context().Value("currentUser").(*pg.UserRow)
 

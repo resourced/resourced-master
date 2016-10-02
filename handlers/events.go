@@ -16,7 +16,7 @@ import (
 func GetApiEventsLine(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	dbs := r.Context().Value("dbs").(*config.DBConfig)
+	dbs := r.Context().Value("dbs").(*config.PGDBConfig)
 
 	accessTokenRow := r.Context().Value("accessToken").(*pg.AccessTokenRow)
 
@@ -71,7 +71,7 @@ func GetApiEventsLine(w http.ResponseWriter, r *http.Request) {
 func GetApiEventsBand(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	dbs := r.Context().Value("dbs").(*config.DBConfig)
+	dbs := r.Context().Value("dbs").(*config.PGDBConfig)
 
 	accessTokenRow := r.Context().Value("accessToken").(*pg.AccessTokenRow)
 
@@ -126,7 +126,7 @@ func GetApiEventsBand(w http.ResponseWriter, r *http.Request) {
 func PostApiEvents(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	dbs := r.Context().Value("dbs").(*config.DBConfig)
+	dbs := r.Context().Value("dbs").(*config.PGDBConfig)
 
 	accessTokenRow := r.Context().Value("accessToken").(*pg.AccessTokenRow)
 
@@ -164,7 +164,7 @@ func PostApiEvents(w http.ResponseWriter, r *http.Request) {
 func DeleteApiEventsID(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	dbs := r.Context().Value("dbs").(*config.DBConfig)
+	dbs := r.Context().Value("dbs").(*config.PGDBConfig)
 
 	accessTokenRow := r.Context().Value("accessToken").(*pg.AccessTokenRow)
 

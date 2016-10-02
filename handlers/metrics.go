@@ -15,7 +15,7 @@ import (
 )
 
 func PostMetrics(w http.ResponseWriter, r *http.Request) {
-	dbs := r.Context().Value("dbs").(*config.DBConfig)
+	dbs := r.Context().Value("dbs").(*config.PGDBConfig)
 
 	clusterID, err := getInt64SlugFromPath(w, r, "clusterID")
 	if err != nil {
@@ -55,7 +55,7 @@ func PutMetricID(w http.ResponseWriter, r *http.Request) {
 
 // DeleteMetricID deletes metrics by ID
 func DeleteMetricID(w http.ResponseWriter, r *http.Request) {
-	dbs := r.Context().Value("dbs").(*config.DBConfig)
+	dbs := r.Context().Value("dbs").(*config.PGDBConfig)
 
 	clusterID, err := getInt64SlugFromPath(w, r, "clusterID")
 	if err != nil {
@@ -87,7 +87,7 @@ func DeleteMetricID(w http.ResponseWriter, r *http.Request) {
 func GetApiTSMetricsByHost(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	dbs := r.Context().Value("dbs").(*config.DBConfig)
+	dbs := r.Context().Value("dbs").(*config.PGDBConfig)
 
 	errLogger := r.Context().Value("errLogger").(*logrus.Logger)
 
@@ -159,7 +159,7 @@ func GetApiTSMetricsByHost(w http.ResponseWriter, r *http.Request) {
 func GetApiTSMetricsByHost15Min(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	dbs := r.Context().Value("dbs").(*config.DBConfig)
+	dbs := r.Context().Value("dbs").(*config.PGDBConfig)
 
 	id, err := getInt64SlugFromPath(w, r, "id")
 	if err != nil {
@@ -231,7 +231,7 @@ func GetApiTSMetricsByHost15Min(w http.ResponseWriter, r *http.Request) {
 func GetApiTSMetrics(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	dbs := r.Context().Value("dbs").(*config.DBConfig)
+	dbs := r.Context().Value("dbs").(*config.PGDBConfig)
 
 	qParams := r.URL.Query()
 
@@ -296,7 +296,7 @@ func GetApiTSMetrics(w http.ResponseWriter, r *http.Request) {
 func GetApiTSMetrics15Min(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	dbs := r.Context().Value("dbs").(*config.DBConfig)
+	dbs := r.Context().Value("dbs").(*config.PGDBConfig)
 
 	qParams := r.URL.Query()
 

@@ -6,9 +6,9 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
-// NewDBConfig connects to all the databases and returns them in DBConfig instance.
-func NewDBConfig(generalConfig GeneralConfig) (*DBConfig, error) {
-	conf := &DBConfig{}
+// NewPGDBConfig connects to all the databases and returns them in PGDBConfig instance.
+func NewPGDBConfig(generalConfig GeneralConfig) (*PGDBConfig, error) {
+	conf := &PGDBConfig{}
 	conf.HostByClusterID = make(map[int64]*sqlx.DB)
 	conf.TSMetricByClusterID = make(map[int64]*sqlx.DB)
 	conf.TSMetricAggr15mByClusterID = make(map[int64]*sqlx.DB)
@@ -196,8 +196,8 @@ func NewDBConfig(generalConfig GeneralConfig) (*DBConfig, error) {
 	return conf, nil
 }
 
-// DBConfig stores all database configuration data.
-type DBConfig struct {
+// PGDBConfig stores all database configuration data.
+type PGDBConfig struct {
 	Core                       *sqlx.DB
 	Host                       *sqlx.DB
 	HostByClusterID            map[int64]*sqlx.DB
@@ -213,7 +213,7 @@ type DBConfig struct {
 	TSCheckByClusterID         map[int64]*sqlx.DB
 }
 
-func (dbconf *DBConfig) GetHost(clusterID int64) *sqlx.DB {
+func (dbconf *PGDBConfig) GetHost(clusterID int64) *sqlx.DB {
 	conn, ok := dbconf.HostByClusterID[clusterID]
 	if !ok {
 		conn = dbconf.Host
@@ -222,7 +222,7 @@ func (dbconf *DBConfig) GetHost(clusterID int64) *sqlx.DB {
 	return conn
 }
 
-func (dbconf *DBConfig) GetTSMetric(clusterID int64) *sqlx.DB {
+func (dbconf *PGDBConfig) GetTSMetric(clusterID int64) *sqlx.DB {
 	conn, ok := dbconf.TSMetricByClusterID[clusterID]
 	if !ok {
 		conn = dbconf.TSMetric
@@ -231,7 +231,7 @@ func (dbconf *DBConfig) GetTSMetric(clusterID int64) *sqlx.DB {
 	return conn
 }
 
-func (dbconf *DBConfig) GetTSMetricAggr15m(clusterID int64) *sqlx.DB {
+func (dbconf *PGDBConfig) GetTSMetricAggr15m(clusterID int64) *sqlx.DB {
 	conn, ok := dbconf.TSMetricAggr15mByClusterID[clusterID]
 	if !ok {
 		conn = dbconf.TSMetricAggr15m
@@ -240,7 +240,7 @@ func (dbconf *DBConfig) GetTSMetricAggr15m(clusterID int64) *sqlx.DB {
 	return conn
 }
 
-func (dbconf *DBConfig) GetTSEvent(clusterID int64) *sqlx.DB {
+func (dbconf *PGDBConfig) GetTSEvent(clusterID int64) *sqlx.DB {
 	conn, ok := dbconf.TSEventByClusterID[clusterID]
 	if !ok {
 		conn = dbconf.TSEvent
@@ -249,7 +249,7 @@ func (dbconf *DBConfig) GetTSEvent(clusterID int64) *sqlx.DB {
 	return conn
 }
 
-func (dbconf *DBConfig) GetTSLog(clusterID int64) *sqlx.DB {
+func (dbconf *PGDBConfig) GetTSLog(clusterID int64) *sqlx.DB {
 	conn, ok := dbconf.TSLogByClusterID[clusterID]
 	if !ok {
 		conn = dbconf.TSLog
@@ -258,7 +258,7 @@ func (dbconf *DBConfig) GetTSLog(clusterID int64) *sqlx.DB {
 	return conn
 }
 
-func (dbconf *DBConfig) GetTSCheck(clusterID int64) *sqlx.DB {
+func (dbconf *PGDBConfig) GetTSCheck(clusterID int64) *sqlx.DB {
 	conn, ok := dbconf.TSCheckByClusterID[clusterID]
 	if !ok {
 		conn = dbconf.TSCheck

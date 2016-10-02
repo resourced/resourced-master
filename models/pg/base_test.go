@@ -20,8 +20,8 @@ func newEmailForTest() string {
 	return fmt.Sprintf("brotato-%v@example.com", uuid.NewV4().String())
 }
 
-func newDBConfigForTest(t *testing.T) *config.DBConfig {
-	conf := &config.DBConfig{}
+func newPGDBConfigForTest(t *testing.T) *config.PGDBConfig {
+	conf := &config.PGDBConfig{}
 	conf.HostByClusterID = make(map[int64]*sqlx.DB)
 	conf.Core = newDbForTest(t)
 	conf.Host = conf.Core

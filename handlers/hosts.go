@@ -25,7 +25,7 @@ func GetHosts(w http.ResponseWriter, r *http.Request) {
 
 	currentCluster := r.Context().Value("currentCluster").(*pg.ClusterRow)
 
-	dbs := r.Context().Value("dbs").(*config.DBConfig)
+	dbs := r.Context().Value("dbs").(*config.PGDBConfig)
 
 	query := r.URL.Query().Get("q")
 
@@ -128,7 +128,7 @@ func GetHostsID(w http.ResponseWriter, r *http.Request) {
 
 	currentCluster := r.Context().Value("currentCluster").(*pg.ClusterRow)
 
-	dbs := r.Context().Value("dbs").(*config.DBConfig)
+	dbs := r.Context().Value("dbs").(*config.PGDBConfig)
 
 	id, err := getInt64SlugFromPath(w, r, "id")
 	if err != nil {
@@ -236,7 +236,7 @@ func PostHostsIDMasterTags(w http.ResponseWriter, r *http.Request) {
 
 	currentCluster := r.Context().Value("currentCluster").(*pg.ClusterRow)
 
-	dbs := r.Context().Value("dbs").(*config.DBConfig)
+	dbs := r.Context().Value("dbs").(*config.PGDBConfig)
 
 	id, err := getInt64SlugFromPath(w, r, "id")
 	if err != nil {
@@ -275,7 +275,7 @@ func PostHostsIDMasterTags(w http.ResponseWriter, r *http.Request) {
 func PostApiHosts(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	dbs := r.Context().Value("dbs").(*config.DBConfig)
+	dbs := r.Context().Value("dbs").(*config.PGDBConfig)
 
 	accessTokenRow := r.Context().Value("accessToken").(*pg.AccessTokenRow)
 
@@ -373,7 +373,7 @@ func PostApiHosts(w http.ResponseWriter, r *http.Request) {
 func GetApiHosts(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	dbs := r.Context().Value("dbs").(*config.DBConfig)
+	dbs := r.Context().Value("dbs").(*config.PGDBConfig)
 
 	accessTokenRow := r.Context().Value("accessToken").(*pg.AccessTokenRow)
 
