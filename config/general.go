@@ -115,14 +115,6 @@ type GeneralConfig struct {
 		DataRetention int
 	}
 
-	ExecutorLogs struct {
-		DSN                  string
-		DBMaxOpenConnections int64
-		DSNByClusterID       map[string]string
-
-		DataRetention int
-	}
-
 	Logs struct {
 		DSN                  string
 		DBMaxOpenConnections int64
