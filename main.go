@@ -114,7 +114,7 @@ func main() {
 		}
 
 	case "migrate up":
-		err := app.MigrateUpAll()
+		err := app.MigrateUpAllPG()
 		if err != nil {
 			logrus.Fatal(err)
 		}
