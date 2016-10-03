@@ -35,6 +35,11 @@ func New(configDir string) (*Application, error) {
 		return nil, err
 	}
 
+	cassandraDBConfig, err := config.NewCassandraDBConfig(generalConfig)
+	if err != nil {
+		return nil, err
+	}
+
 	hostname, err := os.Hostname()
 	if err != nil {
 		return nil, err
@@ -44,6 +49,7 @@ func New(configDir string) (*Application, error) {
 	app.Hostname = hostname
 	app.GeneralConfig = generalConfig
 	app.PGDBConfig = pgDBConfig
+	app.CassandraDBConfig = cassandraDBConfig
 	app.cookieStore = sessions.NewCookieStore([]byte(app.GeneralConfig.CookieSecret))
 	app.Mailers = make(map[string]*mailer.Mailer)
 	app.HandlerInstruments = app.NewHandlerInstruments()
@@ -83,6 +89,7 @@ type Application struct {
 	Hostname           string
 	GeneralConfig      config.GeneralConfig
 	PGDBConfig         *config.PGDBConfig
+	CassandraDBConfig  *config.CassandraDBConfig
 	cookieStore        *sessions.CookieStore
 	Mailers            map[string]*mailer.Mailer
 	HandlerInstruments map[string]chan int64
@@ -254,13 +261,34 @@ func (app *Application) MigrateAllPG(direction string) error {
 	return nil
 }
 
-// func (app *Application) MigrateUpAllCassandra() error {
-// 	if app.GeneralConfig.Metrics.Cassandra.MigrateDSN != "" {
-// 		errs, ok := migrate.UpSync(app.GeneralConfig.Metrics.Cassandra.MigrateDSN, "./migrations/pg/ts-metrics")
-// 		if !ok {
-// 			return fmt.Errorf("DSN: %v, Error: %v", app.GeneralConfig.Metrics.Cassandra.MigrateDSN, errs[0])
-// 		}
-// 	}
+func (app *Application) MigrateAllCassandra(direction string) error {
+	migrationDir := filepath.Join(".", "migrations", "cassandra", direction)
 
-// 	return nil
-// }
+	files, _ := ioutil.ReadDir(migrationDir)
+	for _, f := range files {
+		fullFilename := filepath.Join(migrationDir, f.Name())
+
+		sqlBytes, err := ioutil.ReadFile(fullFilename)
+		if err != nil {
+			return fmt.Errorf("Failed to read migration file. File: %v, Error: %v", fullFilename, err)
+		}
+
+		sql := string(sqlBytes)
+
+		// -----------------------------------------------
+		// Metrics
+		err = app.CassandraDBConfig.TSMetricSession.Query(sql).Exec()
+		if err != nil {
+			return fmt.Errorf("Failed to execute migration file on %v. File: %v, Error: %v", app.GeneralConfig.Metrics.Cassandra.Keyspace, fullFilename, err)
+		}
+
+		// -----------------------------------------------
+		// MetricsAggr15m
+		err = app.CassandraDBConfig.TSMetricAggr15mSession.Query(sql).Exec()
+		if err != nil {
+			return fmt.Errorf("Failed to execute migration file on %v. File: %v, Error: %v", app.GeneralConfig.MetricsAggr15m.Cassandra.Keyspace, fullFilename, err)
+		}
+	}
+
+	return nil
+}

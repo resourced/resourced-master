@@ -59,7 +59,6 @@ type PostgreSQLPerClusterConfig struct {
 }
 
 type CassandraConfig struct {
-	MigrateDSN        string
 	Hosts             []string
 	ProtoVersion      int
 	Port              int

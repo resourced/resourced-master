@@ -1,8 +1,6 @@
 package config
 
 import (
-	"strings"
-
 	"github.com/gocql/gocql"
 )
 
@@ -13,7 +11,7 @@ func NewCassandraDBConfig(generalConfig GeneralConfig) (*CassandraDBConfig, erro
 	// ---------------------------------------------------------
 	// ts_metrics table
 	//
-	if strings.HasPrefix(generalConfig.Metrics.Cassandra.MigrateDSN, "cassandra") {
+	if len(generalConfig.Metrics.Cassandra.Hosts) > 0 {
 		cluster := gocql.NewCluster(generalConfig.Metrics.Cassandra.Hosts...)
 		cluster.ProtoVersion = generalConfig.Metrics.Cassandra.ProtoVersion
 		cluster.Port = generalConfig.Metrics.Cassandra.Port
@@ -41,7 +39,7 @@ func NewCassandraDBConfig(generalConfig GeneralConfig) (*CassandraDBConfig, erro
 	// ---------------------------------------------------------
 	// ts_metrics_aggr_15m table
 	//
-	if strings.HasPrefix(generalConfig.MetricsAggr15m.Cassandra.MigrateDSN, "cassandra") {
+	if len(generalConfig.MetricsAggr15m.Cassandra.Hosts) > 0 {
 		cluster := gocql.NewCluster(generalConfig.MetricsAggr15m.Cassandra.Hosts...)
 		cluster.ProtoVersion = generalConfig.MetricsAggr15m.Cassandra.ProtoVersion
 		cluster.Port = generalConfig.MetricsAggr15m.Cassandra.Port
