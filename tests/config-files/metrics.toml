@@ -3,25 +3,37 @@
 # The unit is defined in days.
 DataRetention = 7
 
+# You can only choose one between PostgreSQL or Cassandra
 [Metrics.PostgreSQL]
 DSN = "postgres://localhost:5432/resourced-master-ts-metrics?sslmode=disable"
-
 MaxOpenConnections = 2
 
 # Optimization Setting: Enable this option if you want to shard metrics data by cluster_id.
 # Format: key:   cluster id.
 #         value: DSN.
-# [Metrics.DSNByClusterID]
+# [Metrics.PostgreSQL.DSNByClusterID]
 # 1 = "postgres://localhost:5432/resourced-master-metrics-1?sslmode=disable"
+
+[Metrics.Cassandra]
+MigrateDSN = "cassandra://localhost:9042/resourced-master-ts-metrics?protocol=4"
+Hosts = ["127.0.0.1"]
+ProtoVersion = 4
+Port = 9042
+Keyspace = "resourced-master-ts-metrics"
+NumConns = 2
+Consistency = "one"
+MaxPreparedStmts  = 1000
+MaxRoutingKeyInfo = 1000
+PageSize = 5000
 
 [MetricsAggr15m]
 # DataRetention defines how long time series data are kept.
 # The unit is defined in days.
 DataRetention = 7
 
+# You can only choose one between PostgreSQL or Cassandra
 [MetricsAggr15m.PostgreSQL]
 DSN = "postgres://localhost:5432/resourced-master-ts-metrics?sslmode=disable"
-
 MaxOpenConnections = 2
 
 # Optimization Setting: Enable this option if you want to shard aggregated 15m metrics data by cluster_id.
@@ -29,3 +41,15 @@ MaxOpenConnections = 2
 #         value: DSN.
 # [MetricsAggr15m.PostgreSQL.DSNByClusterID]
 # 1 = "postgres://localhost:5432/resourced-master-aggr-metrics-15m-1?sslmode=disable"
+
+[MetricsAggr15m.Cassandra]
+MigrateDSN = "cassandra://localhost:9042/resourced-master-ts-metrics?protocol=4"
+Hosts = ["127.0.0.1"]
+ProtoVersion = 4
+Port = 9042
+Keyspace = "resourced-master-ts-metrics"
+NumConns = 2
+Consistency = "one"
+MaxPreparedStmts  = 1000
+MaxRoutingKeyInfo = 1000
+PageSize = 5000

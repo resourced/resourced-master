@@ -58,6 +58,19 @@ type PostgreSQLPerClusterConfig struct {
 	DSNByClusterID     map[string]string
 }
 
+type CassandraConfig struct {
+	MigrateDSN        string
+	Hosts             []string
+	ProtoVersion      int
+	Port              int
+	Keyspace          string
+	NumConns          int
+	Consistency       string
+	MaxPreparedStmts  int
+	MaxRoutingKeyInfo int
+	PageSize          int
+}
+
 // GeneralConfig stores all configuration data.
 type GeneralConfig struct {
 	Addr                    string
@@ -99,12 +112,14 @@ type GeneralConfig struct {
 	}
 
 	Metrics struct {
-		PostgreSQL    PostgreSQLPerClusterConfig
+		PostgreSQL    PostgreSQLPerClusterConfig `toml:",omitempty"`
+		Cassandra     CassandraConfig            `toml:",omitempty"`
 		DataRetention int
 	}
 
 	MetricsAggr15m struct {
-		PostgreSQL    PostgreSQLPerClusterConfig
+		PostgreSQL    PostgreSQLPerClusterConfig `toml:",omitempty"`
+		Cassandra     CassandraConfig            `toml:",omitempty"`
 		DataRetention int
 	}
 
