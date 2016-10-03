@@ -4,22 +4,16 @@
 # Documentation:
 # Purpose: This script helps generate migration file for timeseries child tables.
 #          Do not use this script for ts_events, use drop-ts-events.py instead.
-# Usage: ./scripts/migrations/drop-ts-daily.py ts_checks 2016 > ./migrations/core/0032_add-ts-checks-2016.down.sql
+# Usage: ./scripts/migrations/drop-ts-daily.py ts_checks 2016 > ./migrations/pg/down/0032_ts-checks-2016.sql
 # Arguments:
 # 1.   Parent table name. Example: ts_checks
 # 2.   The year. Example: 2016
 #
 # Examples:
-# ./scripts/migrations/drop-ts-daily.py ts_metrics 2016 > ./migrations/core/0005_add-ts-metrics-2016.down.sql
-# ./scripts/migrations/drop-ts-daily.py ts_metrics 2016 > ./migrations/ts-metrics/0005_add-ts-metrics-2016.down.sql
-# ./scripts/migrations/drop-ts-daily.py ts_metrics_aggr_15m 2016 > ./migrations/core/0006_add-ts-metrics-aggr-15m-2016.down.sql
-# ./scripts/migrations/drop-ts-daily.py ts_metrics_aggr_15m 2016 > ./migrations/ts-metrics/0006_add-ts-metrics-aggr-15m-2016.down.sql
-# ./scripts/migrations/drop-ts-daily.py ts_executor_logs 2016 > ./migrations/core/0026_add-ts-executor-logs-2016.down.sql
-# ./scripts/migrations/drop-ts-daily.py ts_executor_logs 2016 > ./migrations/ts-logs/0026_add-ts-executor-logs-2016.down.sql
-# ./scripts/migrations/drop-ts-daily.py ts_logs 2016 > ./migrations/core/0027_add-ts-logs-2016.down.sql
-# ./scripts/migrations/drop-ts-daily.py ts_logs 2016 > ./migrations/ts-logs/0027_add-ts-logs-2016.down.sql
-# ./scripts/migrations/drop-ts-daily.py ts_checks 2016 > ./migrations/core/0032_add-ts-checks-2016.down.sql
-# ./scripts/migrations/drop-ts-daily.py ts_checks 2016 > ./migrations/ts-checks/0032_add-ts-checks-2016.down.sql
+# ./scripts/migrations/drop-ts-daily.py ts_metrics 2016 > ./migrations/pg/down/0006_ts-metrics-2016.sql
+# ./scripts/migrations/drop-ts-daily.py ts_metrics_aggr_15m 2016 > ./migrations/pg/down/0007_ts-metrics-aggr-15m-2016.sql
+# ./scripts/migrations/drop-ts-daily.py ts_logs 2016 > ./migrations/pg/down/0027_ts-logs-2016.sql
+# ./scripts/migrations/drop-ts-daily.py ts_checks 2016 > ./migrations/pg/down/0032_ts-checks-2016.sql
 
 import sys
 import calendar

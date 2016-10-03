@@ -85,12 +85,6 @@
 			"revisionTime": "2016-05-15T16:26:28Z"
 		},
 		{
-			"checksumSHA1": "lEuAuEXh42xoG+Ygw90K3EF99Xo=",
-			"path": "github.com/fatih/color",
-			"revision": "dea9d3a26a087187530244679c1cfb3a42937794",
-			"revisionTime": "2016-10-02T08:12:59Z"
-		},
-		{
 			"checksumSHA1": "+tiyVKIigYGo7qb06tW5fG1cRME=",
 			"path": "github.com/go-mangos/mangos",
 			"revision": "c3916ba23b3aa721fd13b4dec916b2d15f4a2520",
@@ -113,12 +107,6 @@
 			"path": "github.com/go-mangos/mangos/transport/tcp",
 			"revision": "c3916ba23b3aa721fd13b4dec916b2d15f4a2520",
 			"revisionTime": "2016-07-19T02:05:16Z"
-		},
-		{
-			"checksumSHA1": "jEXpLrWXoQvH/zk1lW5Si0swr6Y=",
-			"path": "github.com/go-sql-driver/mysql",
-			"revision": "0b58b37b664c21f3010e836f1b931e1d0b0b0685",
-			"revisionTime": "2016-08-02T11:38:42Z"
 		},
 		{
 			"checksumSHA1": "X3aO3d9K9ALtg4/XI4I9L57FPkM=",
@@ -221,90 +209,6 @@
 			"path": "github.com/marcw/pagerduty",
 			"revision": "2ae88fd0491e76e95b6b411377bd46ce6a13e7f9",
 			"revisionTime": "2015-09-26T08:07:55Z"
-		},
-		{
-			"checksumSHA1": "JzB1ZD+Mit7HWcMSwOtapCrd0P8=",
-			"path": "github.com/mattes/migrate",
-			"revision": "ce1b59bb819416ca67422929b1cb48bb342720b6",
-			"revisionTime": "2016-03-21T21:09:30Z"
-		},
-		{
-			"checksumSHA1": "lJoKNrsdF14ar8hvpYt2f0u1usk=",
-			"path": "github.com/mattes/migrate/driver",
-			"revision": "ce1b59bb819416ca67422929b1cb48bb342720b6",
-			"revisionTime": "2016-03-21T21:09:30Z"
-		},
-		{
-			"checksumSHA1": "ssFRrjrhw3XNrerNkvKWyBPorWg=",
-			"path": "github.com/mattes/migrate/driver/bash",
-			"revision": "ce1b59bb819416ca67422929b1cb48bb342720b6",
-			"revisionTime": "2016-03-21T21:09:30Z"
-		},
-		{
-			"checksumSHA1": "9aJnHox290rhquA0BbiO2QqDjwQ=",
-			"path": "github.com/mattes/migrate/driver/cassandra",
-			"revision": "ce1b59bb819416ca67422929b1cb48bb342720b6",
-			"revisionTime": "2016-03-21T21:09:30Z"
-		},
-		{
-			"checksumSHA1": "Cp5c2JgPe0uIeyzeyYRFGaUeLhc=",
-			"path": "github.com/mattes/migrate/driver/mysql",
-			"revision": "ce1b59bb819416ca67422929b1cb48bb342720b6",
-			"revisionTime": "2016-03-21T21:09:30Z"
-		},
-		{
-			"checksumSHA1": "YKeZaylqov5XYO7hsA5HalRS/dU=",
-			"path": "github.com/mattes/migrate/driver/postgres",
-			"revision": "ce1b59bb819416ca67422929b1cb48bb342720b6",
-			"revisionTime": "2016-03-21T21:09:30Z"
-		},
-		{
-			"checksumSHA1": "322l3BmjUzZQYzOsqJkx3CBEvbs=",
-			"path": "github.com/mattes/migrate/driver/sqlite3",
-			"revision": "ce1b59bb819416ca67422929b1cb48bb342720b6",
-			"revisionTime": "2016-03-21T21:09:30Z"
-		},
-		{
-			"checksumSHA1": "aIuXAOtdrloDuV7IlKbyzB3Ci94=",
-			"path": "github.com/mattes/migrate/file",
-			"revision": "ce1b59bb819416ca67422929b1cb48bb342720b6",
-			"revisionTime": "2016-03-21T21:09:30Z"
-		},
-		{
-			"checksumSHA1": "cbOkBr/ZgoiRFzHix/86J3P8hYY=",
-			"path": "github.com/mattes/migrate/migrate",
-			"revision": "ce1b59bb819416ca67422929b1cb48bb342720b6",
-			"revisionTime": "2016-03-21T21:09:30Z"
-		},
-		{
-			"checksumSHA1": "xzGjMJ5pt3OO1owmY/HxS0hcJIA=",
-			"path": "github.com/mattes/migrate/migrate/direction",
-			"revision": "ce1b59bb819416ca67422929b1cb48bb342720b6",
-			"revisionTime": "2016-03-21T21:09:30Z"
-		},
-		{
-			"checksumSHA1": "A5Z+yotZkv56n0eUX0kAv0/Sj4I=",
-			"path": "github.com/mattes/migrate/pipe",
-			"revision": "ce1b59bb819416ca67422929b1cb48bb342720b6",
-			"revisionTime": "2016-03-21T21:09:30Z"
-		},
-		{
-			"checksumSHA1": "ugnSryGF6VPBb5s87QgoRH6730g=",
-			"path": "github.com/mattn/go-colorable",
-			"revision": "6c903ff4aa50920ca86087a280590b36b3152b9c",
-			"revisionTime": "2016-09-30T08:41:57Z"
-		},
-		{
-			"checksumSHA1": "xZuhljnmBysJPta/lMyYmJdujCg=",
-			"path": "github.com/mattn/go-isatty",
-			"revision": "66b8e73f3f5cda9f96b69efd03dd3d7fc4a5cdb8",
-			"revisionTime": "2016-08-06T12:27:52Z"
-		},
-		{
-			"checksumSHA1": "ToGxRLachRwa1HbVy7ZBdJaq5Zc=",
-			"path": "github.com/mattn/go-sqlite3",
-			"revision": "4b0af852c17164dce48e6754e3094c55192e4934",
-			"revisionTime": "2016-09-27T02:28:46Z"
 		},
 		{
 			"checksumSHA1": "Lnv1MZJu56aDzs5/EebdCuq3OFI=",

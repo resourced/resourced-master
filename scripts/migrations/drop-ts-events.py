@@ -15,7 +15,7 @@ import os
 import sys
 
 if __name__ == '__main__':
-	template_up = os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', '..', 'migrations', 'core', '0003_add-ts-events-2016.down.sql')
+	template_up = os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', '..', 'migrations', 'pg', 'down', '0004_ts-events-2016.sql')
 
 	content_up = open(template_up, 'r').read()
 

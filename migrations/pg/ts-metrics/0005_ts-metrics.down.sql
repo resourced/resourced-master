@@ -1,2 +1,0 @@
-DROP TABLE IF EXISTS ts_metrics CASCADE;
-DROP TABLE IF EXISTS ts_metrics_aggr_15m CASCADE;

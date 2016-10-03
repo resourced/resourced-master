@@ -4,23 +4,17 @@
 # Documentation:
 # Purpose: This script helps generate migration file for timeseries child tables.
 #          Do not use this script for ts_events, use create-ts-events.py instead.
-# Usage: ./scripts/migrations/create-ts-daily.py ts_checks 2016 check_id created > ./migrations/core/0032_add-ts-checks-2016.up.sql
+# Usage: ./scripts/migrations/create-ts-daily.py ts_checks 2016 check_id created > ./migrations/pg/up/0032_add-ts-checks-2016.up.sql
 # Arguments:
 # 1.   Parent table name. Example: ts_checks
 # 2.   The year. Example: 2016
 # 3... Columns to create composite indexes. The first 'created*' column is expected to be TIMESTAMP column where inheritance is based on.
 #
 # Examples:
-# ./scripts/migrations/create-ts-daily.py ts_metrics 2016 metric_id created deleted > ./migrations/core/0005_ts-metrics-2016.up.sql
-# ./scripts/migrations/create-ts-daily.py ts_metrics 2016 metric_id created deleted > ./migrations/ts-metrics/0005_ts-metrics-2016.up.sql
-# ./scripts/migrations/create-ts-daily.py ts_metrics_aggr_15m 2016 metric_id created deleted > ./migrations/core/0006_ts-metrics-aggr-15m-2016.up.sql
-# ./scripts/migrations/create-ts-daily.py ts_metrics_aggr_15m 2016 metric_id created deleted > ./migrations/ts-metrics/0006_ts-metrics-aggr-15m-2016.up.sql
-# ./scripts/migrations/create-ts-daily.py ts_executor_logs 2016 created deleted > ./migrations/core/0026_ts-executor-logs-2016.up.sql
-# ./scripts/migrations/create-ts-daily.py ts_executor_logs 2016 created deleted > ./migrations/ts-executor-logs/0026_ts-executor-logs-2016.up.sql
-# ./scripts/migrations/create-ts-daily.py ts_logs 2016 created deleted > ./migrations/core/0027_ts-logs-2016.up.sql
-# ./scripts/migrations/create-ts-daily.py ts_logs 2016 created deleted > ./migrations/ts-logs/0027_ts-logs-2016.up.sql
-# ./scripts/migrations/create-ts-daily.py ts_checks 2016 check_id created deleted > ./migrations/core/0032_ts-checks-2016.up.sql
-# ./scripts/migrations/create-ts-daily.py ts_checks 2016 check_id created deleted > ./migrations/ts-checks/0032_ts-checks-2016.up.sql
+# ./scripts/migrations/create-ts-daily.py ts_metrics 2016 metric_id created deleted > ./migrations/pg/up/0006_ts-metrics-2016.sql
+# ./scripts/migrations/create-ts-daily.py ts_metrics_aggr_15m 2016 metric_id created deleted > ./migrations/pg/up/0007_ts-metrics-aggr-15m-2016.sql
+# ./scripts/migrations/create-ts-daily.py ts_logs 2016 created deleted > ./migrations/pg/up/0027_ts-logs-2016.sql
+# ./scripts/migrations/create-ts-daily.py ts_checks 2016 check_id created deleted > ./migrations/pg/up/0032_ts-checks-2016.sql
 
 import sys
 import calendar
@@ -51,7 +45,7 @@ def create_table_by_day(table_name, table_ts_column, year, month, index):
 
 	table_name_with_suffix = "%s_%s_%s_%s" % (table_name, year, padded_month, padded_index)
 
-	t = Template("create table $table_name_with_suffix (check ($table_ts_column >= TIMESTAMP '$year-$padded_month-$padded_index 00:00:00-00' and $table_ts_column < TIMESTAMP '$next_year-$padded_next_month-$padded_next_index 00:00:00-00')) inherits ($table_name);")
+	t = Template("create table IF NOT EXISTS $table_name_with_suffix (check ($table_ts_column >= TIMESTAMP '$year-$padded_month-$padded_index 00:00:00-00' and $table_ts_column < TIMESTAMP '$next_year-$padded_next_month-$padded_next_index 00:00:00-00')) inherits ($table_name);")
 	return t.substitute(
 		table_name_with_suffix=table_name_with_suffix,
 		table_name=table_name,
@@ -163,9 +157,16 @@ $if_clauses
 end;
 $double_dollar language plpgsql;
 
-create trigger $trigger_name
-    before insert on $table_name
-    for each row execute procedure $function_name();
+DO
+$$
+BEGIN
+    IF NOT EXISTS(SELECT * FROM information_schema.triggers  WHERE event_object_table = '$table_name' AND trigger_name = '$trigger_name') THEN
+		create trigger $trigger_name
+		    before insert on $table_name
+		    for each row execute procedure $function_name();
+    END IF;
+END;
+$$
 """)
 
 	return t.substitute(
@@ -181,7 +182,7 @@ def create_migration(table_name, year, *columns):
 
 	create_tables_list = filter(bool, [create_table_by_day(table_name, created_columns[0], year, month, index) for month in range(1,13) for index in range(1,32)])
 
-	if table_name == "ts_logs" or table_name == "ts_executor_logs":
+	if table_name == "ts_logs":
 		create_indexes_list = filter(bool, [create_logs_fulltext_index_by_day(table_name, year, month, index) for month in range(1,13) for index in range(1,32)])
 	else:
 		create_indexes_list = filter(bool, [create_brin_index_by_day(table_name, year, month, index, *(['cluster_id'] + list(columns))) for month in range(1,13) for index in range(1,32)])

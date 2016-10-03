@@ -114,14 +114,14 @@ func main() {
 		}
 
 	case "migrate up":
-		err := app.MigrateUpAllPG()
+		err := app.MigrateAllPG("up")
 		if err != nil {
 			logrus.Fatal(err)
 		}
 
-		err = app.MigrateUpAllCassandra()
-		if err != nil {
-			logrus.Fatal(err)
-		}
+		// err = app.MigrateUpAllCassandra()
+		// if err != nil {
+		// 	logrus.Fatal(err)
+		// }
 	}
 }

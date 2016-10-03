@@ -4,7 +4,10 @@ package application
 
 import (
 	"fmt"
+	"io/ioutil"
 	"os"
+	"path/filepath"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -12,8 +15,6 @@ import (
 	"github.com/Sirupsen/logrus"
 	"github.com/gorilla/sessions"
 	_ "github.com/lib/pq"
-	_ "github.com/mattes/migrate/driver/postgres"
-	"github.com/mattes/migrate/migrate"
 	gocache "github.com/patrickmn/go-cache"
 	"github.com/rcrowley/go-metrics"
 
@@ -114,88 +115,138 @@ func (app *Application) FullAddr() string {
 }
 
 // MigrateUpAll runs all migration files to be up-to-date.
-func (app *Application) MigrateUpAllPG() error {
-	errs, ok := migrate.UpSync(app.GeneralConfig.PostgreSQL.DSN, "./migrations/pg/core")
-	if !ok {
-		return fmt.Errorf("DSN: %v, Errors: %v", app.GeneralConfig.PostgreSQL.DSN, errs)
-	}
+func (app *Application) MigrateAllPG(direction string) error {
+	migrationDir := filepath.Join(".", "migrations", "pg", direction)
 
-	errs, ok = migrate.UpSync(app.GeneralConfig.Hosts.PostgreSQL.DSN, "./migrations/pg/hosts")
-	if !ok {
-		return fmt.Errorf("DSN: %v, Errors: %v", app.GeneralConfig.Hosts.PostgreSQL.DSN, errs)
-	}
+	files, _ := ioutil.ReadDir(migrationDir)
+	for _, f := range files {
+		fullFilename := filepath.Join(migrationDir, f.Name())
 
-	for _, dsn := range app.GeneralConfig.Hosts.PostgreSQL.DSNByClusterID {
-		errs, ok = migrate.UpSync(dsn, "./migrations/pg/hosts")
-		if !ok {
-			return fmt.Errorf("DSN: %v, Errors: %v", dsn, errs)
+		sqlBytes, err := ioutil.ReadFile(fullFilename)
+		if err != nil {
+			return fmt.Errorf("Failed to read migration file. File: %v, Error: %v", fullFilename, err)
 		}
-	}
 
-	errs, ok = migrate.UpSync(app.GeneralConfig.Checks.PostgreSQL.DSN, "./migrations/pg/ts-checks")
-	if !ok {
-		return fmt.Errorf("DSN: %v, Errors: %v", app.GeneralConfig.Checks.PostgreSQL.DSN, errs)
-	}
+		sql := string(sqlBytes)
 
-	for _, dsn := range app.GeneralConfig.Checks.PostgreSQL.DSNByClusterID {
-		errs, ok = migrate.UpSync(dsn, "./migrations/pg/ts-checks")
-		if !ok {
-			return fmt.Errorf("DSN: %v, Errors: %v", dsn, errs)
+		// -----------------------------------------------
+		// Core
+		_, err = app.PGDBConfig.Core.Exec(sql)
+		if err != nil {
+			return fmt.Errorf("Failed to execute migration file on %v. File: %v, Error: %v", app.GeneralConfig.PostgreSQL.DSN, fullFilename, err)
 		}
-	}
 
-	errs, ok = migrate.UpSync(app.GeneralConfig.Events.PostgreSQL.DSN, "./migrations/pg/ts-events")
-	if !ok {
-		return fmt.Errorf("DSN: %v, Errors: %v", app.GeneralConfig.Events.PostgreSQL.DSN, errs)
-	}
-
-	for _, dsn := range app.GeneralConfig.Events.PostgreSQL.DSNByClusterID {
-		errs, ok = migrate.UpSync(dsn, "./migrations/pg/ts-events")
-		if !ok {
-			return fmt.Errorf("DSN: %v, Errors: %v", dsn, errs)
+		// -----------------------------------------------
+		// Hosts
+		_, err = app.PGDBConfig.Host.Exec(sql)
+		if err != nil {
+			return fmt.Errorf("Failed to execute migration file on %v. File: %v, Error: %v", app.GeneralConfig.Hosts.PostgreSQL.DSN, fullFilename, err)
 		}
-	}
 
-	errs, ok = migrate.UpSync(app.GeneralConfig.Logs.PostgreSQL.DSN, "./migrations/pg/ts-logs")
-	if !ok {
-		return fmt.Errorf("DSN: %v, Errors: %v", app.GeneralConfig.Logs.PostgreSQL.DSN, errs)
-	}
+		for clusterIDString, dsn := range app.GeneralConfig.Hosts.PostgreSQL.DSNByClusterID {
+			clusterID, err := strconv.ParseInt(clusterIDString, 10, 64)
+			if err != nil {
+				return fmt.Errorf("Failed to execute migration file on %v. File: %v, Error: %v", dsn, fullFilename, err)
+			}
 
-	for _, dsn := range app.GeneralConfig.Logs.PostgreSQL.DSNByClusterID {
-		errs, ok = migrate.UpSync(dsn, "./migrations/pg/ts-logs")
-		if !ok {
-			return fmt.Errorf("DSN: %v, Errors: %v", dsn, errs)
-		}
-	}
-
-	if app.GeneralConfig.Metrics.PostgreSQL.DSN != "" {
-		errs, ok = migrate.UpSync(app.GeneralConfig.Metrics.PostgreSQL.DSN, "./migrations/pg/ts-metrics")
-		if !ok {
-			return fmt.Errorf("DSN: %v, Error: %v", app.GeneralConfig.Metrics.PostgreSQL.DSN, errs[0])
-		}
-	}
-
-	for _, dsn := range app.GeneralConfig.Metrics.PostgreSQL.DSNByClusterID {
-		if dsn != "" {
-			errs, ok = migrate.UpSync(dsn, "./migrations/pg/ts-metrics")
-			if !ok {
-				return fmt.Errorf("DSN: %v, Errors: %v", dsn, errs)
+			_, err = app.PGDBConfig.GetHost(clusterID).Exec(sql)
+			if err != nil {
+				return fmt.Errorf("Failed to execute migration file on %v. File: %v, Error: %v", dsn, fullFilename, err)
 			}
 		}
-	}
 
-	if app.GeneralConfig.Metrics.PostgreSQL.DSN != "" {
-		errs, ok = migrate.UpSync(app.GeneralConfig.MetricsAggr15m.PostgreSQL.DSN, "./migrations/pg/ts-metrics")
-		if !ok {
-			return fmt.Errorf("DSN: %v, Errors: %v", app.GeneralConfig.MetricsAggr15m.PostgreSQL.DSN, errs)
+		// -----------------------------------------------
+		// Checks
+		_, err = app.PGDBConfig.TSCheck.Exec(sql)
+		if err != nil {
+			return fmt.Errorf("Failed to execute migration file on %v. File: %v, Error: %v", app.GeneralConfig.Checks.PostgreSQL.DSN, fullFilename, err)
 		}
-	}
 
-	for _, dsn := range app.GeneralConfig.MetricsAggr15m.PostgreSQL.DSNByClusterID {
-		if dsn != "" {
-			errs, ok = migrate.UpSync(dsn, "./migrations/pg/ts-metrics")
-			if !ok {
-				return fmt.Errorf("DSN: %v, Errors: %v", dsn, errs)
+		for clusterIDString, dsn := range app.GeneralConfig.Checks.PostgreSQL.DSNByClusterID {
+			clusterID, err := strconv.ParseInt(clusterIDString, 10, 64)
+			if err != nil {
+				return fmt.Errorf("Failed to execute migration file on %v. File: %v, Error: %v", dsn, fullFilename, err)
+			}
+
+			_, err = app.PGDBConfig.GetTSCheck(clusterID).Exec(sql)
+			if err != nil {
+				return fmt.Errorf("Failed to execute migration file on %v. File: %v, Error: %v", dsn, fullFilename, err)
+			}
+		}
+
+		// -----------------------------------------------
+		// Events
+		_, err = app.PGDBConfig.TSEvent.Exec(sql)
+		if err != nil {
+			return fmt.Errorf("Failed to execute migration file on %v. File: %v, Error: %v", app.GeneralConfig.Events.PostgreSQL.DSN, fullFilename, err)
+		}
+
+		for clusterIDString, dsn := range app.GeneralConfig.Events.PostgreSQL.DSNByClusterID {
+			clusterID, err := strconv.ParseInt(clusterIDString, 10, 64)
+			if err != nil {
+				return fmt.Errorf("Failed to execute migration file on %v. File: %v, Error: %v", dsn, fullFilename, err)
+			}
+
+			_, err = app.PGDBConfig.GetTSEvent(clusterID).Exec(sql)
+			if err != nil {
+				return fmt.Errorf("Failed to execute migration file on %v. File: %v, Error: %v", dsn, fullFilename, err)
+			}
+		}
+
+		// -----------------------------------------------
+		// Logs
+		_, err = app.PGDBConfig.TSLog.Exec(sql)
+		if err != nil {
+			return fmt.Errorf("Failed to execute migration file on %v. File: %v, Error: %v", app.GeneralConfig.Logs.PostgreSQL.DSN, fullFilename, err)
+		}
+
+		for clusterIDString, dsn := range app.GeneralConfig.Logs.PostgreSQL.DSNByClusterID {
+			clusterID, err := strconv.ParseInt(clusterIDString, 10, 64)
+			if err != nil {
+				return fmt.Errorf("Failed to execute migration file on %v. File: %v, Error: %v", dsn, fullFilename, err)
+			}
+
+			_, err = app.PGDBConfig.GetTSLog(clusterID).Exec(sql)
+			if err != nil {
+				return fmt.Errorf("Failed to execute migration file on %v. File: %v, Error: %v", dsn, fullFilename, err)
+			}
+		}
+
+		// -----------------------------------------------
+		// Metrics
+		_, err = app.PGDBConfig.TSMetric.Exec(sql)
+		if err != nil {
+			return fmt.Errorf("Failed to execute migration file on %v. File: %v, Error: %v", app.GeneralConfig.Metrics.PostgreSQL.DSN, fullFilename, err)
+		}
+
+		for clusterIDString, dsn := range app.GeneralConfig.Metrics.PostgreSQL.DSNByClusterID {
+			clusterID, err := strconv.ParseInt(clusterIDString, 10, 64)
+			if err != nil {
+				return fmt.Errorf("Failed to execute migration file on %v. File: %v, Error: %v", dsn, fullFilename, err)
+			}
+
+			_, err = app.PGDBConfig.GetTSMetric(clusterID).Exec(sql)
+			if err != nil {
+				return fmt.Errorf("Failed to execute migration file on %v. File: %v, Error: %v", dsn, fullFilename, err)
+			}
+		}
+
+		// -----------------------------------------------
+		// MetricsAggr15m
+		_, err = app.PGDBConfig.TSMetricAggr15m.Exec(sql)
+		if err != nil {
+			return fmt.Errorf("Failed to execute migration file on %v. File: %v, Error: %v", app.GeneralConfig.MetricsAggr15m.PostgreSQL.DSN, fullFilename, err)
+		}
+
+		for clusterIDString, dsn := range app.GeneralConfig.MetricsAggr15m.PostgreSQL.DSNByClusterID {
+			clusterID, err := strconv.ParseInt(clusterIDString, 10, 64)
+			if err != nil {
+				return fmt.Errorf("Failed to execute migration file on %v. File: %v, Error: %v", dsn, fullFilename, err)
+			}
+
+			_, err = app.PGDBConfig.GetTSMetricAggr15m(clusterID).Exec(sql)
+			if err != nil {
+				return fmt.Errorf("Failed to execute migration file on %v. File: %v, Error: %v", dsn, fullFilename, err)
 			}
 		}
 	}
@@ -203,13 +254,13 @@ func (app *Application) MigrateUpAllPG() error {
 	return nil
 }
 
-func (app *Application) MigrateUpAllCassandra() error {
-	if app.GeneralConfig.Metrics.Cassandra.MigrateDSN != "" {
-		errs, ok := migrate.UpSync(app.GeneralConfig.Metrics.Cassandra.MigrateDSN, "./migrations/pg/ts-metrics")
-		if !ok {
-			return fmt.Errorf("DSN: %v, Error: %v", app.GeneralConfig.Metrics.Cassandra.MigrateDSN, errs[0])
-		}
-	}
+// func (app *Application) MigrateUpAllCassandra() error {
+// 	if app.GeneralConfig.Metrics.Cassandra.MigrateDSN != "" {
+// 		errs, ok := migrate.UpSync(app.GeneralConfig.Metrics.Cassandra.MigrateDSN, "./migrations/pg/ts-metrics")
+// 		if !ok {
+// 			return fmt.Errorf("DSN: %v, Error: %v", app.GeneralConfig.Metrics.Cassandra.MigrateDSN, errs[0])
+// 		}
+// 	}
 
-	return nil
-}
+// 	return nil
+// }
