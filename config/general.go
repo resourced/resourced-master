@@ -52,18 +52,27 @@ func NewGeneralConfig(configDir string) (config GeneralConfig, err error) {
 	return config, err
 }
 
+type PostgreSQLPerClusterConfig struct {
+	DSN                string
+	MaxOpenConnections int64
+	DSNByClusterID     map[string]string
+}
+
 // GeneralConfig stores all configuration data.
 type GeneralConfig struct {
 	Addr                    string
 	LogLevel                string
-	DSN                     string
-	DBMaxOpenConnections    int64
 	CookieSecret            string
 	RequestShutdownTimeout  string
 	VIPAddr                 string
 	VIPProtocol             string
 	EnablePeriodicPruneJobs bool
 	JustAPI                 bool
+
+	PostgreSQL struct {
+		DSN                string
+		MaxOpenConnections int64
+	}
 
 	LocalAgent struct {
 		GraphiteTCPPort       string
@@ -86,40 +95,26 @@ type GeneralConfig struct {
 	}
 
 	Hosts struct {
-		DSN                  string
-		DBMaxOpenConnections int64
-		DSNByClusterID       map[string]string
+		PostgreSQL PostgreSQLPerClusterConfig
 	}
 
 	Metrics struct {
-		DSN                  string
-		DBMaxOpenConnections int64
-		DSNByClusterID       map[string]string
-
+		PostgreSQL    PostgreSQLPerClusterConfig
 		DataRetention int
 	}
 
 	MetricsAggr15m struct {
-		DSN                  string
-		DBMaxOpenConnections int64
-		DSNByClusterID       map[string]string
-
+		PostgreSQL    PostgreSQLPerClusterConfig
 		DataRetention int
 	}
 
 	Events struct {
-		DSN                  string
-		DBMaxOpenConnections int64
-		DSNByClusterID       map[string]string
-
+		PostgreSQL    PostgreSQLPerClusterConfig
 		DataRetention int
 	}
 
 	Logs struct {
-		DSN                  string
-		DBMaxOpenConnections int64
-		DSNByClusterID       map[string]string
-
+		PostgreSQL    PostgreSQLPerClusterConfig
 		DataRetention int
 	}
 
@@ -128,9 +123,7 @@ type GeneralConfig struct {
 
 		SMSEmailGateway map[string]string
 
-		DSN                  string
-		DBMaxOpenConnections int64
-		DSNByClusterID       map[string]string
+		PostgreSQL PostgreSQLPerClusterConfig
 
 		DataRetention int
 	}

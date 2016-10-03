@@ -115,77 +115,77 @@ func (app *Application) FullAddr() string {
 
 // MigrateUpAll runs all migration files to be up-to-date.
 func (app *Application) MigrateUpAllPG() error {
-	errs, ok := migrate.UpSync(app.GeneralConfig.DSN, "./migrations/pg/core")
+	errs, ok := migrate.UpSync(app.GeneralConfig.PostgreSQL.DSN, "./migrations/pg/core")
 	if !ok {
-		return fmt.Errorf("DSN: %v, Errors: %v", app.GeneralConfig.DSN, errs)
+		return fmt.Errorf("DSN: %v, Errors: %v", app.GeneralConfig.PostgreSQL.DSN, errs)
 	}
 
-	errs, ok = migrate.UpSync(app.GeneralConfig.Hosts.DSN, "./migrations/pg/hosts")
+	errs, ok = migrate.UpSync(app.GeneralConfig.Hosts.PostgreSQL.DSN, "./migrations/pg/hosts")
 	if !ok {
-		return fmt.Errorf("DSN: %v, Errors: %v", app.GeneralConfig.Hosts.DSN, errs)
+		return fmt.Errorf("DSN: %v, Errors: %v", app.GeneralConfig.Hosts.PostgreSQL.DSN, errs)
 	}
 
-	for _, dsn := range app.GeneralConfig.Hosts.DSNByClusterID {
+	for _, dsn := range app.GeneralConfig.Hosts.PostgreSQL.DSNByClusterID {
 		errs, ok = migrate.UpSync(dsn, "./migrations/pg/hosts")
 		if !ok {
 			return fmt.Errorf("DSN: %v, Errors: %v", dsn, errs)
 		}
 	}
 
-	errs, ok = migrate.UpSync(app.GeneralConfig.Checks.DSN, "./migrations/pg/ts-checks")
+	errs, ok = migrate.UpSync(app.GeneralConfig.Checks.PostgreSQL.DSN, "./migrations/pg/ts-checks")
 	if !ok {
-		return fmt.Errorf("DSN: %v, Errors: %v", app.GeneralConfig.Checks.DSN, errs)
+		return fmt.Errorf("DSN: %v, Errors: %v", app.GeneralConfig.Checks.PostgreSQL.DSN, errs)
 	}
 
-	for _, dsn := range app.GeneralConfig.Checks.DSNByClusterID {
+	for _, dsn := range app.GeneralConfig.Checks.PostgreSQL.DSNByClusterID {
 		errs, ok = migrate.UpSync(dsn, "./migrations/pg/ts-checks")
 		if !ok {
 			return fmt.Errorf("DSN: %v, Errors: %v", dsn, errs)
 		}
 	}
 
-	errs, ok = migrate.UpSync(app.GeneralConfig.Events.DSN, "./migrations/pg/ts-events")
+	errs, ok = migrate.UpSync(app.GeneralConfig.Events.PostgreSQL.DSN, "./migrations/pg/ts-events")
 	if !ok {
-		return fmt.Errorf("DSN: %v, Errors: %v", app.GeneralConfig.Events.DSN, errs)
+		return fmt.Errorf("DSN: %v, Errors: %v", app.GeneralConfig.Events.PostgreSQL.DSN, errs)
 	}
 
-	for _, dsn := range app.GeneralConfig.Events.DSNByClusterID {
+	for _, dsn := range app.GeneralConfig.Events.PostgreSQL.DSNByClusterID {
 		errs, ok = migrate.UpSync(dsn, "./migrations/pg/ts-events")
 		if !ok {
 			return fmt.Errorf("DSN: %v, Errors: %v", dsn, errs)
 		}
 	}
 
-	errs, ok = migrate.UpSync(app.GeneralConfig.Logs.DSN, "./migrations/pg/ts-logs")
+	errs, ok = migrate.UpSync(app.GeneralConfig.Logs.PostgreSQL.DSN, "./migrations/pg/ts-logs")
 	if !ok {
-		return fmt.Errorf("DSN: %v, Errors: %v", app.GeneralConfig.Logs.DSN, errs)
+		return fmt.Errorf("DSN: %v, Errors: %v", app.GeneralConfig.Logs.PostgreSQL.DSN, errs)
 	}
 
-	for _, dsn := range app.GeneralConfig.Logs.DSNByClusterID {
+	for _, dsn := range app.GeneralConfig.Logs.PostgreSQL.DSNByClusterID {
 		errs, ok = migrate.UpSync(dsn, "./migrations/pg/ts-logs")
 		if !ok {
 			return fmt.Errorf("DSN: %v, Errors: %v", dsn, errs)
 		}
 	}
 
-	errs, ok = migrate.UpSync(app.GeneralConfig.Metrics.DSN, "./migrations/pg/ts-metrics")
+	errs, ok = migrate.UpSync(app.GeneralConfig.Metrics.PostgreSQL.DSN, "./migrations/pg/ts-metrics")
 	if !ok {
-		return fmt.Errorf("DSN: %v, Error: %v", app.GeneralConfig.Metrics.DSN, errs[0])
+		return fmt.Errorf("DSN: %v, Error: %v", app.GeneralConfig.Metrics.PostgreSQL.DSN, errs[0])
 	}
 
-	for _, dsn := range app.GeneralConfig.Metrics.DSNByClusterID {
+	for _, dsn := range app.GeneralConfig.Metrics.PostgreSQL.DSNByClusterID {
 		errs, ok = migrate.UpSync(dsn, "./migrations/pg/ts-metrics")
 		if !ok {
 			return fmt.Errorf("DSN: %v, Errors: %v", dsn, errs)
 		}
 	}
 
-	errs, ok = migrate.UpSync(app.GeneralConfig.MetricsAggr15m.DSN, "./migrations/pg/ts-metrics")
+	errs, ok = migrate.UpSync(app.GeneralConfig.MetricsAggr15m.PostgreSQL.DSN, "./migrations/pg/ts-metrics")
 	if !ok {
-		return fmt.Errorf("DSN: %v, Errors: %v", app.GeneralConfig.MetricsAggr15m.DSN, errs)
+		return fmt.Errorf("DSN: %v, Errors: %v", app.GeneralConfig.MetricsAggr15m.PostgreSQL.DSN, errs)
 	}
 
-	for _, dsn := range app.GeneralConfig.MetricsAggr15m.DSNByClusterID {
+	for _, dsn := range app.GeneralConfig.MetricsAggr15m.PostgreSQL.DSNByClusterID {
 		errs, ok = migrate.UpSync(dsn, "./migrations/pg/ts-metrics")
 		if !ok {
 			return fmt.Errorf("DSN: %v, Errors: %v", dsn, errs)

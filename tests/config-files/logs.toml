@@ -1,7 +1,9 @@
 [Logs]
+
+[Logs.PostgreSQL]
 DSN = "postgres://localhost:5432/resourced-master-ts-logs?sslmode=disable"
 
-DBMaxOpenConnections = 50
+MaxOpenConnections = 50
 
 # DataRetention defines how long time series data are kept.
 # The unit is defined in days.
@@ -10,5 +12,5 @@ DataRetention = 1
 # Optimization Setting: Enable this option if you want to shard logs data by cluster_id.
 # Format: key:   cluster id.
 #         value: DSN.
-# [Logs.DSNByClusterID]
+# [Logs.PostgreSQL.DSNByClusterID]
 # 1 = "postgres://localhost:5432/resourced-master-logs-1?sslmode=disable"

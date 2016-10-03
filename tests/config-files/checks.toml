@@ -1,16 +1,18 @@
 [Checks]
-DSN = "postgres://localhost:5432/resourced-master-ts-checks?sslmode=disable"
-
-DBMaxOpenConnections = 2
 
 # DataRetention defines how long time series data are kept.
 # The unit is defined in days.
 DataRetention = 1
 
+[Checks.PostgreSQL]
+DSN = "postgres://localhost:5432/resourced-master-ts-checks?sslmode=disable"
+
+MaxOpenConnections = 2
+
 # Optimization Setting: Enable this option if you want to shard checks data by cluster_id.
 # Format: key:   cluster id.
 #         value: DSN.
-# [Checks.DSNByClusterID]
+# [Checks.PostgreSQL.DSNByClusterID]
 # 1 = "postgres://localhost:5432/resourced-master-checks-1?sslmode=disable"
 
 [Checks.Email]
