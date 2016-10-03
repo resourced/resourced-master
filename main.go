@@ -22,7 +22,11 @@ var (
 	appServerArg  = kingpin.Command("server", "Run resourced-master server.").Default()
 	appMigrateArg = kingpin.Command("migrate", "CLI interface for resourced-master database migration.")
 
-	appMigrateUpArg = appMigrateArg.Command("up", "Run all migrations to the most current.").Default()
+	appMigratePG    = appMigrateArg.Command("pg", "Run PostgreSQL migrations.")
+	appMigratePGCmd = appMigratePG.Arg("command", "PostgreSQL migration commands. Valid choices: up or down").Required().String()
+
+	appMigrateCassandra    = appMigrateArg.Command("cassandra", "Run Cassandra migrations.")
+	appMigrateCassandraCmd = appMigrateCassandra.Arg("command", "Cassandra migration commands. Valid choices: up or down").Required().String()
 )
 
 func init() {
@@ -113,15 +117,17 @@ func main() {
 			srv.ListenAndServe()
 		}
 
-	case "migrate up":
-		// err := app.MigrateAllPG("up")
-		// if err != nil {
-		// 	logrus.Fatal(err)
-		// }
-
-		err := app.MigrateAllCassandra("up")
+	case "migrate pg":
+		err := app.MigrateAllPG(*appMigratePGCmd)
 		if err != nil {
 			logrus.Fatal(err)
 		}
+
+	case "migrate cassandra":
+		err := app.MigrateAllCassandra(*appMigrateCassandraCmd)
+		if err != nil {
+			logrus.Fatal(err)
+		}
+
 	}
 }
