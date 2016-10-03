@@ -168,27 +168,46 @@ func (app *Application) MigrateUpAllPG() error {
 		}
 	}
 
-	errs, ok = migrate.UpSync(app.GeneralConfig.Metrics.PostgreSQL.DSN, "./migrations/pg/ts-metrics")
-	if !ok {
-		return fmt.Errorf("DSN: %v, Error: %v", app.GeneralConfig.Metrics.PostgreSQL.DSN, errs[0])
-	}
-
-	for _, dsn := range app.GeneralConfig.Metrics.PostgreSQL.DSNByClusterID {
-		errs, ok = migrate.UpSync(dsn, "./migrations/pg/ts-metrics")
+	if app.GeneralConfig.Metrics.PostgreSQL.DSN != "" {
+		errs, ok = migrate.UpSync(app.GeneralConfig.Metrics.PostgreSQL.DSN, "./migrations/pg/ts-metrics")
 		if !ok {
-			return fmt.Errorf("DSN: %v, Errors: %v", dsn, errs)
+			return fmt.Errorf("DSN: %v, Error: %v", app.GeneralConfig.Metrics.PostgreSQL.DSN, errs[0])
 		}
 	}
 
-	errs, ok = migrate.UpSync(app.GeneralConfig.MetricsAggr15m.PostgreSQL.DSN, "./migrations/pg/ts-metrics")
-	if !ok {
-		return fmt.Errorf("DSN: %v, Errors: %v", app.GeneralConfig.MetricsAggr15m.PostgreSQL.DSN, errs)
+	for _, dsn := range app.GeneralConfig.Metrics.PostgreSQL.DSNByClusterID {
+		if dsn != "" {
+			errs, ok = migrate.UpSync(dsn, "./migrations/pg/ts-metrics")
+			if !ok {
+				return fmt.Errorf("DSN: %v, Errors: %v", dsn, errs)
+			}
+		}
+	}
+
+	if app.GeneralConfig.Metrics.PostgreSQL.DSN != "" {
+		errs, ok = migrate.UpSync(app.GeneralConfig.MetricsAggr15m.PostgreSQL.DSN, "./migrations/pg/ts-metrics")
+		if !ok {
+			return fmt.Errorf("DSN: %v, Errors: %v", app.GeneralConfig.MetricsAggr15m.PostgreSQL.DSN, errs)
+		}
 	}
 
 	for _, dsn := range app.GeneralConfig.MetricsAggr15m.PostgreSQL.DSNByClusterID {
-		errs, ok = migrate.UpSync(dsn, "./migrations/pg/ts-metrics")
+		if dsn != "" {
+			errs, ok = migrate.UpSync(dsn, "./migrations/pg/ts-metrics")
+			if !ok {
+				return fmt.Errorf("DSN: %v, Errors: %v", dsn, errs)
+			}
+		}
+	}
+
+	return nil
+}
+
+func (app *Application) MigrateUpAllCassandra() error {
+	if app.GeneralConfig.Metrics.Cassandra.MigrateDSN != "" {
+		errs, ok := migrate.UpSync(app.GeneralConfig.Metrics.Cassandra.MigrateDSN, "./migrations/pg/ts-metrics")
 		if !ok {
-			return fmt.Errorf("DSN: %v, Errors: %v", dsn, errs)
+			return fmt.Errorf("DSN: %v, Error: %v", app.GeneralConfig.Metrics.Cassandra.MigrateDSN, errs[0])
 		}
 	}
 
