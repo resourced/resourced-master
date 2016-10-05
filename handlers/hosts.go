@@ -15,6 +15,7 @@ import (
 	"github.com/resourced/resourced-master/config"
 	"github.com/resourced/resourced-master/libhttp"
 	"github.com/resourced/resourced-master/messagebus"
+	"github.com/resourced/resourced-master/models/cassandra"
 	"github.com/resourced/resourced-master/models/pg"
 )
 
@@ -275,7 +276,9 @@ func PostHostsIDMasterTags(w http.ResponseWriter, r *http.Request) {
 func PostApiHosts(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	dbs := r.Context().Value("pg-dbs").(*config.PGDBConfig)
+	pgdbs := r.Context().Value("pg-dbs").(*config.PGDBConfig)
+
+	cassandradbsInterface := r.Context().Value("cassandra-dbs")
 
 	accessTokenRow := r.Context().Value("accessToken").(*pg.AccessTokenRow)
 
@@ -289,7 +292,7 @@ func PostApiHosts(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	hostRow, err := pg.NewHost(dbs.GetHost(accessTokenRow.ClusterID)).CreateOrUpdate(nil, accessTokenRow, dataJson)
+	hostRow, err := pg.NewHost(pgdbs.GetHost(accessTokenRow.ClusterID)).CreateOrUpdate(nil, accessTokenRow, dataJson)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
@@ -297,7 +300,7 @@ func PostApiHosts(w http.ResponseWriter, r *http.Request) {
 
 	// Asynchronously write timeseries data
 	go func() {
-		metricsMap, err := pg.NewMetric(dbs.Core).AllByClusterIDAsMap(nil, hostRow.ClusterID)
+		metricsMap, err := pg.NewMetric(pgdbs.Core).AllByClusterIDAsMap(nil, hostRow.ClusterID)
 		if err != nil {
 			errLogger.WithFields(logrus.Fields{
 				"Error": err.Error(),
@@ -307,7 +310,7 @@ func PostApiHosts(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		clusterRow, err := pg.NewCluster(dbs.Core).GetByID(nil, hostRow.ClusterID)
+		clusterRow, err := pg.NewCluster(pgdbs.Core).GetByID(nil, hostRow.ClusterID)
 		if err != nil {
 			errLogger.WithFields(logrus.Fields{
 				"Error": err.Error(),
@@ -319,21 +322,31 @@ func PostApiHosts(w http.ResponseWriter, r *http.Request) {
 		tsMetricsAggr15mDeletedFrom := clusterRow.GetDeletedFromUNIXTimestampForInsert("ts_metrics_aggr_15m")
 
 		// Create ts_metrics row
-		err = pg.NewTSMetric(dbs.GetTSMetric(hostRow.ClusterID)).CreateByHostRow(nil, hostRow, metricsMap, tsMetricsDeletedFrom)
-		if err != nil {
-			errLogger.Error(err)
-			return
+		if cassandradbsInterface != nil {
+			cassandradbs := cassandradbsInterface.(*config.CassandraDBConfig)
+			err := cassandra.NewTSMetric(cassandradbs.TSMetricSession).CreateByHostRow(hostRow, metricsMap, clusterRow.GetTTLDurationForInsert("ts_metrics"))
+			if err != nil {
+				errLogger.Error(err)
+				return
+			}
+
+		} else {
+			err := pg.NewTSMetric(pgdbs.GetTSMetric(hostRow.ClusterID)).CreateByHostRow(nil, hostRow, metricsMap, tsMetricsDeletedFrom)
+			if err != nil {
+				errLogger.Error(err)
+				return
+			}
 		}
 
 		go func() {
-			selectAggrRows, err := pg.NewTSMetric(dbs.GetTSMetric(hostRow.ClusterID)).AggregateEveryXMinutes(nil, hostRow.ClusterID, 15)
+			selectAggrRows, err := pg.NewTSMetric(pgdbs.GetTSMetric(hostRow.ClusterID)).AggregateEveryXMinutes(nil, hostRow.ClusterID, 15)
 			if err != nil {
 				errLogger.Error(err)
 				return
 			}
 
 			// Create ts_metrics_aggr_15m rows.
-			err = pg.NewTSMetricAggr15m(dbs.GetTSMetricAggr15m(hostRow.ClusterID)).CreateByHostRow(nil, hostRow, metricsMap, selectAggrRows, tsMetricsAggr15mDeletedFrom)
+			err = pg.NewTSMetricAggr15m(pgdbs.GetTSMetricAggr15m(hostRow.ClusterID)).CreateByHostRow(nil, hostRow, metricsMap, selectAggrRows, tsMetricsAggr15mDeletedFrom)
 			if err != nil {
 				errLogger.Error(err)
 				return
@@ -341,14 +354,14 @@ func PostApiHosts(w http.ResponseWriter, r *http.Request) {
 		}()
 
 		go func() {
-			selectAggrRows, err := pg.NewTSMetric(dbs.GetTSMetric(hostRow.ClusterID)).AggregateEveryXMinutesPerHost(nil, hostRow.ClusterID, 15)
+			selectAggrRows, err := pg.NewTSMetric(pgdbs.GetTSMetric(hostRow.ClusterID)).AggregateEveryXMinutesPerHost(nil, hostRow.ClusterID, 15)
 			if err != nil {
 				errLogger.Error(err)
 				return
 			}
 
 			// Create ts_metrics_aggr_15m rows per host.
-			err = pg.NewTSMetricAggr15m(dbs.GetTSMetricAggr15m(hostRow.ClusterID)).CreateByHostRowPerHost(nil, hostRow, metricsMap, selectAggrRows, tsMetricsAggr15mDeletedFrom)
+			err = pg.NewTSMetricAggr15m(pgdbs.GetTSMetricAggr15m(hostRow.ClusterID)).CreateByHostRowPerHost(nil, hostRow, metricsMap, selectAggrRows, tsMetricsAggr15mDeletedFrom)
 			if err != nil {
 				errLogger.Error(err)
 				return

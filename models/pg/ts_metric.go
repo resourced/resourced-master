@@ -6,6 +6,8 @@ import (
 
 	"github.com/Sirupsen/logrus"
 	"github.com/jmoiron/sqlx"
+
+	"github.com/resourced/resourced-master/models/shared"
 )
 
 func NewTSMetric(db *sqlx.DB) *TSMetric {
@@ -76,7 +78,7 @@ func (ts *TSMetric) Create(tx *sqlx.Tx, clusterID, metricID int64, host, key str
 	return err
 }
 
-func (ts *TSMetric) CreateByHostRow(tx *sqlx.Tx, hostRow *HostRow, metricsMap map[string]int64, deletedFrom int64) error {
+func (ts *TSMetric) CreateByHostRow(tx *sqlx.Tx, hostRow shared.IHostRow, metricsMap map[string]int64, deletedFrom int64) error {
 	// Loop through every host's data and see if they are part of graph metrics.
 	// If they are, insert a record in ts_metrics.
 	for path, data := range hostRow.DataAsFlatKeyValue() {
@@ -87,14 +89,14 @@ func (ts *TSMetric) CreateByHostRow(tx *sqlx.Tx, hostRow *HostRow, metricsMap ma
 				// Deserialized JSON number -> interface{} always have float64 as type.
 				if trueValueFloat64, ok := value.(float64); ok {
 					// Ignore error for now, there's no need to break the entire loop when one insert fails.
-					err := ts.Create(tx, hostRow.ClusterID, metricID, hostRow.Hostname, metricKey, trueValueFloat64, deletedFrom)
+					err := ts.Create(tx, hostRow.GetClusterID(), metricID, hostRow.GetHostname(), metricKey, trueValueFloat64, deletedFrom)
 					if err != nil {
 						logrus.WithFields(logrus.Fields{
 							"Method":    "TSMetric.Create",
-							"ClusterID": hostRow.ClusterID,
+							"ClusterID": hostRow.GetClusterID(),
 							"MetricID":  metricID,
 							"MetricKey": metricKey,
-							"Hostname":  hostRow.Hostname,
+							"Hostname":  hostRow.GetHostname(),
 							"Value":     trueValueFloat64,
 						}).Error(err)
 					}

@@ -49,6 +49,7 @@ func (app *Application) Mux() *chi.Mux {
 	r.Use(middlewares.SetVIPAddr(app.GeneralConfig.VIPAddr))
 	r.Use(middlewares.SetVIPProtocol(app.GeneralConfig.VIPProtocol))
 	r.Use(middlewares.SetPGDBs(app.PGDBConfig))
+	r.Use(middlewares.SetCassandraDBs(app.CassandraDBConfig))
 	r.Use(middlewares.SetCookieStore(app.cookieStore))
 	r.Use(middlewares.SetMailers(app.Mailers))
 	r.Use(middlewares.SetMessageBus(app.MessageBus))

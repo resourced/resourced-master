@@ -55,11 +55,22 @@ func SetVIPProtocol(vipProtocol string) func(http.Handler) http.Handler {
 	return chi_middleware.WithValue("vipProtocol", vipProtocol)
 }
 
-// SetPGDBs passes all database connections to every request handler
+// SetPGDBs passes all PG database connections to every request handler
 func SetPGDBs(dbConfig *config.PGDBConfig) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			r = r.WithContext(context.WithValue(r.Context(), "pg-dbs", dbConfig))
+
+			next.ServeHTTP(w, r)
+		})
+	}
+}
+
+// SetCassandraDBs passes all Cassandra database connections to every request handler
+func SetCassandraDBs(dbConfig *config.CassandraDBConfig) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			r = r.WithContext(context.WithValue(r.Context(), "cassandra-dbs", dbConfig))
 
 			next.ServeHTTP(w, r)
 		})

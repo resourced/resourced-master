@@ -56,6 +56,12 @@ func (cr *ClusterRow) GetDeletedFromUNIXTimestampForInsert(tableName string) int
 	return time.Now().UTC().Unix() + int64(retention*86400) // 1 day = 86400 seconds
 }
 
+// GetTTLDurationForInsert returns TTL duration for timeseries data on insert.
+func (cr *ClusterRow) GetTTLDurationForInsert(tableName string) time.Duration {
+	retention := cr.GetDataRetention()[tableName]
+	return time.Duration(retention * 86400) // 1 day = 86400 seconds
+}
+
 // GetMembers returns Members in map
 func (cr *ClusterRow) GetMembers() []ClusterMember {
 	members := make([]ClusterMember, 0)
