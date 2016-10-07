@@ -144,3 +144,12 @@ type GeneralConfig struct {
 
 	Email *EmailConfig
 }
+
+func (conf GeneralConfig) GetMetricsDB() string {
+	if len(conf.Metrics.Cassandra.Hosts) > 0 {
+		return "cassandra"
+	}
+
+	// Default
+	return "pg"
+}

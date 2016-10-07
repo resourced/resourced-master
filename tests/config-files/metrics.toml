@@ -4,9 +4,9 @@
 DataRetention = 7
 
 # You can only choose one between PostgreSQL or Cassandra
-[Metrics.PostgreSQL]
-DSN = "postgres://localhost:5432/resourced-master-ts-metrics?sslmode=disable"
-MaxOpenConnections = 2
+# [Metrics.PostgreSQL]
+# DSN = "postgres://localhost:5432/resourced-master-ts-metrics?sslmode=disable"
+# MaxOpenConnections = 2
 
 # Optimization Setting: Enable this option if you want to shard metrics data by cluster_id.
 # Format: key:   cluster id.

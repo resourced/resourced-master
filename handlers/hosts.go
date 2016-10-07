@@ -13,8 +13,8 @@ import (
 	"github.com/gorilla/csrf"
 
 	"github.com/resourced/resourced-master/config"
+	"github.com/resourced/resourced-master/contexthelper"
 	"github.com/resourced/resourced-master/libhttp"
-	"github.com/resourced/resourced-master/messagebus"
 	"github.com/resourced/resourced-master/models/cassandra"
 	"github.com/resourced/resourced-master/models/pg"
 )
@@ -276,17 +276,37 @@ func PostHostsIDMasterTags(w http.ResponseWriter, r *http.Request) {
 func PostApiHosts(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	pgdbs := r.Context().Value("pg-dbs").(*config.PGDBConfig)
+	generalConfig, err := contexthelper.GetGeneralConfig(r.Context())
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
 
-	cassandradbsInterface := r.Context().Value("cassandra-dbs")
+	accessTokenRow, err := contexthelper.GetAccessToken(r.Context())
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
 
-	accessTokenRow := r.Context().Value("accessToken").(*pg.AccessTokenRow)
+	bus, err := contexthelper.GetMessageBus(r.Context())
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
 
-	bus := r.Context().Value("bus").(*messagebus.MessageBus)
-
-	errLogger := r.Context().Value("errLogger").(*logrus.Logger)
+	errLogger, err := contexthelper.GetLogger(r.Context(), "errLogger")
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
 
 	dataJson, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
+
+	pgdbs, err := contexthelper.GetPGDBConfig(r.Context())
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
@@ -318,20 +338,26 @@ func PostApiHosts(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		tsMetricsDeletedFrom := clusterRow.GetDeletedFromUNIXTimestampForInsert("ts_metrics")
-		tsMetricsAggr15mDeletedFrom := clusterRow.GetDeletedFromUNIXTimestampForInsert("ts_metrics_aggr_15m")
-
 		// Create ts_metrics row
-		if cassandradbsInterface != nil {
-			cassandradbs := cassandradbsInterface.(*config.CassandraDBConfig)
-			err := cassandra.NewTSMetric(cassandradbs.TSMetricSession).CreateByHostRow(hostRow, metricsMap, clusterRow.GetTTLDurationForInsert("ts_metrics"))
+		tsMetricDBType := generalConfig.GetMetricsDB()
+
+		if tsMetricDBType == "pg" {
+			tsMetricsDeletedFrom := clusterRow.GetDeletedFromUNIXTimestampForInsert("ts_metrics")
+
+			err := pg.NewTSMetric(pgdbs.GetTSMetric(hostRow.ClusterID)).CreateByHostRow(nil, hostRow, metricsMap, tsMetricsDeletedFrom)
 			if err != nil {
 				errLogger.Error(err)
 				return
 			}
 
-		} else {
-			err := pg.NewTSMetric(pgdbs.GetTSMetric(hostRow.ClusterID)).CreateByHostRow(nil, hostRow, metricsMap, tsMetricsDeletedFrom)
+		} else if tsMetricDBType == "cassandra" {
+			cassandradbs, err := contexthelper.GetCassandraDBConfig(r.Context())
+			if err != nil {
+				errLogger.Error(err)
+				return
+			}
+
+			err = cassandra.NewTSMetric(cassandradbs.TSMetricSession).CreateByHostRow(hostRow, metricsMap, clusterRow.GetTTLDurationForInsert("ts_metrics"))
 			if err != nil {
 				errLogger.Error(err)
 				return
@@ -346,6 +372,8 @@ func PostApiHosts(w http.ResponseWriter, r *http.Request) {
 			}
 
 			// Create ts_metrics_aggr_15m rows.
+			tsMetricsAggr15mDeletedFrom := clusterRow.GetDeletedFromUNIXTimestampForInsert("ts_metrics_aggr_15m")
+
 			err = pg.NewTSMetricAggr15m(pgdbs.GetTSMetricAggr15m(hostRow.ClusterID)).CreateByHostRow(nil, hostRow, metricsMap, selectAggrRows, tsMetricsAggr15mDeletedFrom)
 			if err != nil {
 				errLogger.Error(err)
@@ -361,6 +389,8 @@ func PostApiHosts(w http.ResponseWriter, r *http.Request) {
 			}
 
 			// Create ts_metrics_aggr_15m rows per host.
+			tsMetricsAggr15mDeletedFrom := clusterRow.GetDeletedFromUNIXTimestampForInsert("ts_metrics_aggr_15m")
+
 			err = pg.NewTSMetricAggr15m(pgdbs.GetTSMetricAggr15m(hostRow.ClusterID)).CreateByHostRowPerHost(nil, hostRow, metricsMap, selectAggrRows, tsMetricsAggr15mDeletedFrom)
 			if err != nil {
 				errLogger.Error(err)

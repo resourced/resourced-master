@@ -9,6 +9,7 @@ import (
 	"github.com/didip/stopwatch"
 	"github.com/didip/tollbooth"
 	"github.com/pressly/chi"
+	chi_middleware "github.com/pressly/chi/middleware"
 	"gopkg.in/tylerb/graceful.v1"
 
 	"github.com/resourced/resourced-master/handlers"
@@ -45,6 +46,7 @@ func (app *Application) Mux() *chi.Mux {
 	r := chi.NewRouter()
 
 	// Set middlewares which impact every request.
+	r.Use(chi_middleware.WithValue("generalConfig", app.GeneralConfig))
 	r.Use(middlewares.SetAddr(app.GeneralConfig.Addr))
 	r.Use(middlewares.SetVIPAddr(app.GeneralConfig.VIPAddr))
 	r.Use(middlewares.SetVIPProtocol(app.GeneralConfig.VIPProtocol))

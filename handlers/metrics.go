@@ -10,7 +10,9 @@ import (
 	"github.com/pressly/chi"
 
 	"github.com/resourced/resourced-master/config"
+	"github.com/resourced/resourced-master/contexthelper"
 	"github.com/resourced/resourced-master/libhttp"
+	"github.com/resourced/resourced-master/models/cassandra"
 	"github.com/resourced/resourced-master/models/pg"
 )
 
@@ -87,9 +89,23 @@ func DeleteMetricID(w http.ResponseWriter, r *http.Request) {
 func GetApiTSMetricsByHost(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	dbs := r.Context().Value("pg-dbs").(*config.PGDBConfig)
+	generalConfig, err := contexthelper.GetGeneralConfig(r.Context())
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
 
-	errLogger := r.Context().Value("errLogger").(*logrus.Logger)
+	pgdbs, err := contexthelper.GetPGDBConfig(r.Context())
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
+
+	errLogger, err := contexthelper.GetLogger(r.Context(), "errLogger")
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
 
 	id, err := getInt64SlugFromPath(w, r, "id")
 	if err != nil {
@@ -124,36 +140,62 @@ func GetApiTSMetricsByHost(w http.ResponseWriter, r *http.Request) {
 
 	host := chi.URLParam(r, "host")
 
-	metricRow, err := pg.NewMetric(dbs.Core).GetByID(nil, id)
+	metricRow, err := pg.NewMetric(pgdbs.Core).GetByID(nil, id)
 	if err != nil {
 		errLogger.WithFields(logrus.Fields{"Error": err}).Error("Failed to fetch metric row")
 		libhttp.HandleErrorJson(w, err)
 		return
 	}
 
-	clusterRow, err := pg.NewCluster(dbs.Core).GetByID(nil, metricRow.ClusterID)
+	clusterRow, err := pg.NewCluster(pgdbs.Core).GetByID(nil, metricRow.ClusterID)
 	if err != nil {
 		errLogger.WithFields(logrus.Fields{"Error": err}).Error("Failed to fetch cluster row")
 		libhttp.HandleErrorJson(w, err)
 		return
 	}
 
-	deletedFrom := clusterRow.GetDeletedFromUNIXTimestampForSelect("ts_metrics")
+	tsMetricDBType := generalConfig.GetMetricsDB()
 
-	hcMetrics, err := pg.NewTSMetric(dbs.GetTSMetric(metricRow.ClusterID)).AllByMetricIDHostAndRangeForHighchart(nil, metricRow.ClusterID, id, host, from, to, deletedFrom)
-	if err != nil {
-		errLogger.WithFields(logrus.Fields{"Error": err}).Error("Failed to fetch metrics rows")
-		libhttp.HandleErrorJson(w, err)
-		return
+	if tsMetricDBType == "pg" {
+		deletedFrom := clusterRow.GetDeletedFromUNIXTimestampForSelect("ts_metrics")
+
+		hcMetrics, err := pg.NewTSMetric(pgdbs.GetTSMetric(metricRow.ClusterID)).AllByMetricIDHostAndRangeForHighchart(nil, metricRow.ClusterID, id, host, from, to, deletedFrom)
+		if err != nil {
+			errLogger.WithFields(logrus.Fields{"Error": err}).Error("Failed to fetch metrics rows")
+			libhttp.HandleErrorJson(w, err)
+			return
+		}
+
+		hcMetricsJSON, err := json.Marshal(hcMetrics)
+		if err != nil {
+			libhttp.HandleErrorJson(w, err)
+			return
+		}
+
+		w.Write(hcMetricsJSON)
+
+	} else if tsMetricDBType == "cassandra" {
+		cassandradbs, err := contexthelper.GetCassandraDBConfig(r.Context())
+		if err != nil {
+			errLogger.Error(err)
+			return
+		}
+
+		hcMetrics, err := cassandra.NewTSMetric(cassandradbs.TSMetricSession).AllByMetricIDHostAndRangeForHighchart(metricRow.ClusterID, id, host, from, to)
+		if err != nil {
+			errLogger.WithFields(logrus.Fields{"Error": err}).Error("Failed to fetch metrics rows")
+			libhttp.HandleErrorJson(w, err)
+			return
+		}
+
+		hcMetricsJSON, err := json.Marshal(hcMetrics)
+		if err != nil {
+			libhttp.HandleErrorJson(w, err)
+			return
+		}
+
+		w.Write(hcMetricsJSON)
 	}
-
-	hcMetricsJSON, err := json.Marshal(hcMetrics)
-	if err != nil {
-		libhttp.HandleErrorJson(w, err)
-		return
-	}
-
-	w.Write(hcMetricsJSON)
 }
 
 func GetApiTSMetricsByHost15Min(w http.ResponseWriter, r *http.Request) {
@@ -231,7 +273,23 @@ func GetApiTSMetricsByHost15Min(w http.ResponseWriter, r *http.Request) {
 func GetApiTSMetrics(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	dbs := r.Context().Value("pg-dbs").(*config.PGDBConfig)
+	generalConfig, err := contexthelper.GetGeneralConfig(r.Context())
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
+
+	pgdbs, err := contexthelper.GetPGDBConfig(r.Context())
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
+
+	errLogger, err := contexthelper.GetLogger(r.Context(), "errLogger")
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
 
 	qParams := r.URL.Query()
 
@@ -264,33 +322,59 @@ func GetApiTSMetrics(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	metricRow, err := pg.NewMetric(dbs.Core).GetByID(nil, id)
+	metricRow, err := pg.NewMetric(pgdbs.Core).GetByID(nil, id)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
 	}
 
-	clusterRow, err := pg.NewCluster(dbs.Core).GetByID(nil, metricRow.ClusterID)
+	clusterRow, err := pg.NewCluster(pgdbs.Core).GetByID(nil, metricRow.ClusterID)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
 	}
 
-	deletedFrom := clusterRow.GetDeletedFromUNIXTimestampForSelect("ts_metrics")
+	tsMetricDBType := generalConfig.GetMetricsDB()
 
-	hcMetrics, err := pg.NewTSMetric(dbs.GetTSMetric(metricRow.ClusterID)).AllByMetricIDAndRangeForHighchart(nil, metricRow.ClusterID, id, from, to, deletedFrom)
-	if err != nil {
-		libhttp.HandleErrorJson(w, err)
-		return
+	if tsMetricDBType == "pg" {
+		deletedFrom := clusterRow.GetDeletedFromUNIXTimestampForSelect("ts_metrics")
+
+		hcMetrics, err := pg.NewTSMetric(pgdbs.GetTSMetric(metricRow.ClusterID)).AllByMetricIDAndRangeForHighchart(nil, metricRow.ClusterID, id, from, to, deletedFrom)
+		if err != nil {
+			libhttp.HandleErrorJson(w, err)
+			return
+		}
+
+		hcMetricsJSON, err := json.Marshal(hcMetrics)
+		if err != nil {
+			libhttp.HandleErrorJson(w, err)
+			return
+		}
+
+		w.Write(hcMetricsJSON)
+
+	} else if tsMetricDBType == "cassandra" {
+		cassandradbs, err := contexthelper.GetCassandraDBConfig(r.Context())
+		if err != nil {
+			errLogger.Error(err)
+			return
+		}
+
+		hcMetrics, err := cassandra.NewTSMetric(cassandradbs.TSMetricSession).AllByMetricIDAndRangeForHighchart(metricRow.ClusterID, id, from, to)
+		if err != nil {
+			errLogger.WithFields(logrus.Fields{"Error": err}).Error("Failed to fetch metrics rows")
+			libhttp.HandleErrorJson(w, err)
+			return
+		}
+
+		hcMetricsJSON, err := json.Marshal(hcMetrics)
+		if err != nil {
+			libhttp.HandleErrorJson(w, err)
+			return
+		}
+
+		w.Write(hcMetricsJSON)
 	}
-
-	hcMetricsJSON, err := json.Marshal(hcMetrics)
-	if err != nil {
-		libhttp.HandleErrorJson(w, err)
-		return
-	}
-
-	w.Write(hcMetricsJSON)
 }
 
 func GetApiTSMetrics15Min(w http.ResponseWriter, r *http.Request) {
