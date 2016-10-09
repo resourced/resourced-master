@@ -61,10 +61,6 @@ func (app *Application) PruneAll() {
 			}(cluster)
 
 			go func(cluster *pg.ClusterRow) {
-				app.PruneTSMetricAggr15mOnce(cluster.ID)
-			}(cluster)
-
-			go func(cluster *pg.ClusterRow) {
 				app.PruneTSEventOnce(cluster.ID)
 			}(cluster)
 
@@ -114,29 +110,6 @@ func (app *Application) PruneTSMetricOnce(clusterID int64) (err error) {
 
 	logFields := logrus.Fields{
 		"Method":       "Application.PruneTSMetricOnce",
-		"NanoSeconds":  latency,
-		"MicroSeconds": latency / 1000,
-		"MilliSeconds": latency / 1000 / 1000,
-	}
-	if err != nil {
-		app.ErrLogger.WithFields(logFields).Error(err)
-	} else {
-		app.OutLogger.WithFields(logFields).Info("Latency measurement")
-	}
-
-	return err
-}
-
-// PruneTSMetricAggr15mOnce deletes old ts_metrics_aggr_15m data.
-func (app *Application) PruneTSMetricAggr15mOnce(clusterID int64) (err error) {
-	f := func() {
-		err = pg.NewTSMetricAggr15m(app.PGDBConfig.TSMetricAggr15m).DeleteDeleted(nil, clusterID)
-	}
-
-	latency := stopwatch.Measure(f)
-
-	logFields := logrus.Fields{
-		"Method":       "Application.PruneTSMetricAggr15mOnce",
 		"NanoSeconds":  latency,
 		"MicroSeconds": latency / 1000,
 		"MilliSeconds": latency / 1000 / 1000,

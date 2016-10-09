@@ -114,36 +114,6 @@ func (ts *TSMetric) CreateByHostRow(tx *sqlx.Tx, hostRow shared.IHostRow, metric
 	return nil
 }
 
-func (ts *TSMetric) AggregateEveryXMinutes(tx *sqlx.Tx, clusterID int64, minutes int) ([]*TSMetricSelectAggregateRow, error) {
-	seconds := minutes * 60
-	now := time.Now().UTC()
-	from := now.Add(-1 * time.Duration(minutes) * time.Minute).UTC().Unix()
-
-	rows := []*TSMetricSelectAggregateRow{}
-	query := fmt.Sprintf("SELECT cluster_id, cast(CEILING(extract('epoch' from created)/%v)*%v as bigint) AS created_unix, key, avg(value) as avg, max(value) as max, min(value) as min, sum(value) as sum FROM %v WHERE cluster_id=$1 AND created >= to_timestamp($2) at time zone 'utc' GROUP BY cluster_id, created_unix, key ORDER BY created_unix ASC", seconds, seconds, ts.table)
-	err := ts.db.Select(&rows, query, clusterID, from)
-
-	if err != nil {
-		err = fmt.Errorf("%v. Query: %v", err.Error(), query)
-	}
-	return rows, err
-}
-
-func (ts *TSMetric) AggregateEveryXMinutesPerHost(tx *sqlx.Tx, clusterID int64, minutes int) ([]*TSMetricSelectAggregateRow, error) {
-	seconds := minutes * 60
-	now := time.Now().UTC()
-	from := now.Add(-1 * time.Duration(minutes) * time.Minute).UTC().Unix()
-
-	rows := []*TSMetricSelectAggregateRow{}
-	query := fmt.Sprintf("SELECT cluster_id, cast(CEILING(extract('epoch' from created)/%v)*%v as bigint) AS created_unix, host, key, avg(value) as avg, max(value) as max, min(value) as min, sum(value) as sum FROM %v WHERE cluster_id=$1 AND created >= to_timestamp($2) at time zone 'utc' GROUP BY cluster_id, created_unix, host, key ORDER BY created_unix ASC", seconds, seconds, ts.table)
-	err := ts.db.Select(&rows, query, clusterID, from)
-
-	if err != nil {
-		err = fmt.Errorf("%v. Query: %v", err.Error(), query)
-	}
-	return rows, err
-}
-
 func (ts *TSMetric) GetAggregateXMinutesByHostnameAndKey(tx *sqlx.Tx, clusterID int64, minutes int, hostname, key string) (*TSMetricSelectAggregateRow, error) {
 	now := time.Now().UTC()
 	from := now.Add(-1 * time.Duration(minutes) * time.Minute).UTC().Unix()

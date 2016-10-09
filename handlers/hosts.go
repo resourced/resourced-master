@@ -360,40 +360,6 @@ func PostApiHosts(w http.ResponseWriter, r *http.Request) {
 		}
 
 		go func() {
-			selectAggrRows, err := pg.NewTSMetric(pgdbs.GetTSMetric(hostRow.ClusterID)).AggregateEveryXMinutes(nil, hostRow.ClusterID, 15)
-			if err != nil {
-				errLogger.Error(err)
-				return
-			}
-
-			// Create ts_metrics_aggr_15m rows.
-			tsMetricsAggr15mDeletedFrom := clusterRow.GetDeletedFromUNIXTimestampForInsert("ts_metrics_aggr_15m")
-
-			err = pg.NewTSMetricAggr15m(pgdbs.GetTSMetricAggr15m(hostRow.ClusterID)).CreateByHostRow(nil, hostRow, metricsMap, selectAggrRows, tsMetricsAggr15mDeletedFrom)
-			if err != nil {
-				errLogger.Error(err)
-				return
-			}
-		}()
-
-		go func() {
-			selectAggrRows, err := pg.NewTSMetric(pgdbs.GetTSMetric(hostRow.ClusterID)).AggregateEveryXMinutesPerHost(nil, hostRow.ClusterID, 15)
-			if err != nil {
-				errLogger.Error(err)
-				return
-			}
-
-			// Create ts_metrics_aggr_15m rows per host.
-			tsMetricsAggr15mDeletedFrom := clusterRow.GetDeletedFromUNIXTimestampForInsert("ts_metrics_aggr_15m")
-
-			err = pg.NewTSMetricAggr15m(pgdbs.GetTSMetricAggr15m(hostRow.ClusterID)).CreateByHostRowPerHost(nil, hostRow, metricsMap, selectAggrRows, tsMetricsAggr15mDeletedFrom)
-			if err != nil {
-				errLogger.Error(err)
-				return
-			}
-		}()
-
-		go func() {
 			// Publish evey graphed metric to message bus.
 			bus.PublishMetricsByHostRow(hostRow, metricsMap)
 		}()

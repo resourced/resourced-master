@@ -222,10 +222,8 @@ func (app *Application) Mux() *chi.Mux {
 			r.Route("/:id", func(r chi.Router) {
 				r.Use(middlewares.MustLoginApi)
 				r.Get("/", tollbooth.LimitFuncHandler(generalAPILimiter, handlers.GetApiTSMetrics).(http.HandlerFunc))
-				r.Get("/15min", tollbooth.LimitFuncHandler(generalAPILimiter, handlers.GetApiTSMetrics15Min).(http.HandlerFunc))
 
 				r.Get("/hosts/:host", tollbooth.LimitFuncHandler(generalAPILimiter, handlers.GetApiTSMetricsByHost).(http.HandlerFunc))
-				r.Get("/hosts/:host/15min", tollbooth.LimitFuncHandler(generalAPILimiter, handlers.GetApiTSMetricsByHost15Min).(http.HandlerFunc))
 			})
 		})
 
