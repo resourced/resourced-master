@@ -89,7 +89,7 @@ func (ts *TSMetric) metricRowsForHighchart(host string, tsMetricRows []*TSMetric
 
 	for i, tsMetricRow := range tsMetricRows {
 		row := make([]interface{}, 2)
-		row[0] = tsMetricRow.Created / 1000000
+		row[0] = tsMetricRow.Created
 		row[1] = tsMetricRow.Value
 
 		hcPayload.Data[i] = row
