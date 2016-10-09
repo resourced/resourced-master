@@ -446,8 +446,18 @@ func (checkRow *CheckRow) EvalRelativeHostDataExpression(dbs *config.PGDBConfig,
 	var perHostResult bool
 
 	for _, hostRow := range hostRows {
+		metric, err := NewMetric(dbs.Core).GetByClusterIDAndKey(nil, checkRow.ClusterID, expression.Metric)
+		if err != nil {
+			// If we are unable to pull metric metadata,
+			// We assume that there's something wrong with it.
+			if strings.Contains(err.Error(), "no rows in result set") {
+				perHostResult = true
+				affectedHosts = affectedHosts + 1
+			}
+			continue
+		}
 
-		aggregateData, err := NewTSMetric(dbs.GetTSMetric(checkRow.ClusterID)).GetAggregateXMinutesByHostnameAndKey(nil, checkRow.ClusterID, expression.PrevRange, hostRow.Hostname, expression.Metric)
+		aggregateData, err := NewTSMetric(dbs.GetTSMetric(checkRow.ClusterID)).GetAggregateXMinutesByMetricIDAndHostname(nil, checkRow.ClusterID, metric.ID, expression.PrevRange, hostRow.Hostname)
 		if err != nil {
 			// If a Host does not contain historical data of a particular metric,
 			// We assume that there's something wrong with it.

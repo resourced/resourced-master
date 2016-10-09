@@ -15,20 +15,6 @@ func NewTSMetric(params Parameters) *TSMetric {
 	return ts
 }
 
-type TSMetricHighchartPayload struct {
-	Name string          `json:"name"`
-	Data [][]interface{} `json:"data"`
-}
-
-type TSMetricRow struct {
-	ClusterID int64   `db:"cluster_id"`
-	MetricID  int64   `db:"metric_id"`
-	Created   int64   `db:"created"`
-	Key       string  `db:"key"`
-	Host      string  `db:"host"`
-	Value     float64 `db:"value"`
-}
-
 type TSMetric struct {
 	Parameters Parameters
 }
@@ -44,18 +30,7 @@ func (ts *TSMetric) CreateByHostRow(hostRow shared.IHostRow, metricsMap map[stri
 	return fmt.Errorf("Unrecognized DBType, valid options are: pg or cassandra")
 }
 
-// func (ts *TSMetric) AllByMetricIDHostAndRange(clusterID, metricID int64, host string, from, to, deletedFrom int64) ([]interface{}, error) {
-// 	if ts.Parameters.DBType == "pg" {
-// 		return pg.NewTSMetric(ts.Parameters.PGDB).AllByMetricIDHostAndRange(ts.Parameters.PGTx, clusterID, metricID, host, from, to, deletedFrom)
-
-// 	} else if ts.Parameters.DBType == "cassandra" {
-// 		return cassandra.NewTSMetric(ts.Parameters.CassandraSession).AllByMetricIDHostAndRange(clusterID, metricID, host, from, to)
-// 	}
-
-// 	return nil, fmt.Errorf("Unrecognized DBType, valid options are: pg or cassandra")
-// }
-
-func (ts *TSMetric) AllByMetricIDHostAndRangeForHighchart(clusterID, metricID int64, host string, from, to, deletedFrom int64) (interface{}, error) {
+func (ts *TSMetric) AllByMetricIDHostAndRangeForHighchart(clusterID, metricID int64, host string, from, to, deletedFrom int64) (*shared.TSMetricHighchartPayload, error) {
 	if ts.Parameters.DBType == "pg" {
 		return pg.NewTSMetric(ts.Parameters.PGDB).AllByMetricIDHostAndRangeForHighchart(ts.Parameters.PGTx, clusterID, metricID, host, from, to, deletedFrom)
 
@@ -66,18 +41,7 @@ func (ts *TSMetric) AllByMetricIDHostAndRangeForHighchart(clusterID, metricID in
 	return nil, fmt.Errorf("Unrecognized DBType, valid options are: pg or cassandra")
 }
 
-// func (ts *TSMetric) AllByMetricIDAndRange(clusterID, metricID, from, to, deletedFrom int64) ([]interface{}, error) {
-// 	if ts.Parameters.DBType == "pg" {
-// 		return pg.NewTSMetric(ts.Parameters.PGDB).AllByMetricIDAndRange(ts.Parameters.PGTx, clusterID, metricID, from, to, deletedFrom)
-
-// 	} else if ts.Parameters.DBType == "cassandra" {
-// 		return cassandra.NewTSMetric(ts.Parameters.CassandraSession).AllByMetricIDAndRange(clusterID, metricID, from, to)
-// 	}
-
-// 	return nil, fmt.Errorf("Unrecognized DBType, valid options are: pg or cassandra")
-// }
-
-func (ts *TSMetric) AllByMetricIDAndRangeForHighchart(clusterID, metricID, from, to, deletedFrom int64) (interface{}, error) {
+func (ts *TSMetric) AllByMetricIDAndRangeForHighchart(clusterID, metricID, from, to, deletedFrom int64) ([]*shared.TSMetricHighchartPayload, error) {
 	if ts.Parameters.DBType == "pg" {
 		return pg.NewTSMetric(ts.Parameters.PGDB).AllByMetricIDAndRangeForHighchart(ts.Parameters.PGTx, clusterID, metricID, from, to, deletedFrom)
 

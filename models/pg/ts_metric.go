@@ -18,29 +18,6 @@ func NewTSMetric(db *sqlx.DB) *TSMetric {
 	return ts
 }
 
-type TSMetricHighchartPayload struct {
-	Name string          `json:"name"`
-	Data [][]interface{} `json:"data"`
-}
-
-func (hcPayload *TSMetricHighchartPayload) GetName() string {
-	return hcPayload.Name
-}
-func (hcPayload *TSMetricHighchartPayload) GetData() [][]interface{} {
-	return hcPayload.Data
-}
-
-type TSMetricSelectAggregateRow struct {
-	ClusterID   int64   `db:"cluster_id"`
-	CreatedUnix int64   `db:"created_unix"`
-	Key         string  `db:"key"`
-	Host        string  `db:"host"`
-	Avg         float64 `db:"avg"`
-	Max         float64 `db:"max"`
-	Min         float64 `db:"min"`
-	Sum         float64 `db:"sum"`
-}
-
 type TSMetricRow struct {
 	ClusterID int64     `db:"cluster_id"`
 	MetricID  int64     `db:"metric_id"`
@@ -55,8 +32,8 @@ type TSMetric struct {
 	TSBase
 }
 
-func (ts *TSMetric) metricRowsForHighchart(tx *sqlx.Tx, host string, tsMetricRows []*TSMetricRow) (*TSMetricHighchartPayload, error) {
-	hcPayload := &TSMetricHighchartPayload{}
+func (ts *TSMetric) metricRowsForHighchart(tx *sqlx.Tx, host string, tsMetricRows []*TSMetricRow) (*shared.TSMetricHighchartPayload, error) {
+	hcPayload := &shared.TSMetricHighchartPayload{}
 	hcPayload.Name = host
 	hcPayload.Data = make([][]interface{}, len(tsMetricRows))
 
@@ -114,20 +91,6 @@ func (ts *TSMetric) CreateByHostRow(tx *sqlx.Tx, hostRow shared.IHostRow, metric
 	return nil
 }
 
-func (ts *TSMetric) GetAggregateXMinutesByHostnameAndKey(tx *sqlx.Tx, clusterID int64, minutes int, hostname, key string) (*TSMetricSelectAggregateRow, error) {
-	now := time.Now().UTC()
-	from := now.Add(-1 * time.Duration(minutes) * time.Minute).UTC().Unix()
-
-	row := &TSMetricSelectAggregateRow{}
-	query := fmt.Sprintf("SELECT cluster_id, cast(extract(epoch from now() at time zone 'utc') as bigint) AS created_unix, host, key, avg(value) as avg, max(value) as max, min(value) as min, sum(value) as sum FROM %v WHERE cluster_id=$1 AND created >= to_timestamp($2) at time zone 'utc' AND host=$3 AND key=$4 GROUP BY cluster_id, host, key", ts.table)
-	err := ts.db.Get(row, query, clusterID, from, hostname, key)
-
-	if err != nil {
-		err = fmt.Errorf("%v. Query: %v, ClusterID: %v, Hostname: %v, Key: %v", err.Error(), query, clusterID, hostname, key)
-	}
-	return row, err
-}
-
 func (ts *TSMetric) AllByMetricIDHostAndRange(tx *sqlx.Tx, clusterID, metricID int64, host string, from, to, deletedFrom int64) ([]*TSMetricRow, error) {
 	rows := []*TSMetricRow{}
 	query := fmt.Sprintf(`SELECT * FROM %v WHERE cluster_id=$1 AND metric_id=$2 AND host=$3 AND
@@ -154,7 +117,7 @@ ORDER BY cluster_id,metric_id,created ASC`, ts.table)
 	return rows, err
 }
 
-func (ts *TSMetric) AllByMetricIDHostAndRangeForHighchart(tx *sqlx.Tx, clusterID, metricID int64, host string, from, to, deletedFrom int64) (*TSMetricHighchartPayload, error) {
+func (ts *TSMetric) AllByMetricIDHostAndRangeForHighchart(tx *sqlx.Tx, clusterID, metricID int64, host string, from, to, deletedFrom int64) (*shared.TSMetricHighchartPayload, error) {
 	tsMetricRows, err := ts.AllByMetricIDHostAndRange(tx, clusterID, metricID, host, from, to, deletedFrom)
 	if err != nil {
 		return nil, err
@@ -179,7 +142,7 @@ ORDER BY cluster_id,metric_id,created ASC`, ts.table)
 	return rows, err
 }
 
-func (ts *TSMetric) AllByMetricIDAndRangeForHighchart(tx *sqlx.Tx, clusterID, metricID, from, to, deletedFrom int64) ([]*TSMetricHighchartPayload, error) {
+func (ts *TSMetric) AllByMetricIDAndRangeForHighchart(tx *sqlx.Tx, clusterID, metricID, from, to, deletedFrom int64) ([]*shared.TSMetricHighchartPayload, error) {
 	tsMetricRows, err := ts.AllByMetricIDAndRange(tx, clusterID, metricID, from, to, deletedFrom)
 	if err != nil {
 		return nil, err
@@ -199,7 +162,7 @@ func (ts *TSMetric) AllByMetricIDAndRangeForHighchart(tx *sqlx.Tx, clusterID, me
 	}
 
 	// Then generate multiple Highchart payloads per all these hosts.
-	highChartPayloads := make([]*TSMetricHighchartPayload, 0)
+	highChartPayloads := make([]*shared.TSMetricHighchartPayload, 0)
 
 	for host, tsMetricRows := range mapHostsAndMetrics {
 		highChartPayload, err := ts.metricRowsForHighchart(tx, host, tsMetricRows)
@@ -210,4 +173,18 @@ func (ts *TSMetric) AllByMetricIDAndRangeForHighchart(tx *sqlx.Tx, clusterID, me
 	}
 
 	return highChartPayloads, nil
+}
+
+func (ts *TSMetric) GetAggregateXMinutesByMetricIDAndHostname(tx *sqlx.Tx, clusterID, metricID int64, minutes int, hostname string) (*shared.TSMetricAggregateRow, error) {
+	now := time.Now().UTC()
+	from := now.Add(-1 * time.Duration(minutes) * time.Minute).UTC().Unix()
+
+	row := &shared.TSMetricAggregateRow{}
+	query := fmt.Sprintf("SELECT cluster_id, host, key, avg(value) as avg, max(value) as max, min(value) as min, sum(value) as sum FROM %v WHERE cluster_id=$1 AND metric_id=$2 AND created >= to_timestamp($2) at time zone 'utc' AND host=$3 GROUP BY cluster_id, metric_id, host", ts.table)
+	err := ts.db.Get(row, query, clusterID, metricID, from, hostname)
+
+	if err != nil {
+		err = fmt.Errorf("%v. Query: %v, ClusterID: %v, Hostname: %v, MetricID: %v", err.Error(), query, clusterID, hostname, metricID)
+	}
+	return row, err
 }

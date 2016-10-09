@@ -18,27 +18,6 @@ func NewTSMetric(session *gocql.Session) *TSMetric {
 	return ts
 }
 
-type TSMetricHighchartPayload struct {
-	Name string          `json:"name"`
-	Data [][]interface{} `json:"data"`
-}
-
-func (hcPayload *TSMetricHighchartPayload) GetName() string {
-	return hcPayload.Name
-}
-func (hcPayload *TSMetricHighchartPayload) GetData() [][]interface{} {
-	return hcPayload.Data
-}
-
-type TSMetricRow struct {
-	ClusterID int64   `db:"cluster_id"`
-	MetricID  int64   `db:"metric_id"`
-	Created   int64   `db:"created"`
-	Key       string  `db:"key"`
-	Host      string  `db:"host"`
-	Value     float64 `db:"value"`
-}
-
 type TSMetric struct {
 	Base
 }
@@ -82,8 +61,8 @@ func (ts *TSMetric) CreateByHostRow(hostRow shared.IHostRow, metricsMap map[stri
 	return nil
 }
 
-func (ts *TSMetric) metricRowsForHighchart(host string, tsMetricRows []*TSMetricRow) (*TSMetricHighchartPayload, error) {
-	hcPayload := &TSMetricHighchartPayload{}
+func (ts *TSMetric) metricRowsForHighchart(host string, tsMetricRows []*shared.TSMetricRow) (*shared.TSMetricHighchartPayload, error) {
+	hcPayload := &shared.TSMetricHighchartPayload{}
 	hcPayload.Name = host
 	hcPayload.Data = make([][]interface{}, len(tsMetricRows))
 
@@ -98,8 +77,8 @@ func (ts *TSMetric) metricRowsForHighchart(host string, tsMetricRows []*TSMetric
 	return hcPayload, nil
 }
 
-func (ts *TSMetric) AllByMetricIDHostAndRange(clusterID, metricID int64, host string, from, to int64) ([]*TSMetricRow, error) {
-	rows := []*TSMetricRow{}
+func (ts *TSMetric) AllByMetricIDHostAndRange(clusterID, metricID int64, host string, from, to int64) ([]*shared.TSMetricRow, error) {
+	rows := []*shared.TSMetricRow{}
 	query := fmt.Sprintf(`SELECT cluster_id, metric_id, created, key, host, value FROM %v WHERE cluster_id=? AND metric_id=? AND host=? AND created >= ? AND created <= ? ORDER BY created ASC ALLOW FILTERING`, ts.table)
 
 	var scannedClusterID, scannedMetricID, scannedCreated int64
@@ -108,7 +87,7 @@ func (ts *TSMetric) AllByMetricIDHostAndRange(clusterID, metricID int64, host st
 
 	iter := ts.session.Query(query, clusterID, metricID, host, from, to).Iter()
 	for iter.Scan(&scannedClusterID, &scannedMetricID, &scannedCreated, &scannedKey, &scannedHost, &scannedValue) {
-		rows = append(rows, &TSMetricRow{
+		rows = append(rows, &shared.TSMetricRow{
 			ClusterID: scannedClusterID,
 			MetricID:  scannedMetricID,
 			Created:   scannedCreated,
@@ -134,7 +113,7 @@ func (ts *TSMetric) AllByMetricIDHostAndRange(clusterID, metricID int64, host st
 	return rows, nil
 }
 
-func (ts *TSMetric) AllByMetricIDHostAndRangeForHighchart(clusterID, metricID int64, host string, from, to int64) (*TSMetricHighchartPayload, error) {
+func (ts *TSMetric) AllByMetricIDHostAndRangeForHighchart(clusterID, metricID int64, host string, from, to int64) (*shared.TSMetricHighchartPayload, error) {
 	tsMetricRows, err := ts.AllByMetricIDHostAndRange(clusterID, metricID, host, from, to)
 	if err != nil {
 		return nil, err
@@ -143,8 +122,8 @@ func (ts *TSMetric) AllByMetricIDHostAndRangeForHighchart(clusterID, metricID in
 	return ts.metricRowsForHighchart(host, tsMetricRows)
 }
 
-func (ts *TSMetric) AllByMetricIDAndRange(clusterID, metricID int64, from, to int64) ([]*TSMetricRow, error) {
-	rows := []*TSMetricRow{}
+func (ts *TSMetric) AllByMetricIDAndRange(clusterID, metricID int64, from, to int64) ([]*shared.TSMetricRow, error) {
+	rows := []*shared.TSMetricRow{}
 	query := fmt.Sprintf(`SELECT * FROM %v WHERE cluster_id=? AND metric_id=? AND created >= ? AND created <= ? ORDER BY created ASC`, ts.table)
 
 	var scannedClusterID, scannedMetricID, scannedCreated int64
@@ -153,7 +132,7 @@ func (ts *TSMetric) AllByMetricIDAndRange(clusterID, metricID int64, from, to in
 
 	iter := ts.session.Query(query, clusterID, metricID, from, to).Iter()
 	for iter.Scan(&scannedClusterID, &scannedMetricID, &scannedCreated, &scannedKey, &scannedHost, &scannedValue) {
-		rows = append(rows, &TSMetricRow{
+		rows = append(rows, &shared.TSMetricRow{
 			ClusterID: scannedClusterID,
 			MetricID:  scannedMetricID,
 			Created:   scannedCreated,
@@ -178,27 +157,27 @@ func (ts *TSMetric) AllByMetricIDAndRange(clusterID, metricID int64, from, to in
 	return rows, nil
 }
 
-func (ts *TSMetric) AllByMetricIDAndRangeForHighchart(clusterID, metricID, from, to int64) ([]*TSMetricHighchartPayload, error) {
+func (ts *TSMetric) AllByMetricIDAndRangeForHighchart(clusterID, metricID, from, to int64) ([]*shared.TSMetricHighchartPayload, error) {
 	tsMetricRows, err := ts.AllByMetricIDAndRange(clusterID, metricID, from, to)
 	if err != nil {
 		return nil, err
 	}
 
-	// Group all TSMetricRows per host
-	mapHostsAndMetrics := make(map[string][]*TSMetricRow)
+	// Group all shared.TSMetricRows per host
+	mapHostsAndMetrics := make(map[string][]*shared.TSMetricRow)
 
 	for _, tsMetricRow := range tsMetricRows {
 		host := tsMetricRow.Host
 
 		if _, ok := mapHostsAndMetrics[host]; !ok {
-			mapHostsAndMetrics[host] = make([]*TSMetricRow, 0)
+			mapHostsAndMetrics[host] = make([]*shared.TSMetricRow, 0)
 		}
 
 		mapHostsAndMetrics[host] = append(mapHostsAndMetrics[host], tsMetricRow)
 	}
 
 	// Then generate multiple Highchart payloads per all these hosts.
-	highChartPayloads := make([]*TSMetricHighchartPayload, 0)
+	highChartPayloads := make([]*shared.TSMetricHighchartPayload, 0)
 
 	for host, tsMetricRows := range mapHostsAndMetrics {
 		highChartPayload, err := ts.metricRowsForHighchart(host, tsMetricRows)
@@ -209,4 +188,42 @@ func (ts *TSMetric) AllByMetricIDAndRangeForHighchart(clusterID, metricID, from,
 	}
 
 	return highChartPayloads, nil
+}
+
+func (ts *TSMetric) GetAggregateXMinutesByMetricIDAndHostname(clusterID, metricID int64, minutes int, hostname string) ([]*shared.TSMetricAggregateRow, error) {
+	now := time.Now().UTC()
+	from := now.Add(-1 * time.Duration(minutes) * time.Minute).UTC().Unix()
+
+	rows := []*shared.TSMetricAggregateRow{}
+	query := fmt.Sprintf("SELECT cluster_id, host, key, avg(value) as avg, max(value) as max, min(value) as min, sum(value) as sum FROM %v WHERE cluster_id=? AND metric_id=? AND created >= ? AND host=? GROUP BY cluster_id, metric_id, host", ts.table)
+
+	var scannedClusterID, scannedAvg, scannedMax, scannedMin, scannedSum int64
+	var scannedKey, scannedHost string
+
+	iter := ts.session.Query(query, clusterID, metricID, from, hostname).Iter()
+	for iter.Scan(&scannedClusterID, &scannedHost, &scannedKey, &scannedAvg, &scannedMax, &scannedMin, &scannedSum) {
+		rows = append(rows, &shared.TSMetricAggregateRow{
+			ClusterID: scannedClusterID,
+			Key:       scannedKey,
+			Host:      scannedHost,
+			Avg:       float64(scannedAvg),
+			Max:       float64(scannedMax),
+			Min:       float64(scannedMin),
+			Sum:       float64(scannedSum),
+		})
+	}
+	if err := iter.Close(); err != nil {
+		err = fmt.Errorf("%v. Query: %v", err.Error(), query)
+		logrus.WithFields(logrus.Fields{
+			"Method":    "TSMetric.GetAggregateXMinutesByMetricIDAndHostname",
+			"ClusterID": clusterID,
+			"MetricID":  metricID,
+			"From":      from,
+			"Hostname":  hostname,
+		}).Error(err)
+
+		return nil, err
+	}
+
+	return rows, nil
 }
