@@ -37,13 +37,6 @@
                 </button>
 
                 <input class="form-control daterange" style="width: 90%" type="text" data-id="{{ $metric.ID }}" data-key="{{ $metric.Key }}" />
-
-                <select class="form-control aggregate-selector" style="display: none">
-                    <option value="avg">Avg</option>
-                    <option value="max">Max</option>
-                    <option value="min">Min</option>
-                    <option value="sum">Sum</option>
-                </select>
             </div>
 
             <div class="panel-body"></div>
@@ -217,8 +210,6 @@ function renderChartRange(numCharts, daterangepicker, from, to, aggr) {
     var metricKey = elem.data('key');
     var containerDOM = elem.siblings('.panel-body');
 
-    var renderAggregate = (to - from) >= 21600;
-
     var renderOptions = {
         from: from,
         to: to,
@@ -226,39 +217,29 @@ function renderChartRange(numCharts, daterangepicker, from, to, aggr) {
         title: metricKey,
         aggr: aggr,
         onLoad: function() {
-            if(!renderAggregate) {
-                // Begin streaming Server Side Events after the graph is loaded
-                var chart = this;
+            // Begin streaming Server Side Events after the graph is loaded
+            var chart = this;
 
-                var series = this.series;
+            var series = this.series;
 
-                if(ResourcedMaster.globals.EventSource) {
-                    ResourcedMaster.globals.EventSource.addEventListener('metric|' + metricID, function(event) {
-                        if(event.data) {
-                            var datapoint = JSON.parse(event.data);
+            if(ResourcedMaster.globals.EventSource) {
+                ResourcedMaster.globals.EventSource.addEventListener('metric|' + metricID, function(event) {
+                    if(event.data) {
+                        var datapoint = JSON.parse(event.data);
 
-                            for(var i = 0; i < series.length; i++) {
-                                if(series[i].name == datapoint.Hostname && datapoint.MetricID == metricID && datapoint.Value) {
-                                    series[i].addPoint([datapoint.CreatedMillisecond, datapoint.Value], false, true);
-                                }
+                        for(var i = 0; i < series.length; i++) {
+                            if(series[i].name == datapoint.Hostname && datapoint.MetricID == metricID && datapoint.Value) {
+                                series[i].addPoint([datapoint.CreatedMillisecond, datapoint.Value], false, true);
                             }
-                            chart.redraw();
                         }
-                    }, false);
-                }
-
-                execWhenAllChartsRendered(numCharts);
+                        chart.redraw();
+                    }
+                }, false);
             }
+
+            execWhenAllChartsRendered(numCharts);
         }
     };
-
-    if(renderAggregate) {
-        renderOptions.shortAggrInterval = '15min';
-
-        elem.find('.aggregate-selector').show();
-    } else {
-        elem.find('.aggregate-selector').hide();
-    }
 
     ResourcedMaster.metrics.renderOneChart(
         ResourcedMaster.globals.AccessToken,
@@ -351,16 +332,6 @@ $('.chart-keys option').click(function(event) {
     renderChartPreview();
 });
 
-$('.aggregate-selector').change(function() {
-    var panelHeadingElem = $(this).closest('.panel-heading');
-    var drpElem = panelHeadingElem.find('.daterange');
-    var drp = drpElem.data('daterangepicker');
-    var from = drp.startDate.unix();
-    var to = drp.endDate.unix();
-
-    renderChartRange($('.graphs-metrics-brick-layout .panel-heading').length, drpElem, from, to, $(this).val());
-});
-
 $('.graphs-select').change(function() {
     window.location = '/graphs/' + $(this).val();
 });
@@ -388,40 +359,32 @@ $('#graph-lg-modal').on('shown.bs.modal', function (event) {
     var from = ResourcedMaster.daterange.defaultSettings.startDate.utc().unix();
     var to = ResourcedMaster.daterange.defaultSettings.endDate.utc().unix();
 
-    var renderAggregate = (to - from) >= 21600;
-
     var renderOptions = {
         from: from,
         to: to,
         containerDOM: $('#graph-lg-modal .graph-lg-modal-container'),
         title: metricKey,
         onLoad: function() {
-            if(!renderAggregate) {
-                // Begin streaming Server Side Events after the graph is loaded
-                var series = this.series;
+            // Begin streaming Server Side Events after the graph is loaded
+            var series = this.series;
 
-                if(ResourcedMaster.globals.EventSource) {
-                    ResourcedMaster.globals.EventSource.addEventListener('metric|' + metricID, function(event) {
-                        if(!renderAggregate && event.data) {
-                            var datapoint = JSON.parse(event.data);
+            if(ResourcedMaster.globals.EventSource) {
+                ResourcedMaster.globals.EventSource.addEventListener('metric|' + metricID, function(event) {
+                    if(event.data) {
+                        var datapoint = JSON.parse(event.data);
 
-                            for(var i = 0; i < series.length; i++) {
-                                // TODO: At this point, we know we are receiving data regularly,
-                                // but the chart is not rendering at the same interval.
-                                if(series[i].name == datapoint.Hostname && datapoint.MetricID == metricID && datapoint.Value) {
-                                    series[i].addPoint([datapoint.CreatedMillisecond, datapoint.Value], true, true);
-                                }
+                        for(var i = 0; i < series.length; i++) {
+                            // TODO: At this point, we know we are receiving data regularly,
+                            // but the chart is not rendering at the same interval.
+                            if(series[i].name == datapoint.Hostname && datapoint.MetricID == metricID && datapoint.Value) {
+                                series[i].addPoint([datapoint.CreatedMillisecond, datapoint.Value], true, true);
                             }
                         }
-                    }, false);
-                }
+                    }
+                }, false);
             }
         }
     };
-
-    if(renderAggregate) {
-        renderOptions.shortAggrInterval = '15min';
-    }
 
     ResourcedMaster.metrics.renderOneChart(
         ResourcedMaster.globals.AccessToken,
@@ -459,10 +422,6 @@ $('#graph-lg-modal').on('show.bs.modal', function (event) {
             containerDOM: containerDOM,
             title: metricKey
         };
-
-        if((to - from) >= 21600) {
-            renderOptions.shortAggrInterval = '15min';
-        }
 
         ResourcedMaster.metrics.renderOneChart(
             ResourcedMaster.globals.AccessToken,

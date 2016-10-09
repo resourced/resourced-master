@@ -308,8 +308,6 @@ $(document).on('shown.bs.modal', '#graph-modal', function(event) {
     var from = ResourcedMaster.daterange.defaultSettings.startDate.utc().unix();
     var to = ResourcedMaster.daterange.defaultSettings.endDate.utc().unix();
 
-    var renderAggregate = (to - from) >= 21600;
-
     var renderOptions = {
         from: from,
         to: to,
@@ -317,33 +315,27 @@ $(document).on('shown.bs.modal', '#graph-modal', function(event) {
         containerDOM: $('#graph-modal .graph-modal-container'),
         title: metricKey,
         onLoad: function() {
-            if(!renderAggregate) {
-                // Begin streaming Server Side Events after the graph is loaded
-                var series = this.series[0];
+            // Begin streaming Server Side Events after the graph is loaded
+            var series = this.series[0];
 
-                var es = new EventSource('/api/metrics/' + metricID + '/hosts/' + host + '/streams?accessToken=' + ResourcedMaster.globals.AccessToken);
+            var es = new EventSource('/api/metrics/' + metricID + '/hosts/' + host + '/streams?accessToken=' + ResourcedMaster.globals.AccessToken);
 
-                es.addEventListener('metric|' + metricID + '|host|' + host, function(event) {
-                    if(event.data) {
-                        var datapoint = JSON.parse(event.data);
+            es.addEventListener('metric|' + metricID + '|host|' + host, function(event) {
+                if(event.data) {
+                    var datapoint = JSON.parse(event.data);
 
-                        // TODO: At this point, we know we are receiving data regularly,
-                        // but the chart is not rendering at the same interval.
-                        if(datapoint.MetricID == metricID && datapoint.Value) {
-                            series.addPoint([datapoint.CreatedMillisecond, datapoint.Value], true, true);
-                        }
+                    // TODO: At this point, we know we are receiving data regularly,
+                    // but the chart is not rendering at the same interval.
+                    if(datapoint.MetricID == metricID && datapoint.Value) {
+                        series.addPoint([datapoint.CreatedMillisecond, datapoint.Value], true, true);
                     }
-                }, false);
+                }
+            }, false);
 
-                // Attach EventSource object to the modal so we can close it as we close modal.
-                $('#graph-modal').data('eventsource', es);
-            }
+            // Attach EventSource object to the modal so we can close it as we close modal.
+            $('#graph-modal').data('eventsource', es);
         }
     };
-
-    if(renderAggregate) {
-        renderOptions.shortAggrInterval = '15min';
-    }
 
     ResourcedMaster.metrics.renderOneChart(
         ResourcedMaster.globals.AccessToken,
@@ -384,10 +376,6 @@ $(document).on('show.bs.modal', '#graph-modal', function(event) {
             containerDOM: containerDOM,
             title: metricKey
         };
-
-        if((to - from) >= 21600) {
-            renderOptions.shortAggrInterval = '15min';
-        }
 
         // If we have an established EventSource, disconnect it.
         var es = $('#graph-modal').data('eventsource');

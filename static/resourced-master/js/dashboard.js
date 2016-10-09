@@ -227,9 +227,6 @@ ResourcedMaster.metrics.get = function(accessToken, metricID, options) {
     if('host' in options) {
         path = path + '/hosts/' + options.host;
     }
-    if('shortAggrInterval' in options) {
-        path = path + '/' + options.shortAggrInterval;
-    }
     if('from' in options) {
         getParams = getParams + 'From=' + options.from;
     }
