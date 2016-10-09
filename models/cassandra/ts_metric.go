@@ -100,7 +100,7 @@ func (ts *TSMetric) metricRowsForHighchart(host string, tsMetricRows []*TSMetric
 
 func (ts *TSMetric) AllByMetricIDHostAndRange(clusterID, metricID int64, host string, from, to int64) ([]*TSMetricRow, error) {
 	rows := []*TSMetricRow{}
-	query := fmt.Sprintf(`SELECT cluster_id, metric_id, created, key, host, value FROM %v WHERE cluster_id=? AND metric_id=? AND host=? AND created >= ? AND created <= ? ORDER BY cluster_id,metric_id,created ASC`, ts.table)
+	query := fmt.Sprintf(`SELECT cluster_id, metric_id, created, key, host, value FROM %v WHERE cluster_id=? AND metric_id=? AND host=? AND created >= ? AND created <= ? ORDER BY created ASC`, ts.table)
 
 	var scannedClusterID, scannedMetricID, scannedCreated int64
 	var scannedKey, scannedHost string
@@ -145,7 +145,7 @@ func (ts *TSMetric) AllByMetricIDHostAndRangeForHighchart(clusterID, metricID in
 
 func (ts *TSMetric) AllByMetricIDAndRange(clusterID, metricID int64, from, to int64) ([]*TSMetricRow, error) {
 	rows := []*TSMetricRow{}
-	query := fmt.Sprintf(`SELECT * FROM %v WHERE cluster_id=? AND metric_id=? AND created >= ? AND created <= ? ORDER BY cluster_id,metric_id,created ASC`, ts.table)
+	query := fmt.Sprintf(`SELECT * FROM %v WHERE cluster_id=? AND metric_id=? AND created >= ? AND created <= ? ORDER BY created ASC`, ts.table)
 
 	var scannedClusterID, scannedMetricID, scannedCreated int64
 	var scannedKey, scannedHost string
