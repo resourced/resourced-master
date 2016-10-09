@@ -51,3 +51,14 @@ func (ts *TSMetric) AllByMetricIDAndRangeForHighchart(clusterID, metricID, from,
 
 	return nil, fmt.Errorf("Unrecognized DBType, valid options are: pg or cassandra")
 }
+
+func (ts *TSMetric) GetAggregateXMinutesByMetricIDAndHostname(clusterID, metricID int64, minutes int, hostname string) (*shared.TSMetricAggregateRow, error) {
+	if ts.Parameters.DBType == "pg" {
+		return pg.NewTSMetric(ts.Parameters.PGDB).GetAggregateXMinutesByMetricIDAndHostname(ts.Parameters.PGTx, clusterID, metricID, minutes, hostname)
+
+	} else if ts.Parameters.DBType == "cassandra" {
+		return cassandra.NewTSMetric(ts.Parameters.CassandraSession).GetAggregateXMinutesByMetricIDAndHostname(clusterID, metricID, minutes, hostname)
+	}
+
+	return nil, fmt.Errorf("Unrecognized DBType, valid options are: pg or cassandra")
+}

@@ -5,6 +5,7 @@ import (
 
 	"github.com/Sirupsen/logrus"
 
+	"github.com/resourced/resourced-master/models/check_expression"
 	"github.com/resourced/resourced-master/models/pg"
 )
 
@@ -45,7 +46,13 @@ func (app *Application) CheckAndRunTriggers() {
 
 					for range time.Tick(checkDuration) {
 						// 1. Evaluate all expressions in a check.
-						expressionResults, finalResult, err := checkRow.EvalExpressions(app.PGDBConfig)
+						evaluator := &check_expression.CheckExpressionEvaluator{
+							GeneralConfig: app.GeneralConfig,
+							PGDBs:         app.PGDBConfig,
+							CassandraDBs:  app.CassandraDBConfig,
+						}
+
+						expressionResults, finalResult, err := evaluator.EvalExpressions(checkRow)
 						if err != nil {
 							app.ErrLogger.WithFields(logrus.Fields{
 								"Method":    "checkRow.EvalExpressions",
