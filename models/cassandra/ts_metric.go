@@ -100,7 +100,7 @@ func (ts *TSMetric) metricRowsForHighchart(host string, tsMetricRows []*TSMetric
 
 func (ts *TSMetric) AllByMetricIDHostAndRange(clusterID, metricID int64, host string, from, to int64) ([]*TSMetricRow, error) {
 	rows := []*TSMetricRow{}
-	query := fmt.Sprintf(`SELECT cluster_id, metric_id, created, key, host, value FROM %v WHERE cluster_id=? AND metric_id=? AND host=? AND created >= ? AND created <= ? ORDER BY created ASC`, ts.table)
+	query := fmt.Sprintf(`SELECT cluster_id, metric_id, created, key, host, value FROM %v WHERE cluster_id=? AND metric_id=? AND host=? AND created >= ? AND created <= ? ORDER BY created ASC ALLOW FILTERING`, ts.table)
 
 	var scannedClusterID, scannedMetricID, scannedCreated int64
 	var scannedKey, scannedHost string
@@ -165,7 +165,7 @@ func (ts *TSMetric) AllByMetricIDAndRange(clusterID, metricID int64, from, to in
 	if err := iter.Close(); err != nil {
 		err = fmt.Errorf("%v. Query: %v", err.Error(), query)
 		logrus.WithFields(logrus.Fields{
-			"Method":    "TSMetric.AllByMetricIDHostAndRange",
+			"Method":    "TSMetric.AllByMetricIDAndRange",
 			"ClusterID": clusterID,
 			"MetricID":  metricID,
 			"From":      from,

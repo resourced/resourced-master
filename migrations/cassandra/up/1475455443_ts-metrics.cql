@@ -17,7 +17,3 @@ CREATE TABLE IF NOT EXISTS ts_metrics (
   AND memtable_flush_period_in_ms = 0
   AND read_repair_chance = 0.0
   AND speculative_retry = '99PERCENTILE';
-
-CREATE INDEX ts_metrics_key ON ts_metrics (key);
-
-CREATE INDEX ts_metrics_host ON ts_metrics (host);
