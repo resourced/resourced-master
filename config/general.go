@@ -116,12 +116,6 @@ type GeneralConfig struct {
 		DataRetention int
 	}
 
-	MetricsAggr15m struct {
-		PostgreSQL    PostgreSQLPerClusterConfig `toml:",omitempty"`
-		Cassandra     CassandraConfig            `toml:",omitempty"`
-		DataRetention int
-	}
-
 	Events struct {
 		PostgreSQL    PostgreSQLPerClusterConfig
 		DataRetention int

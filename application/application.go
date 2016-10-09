@@ -237,25 +237,6 @@ func (app *Application) MigrateAllPG(direction string) error {
 				return fmt.Errorf("Failed to execute migration file on %v. File: %v, Error: %v", dsn, fullFilename, err)
 			}
 		}
-
-		// -----------------------------------------------
-		// MetricsAggr15m
-		_, err = app.PGDBConfig.TSMetricAggr15m.Exec(sql)
-		if err != nil {
-			return fmt.Errorf("Failed to execute migration file on %v. File: %v, Error: %v", app.GeneralConfig.MetricsAggr15m.PostgreSQL.DSN, fullFilename, err)
-		}
-
-		for clusterIDString, dsn := range app.GeneralConfig.MetricsAggr15m.PostgreSQL.DSNByClusterID {
-			clusterID, err := strconv.ParseInt(clusterIDString, 10, 64)
-			if err != nil {
-				return fmt.Errorf("Failed to execute migration file on %v. File: %v, Error: %v", dsn, fullFilename, err)
-			}
-
-			_, err = app.PGDBConfig.GetTSMetricAggr15m(clusterID).Exec(sql)
-			if err != nil {
-				return fmt.Errorf("Failed to execute migration file on %v. File: %v, Error: %v", dsn, fullFilename, err)
-			}
-		}
 	}
 
 	return nil
@@ -280,13 +261,6 @@ func (app *Application) MigrateAllCassandra(direction string) error {
 		err = app.CassandraDBConfig.TSMetricSession.Query(sql).Exec()
 		if err != nil {
 			return fmt.Errorf("Failed to execute migration file on %v. File: %v, Error: %v", app.GeneralConfig.Metrics.Cassandra.Keyspace, fullFilename, err)
-		}
-
-		// -----------------------------------------------
-		// MetricsAggr15m
-		err = app.CassandraDBConfig.TSMetricAggr15mSession.Query(sql).Exec()
-		if err != nil {
-			return fmt.Errorf("Failed to execute migration file on %v. File: %v, Error: %v", app.GeneralConfig.MetricsAggr15m.Cassandra.Keyspace, fullFilename, err)
 		}
 	}
 

@@ -93,38 +93,6 @@ func NewPGDBConfig(generalConfig GeneralConfig) (*PGDBConfig, error) {
 	}
 
 	// ---------------------------------------------------------
-	// ts_metrics_aggr_15m table
-	//
-	if strings.HasPrefix(generalConfig.MetricsAggr15m.PostgreSQL.DSN, "postgres") {
-		db, err := sqlx.Connect("postgres", generalConfig.MetricsAggr15m.PostgreSQL.DSN)
-		if err != nil {
-			return nil, err
-		}
-		if generalConfig.MetricsAggr15m.PostgreSQL.MaxOpenConnections > int64(0) {
-			db.DB.SetMaxOpenConns(int(generalConfig.MetricsAggr15m.PostgreSQL.MaxOpenConnections))
-		}
-		conf.TSMetricAggr15m = db
-	}
-
-	for clusterIDString, dsn := range generalConfig.MetricsAggr15m.PostgreSQL.DSNByClusterID {
-		if strings.HasPrefix(dsn, "postgres") {
-			clusterID, err := strconv.ParseInt(clusterIDString, 10, 64)
-			if err != nil {
-				return nil, err
-			}
-
-			db, err := sqlx.Connect("postgres", dsn)
-			if err != nil {
-				return nil, err
-			}
-			if generalConfig.MetricsAggr15m.PostgreSQL.MaxOpenConnections > int64(0) {
-				db.DB.SetMaxOpenConns(int(generalConfig.MetricsAggr15m.PostgreSQL.MaxOpenConnections))
-			}
-			conf.TSMetricAggr15mByClusterID[clusterID] = db
-		}
-	}
-
-	// ---------------------------------------------------------
 	// ts_events table
 	//
 	if strings.HasPrefix(generalConfig.Events.PostgreSQL.DSN, "postgres") {
