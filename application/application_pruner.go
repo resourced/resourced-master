@@ -102,6 +102,10 @@ func (app *Application) PruneTSCheckOnce(clusterID int64) (err error) {
 
 // PruneTSMetricOnce deletes old ts_metrics data.
 func (app *Application) PruneTSMetricOnce(clusterID int64) (err error) {
+	if app.PGDBConfig.TSMetric == nil {
+		return nil
+	}
+
 	f := func() {
 		err = pg.NewTSMetric(app.PGDBConfig.TSMetric).DeleteDeleted(nil, clusterID)
 	}

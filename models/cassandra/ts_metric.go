@@ -23,6 +23,13 @@ type TSMetricHighchartPayload struct {
 	Data [][]interface{} `json:"data"`
 }
 
+func (hcPayload *TSMetricHighchartPayload) GetName() string {
+	return hcPayload.Name
+}
+func (hcPayload *TSMetricHighchartPayload) GetData() [][]interface{} {
+	return hcPayload.Data
+}
+
 type TSMetricRow struct {
 	ClusterID int64   `db:"cluster_id"`
 	MetricID  int64   `db:"metric_id"`

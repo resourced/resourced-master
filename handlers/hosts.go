@@ -15,8 +15,8 @@ import (
 	"github.com/resourced/resourced-master/config"
 	"github.com/resourced/resourced-master/contexthelper"
 	"github.com/resourced/resourced-master/libhttp"
-	"github.com/resourced/resourced-master/models/cassandra"
 	"github.com/resourced/resourced-master/models/pg"
+	"github.com/resourced/resourced-master/models/shims"
 )
 
 func GetHosts(w http.ResponseWriter, r *http.Request) {
@@ -341,27 +341,22 @@ func PostApiHosts(w http.ResponseWriter, r *http.Request) {
 		// Create ts_metrics row
 		tsMetricDBType := generalConfig.GetMetricsDB()
 
-		if tsMetricDBType == "pg" {
-			tsMetricsDeletedFrom := clusterRow.GetDeletedFromUNIXTimestampForInsert("ts_metrics")
+		cassandradbs, err := contexthelper.GetCassandraDBConfig(r.Context())
+		if err != nil {
+			errLogger.Error(err)
+			return
+		}
 
-			err := pg.NewTSMetric(pgdbs.GetTSMetric(hostRow.ClusterID)).CreateByHostRow(nil, hostRow, metricsMap, tsMetricsDeletedFrom)
-			if err != nil {
-				errLogger.Error(err)
-				return
-			}
+		shimsTSMetric := shims.TSMetric{Parameters: shims.Parameters{
+			PGDB:             pgdbs.GetTSMetric(hostRow.ClusterID),
+			CassandraSession: cassandradbs.TSMetricSession,
+			DBType:           tsMetricDBType,
+		}}
 
-		} else if tsMetricDBType == "cassandra" {
-			cassandradbs, err := contexthelper.GetCassandraDBConfig(r.Context())
-			if err != nil {
-				errLogger.Error(err)
-				return
-			}
-
-			err = cassandra.NewTSMetric(cassandradbs.TSMetricSession).CreateByHostRow(hostRow, metricsMap, clusterRow.GetTTLDurationForInsert("ts_metrics"))
-			if err != nil {
-				errLogger.Error(err)
-				return
-			}
+		err = shimsTSMetric.CreateByHostRow(hostRow, metricsMap, clusterRow.GetDeletedFromUNIXTimestampForInsert("ts_metrics"), clusterRow.GetTTLDurationForInsert("ts_metrics"))
+		if err != nil {
+			errLogger.Error(err)
+			return
 		}
 
 		go func() {

@@ -23,6 +23,13 @@ type TSMetricHighchartPayload struct {
 	Data [][]interface{} `json:"data"`
 }
 
+func (hcPayload *TSMetricHighchartPayload) GetName() string {
+	return hcPayload.Name
+}
+func (hcPayload *TSMetricHighchartPayload) GetData() [][]interface{} {
+	return hcPayload.Data
+}
+
 type TSMetricSelectAggregateRow struct {
 	ClusterID   int64   `db:"cluster_id"`
 	CreatedUnix int64   `db:"created_unix"`
@@ -186,7 +193,7 @@ func (ts *TSMetric) AllByMetricIDHostAndRangeForHighchart(tx *sqlx.Tx, clusterID
 	return ts.metricRowsForHighchart(tx, host, tsMetricRows)
 }
 
-func (ts *TSMetric) AllByMetricIDAndRange(tx *sqlx.Tx, clusterID, metricID int64, from, to, deletedFrom int64) ([]*TSMetricRow, error) {
+func (ts *TSMetric) AllByMetricIDAndRange(tx *sqlx.Tx, clusterID, metricID, from, to, deletedFrom int64) ([]*TSMetricRow, error) {
 	rows := []*TSMetricRow{}
 	query := fmt.Sprintf(`SELECT * FROM %v WHERE cluster_id=$1 AND metric_id=$2 AND
 created >= to_timestamp($3) at time zone 'utc' AND

@@ -12,8 +12,8 @@ import (
 	"github.com/resourced/resourced-master/config"
 	"github.com/resourced/resourced-master/contexthelper"
 	"github.com/resourced/resourced-master/libhttp"
-	"github.com/resourced/resourced-master/models/cassandra"
 	"github.com/resourced/resourced-master/models/pg"
+	"github.com/resourced/resourced-master/models/shims"
 )
 
 func PostMetrics(w http.ResponseWriter, r *http.Request) {
@@ -156,46 +156,32 @@ func GetApiTSMetricsByHost(w http.ResponseWriter, r *http.Request) {
 
 	tsMetricDBType := generalConfig.GetMetricsDB()
 
-	if tsMetricDBType == "pg" {
-		deletedFrom := clusterRow.GetDeletedFromUNIXTimestampForSelect("ts_metrics")
-
-		hcMetrics, err := pg.NewTSMetric(pgdbs.GetTSMetric(metricRow.ClusterID)).AllByMetricIDHostAndRangeForHighchart(nil, metricRow.ClusterID, id, host, from, to, deletedFrom)
-		if err != nil {
-			errLogger.WithFields(logrus.Fields{"Error": err}).Error("Failed to fetch metrics rows")
-			libhttp.HandleErrorJson(w, err)
-			return
-		}
-
-		hcMetricsJSON, err := json.Marshal(hcMetrics)
-		if err != nil {
-			libhttp.HandleErrorJson(w, err)
-			return
-		}
-
-		w.Write(hcMetricsJSON)
-
-	} else if tsMetricDBType == "cassandra" {
-		cassandradbs, err := contexthelper.GetCassandraDBConfig(r.Context())
-		if err != nil {
-			errLogger.Error(err)
-			return
-		}
-
-		hcMetrics, err := cassandra.NewTSMetric(cassandradbs.TSMetricSession).AllByMetricIDHostAndRangeForHighchart(metricRow.ClusterID, id, host, from, to)
-		if err != nil {
-			errLogger.WithFields(logrus.Fields{"Error": err}).Error("Failed to fetch metrics rows")
-			libhttp.HandleErrorJson(w, err)
-			return
-		}
-
-		hcMetricsJSON, err := json.Marshal(hcMetrics)
-		if err != nil {
-			libhttp.HandleErrorJson(w, err)
-			return
-		}
-
-		w.Write(hcMetricsJSON)
+	cassandradbs, err := contexthelper.GetCassandraDBConfig(r.Context())
+	if err != nil {
+		errLogger.Error(err)
+		return
 	}
+
+	shimsTSMetric := shims.TSMetric{Parameters: shims.Parameters{
+		PGDB:             pgdbs.GetTSMetric(metricRow.ClusterID),
+		CassandraSession: cassandradbs.TSMetricSession,
+		DBType:           tsMetricDBType,
+	}}
+
+	hcMetrics, err := shimsTSMetric.AllByMetricIDHostAndRangeForHighchart(metricRow.ClusterID, id, host, from, to, clusterRow.GetDeletedFromUNIXTimestampForSelect("ts_metrics"))
+	if err != nil {
+		errLogger.WithFields(logrus.Fields{"Error": err}).Error("Failed to fetch metrics rows")
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
+
+	hcMetricsJSON, err := json.Marshal(hcMetrics)
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
+
+	w.Write(hcMetricsJSON)
 }
 
 func GetApiTSMetricsByHost15Min(w http.ResponseWriter, r *http.Request) {
@@ -336,45 +322,32 @@ func GetApiTSMetrics(w http.ResponseWriter, r *http.Request) {
 
 	tsMetricDBType := generalConfig.GetMetricsDB()
 
-	if tsMetricDBType == "pg" {
-		deletedFrom := clusterRow.GetDeletedFromUNIXTimestampForSelect("ts_metrics")
-
-		hcMetrics, err := pg.NewTSMetric(pgdbs.GetTSMetric(metricRow.ClusterID)).AllByMetricIDAndRangeForHighchart(nil, metricRow.ClusterID, id, from, to, deletedFrom)
-		if err != nil {
-			libhttp.HandleErrorJson(w, err)
-			return
-		}
-
-		hcMetricsJSON, err := json.Marshal(hcMetrics)
-		if err != nil {
-			libhttp.HandleErrorJson(w, err)
-			return
-		}
-
-		w.Write(hcMetricsJSON)
-
-	} else if tsMetricDBType == "cassandra" {
-		cassandradbs, err := contexthelper.GetCassandraDBConfig(r.Context())
-		if err != nil {
-			errLogger.Error(err)
-			return
-		}
-
-		hcMetrics, err := cassandra.NewTSMetric(cassandradbs.TSMetricSession).AllByMetricIDAndRangeForHighchart(metricRow.ClusterID, id, from, to)
-		if err != nil {
-			errLogger.WithFields(logrus.Fields{"Error": err}).Error("Failed to fetch metrics rows")
-			libhttp.HandleErrorJson(w, err)
-			return
-		}
-
-		hcMetricsJSON, err := json.Marshal(hcMetrics)
-		if err != nil {
-			libhttp.HandleErrorJson(w, err)
-			return
-		}
-
-		w.Write(hcMetricsJSON)
+	cassandradbs, err := contexthelper.GetCassandraDBConfig(r.Context())
+	if err != nil {
+		errLogger.Error(err)
+		return
 	}
+
+	shimsTSMetric := shims.TSMetric{Parameters: shims.Parameters{
+		PGDB:             pgdbs.GetTSMetric(metricRow.ClusterID),
+		CassandraSession: cassandradbs.TSMetricSession,
+		DBType:           tsMetricDBType,
+	}}
+
+	hcMetrics, err := shimsTSMetric.AllByMetricIDAndRangeForHighchart(metricRow.ClusterID, id, from, to, clusterRow.GetDeletedFromUNIXTimestampForSelect("ts_metrics"))
+	if err != nil {
+		errLogger.WithFields(logrus.Fields{"Error": err}).Error("Failed to fetch metrics rows")
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
+
+	hcMetricsJSON, err := json.Marshal(hcMetrics)
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
+
+	w.Write(hcMetricsJSON)
 }
 
 func GetApiTSMetrics15Min(w http.ResponseWriter, r *http.Request) {
