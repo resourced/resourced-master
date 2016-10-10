@@ -96,12 +96,6 @@ func DeleteMetricID(w http.ResponseWriter, r *http.Request) {
 func GetApiTSMetricsByHost(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	generalConfig, err := contexthelper.GetGeneralConfig(r.Context())
-	if err != nil {
-		libhttp.HandleErrorJson(w, err)
-		return
-	}
-
 	pgdbs, err := contexthelper.GetPGDBConfig(r.Context())
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
@@ -161,19 +155,7 @@ func GetApiTSMetricsByHost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tsMetricDBType := generalConfig.GetMetricsDB()
-
-	cassandradbs, err := contexthelper.GetCassandraDBConfig(r.Context())
-	if err != nil {
-		errLogger.Error(err)
-		return
-	}
-
-	shimsTSMetric := shims.TSMetric{Parameters: shims.Parameters{
-		PGDB:             pgdbs.GetTSMetric(metricRow.ClusterID),
-		CassandraSession: cassandradbs.TSMetricSession,
-		DBType:           tsMetricDBType,
-	}}
+	shimsTSMetric := shims.NewTSMetric(r.Context(), metricRow.ClusterID)
 
 	hcMetrics, err := shimsTSMetric.AllByMetricIDHostAndRangeForHighchart(metricRow.ClusterID, id, host, from, to, clusterRow.GetDeletedFromUNIXTimestampForSelect("ts_metrics"))
 	if err != nil {
@@ -193,12 +175,6 @@ func GetApiTSMetricsByHost(w http.ResponseWriter, r *http.Request) {
 
 func GetApiTSMetrics(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-
-	generalConfig, err := contexthelper.GetGeneralConfig(r.Context())
-	if err != nil {
-		libhttp.HandleErrorJson(w, err)
-		return
-	}
 
 	pgdbs, err := contexthelper.GetPGDBConfig(r.Context())
 	if err != nil {
@@ -255,19 +231,7 @@ func GetApiTSMetrics(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tsMetricDBType := generalConfig.GetMetricsDB()
-
-	cassandradbs, err := contexthelper.GetCassandraDBConfig(r.Context())
-	if err != nil {
-		errLogger.Error(err)
-		return
-	}
-
-	shimsTSMetric := shims.TSMetric{Parameters: shims.Parameters{
-		PGDB:             pgdbs.GetTSMetric(metricRow.ClusterID),
-		CassandraSession: cassandradbs.TSMetricSession,
-		DBType:           tsMetricDBType,
-	}}
+	shimsTSMetric := shims.NewTSMetric(r.Context(), metricRow.ClusterID)
 
 	hcMetrics, err := shimsTSMetric.AllByMetricIDAndRangeForHighchart(metricRow.ClusterID, id, from, to, clusterRow.GetDeletedFromUNIXTimestampForSelect("ts_metrics"))
 	if err != nil {

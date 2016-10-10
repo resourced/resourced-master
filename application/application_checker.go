@@ -47,9 +47,7 @@ func (app *Application) CheckAndRunTriggers() {
 					for range time.Tick(checkDuration) {
 						// 1. Evaluate all expressions in a check.
 						evaluator := &check_expression.CheckExpressionEvaluator{
-							GeneralConfig: app.GeneralConfig,
-							PGDBs:         app.PGDBConfig,
-							CassandraDBs:  app.CassandraDBConfig,
+							AppContext: app.GetContext(),
 						}
 
 						expressionResults, finalResult, err := evaluator.EvalExpressions(checkRow)

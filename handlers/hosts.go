@@ -287,12 +287,6 @@ func PostHostsIDMasterTags(w http.ResponseWriter, r *http.Request) {
 func PostApiHosts(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	generalConfig, err := contexthelper.GetGeneralConfig(r.Context())
-	if err != nil {
-		libhttp.HandleErrorJson(w, err)
-		return
-	}
-
 	accessTokenRow, err := contexthelper.GetAccessToken(r.Context())
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
@@ -350,19 +344,7 @@ func PostApiHosts(w http.ResponseWriter, r *http.Request) {
 		}
 
 		// Create ts_metrics row
-		tsMetricDBType := generalConfig.GetMetricsDB()
-
-		cassandradbs, err := contexthelper.GetCassandraDBConfig(r.Context())
-		if err != nil {
-			errLogger.Error(err)
-			return
-		}
-
-		shimsTSMetric := shims.TSMetric{Parameters: shims.Parameters{
-			PGDB:             pgdbs.GetTSMetric(hostRow.ClusterID),
-			CassandraSession: cassandradbs.TSMetricSession,
-			DBType:           tsMetricDBType,
-		}}
+		shimsTSMetric := shims.NewTSMetric(r.Context(), hostRow.ClusterID)
 
 		err = shimsTSMetric.CreateByHostRow(hostRow, metricsMap, clusterRow.GetDeletedFromUNIXTimestampForInsert("ts_metrics"), clusterRow.GetTTLDurationForInsert("ts_metrics"))
 		if err != nil {

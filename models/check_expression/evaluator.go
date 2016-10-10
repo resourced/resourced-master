@@ -1,6 +1,7 @@
 package check_expression
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"os/exec"
@@ -9,15 +10,13 @@ import (
 
 	"github.com/Sirupsen/logrus"
 
-	"github.com/resourced/resourced-master/config"
+	"github.com/resourced/resourced-master/contexthelper"
 	"github.com/resourced/resourced-master/models/pg"
 	"github.com/resourced/resourced-master/models/shims"
 )
 
 type CheckExpressionEvaluator struct {
-	GeneralConfig config.GeneralConfig
-	PGDBs         *config.PGDBConfig
-	CassandraDBs  *config.CassandraDBConfig
+	AppContext context.Context
 }
 
 // EvalExpressions reduces the result of expression into a single true/false.
@@ -28,7 +27,12 @@ func (evaluator *CheckExpressionEvaluator) EvalExpressions(checkRow *pg.CheckRow
 	var hostRows []*pg.HostRow
 	var err error
 
-	host := pg.NewHost(evaluator.PGDBs.GetHost(checkRow.ClusterID))
+	pgdbs, err := contexthelper.GetPGDBConfig(evaluator.AppContext)
+	if err != nil {
+		return nil, false, err
+	}
+
+	host := pg.NewHost(pgdbs.GetHost(checkRow.ClusterID))
 
 	if checkRow.HostsQuery != "" {
 		hostRows, err = host.AllByClusterIDQueryAndUpdatedInterval(nil, checkRow.ClusterID, checkRow.HostsQuery, "5m")
@@ -172,10 +176,18 @@ func (evaluator *CheckExpressionEvaluator) EvalRelativeHostDataExpression(checkR
 	badHostnames := make([]string, 0)
 	goodHostnames := make([]string, 0)
 
+	pgdbs, err := contexthelper.GetPGDBConfig(evaluator.AppContext)
+	if err != nil {
+		// If we are unable to get database connection, expression should not go bad.
+		expression.Result.Value = false
+		expression.Result.Message = "Unable to get database connections, will re-check later"
+		return expression
+	}
+
 	var perHostResult bool
 
 	for _, hostRow := range hostRows {
-		metric, err := pg.NewMetric(evaluator.PGDBs.Core).GetByClusterIDAndKey(nil, checkRow.ClusterID, expression.Metric)
+		metric, err := pg.NewMetric(pgdbs.Core).GetByClusterIDAndKey(nil, checkRow.ClusterID, expression.Metric)
 		if err != nil {
 			// If we are unable to pull metric metadata,
 			// We assume that there's something wrong with it.
@@ -186,13 +198,7 @@ func (evaluator *CheckExpressionEvaluator) EvalRelativeHostDataExpression(checkR
 			continue
 		}
 
-		tsMetricDBType := evaluator.GeneralConfig.GetMetricsDB()
-
-		shimsTSMetric := shims.TSMetric{Parameters: shims.Parameters{
-			PGDB:             evaluator.PGDBs.GetTSMetric(hostRow.ClusterID),
-			CassandraSession: evaluator.CassandraDBs.TSMetricSession,
-			DBType:           tsMetricDBType,
-		}}
+		shimsTSMetric := shims.NewTSMetric(evaluator.AppContext, hostRow.ClusterID)
 
 		aggregateData, err := shimsTSMetric.GetAggregateXMinutesByMetricIDAndHostname(checkRow.ClusterID, metric.ID, expression.PrevRange, hostRow.Hostname)
 		if err != nil {
@@ -286,11 +292,19 @@ func (evaluator *CheckExpressionEvaluator) EvalLogDataExpression(checkRow *pg.Ch
 		return expression
 	}
 
+	pgdbs, err := contexthelper.GetPGDBConfig(evaluator.AppContext)
+	if err != nil {
+		// If we are unable to get database connection, expression should not go bad.
+		expression.Result.Value = false
+		expression.Result.Message = "Unable to get database connections, will re-check later"
+		return expression
+	}
+
 	affectedHosts := 0
 	badHostnames := make([]string, 0)
 	goodHostnames := make([]string, 0)
 
-	clusterRow, err := pg.NewCluster(evaluator.PGDBs.Core).GetByID(nil, checkRow.ClusterID)
+	clusterRow, err := pg.NewCluster(pgdbs.Core).GetByID(nil, checkRow.ClusterID)
 	if err != nil {
 		expression.Result.Value = false
 		return expression
@@ -305,7 +319,7 @@ func (evaluator *CheckExpressionEvaluator) EvalLogDataExpression(checkRow *pg.Ch
 		from := now.Add(-1 * time.Duration(expression.PrevRange) * time.Minute).UTC().Unix()
 		searchQuery := fmt.Sprintf(`logline search "%v"`, expression.Search)
 
-		valInt64, err := pg.NewTSLog(evaluator.PGDBs.GetTSLog(checkRow.ClusterID)).CountByClusterIDFromTimestampHostAndQuery(nil, checkRow.ClusterID, from, hostname, searchQuery, deletedFrom)
+		valInt64, err := pg.NewTSLog(pgdbs.GetTSLog(checkRow.ClusterID)).CountByClusterIDFromTimestampHostAndQuery(nil, checkRow.ClusterID, from, hostname, searchQuery, deletedFrom)
 		if err != nil {
 			continue
 		}
