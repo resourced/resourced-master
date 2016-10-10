@@ -130,7 +130,11 @@ func PostChecks(w http.ResponseWriter, r *http.Request) {
 
 	currentCluster := r.Context().Value("currentCluster").(*pg.ClusterRow)
 
-	errLogger := r.Context().Value("errLogger").(*logrus.Logger)
+	errLogger, err := contexthelper.GetLogger(r.Context(), "ErrLogger")
+	if err != nil {
+		libhttp.HandleErrorHTML(w, err, 500)
+		return
+	}
 
 	intervalInSeconds := r.FormValue("IntervalInSeconds")
 	if intervalInSeconds == "" {
@@ -175,7 +179,11 @@ func PostChecks(w http.ResponseWriter, r *http.Request) {
 }
 
 func PostPutDeleteCheckID(w http.ResponseWriter, r *http.Request) {
-	errLogger := r.Context().Value("errLogger").(*logrus.Logger)
+	errLogger, err := contexthelper.GetLogger(r.Context(), "ErrLogger")
+	if err != nil {
+		libhttp.HandleErrorHTML(w, err, 500)
+		return
+	}
 
 	method := r.FormValue("_method")
 	if method == "" {
@@ -349,7 +357,11 @@ func PostChecksTriggers(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	errLogger := r.Context().Value("errLogger").(*logrus.Logger)
+	errLogger, err := contexthelper.GetLogger(r.Context(), "ErrLogger")
+	if err != nil {
+		libhttp.HandleErrorHTML(w, err, 500)
+		return
+	}
 
 	w.Header().Set("Content-Type", "text/html")
 
@@ -399,7 +411,11 @@ func PostChecksTriggers(w http.ResponseWriter, r *http.Request) {
 }
 
 func PostPutDeleteCheckTriggerID(w http.ResponseWriter, r *http.Request) {
-	errLogger := r.Context().Value("errLogger").(*logrus.Logger)
+	errLogger, err := contexthelper.GetLogger(r.Context(), "ErrLogger")
+	if err != nil {
+		libhttp.HandleErrorHTML(w, err, 500)
+		return
+	}
 
 	method := r.FormValue("_method")
 	if method == "" {

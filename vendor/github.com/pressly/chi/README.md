@@ -25,7 +25,7 @@ included some useful/optional subpackages: `middleware`, `render` and `docgen`. 
 * **Designed for modular/composable APIs** - middlewares, inline middlewares, route groups and subrouter mounting
 * **Context control** - built on new `context` package, providing value chaining, cancelations and timeouts
 * **Robust** - tested / used in production at Pressly.com, and many others
-* **Doc generation** - `docgen` auto-generates routing documentation from your source
+* **Doc generation** - `docgen` auto-generates routing documentation from your source to JSON or Markdown
 * **No external dependencies** - plain ol' Go 1.7+ stdlib + net/http
 
 
@@ -37,11 +37,13 @@ Examples:
 * [todos-resource](https://github.com/pressly/chi/blob/master/_examples/todos-resource/main.go) - Struct routers/handlers, an example of another code layout style
 * [versions](https://github.com/pressly/chi/blob/master/_examples/versions/main.go) - Demo of `chi/render` subpkg
 * [fileserver](https://github.com/pressly/chi/blob/master/_examples/fileserver/main.go) - Easily serve static files
+* [graceful](https://github.com/pressly/chi/blob/master/_examples/graceful/main.go) - Graceful context signaling and server shutdown
 
 Preview:
 
-Here is a little preview of how routing looks like with chi. And also take a look at the generated docs
-file [routes.json](https://github.com/pressly/chi/blob/master/_examples/rest/routes.json).
+Here is a little preview of how routing looks like with chi. Also take a look at the generated routing docs
+in JSON ([routes.json](https://github.com/pressly/chi/blob/master/_examples/rest/routes.json)) and in
+Markdown ([routes.md](https://github.com/pressly/chi/blob/master/_examples/rest/routes.md)).
 
 ```go
 import (
@@ -258,12 +260,14 @@ Chi comes equipped with an optional `middleware` package, providing:
 | Profiler     | Easily attach net/http/pprof to your routers.                                   |
 | Slashes      | Strip and redirect slashes on routing paths.                                    |
 | WithValue    | Short-hand middleware to set a key/value on the request context.                |
+| Heartbeat    | Monitoring endpoint to check the servers pulse.                                 |
 --------------------------------------------------------------------------------------------------
 
 Other middlewares:
 
-* [httpcoala](https://github.com/goware/httpcoala) - Request coalescer
 * [jwtauth](https://github.com/goware/jwtauth) - JWT authenticator
+* [cors](https://github.com/goware/cors) - CORS middleware
+* [httpcoala](https://github.com/goware/httpcoala) - Request coalescer
 
 please [submit a PR](./CONTRIBUTING.md) if you'd like to include a link to a chi middleware
 
@@ -331,12 +335,12 @@ APIs. But, REST is just a convention for managing state via HTTP, and there's a 
 required to write a complete client-server system or network of microservices.
 
 Looking ahead beyond REST, I also recommend some newer works in the field coming from
-[gRPC](https://github.com/grpc/grpc-go), [nats](https://nats.io), [go-kit](https://github.com/go-kit/kit)
+[gRPC](https://github.com/grpc/grpc-go), [NATS](https://nats.io), [go-kit](https://github.com/go-kit/kit)
 and even [graphql](https://github.com/graphql-go/graphql). They're all pretty cool with their
 own unique approaches and benefits. Specifically, I'd look at gRPC since it makes client-server
 communication feel like a single program on a single computer, no need to hand-write a client library
-and the request/response payloads are like static contracts. NATS is pretty amazing too as a super
-fast and lightweight pub-sub transport that can speak protobufs, with excellent service discovery - 
+and the request/response payloads are typed contracts. NATS is pretty amazing too as a super
+fast and lightweight pub-sub transport that can speak protobufs, with nice service discovery - 
 an excellent combination with gRPC.
 
 

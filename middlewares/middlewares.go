@@ -10,6 +10,7 @@ import (
 	"github.com/didip/stopwatch"
 	"github.com/gorilla/csrf"
 	"github.com/gorilla/sessions"
+	"github.com/pressly/chi"
 
 	"github.com/resourced/resourced-master/contexthelper"
 	"github.com/resourced/resourced-master/libhttp"
@@ -29,7 +30,12 @@ func CSRFMiddleware(useHTTPS bool, salt string) func(http.Handler) http.Handler 
 func SetContext(ctx context.Context) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		fn := func(w http.ResponseWriter, r *http.Request) {
+
+			// Make sure we don't lose Chi's context.
+			chiContext := r.Context().Value(chi.RouteCtxKey)
 			r = r.WithContext(ctx)
+			r = r.WithContext(context.WithValue(r.Context(), chi.RouteCtxKey, chiContext))
+
 			next.ServeHTTP(w, r)
 		}
 		return http.HandlerFunc(fn)

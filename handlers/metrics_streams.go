@@ -30,7 +30,11 @@ func ApiMetricStreams(w http.ResponseWriter, r *http.Request) {
 
 	accessTokenRow := r.Context().Value("accessToken").(*pg.AccessTokenRow)
 
-	errLogger := r.Context().Value("errLogger").(*logrus.Logger)
+	errLogger, err := contexthelper.GetLogger(r.Context(), "ErrLogger")
+	if err != nil {
+		libhttp.HandleErrorHTML(w, fmt.Errorf("Event streaming is unsupported"), 500)
+		return
+	}
 
 	// Create a new channel for this connected client.
 	newClientChan := make(chan string)
@@ -129,13 +133,13 @@ func ApiMetricIDStreams(w http.ResponseWriter, r *http.Request) {
 
 	metricID, err := getInt64SlugFromPath(w, r, "id")
 	if err != nil {
-		libhttp.HandleErrorHTML(w, err, 500)
+		libhttp.HandleErrorJson(w, err)
 		return
 	}
 
 	metricRow, err := pg.NewMetric(pgdbs.Core).GetByID(nil, metricID)
 	if err != nil {
-		libhttp.HandleErrorHTML(w, err, 500)
+		libhttp.HandleErrorJson(w, err)
 		return
 	}
 

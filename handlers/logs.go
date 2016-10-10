@@ -9,7 +9,6 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/Sirupsen/logrus"
 	"github.com/gorilla/csrf"
 
 	"github.com/resourced/resourced-master/contexthelper"
@@ -120,23 +119,27 @@ func PostApiLogs(w http.ResponseWriter, r *http.Request) {
 
 	pgdbs, err := contexthelper.GetPGDBConfig(r.Context())
 	if err != nil {
-		libhttp.HandleErrorHTML(w, err, 500)
+		libhttp.HandleErrorJson(w, err)
 		return
 	}
 
 	accessTokenRow := r.Context().Value("accessToken").(*pg.AccessTokenRow)
 
-	errLogger := r.Context().Value("errLogger").(*logrus.Logger)
+	errLogger, err := contexthelper.GetLogger(r.Context(), "ErrLogger")
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
 
 	dataJson, err := ioutil.ReadAll(r.Body)
 	if err != nil {
-		libhttp.HandleErrorHTML(w, err, 500)
+		libhttp.HandleErrorJson(w, err)
 		return
 	}
 
 	clusterRow, err := pg.NewCluster(pgdbs.Core).GetByID(nil, accessTokenRow.ClusterID)
 	if err != nil {
-		libhttp.HandleErrorHTML(w, err, 500)
+		libhttp.HandleErrorJson(w, err)
 		return
 	}
 
