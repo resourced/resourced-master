@@ -1,18 +1,20 @@
 package cassandra
 
 import (
+	"context"
 	"fmt"
 	"time"
 
 	"github.com/Sirupsen/logrus"
 	"github.com/gocql/gocql"
 
+	"github.com/resourced/resourced-master/contexthelper"
 	"github.com/resourced/resourced-master/models/shared"
 )
 
-func NewTSMetric(session *gocql.Session) *TSMetric {
+func NewTSMetric(ctx context.Context) *TSMetric {
 	ts := &TSMetric{}
-	ts.session = session
+	ts.AppContext = ctx
 	ts.table = "ts_metrics"
 
 	return ts
@@ -22,7 +24,21 @@ type TSMetric struct {
 	Base
 }
 
+func (ts *TSMetric) GetCassandraSession() (*gocql.Session, error) {
+	cassandradbs, err := contexthelper.GetCassandraDBConfig(ts.AppContext)
+	if err != nil {
+		return nil, err
+	}
+
+	return cassandradbs.TSMetricSession, nil
+}
+
 func (ts *TSMetric) CreateByHostRow(hostRow shared.IHostRow, metricsMap map[string]int64, ttl time.Duration) error {
+	session, err := ts.GetCassandraSession()
+	if err != nil {
+		return err
+	}
+
 	// Loop through every host's data and see if they are part of graph metrics.
 	// If they are, insert a record in ts_metrics.
 	for path, data := range hostRow.DataAsFlatKeyValue() {
@@ -33,7 +49,7 @@ func (ts *TSMetric) CreateByHostRow(hostRow shared.IHostRow, metricsMap map[stri
 				// Deserialized JSON number -> interface{} always have float64 as type.
 				if trueValueFloat64, ok := value.(float64); ok {
 					// Ignore error for now, there's no need to break the entire loop when one insert fails.
-					err := ts.session.Query(
+					err := session.Query(
 						fmt.Sprintf(`INSERT INTO %v (cluster_id, metric_id, key, host, value, created) VALUES (?, ?, ?, ?, ?, ?) USING TTL ?`, ts.table),
 						hostRow.GetClusterID(),
 						metricID,
@@ -78,6 +94,11 @@ func (ts *TSMetric) metricRowsForHighchart(host string, tsMetricRows []*shared.T
 }
 
 func (ts *TSMetric) AllByMetricIDHostAndRange(clusterID, metricID int64, host string, from, to int64) ([]*shared.TSMetricRow, error) {
+	session, err := ts.GetCassandraSession()
+	if err != nil {
+		return nil, err
+	}
+
 	rows := []*shared.TSMetricRow{}
 	query := fmt.Sprintf(`SELECT cluster_id, metric_id, created, key, host, value FROM %v WHERE cluster_id=? AND metric_id=? AND host=? AND created >= ? AND created <= ? ORDER BY created ASC ALLOW FILTERING`, ts.table)
 
@@ -85,7 +106,7 @@ func (ts *TSMetric) AllByMetricIDHostAndRange(clusterID, metricID int64, host st
 	var scannedKey, scannedHost string
 	var scannedValue float64
 
-	iter := ts.session.Query(query, clusterID, metricID, host, from, to).Iter()
+	iter := session.Query(query, clusterID, metricID, host, from, to).Iter()
 	for iter.Scan(&scannedClusterID, &scannedMetricID, &scannedCreated, &scannedKey, &scannedHost, &scannedValue) {
 		rows = append(rows, &shared.TSMetricRow{
 			ClusterID: scannedClusterID,
@@ -123,6 +144,11 @@ func (ts *TSMetric) AllByMetricIDHostAndRangeForHighchart(clusterID, metricID in
 }
 
 func (ts *TSMetric) AllByMetricIDAndRange(clusterID, metricID int64, from, to int64) ([]*shared.TSMetricRow, error) {
+	session, err := ts.GetCassandraSession()
+	if err != nil {
+		return nil, err
+	}
+
 	rows := []*shared.TSMetricRow{}
 	query := fmt.Sprintf(`SELECT * FROM %v WHERE cluster_id=? AND metric_id=? AND created >= ? AND created <= ? ORDER BY created ASC`, ts.table)
 
@@ -130,7 +156,7 @@ func (ts *TSMetric) AllByMetricIDAndRange(clusterID, metricID int64, from, to in
 	var scannedKey, scannedHost string
 	var scannedValue float64
 
-	iter := ts.session.Query(query, clusterID, metricID, from, to).Iter()
+	iter := session.Query(query, clusterID, metricID, from, to).Iter()
 	for iter.Scan(&scannedClusterID, &scannedMetricID, &scannedCreated, &scannedKey, &scannedHost, &scannedValue) {
 		rows = append(rows, &shared.TSMetricRow{
 			ClusterID: scannedClusterID,
@@ -191,6 +217,11 @@ func (ts *TSMetric) AllByMetricIDAndRangeForHighchart(clusterID, metricID, from,
 }
 
 func (ts *TSMetric) GetAggregateXMinutesByMetricIDAndHostname(clusterID, metricID int64, minutes int, hostname string) (*shared.TSMetricAggregateRow, error) {
+	session, err := ts.GetCassandraSession()
+	if err != nil {
+		return nil, err
+	}
+
 	now := time.Now().UTC()
 	from := now.Add(-1 * time.Duration(minutes) * time.Minute).UTC().Unix()
 
@@ -201,7 +232,7 @@ func (ts *TSMetric) GetAggregateXMinutesByMetricIDAndHostname(clusterID, metricI
 	var scannedAvg, scannedMax, scannedMin, scannedSum float64
 	var scannedKey, scannedHost string
 
-	iter := ts.session.Query(query, clusterID, metricID, from, hostname).Iter()
+	iter := session.Query(query, clusterID, metricID, from, hostname).Iter()
 	for iter.Scan(&scannedClusterID, &scannedHost, &scannedKey, &scannedAvg, &scannedMax, &scannedMin, &scannedSum) {
 		row = &shared.TSMetricAggregateRow{
 			ClusterID: scannedClusterID,

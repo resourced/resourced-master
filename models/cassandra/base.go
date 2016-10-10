@@ -2,6 +2,7 @@
 package cassandra
 
 import (
+	"context"
 	"math"
 	"time"
 
@@ -11,9 +12,10 @@ import (
 var PROJECT_EPOCH = 1451606400
 
 type Base struct {
-	session *gocql.Session
-	table   string
-	hasID   bool
+	AppContext context.Context
+	session    *gocql.Session
+	table      string
+	hasID      bool
 }
 
 // NewExplicitID uses UNIX timestamp in microseconds as ID.

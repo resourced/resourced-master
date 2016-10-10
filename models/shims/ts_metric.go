@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/gocql/gocql"
 	"github.com/jmoiron/sqlx"
 
 	"github.com/resourced/resourced-master/contexthelper"
@@ -44,15 +43,6 @@ func (ts *TSMetric) GetPGDB() (*sqlx.DB, error) {
 	return pgdbs.GetTSMetric(ts.ClusterID), nil
 }
 
-func (ts *TSMetric) GetCassandraSession() (*gocql.Session, error) {
-	cassandradbs, err := contexthelper.GetCassandraDBConfig(ts.AppContext)
-	if err != nil {
-		return nil, err
-	}
-
-	return cassandradbs.TSMetricSession, nil
-}
-
 func (ts *TSMetric) CreateByHostRow(hostRow shared.IHostRow, metricsMap map[string]int64, deletedFrom int64, ttl time.Duration) error {
 	if ts.GetDBType() == "pg" {
 		pgdb, err := ts.GetPGDB()
@@ -62,11 +52,7 @@ func (ts *TSMetric) CreateByHostRow(hostRow shared.IHostRow, metricsMap map[stri
 		return pg.NewTSMetric(pgdb).CreateByHostRow(nil, hostRow, metricsMap, deletedFrom)
 
 	} else if ts.GetDBType() == "cassandra" {
-		cassandraSession, err := ts.GetCassandraSession()
-		if err != nil {
-			return err
-		}
-		return cassandra.NewTSMetric(cassandraSession).CreateByHostRow(hostRow, metricsMap, ttl)
+		return cassandra.NewTSMetric(ts.AppContext).CreateByHostRow(hostRow, metricsMap, ttl)
 	}
 
 	return fmt.Errorf("Unrecognized DBType, valid options are: pg or cassandra")
@@ -81,11 +67,7 @@ func (ts *TSMetric) AllByMetricIDHostAndRangeForHighchart(clusterID, metricID in
 		return pg.NewTSMetric(pgdb).AllByMetricIDHostAndRangeForHighchart(nil, clusterID, metricID, host, from, to, deletedFrom)
 
 	} else if ts.GetDBType() == "cassandra" {
-		cassandraSession, err := ts.GetCassandraSession()
-		if err != nil {
-			return nil, err
-		}
-		return cassandra.NewTSMetric(cassandraSession).AllByMetricIDHostAndRangeForHighchart(clusterID, metricID, host, from, to)
+		return cassandra.NewTSMetric(ts.AppContext).AllByMetricIDHostAndRangeForHighchart(clusterID, metricID, host, from, to)
 	}
 
 	return nil, fmt.Errorf("Unrecognized DBType, valid options are: pg or cassandra")
@@ -100,11 +82,7 @@ func (ts *TSMetric) AllByMetricIDAndRangeForHighchart(clusterID, metricID, from,
 		return pg.NewTSMetric(pgdb).AllByMetricIDAndRangeForHighchart(nil, clusterID, metricID, from, to, deletedFrom)
 
 	} else if ts.GetDBType() == "cassandra" {
-		cassandraSession, err := ts.GetCassandraSession()
-		if err != nil {
-			return nil, err
-		}
-		return cassandra.NewTSMetric(cassandraSession).AllByMetricIDAndRangeForHighchart(clusterID, metricID, from, to)
+		return cassandra.NewTSMetric(ts.AppContext).AllByMetricIDAndRangeForHighchart(clusterID, metricID, from, to)
 	}
 
 	return nil, fmt.Errorf("Unrecognized DBType, valid options are: pg or cassandra")
@@ -119,11 +97,7 @@ func (ts *TSMetric) GetAggregateXMinutesByMetricIDAndHostname(clusterID, metricI
 		return pg.NewTSMetric(pgdb).GetAggregateXMinutesByMetricIDAndHostname(nil, clusterID, metricID, minutes, hostname)
 
 	} else if ts.GetDBType() == "cassandra" {
-		cassandraSession, err := ts.GetCassandraSession()
-		if err != nil {
-			return nil, err
-		}
-		return cassandra.NewTSMetric(cassandraSession).GetAggregateXMinutesByMetricIDAndHostname(clusterID, metricID, minutes, hostname)
+		return cassandra.NewTSMetric(ts.AppContext).GetAggregateXMinutesByMetricIDAndHostname(clusterID, metricID, minutes, hostname)
 	}
 
 	return nil, fmt.Errorf("Unrecognized DBType, valid options are: pg or cassandra")
