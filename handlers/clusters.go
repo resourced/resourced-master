@@ -263,11 +263,11 @@ func PutClusterIDUsers(w http.ResponseWriter, r *http.Request) {
 		enabled = true
 	}
 
-	userRow, err := pg.NewUser(pgdbs.Core).GetByEmail(nil, email)
+	userRow, err := pg.NewUser(r.Context()).GetByEmail(nil, email)
 	if err != nil && strings.Contains(err.Error(), "no rows in result set") {
 
 		// 1. Create a user with temporary password
-		userRow, err = pg.NewUser(pgdbs.Core).SignupRandomPassword(nil, email)
+		userRow, err = pg.NewUser(r.Context()).SignupRandomPassword(nil, email)
 		if err != nil {
 			libhttp.HandleErrorHTML(w, err, 500)
 			return
@@ -324,7 +324,7 @@ func DeleteClusterIDUsers(w http.ResponseWriter, r *http.Request) {
 
 	email := r.FormValue("Email")
 
-	existingUser, _ := pg.NewUser(pgdbs.Core).GetByEmail(nil, email)
+	existingUser, _ := pg.NewUser(r.Context()).GetByEmail(nil, email)
 	if existingUser != nil {
 		err := pg.NewCluster(pgdbs.Core).RemoveMember(nil, clusterID, existingUser)
 		if err != nil {

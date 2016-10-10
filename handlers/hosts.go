@@ -287,11 +287,7 @@ func PostHostsIDMasterTags(w http.ResponseWriter, r *http.Request) {
 func PostApiHosts(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	accessTokenRow, err := contexthelper.GetAccessToken(r.Context())
-	if err != nil {
-		libhttp.HandleErrorJson(w, err)
-		return
-	}
+	accessTokenRow := r.Context().Value("accessToken").(*pg.AccessTokenRow)
 
 	bus, err := contexthelper.GetMessageBus(r.Context())
 	if err != nil {

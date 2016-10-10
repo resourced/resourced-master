@@ -2,6 +2,7 @@
 package pg
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json"
 	"errors"
@@ -13,6 +14,8 @@ import (
 	"github.com/Sirupsen/logrus"
 	"github.com/jmoiron/sqlx"
 	sqlx_types "github.com/jmoiron/sqlx/types"
+
+	"github.com/resourced/resourced-master/contexthelper"
 )
 
 var PROJECT_EPOCH = 1451606400
@@ -66,9 +69,10 @@ func (br *BaseRow) JSONAttrFloat64(field sqlx_types.JSONText, attr string) float
 }
 
 type Base struct {
-	db    *sqlx.DB
-	table string
-	hasID bool
+	AppContext context.Context
+	db         *sqlx.DB
+	table      string
+	hasID      bool
 }
 
 // NewExplicitID uses UNIX timestamp in microseconds as ID.
@@ -82,6 +86,15 @@ func (b *Base) NewExplicitID() int64 {
 	return resultInMicroSeconds
 }
 
+func (b *Base) GetPGDB() (*sqlx.DB, error) {
+	pgdbs, err := contexthelper.GetPGDBConfig(b.AppContext)
+	if err != nil {
+		return nil, err
+	}
+
+	return pgdbs.Core, nil
+}
+
 func (b *Base) newTransactionIfNeeded(tx *sqlx.Tx) (*sqlx.Tx, bool, error) {
 	var err error
 	wrapInSingleTransaction := false
@@ -90,7 +103,12 @@ func (b *Base) newTransactionIfNeeded(tx *sqlx.Tx) (*sqlx.Tx, bool, error) {
 		return tx, wrapInSingleTransaction, nil
 	}
 
-	tx, err = b.db.Beginx()
+	db, err := b.GetPGDB()
+	if err != nil {
+		return nil, wrapInSingleTransaction, err
+	}
+
+	tx, err = db.Beginx()
 	if err == nil {
 		wrapInSingleTransaction = true
 	}

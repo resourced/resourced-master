@@ -8,7 +8,6 @@ import (
 
 	"github.com/resourced/resourced-master/config"
 	"github.com/resourced/resourced-master/messagebus"
-	"github.com/resourced/resourced-master/models/pg"
 )
 
 func GetGeneralConfig(ctx context.Context) (config.GeneralConfig, error) {
@@ -36,15 +35,6 @@ func GetCassandraDBConfig(ctx context.Context) (*config.CassandraDBConfig, error
 	}
 
 	return valInterface.(*config.CassandraDBConfig), nil
-}
-
-func GetAccessToken(ctx context.Context) (*pg.AccessTokenRow, error) {
-	valInterface := ctx.Value("accessToken")
-	if valInterface == nil {
-		return nil, errors.New("access token is nil")
-	}
-
-	return valInterface.(*pg.AccessTokenRow), nil
 }
 
 func GetMessageBus(ctx context.Context) (*messagebus.MessageBus, error) {

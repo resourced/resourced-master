@@ -1,6 +1,7 @@
 package pg
 
 import (
+	"context"
 	"database/sql"
 	"errors"
 	"fmt"
@@ -11,9 +12,9 @@ import (
 	"github.com/resourced/resourced-master/libstring"
 )
 
-func NewUser(db *sqlx.DB) *User {
+func NewUser(ctx context.Context) *User {
 	user := &User{}
-	user.db = db
+	user.AppContext = ctx
 	user.table = "users"
 	user.hasID = true
 
@@ -43,36 +44,56 @@ func (u *User) userRowFromSqlResult(tx *sqlx.Tx, sqlResult sql.Result) (*UserRow
 
 // AllUsers returns all user rows.
 func (u *User) AllUsers(tx *sqlx.Tx) ([]*UserRow, error) {
+	pgdb, err := u.GetPGDB()
+	if err != nil {
+		return nil, err
+	}
+
 	users := []*UserRow{}
 	query := fmt.Sprintf("SELECT * FROM %v", u.table)
-	err := u.db.Select(&users, query)
+	err = pgdb.Select(&users, query)
 
 	return users, err
 }
 
 // GetByID returns record by id.
 func (u *User) GetByID(tx *sqlx.Tx, id int64) (*UserRow, error) {
+	pgdb, err := u.GetPGDB()
+	if err != nil {
+		return nil, err
+	}
+
 	user := &UserRow{}
 	query := fmt.Sprintf("SELECT * FROM %v WHERE id=$1", u.table)
-	err := u.db.Get(user, query, id)
+	err = pgdb.Get(user, query, id)
 
 	return user, err
 }
 
 // GetByEmail returns record by email.
 func (u *User) GetByEmail(tx *sqlx.Tx, email string) (*UserRow, error) {
+	pgdb, err := u.GetPGDB()
+	if err != nil {
+		return nil, err
+	}
+
 	user := &UserRow{}
 	query := fmt.Sprintf("SELECT * FROM %v WHERE email=$1", u.table)
-	err := u.db.Get(user, query, email)
+	err = pgdb.Get(user, query, email)
 
 	return user, err
 }
 
 // GetByEmailVerificationToken returns record by email_verification_token.
 func (u *User) GetByEmailVerificationToken(tx *sqlx.Tx, emailVerificationToken string) (*UserRow, error) {
+	pgdb, err := u.GetPGDB()
+	if err != nil {
+		return nil, err
+	}
+
 	user := &UserRow{}
 	query := fmt.Sprintf("SELECT * FROM %v WHERE email_verification_token=$1", u.table)
-	err := u.db.Get(user, query, emailVerificationToken)
+	err = pgdb.Get(user, query, emailVerificationToken)
 
 	return user, err
 }

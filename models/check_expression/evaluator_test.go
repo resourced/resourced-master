@@ -12,6 +12,7 @@ import (
 
 	"github.com/resourced/resourced-master/libunix"
 	"github.com/resourced/resourced-master/models/pg"
+	"github.com/resourced/resourced-master/models/shared"
 )
 
 func newDbForTest(t *testing.T) *sqlx.DB {
@@ -32,7 +33,7 @@ func newEmailForTest() string {
 }
 
 func newUserForTest(t *testing.T) *pg.User {
-	return pg.NewUser(newDbForTest(t))
+	return pg.NewUser(shared.AppContextForTest())
 }
 
 func newClusterForTest(t *testing.T) *pg.Cluster {

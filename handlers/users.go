@@ -56,11 +56,11 @@ func PostSignup(w http.ResponseWriter, r *http.Request) {
 
 	emailValidated := false
 
-	userRow, err := pg.NewUser(pgdbs.Core).GetByEmail(nil, email)
+	userRow, err := pg.NewUser(r.Context()).GetByEmail(nil, email)
 
 	if err != nil && err.Error() == "sql: no rows in result set" {
 		// There's no existing user in the database, create a new one.
-		userRow, err = pg.NewUser(pgdbs.Core).Signup(nil, email, password, passwordAgain)
+		userRow, err = pg.NewUser(r.Context()).Signup(nil, email, password, passwordAgain)
 		if err != nil {
 			libhttp.HandleErrorHTML(w, err, 500)
 			return
@@ -89,14 +89,14 @@ func PostSignup(w http.ResponseWriter, r *http.Request) {
 		emailValidated = true
 
 		// There's an existing user in the database, update email and password info.
-		userRow, err = pg.NewUser(pgdbs.Core).UpdateEmailAndPasswordById(nil, userRow.ID, email, password, passwordAgain)
+		userRow, err = pg.NewUser(r.Context()).UpdateEmailAndPasswordById(nil, userRow.ID, email, password, passwordAgain)
 		if err != nil {
 			libhttp.HandleErrorHTML(w, err, 500)
 			return
 		}
 
 		// Verified that emailVerificationToken works.
-		_, err = pg.NewUser(pgdbs.Core).UpdateEmailVerification(nil, emailVerificationToken)
+		_, err = pg.NewUser(r.Context()).UpdateEmailVerification(nil, emailVerificationToken)
 		if err != nil {
 			libhttp.HandleErrorHTML(w, err, 500)
 			return
@@ -158,13 +158,12 @@ func GetLogin(w http.ResponseWriter, r *http.Request) {
 func PostLogin(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html")
 
-	pgdbs, err := contexthelper.GetPGDBConfig(r.Context())
 	cookieStore := r.Context().Value("CookieStore").(*sessions.CookieStore)
 
 	email := r.FormValue("Email")
 	password := r.FormValue("Password")
 
-	u := pg.NewUser(pgdbs.Core)
+	u := pg.NewUser(r.Context())
 
 	user, err := u.GetUserByEmailAndPassword(nil, email, password)
 	if err != nil {
@@ -202,12 +201,6 @@ func PutUsersID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	pgdbs, err := contexthelper.GetPGDBConfig(r.Context())
-	if err != nil {
-		libhttp.HandleErrorJson(w, err)
-		return
-	}
-
 	cookieStore := r.Context().Value("CookieStore").(*sessions.CookieStore)
 
 	session, _ := cookieStore.Get(r, "resourcedmaster-session")
@@ -224,7 +217,7 @@ func PutUsersID(w http.ResponseWriter, r *http.Request) {
 	password := r.FormValue("Password")
 	passwordAgain := r.FormValue("PasswordAgain")
 
-	u := pg.NewUser(pgdbs.Core)
+	u := pg.NewUser(r.Context())
 
 	currentUser, err = u.UpdateEmailAndPasswordById(nil, currentUser.ID, email, password, passwordAgain)
 	if err != nil {
@@ -253,15 +246,9 @@ func DeleteUsersID(w http.ResponseWriter, r *http.Request) {
 func GetUsersEmailVerificationToken(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html")
 
-	pgdbs, err := contexthelper.GetPGDBConfig(r.Context())
-	if err != nil {
-		libhttp.HandleErrorHTML(w, err, 500)
-		return
-	}
-
 	emailVerificationToken := chi.URLParam(r, "token")
 
-	_, err = pg.NewUser(pgdbs.Core).UpdateEmailVerification(nil, emailVerificationToken)
+	_, err := pg.NewUser(r.Context()).UpdateEmailVerification(nil, emailVerificationToken)
 	if err != nil {
 		libhttp.HandleErrorHTML(w, err, 500)
 		return

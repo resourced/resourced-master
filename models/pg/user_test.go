@@ -4,10 +4,12 @@ import (
 	"testing"
 
 	_ "github.com/lib/pq"
+
+	"github.com/resourced/resourced-master/models/shared"
 )
 
 func newUserForTest(t *testing.T) *User {
-	return NewUser(newDbForTest(t))
+	return NewUser(shared.AppContextForTest())
 }
 
 func TestUserCRUD(t *testing.T) {
