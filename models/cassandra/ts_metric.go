@@ -195,9 +195,10 @@ func (ts *TSMetric) GetAggregateXMinutesByMetricIDAndHostname(clusterID, metricI
 	from := now.Add(-1 * time.Duration(minutes) * time.Minute).UTC().Unix()
 
 	var row *shared.TSMetricAggregateRow
-	query := fmt.Sprintf("SELECT cluster_id, host, key, avg(value) as avg, max(value) as max, min(value) as min, sum(value) as sum FROM %v WHERE cluster_id=? AND metric_id=? AND created >= ? AND host=? GROUP BY cluster_id, metric_id, host", ts.table)
+	query := fmt.Sprintf("SELECT cluster_id, host, key, avg(value) as avg, max(value) as max, min(value) as min, sum(value) as sum FROM %v WHERE cluster_id=? AND metric_id=? AND created >= ? AND host=? ALLOW FILTERING", ts.table)
 
-	var scannedClusterID, scannedAvg, scannedMax, scannedMin, scannedSum int64
+	var scannedClusterID int64
+	var scannedAvg, scannedMax, scannedMin, scannedSum float64
 	var scannedKey, scannedHost string
 
 	iter := ts.session.Query(query, clusterID, metricID, from, hostname).Iter()
@@ -206,10 +207,10 @@ func (ts *TSMetric) GetAggregateXMinutesByMetricIDAndHostname(clusterID, metricI
 			ClusterID: scannedClusterID,
 			Key:       scannedKey,
 			Host:      scannedHost,
-			Avg:       float64(scannedAvg),
-			Max:       float64(scannedMax),
-			Min:       float64(scannedMin),
-			Sum:       float64(scannedSum),
+			Avg:       scannedAvg,
+			Max:       scannedMax,
+			Min:       scannedMin,
+			Sum:       scannedSum,
 		}
 	}
 	if err := iter.Close(); err != nil {
