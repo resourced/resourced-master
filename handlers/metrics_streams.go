@@ -118,6 +118,10 @@ func ApiMetricIDStreams(w http.ResponseWriter, r *http.Request) {
 	}
 
 	pgdbs, err := contexthelper.GetPGDBConfig(r.Context())
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
 
 	bus := r.Context().Value("bus").(*messagebus.MessageBus)
 

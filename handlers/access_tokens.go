@@ -10,12 +10,16 @@ import (
 
 func PostAccessTokens(w http.ResponseWriter, r *http.Request) {
 	pgdbs, err := contexthelper.GetPGDBConfig(r.Context())
+	if err != nil {
+		libhttp.HandleErrorHTML(w, err, 500)
+		return
+	}
 
 	currentUser := r.Context().Value("currentUser").(*pg.UserRow)
 
 	clusterID, err := getInt64SlugFromPath(w, r, "clusterID")
 	if err != nil {
-		libhttp.HandleErrorJson(w, err)
+		libhttp.HandleErrorHTML(w, err, 500)
 		return
 	}
 
@@ -23,7 +27,7 @@ func PostAccessTokens(w http.ResponseWriter, r *http.Request) {
 
 	_, err = pg.NewAccessToken(pgdbs.Core).Create(nil, currentUser.ID, clusterID, level)
 	if err != nil {
-		libhttp.HandleErrorJson(w, err)
+		libhttp.HandleErrorHTML(w, err, 500)
 		return
 	}
 
@@ -32,10 +36,14 @@ func PostAccessTokens(w http.ResponseWriter, r *http.Request) {
 
 func PostAccessTokensLevel(w http.ResponseWriter, r *http.Request) {
 	pgdbs, err := contexthelper.GetPGDBConfig(r.Context())
+	if err != nil {
+		libhttp.HandleErrorHTML(w, err, 500)
+		return
+	}
 
 	tokenID, err := getInt64SlugFromPath(w, r, "id")
 	if err != nil {
-		libhttp.HandleErrorJson(w, err)
+		libhttp.HandleErrorHTML(w, err, 500)
 		return
 	}
 
@@ -46,7 +54,7 @@ func PostAccessTokensLevel(w http.ResponseWriter, r *http.Request) {
 
 	_, err = pg.NewAccessToken(pgdbs.Core).UpdateByID(nil, data, tokenID)
 	if err != nil {
-		libhttp.HandleErrorJson(w, err)
+		libhttp.HandleErrorHTML(w, err, 500)
 		return
 	}
 
@@ -55,10 +63,14 @@ func PostAccessTokensLevel(w http.ResponseWriter, r *http.Request) {
 
 func PostAccessTokensEnabled(w http.ResponseWriter, r *http.Request) {
 	pgdbs, err := contexthelper.GetPGDBConfig(r.Context())
+	if err != nil {
+		libhttp.HandleErrorHTML(w, err, 500)
+		return
+	}
 
 	tokenID, err := getInt64SlugFromPath(w, r, "id")
 	if err != nil {
-		libhttp.HandleErrorJson(w, err)
+		libhttp.HandleErrorHTML(w, err, 500)
 		return
 	}
 
@@ -66,7 +78,7 @@ func PostAccessTokensEnabled(w http.ResponseWriter, r *http.Request) {
 
 	accessTokenRow, err := at.GetByID(nil, tokenID)
 	if err != nil {
-		libhttp.HandleErrorJson(w, err)
+		libhttp.HandleErrorHTML(w, err, 500)
 		return
 	}
 
@@ -84,16 +96,20 @@ func PostAccessTokensEnabled(w http.ResponseWriter, r *http.Request) {
 
 func PostAccessTokensDelete(w http.ResponseWriter, r *http.Request) {
 	pgdbs, err := contexthelper.GetPGDBConfig(r.Context())
+	if err != nil {
+		libhttp.HandleErrorHTML(w, err, 500)
+		return
+	}
 
 	tokenID, err := getInt64SlugFromPath(w, r, "id")
 	if err != nil {
-		libhttp.HandleErrorJson(w, err)
+		libhttp.HandleErrorHTML(w, err, 500)
 		return
 	}
 
 	_, err = pg.NewAccessToken(pgdbs.Core).DeleteByID(nil, tokenID)
 	if err != nil {
-		libhttp.HandleErrorJson(w, err)
+		libhttp.HandleErrorHTML(w, err, 500)
 		return
 	}
 

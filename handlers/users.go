@@ -44,6 +44,10 @@ func PostSignup(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html")
 
 	pgdbs, err := contexthelper.GetPGDBConfig(r.Context())
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
 
 	email := r.FormValue("Email")
 	password := r.FormValue("Password")
@@ -199,6 +203,10 @@ func PutUsersID(w http.ResponseWriter, r *http.Request) {
 	}
 
 	pgdbs, err := contexthelper.GetPGDBConfig(r.Context())
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
 
 	cookieStore := r.Context().Value("CookieStore").(*sessions.CookieStore)
 

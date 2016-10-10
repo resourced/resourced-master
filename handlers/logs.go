@@ -25,6 +25,10 @@ func GetLogs(w http.ResponseWriter, r *http.Request) {
 	currentCluster := r.Context().Value("currentCluster").(*pg.ClusterRow)
 
 	pgdbs, err := contexthelper.GetPGDBConfig(r.Context())
+	if err != nil {
+		libhttp.HandleErrorHTML(w, err, 500)
+		return
+	}
 
 	qParams := r.URL.Query()
 
@@ -46,7 +50,7 @@ func GetLogs(w http.ResponseWriter, r *http.Request) {
 	if fromString == "" || toString == "" {
 		lastLogRow, err = pg.NewTSLog(pgdbs.GetTSLog(currentCluster.ID)).LastByClusterID(nil, currentCluster.ID)
 		if err != nil && err.Error() != "sql: no rows in result set" {
-			libhttp.HandleErrorJson(w, err)
+			libhttp.HandleErrorHTML(w, err, 500)
 			return
 		}
 	}
@@ -63,13 +67,13 @@ func GetLogs(w http.ResponseWriter, r *http.Request) {
 
 	savedQueries, err := pg.NewSavedQuery(pgdbs.Core).AllByClusterIDAndType(nil, currentCluster.ID, "logs")
 	if err != nil && err.Error() != "sql: no rows in result set" {
-		libhttp.HandleErrorJson(w, err)
+		libhttp.HandleErrorHTML(w, err, 500)
 		return
 	}
 
 	accessToken, err := getAccessToken(w, r, "read")
 	if err != nil {
-		libhttp.HandleErrorJson(w, err)
+		libhttp.HandleErrorHTML(w, err, 500)
 		return
 	}
 
@@ -115,6 +119,10 @@ func PostApiLogs(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	pgdbs, err := contexthelper.GetPGDBConfig(r.Context())
+	if err != nil {
+		libhttp.HandleErrorHTML(w, err, 500)
+		return
+	}
 
 	accessTokenRow := r.Context().Value("accessToken").(*pg.AccessTokenRow)
 
@@ -122,13 +130,13 @@ func PostApiLogs(w http.ResponseWriter, r *http.Request) {
 
 	dataJson, err := ioutil.ReadAll(r.Body)
 	if err != nil {
-		libhttp.HandleErrorJson(w, err)
+		libhttp.HandleErrorHTML(w, err, 500)
 		return
 	}
 
 	clusterRow, err := pg.NewCluster(pgdbs.Core).GetByID(nil, accessTokenRow.ClusterID)
 	if err != nil {
-		libhttp.HandleErrorJson(w, err)
+		libhttp.HandleErrorHTML(w, err, 500)
 		return
 	}
 
@@ -148,6 +156,10 @@ func GetApiLogs(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	pgdbs, err := contexthelper.GetPGDBConfig(r.Context())
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
 
 	accessTokenRow := r.Context().Value("accessToken").(*pg.AccessTokenRow)
 

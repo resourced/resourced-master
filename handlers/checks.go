@@ -23,6 +23,10 @@ func GetChecks(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html")
 
 	pgdbs, err := contexthelper.GetPGDBConfig(r.Context())
+	if err != nil {
+		libhttp.HandleErrorHTML(w, err, 500)
+		return
+	}
 
 	currentUser := r.Context().Value("currentUser").(*pg.UserRow)
 
@@ -117,6 +121,10 @@ func GetChecks(w http.ResponseWriter, r *http.Request) {
 
 func PostChecks(w http.ResponseWriter, r *http.Request) {
 	pgdbs, err := contexthelper.GetPGDBConfig(r.Context())
+	if err != nil {
+		libhttp.HandleErrorHTML(w, err, 500)
+		return
+	}
 
 	w.Header().Set("Content-Type", "text/html")
 
@@ -135,7 +143,7 @@ func PostChecks(w http.ResponseWriter, r *http.Request) {
 
 	hostsListJSON, err := json.Marshal(hostsList)
 	if err != nil {
-		libhttp.HandleErrorJson(w, err)
+		libhttp.HandleErrorHTML(w, err, 500)
 		return
 	}
 
@@ -151,7 +159,7 @@ func PostChecks(w http.ResponseWriter, r *http.Request) {
 
 	_, err = pg.NewCheck(pgdbs.Core).Create(nil, currentCluster.ID, data)
 	if err != nil {
-		libhttp.HandleErrorJson(w, err)
+		libhttp.HandleErrorHTML(w, err, 500)
 		return
 	}
 
@@ -191,10 +199,14 @@ func PostPutDeleteCheckID(w http.ResponseWriter, r *http.Request) {
 
 func PutCheckID(w http.ResponseWriter, r *http.Request) {
 	pgdbs, err := contexthelper.GetPGDBConfig(r.Context())
+	if err != nil {
+		libhttp.HandleErrorHTML(w, err, 500)
+		return
+	}
 
 	id, err := getInt64SlugFromPath(w, r, "checkID")
 	if err != nil {
-		libhttp.HandleErrorJson(w, err)
+		libhttp.HandleErrorHTML(w, err, 500)
 		return
 	}
 
@@ -209,7 +221,7 @@ func PutCheckID(w http.ResponseWriter, r *http.Request) {
 
 	hostsListJSON, err := json.Marshal(hostsList)
 	if err != nil {
-		libhttp.HandleErrorJson(w, err)
+		libhttp.HandleErrorHTML(w, err, 500)
 		return
 	}
 
@@ -222,7 +234,7 @@ func PutCheckID(w http.ResponseWriter, r *http.Request) {
 
 	_, err = pg.NewCheck(pgdbs.Core).UpdateByID(nil, data, id)
 	if err != nil {
-		libhttp.HandleErrorJson(w, err)
+		libhttp.HandleErrorHTML(w, err, 500)
 		return
 	}
 
@@ -232,11 +244,15 @@ func PutCheckID(w http.ResponseWriter, r *http.Request) {
 func DeleteCheckID(w http.ResponseWriter, r *http.Request) {
 	id, err := getInt64SlugFromPath(w, r, "checkID")
 	if err != nil {
-		libhttp.HandleErrorJson(w, err)
+		libhttp.HandleErrorHTML(w, err, 500)
 		return
 	}
 
 	pgdbs, err := contexthelper.GetPGDBConfig(r.Context())
+	if err != nil {
+		libhttp.HandleErrorHTML(w, err, 500)
+		return
+	}
 
 	currentCluster := r.Context().Value("currentCluster").(*pg.ClusterRow)
 
@@ -251,10 +267,14 @@ func DeleteCheckID(w http.ResponseWriter, r *http.Request) {
 
 func PostCheckIDSilence(w http.ResponseWriter, r *http.Request) {
 	pgdbs, err := contexthelper.GetPGDBConfig(r.Context())
+	if err != nil {
+		libhttp.HandleErrorHTML(w, err, 500)
+		return
+	}
 
 	id, err := getInt64SlugFromPath(w, r, "checkID")
 	if err != nil {
-		libhttp.HandleErrorJson(w, err)
+		libhttp.HandleErrorHTML(w, err, 500)
 		return
 	}
 
@@ -262,7 +282,7 @@ func PostCheckIDSilence(w http.ResponseWriter, r *http.Request) {
 
 	checkRow, err := check.GetByID(nil, id)
 	if err != nil {
-		libhttp.HandleErrorJson(w, err)
+		libhttp.HandleErrorHTML(w, err, 500)
 		return
 	}
 
@@ -271,7 +291,7 @@ func PostCheckIDSilence(w http.ResponseWriter, r *http.Request) {
 
 	_, err = check.UpdateByID(nil, data, id)
 	if err != nil {
-		libhttp.HandleErrorJson(w, err)
+		libhttp.HandleErrorHTML(w, err, 500)
 		return
 	}
 
@@ -324,6 +344,10 @@ func newCheckTriggerFromForm(r *http.Request) (pg.CheckTrigger, error) {
 
 func PostChecksTriggers(w http.ResponseWriter, r *http.Request) {
 	pgdbs, err := contexthelper.GetPGDBConfig(r.Context())
+	if err != nil {
+		libhttp.HandleErrorHTML(w, err, 500)
+		return
+	}
 
 	errLogger := r.Context().Value("errLogger").(*logrus.Logger)
 
@@ -331,19 +355,19 @@ func PostChecksTriggers(w http.ResponseWriter, r *http.Request) {
 
 	checkIDString := chi.URLParam(r, "checkID")
 	if checkIDString == "" {
-		libhttp.HandleErrorJson(w, fmt.Errorf("id cannot be empty."))
+		libhttp.HandleErrorHTML(w, fmt.Errorf("id cannot be empty."), 500)
 		return
 	}
 
 	checkID, err := strconv.ParseInt(checkIDString, 10, 64)
 	if err != nil {
-		libhttp.HandleErrorJson(w, fmt.Errorf("id cannot be non numeric."))
+		libhttp.HandleErrorHTML(w, fmt.Errorf("id cannot be non numeric."), 500)
 		return
 	}
 
 	trigger, err := newCheckTriggerFromForm(r)
 	if err != nil {
-		libhttp.HandleErrorJson(w, err)
+		libhttp.HandleErrorHTML(w, err, 500)
 		return
 	}
 
@@ -353,13 +377,13 @@ func PostChecksTriggers(w http.ResponseWriter, r *http.Request) {
 
 	checkRow, err := check.GetByID(nil, checkID)
 	if err != nil {
-		libhttp.HandleErrorJson(w, err)
+		libhttp.HandleErrorHTML(w, err, 500)
 		return
 	}
 
 	_, err = check.AddTrigger(nil, checkRow, trigger)
 	if err != nil {
-		libhttp.HandleErrorJson(w, err)
+		libhttp.HandleErrorHTML(w, err, 500)
 		return
 	}
 
@@ -412,31 +436,35 @@ func PutCheckTriggerID(w http.ResponseWriter, r *http.Request) {
 
 	triggerID, err := getInt64SlugFromPath(w, r, "triggerID")
 	if err != nil {
-		libhttp.HandleErrorJson(w, err)
+		libhttp.HandleErrorHTML(w, err, 500)
 		return
 	}
 
 	trigger, err := newCheckTriggerFromForm(r)
 	if err != nil {
-		libhttp.HandleErrorJson(w, err)
+		libhttp.HandleErrorHTML(w, err, 500)
 		return
 	}
 
 	trigger.ID = triggerID
 
 	pgdbs, err := contexthelper.GetPGDBConfig(r.Context())
+	if err != nil {
+		libhttp.HandleErrorHTML(w, err, 500)
+		return
+	}
 
 	check := pg.NewCheck(pgdbs.Core)
 
 	checkRow, err := check.GetByID(nil, checkID)
 	if err != nil {
-		libhttp.HandleErrorJson(w, err)
+		libhttp.HandleErrorHTML(w, err, 500)
 		return
 	}
 
 	_, err = check.UpdateTrigger(nil, checkRow, trigger)
 	if err != nil {
-		libhttp.HandleErrorJson(w, err)
+		libhttp.HandleErrorHTML(w, err, 500)
 		return
 	}
 
@@ -466,18 +494,22 @@ func DeleteCheckTriggerID(w http.ResponseWriter, r *http.Request) {
 	trigger.ID = triggerID
 
 	pgdbs, err := contexthelper.GetPGDBConfig(r.Context())
+	if err != nil {
+		libhttp.HandleErrorHTML(w, err, 500)
+		return
+	}
 
 	check := pg.NewCheck(pgdbs.Core)
 
 	checkRow, err := check.GetByID(nil, checkID)
 	if err != nil {
-		libhttp.HandleErrorJson(w, err)
+		libhttp.HandleErrorHTML(w, err, 500)
 		return
 	}
 
 	_, err = check.DeleteTrigger(nil, checkRow, trigger)
 	if err != nil {
-		libhttp.HandleErrorJson(w, err)
+		libhttp.HandleErrorHTML(w, err, 500)
 		return
 	}
 

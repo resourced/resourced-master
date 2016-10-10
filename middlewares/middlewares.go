@@ -108,6 +108,10 @@ func SetClusters(next http.Handler) http.Handler {
 func SetAccessTokens(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		pgdbs, err := contexthelper.GetPGDBConfig(r.Context())
+		if err != nil {
+			libhttp.HandleErrorJson(w, err)
+			return
+		}
 
 		currentClusterInterface := r.Context().Value("currentCluster")
 		if currentClusterInterface == nil {
@@ -169,6 +173,10 @@ func MustLoginApi(next http.Handler) http.Handler {
 		}
 
 		pgdbs, err := contexthelper.GetPGDBConfig(r.Context())
+		if err != nil {
+			libhttp.BasicAuthUnauthorized(w, nil)
+			return
+		}
 
 		accessTokenRow, err := pg.NewAccessToken(pgdbs.Core).GetByAccessToken(nil, accessTokenString)
 		if err != nil {
@@ -221,6 +229,10 @@ func MustLoginApiStream(next http.Handler) http.Handler {
 		}
 
 		pgdbs, err := contexthelper.GetPGDBConfig(r.Context())
+		if err != nil {
+			libhttp.BasicAuthUnauthorized(w, nil)
+			return
+		}
 
 		accessTokenRow, err := pg.NewAccessToken(pgdbs.Core).GetByAccessToken(nil, accessTokenString)
 		if err != nil {

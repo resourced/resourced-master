@@ -17,6 +17,10 @@ func GetApiEventsLine(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	pgdbs, err := contexthelper.GetPGDBConfig(r.Context())
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
 
 	accessTokenRow := r.Context().Value("accessToken").(*pg.AccessTokenRow)
 
@@ -72,6 +76,10 @@ func GetApiEventsBand(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	pgdbs, err := contexthelper.GetPGDBConfig(r.Context())
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
 
 	accessTokenRow := r.Context().Value("accessToken").(*pg.AccessTokenRow)
 
@@ -127,6 +135,10 @@ func PostApiEvents(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	pgdbs, err := contexthelper.GetPGDBConfig(r.Context())
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
 
 	accessTokenRow := r.Context().Value("accessToken").(*pg.AccessTokenRow)
 
@@ -165,6 +177,10 @@ func DeleteApiEventsID(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	pgdbs, err := contexthelper.GetPGDBConfig(r.Context())
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
 
 	accessTokenRow := r.Context().Value("accessToken").(*pg.AccessTokenRow)
 

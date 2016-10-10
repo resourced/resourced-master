@@ -110,6 +110,10 @@ func GetGraphsID(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html")
 
 	pgdbs, err := contexthelper.GetPGDBConfig(r.Context())
+	if err != nil {
+		libhttp.HandleErrorHTML(w, err, 500)
+		return
+	}
 
 	currentUser := r.Context().Value("currentUser").(*pg.UserRow)
 
@@ -117,13 +121,13 @@ func GetGraphsID(w http.ResponseWriter, r *http.Request) {
 
 	id, err := getInt64SlugFromPath(w, r, "id")
 	if err != nil {
-		libhttp.HandleErrorJson(w, err)
+		libhttp.HandleErrorHTML(w, err, 500)
 		return
 	}
 
 	accessToken, err := getAccessToken(w, r, "read")
 	if err != nil {
-		libhttp.HandleErrorJson(w, err)
+		libhttp.HandleErrorHTML(w, err, 500)
 		return
 	}
 
@@ -220,16 +224,20 @@ func GetGraphsID(w http.ResponseWriter, r *http.Request) {
 
 func PutGraphsID(w http.ResponseWriter, r *http.Request) {
 	pgdbs, err := contexthelper.GetPGDBConfig(r.Context())
+	if err != nil {
+		libhttp.HandleErrorHTML(w, err, 500)
+		return
+	}
 
 	id, err := getInt64SlugFromPath(w, r, "id")
 	if err != nil {
-		libhttp.HandleErrorJson(w, err)
+		libhttp.HandleErrorHTML(w, err, 500)
 		return
 	}
 
 	err = r.ParseForm()
 	if err != nil {
-		libhttp.HandleErrorJson(w, err)
+		libhttp.HandleErrorHTML(w, err, 500)
 		return
 	}
 
@@ -258,7 +266,7 @@ func PutGraphsID(w http.ResponseWriter, r *http.Request) {
 	if len(data) > 0 {
 		_, err = pg.NewGraph(pgdbs.Core).UpdateByID(nil, data, id)
 		if err != nil {
-			libhttp.HandleErrorJson(w, err)
+			libhttp.HandleErrorHTML(w, err, 500)
 			return
 		}
 	}
@@ -268,18 +276,22 @@ func PutGraphsID(w http.ResponseWriter, r *http.Request) {
 
 func DeleteGraphsID(w http.ResponseWriter, r *http.Request) {
 	pgdbs, err := contexthelper.GetPGDBConfig(r.Context())
+	if err != nil {
+		libhttp.HandleErrorHTML(w, err, 500)
+		return
+	}
 
 	currentCluster := r.Context().Value("currentCluster").(*pg.ClusterRow)
 
 	id, err := getInt64SlugFromPath(w, r, "id")
 	if err != nil {
-		libhttp.HandleErrorJson(w, err)
+		libhttp.HandleErrorHTML(w, err, 500)
 		return
 	}
 
 	_, err = pg.NewGraph(pgdbs.Core).DeleteByClusterIDAndID(nil, currentCluster.ID, id)
 	if err != nil {
-		libhttp.HandleErrorJson(w, err)
+		libhttp.HandleErrorHTML(w, err, 500)
 		return
 	}
 
@@ -290,18 +302,22 @@ func PutApiGraphsIDMetrics(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	pgdbs, err := contexthelper.GetPGDBConfig(r.Context())
+	if err != nil {
+		libhttp.HandleErrorHTML(w, err, 500)
+		return
+	}
 
 	accessTokenRow := r.Context().Value("accessToken").(*pg.AccessTokenRow)
 
 	id, err := getInt64SlugFromPath(w, r, "id")
 	if err != nil {
-		libhttp.HandleErrorJson(w, err)
+		libhttp.HandleErrorHTML(w, err, 500)
 		return
 	}
 
 	dataJSON, err := ioutil.ReadAll(r.Body)
 	if err != nil {
-		libhttp.HandleErrorJson(w, err)
+		libhttp.HandleErrorHTML(w, err, 500)
 		return
 	}
 
@@ -309,7 +325,7 @@ func PutApiGraphsIDMetrics(w http.ResponseWriter, r *http.Request) {
 
 	rowJSON, err := json.Marshal(row)
 	if err != nil {
-		libhttp.HandleErrorJson(w, err)
+		libhttp.HandleErrorHTML(w, err, 500)
 		return
 	}
 

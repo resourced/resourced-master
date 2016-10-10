@@ -12,6 +12,10 @@ import (
 
 func PostSavedQueries(w http.ResponseWriter, r *http.Request) {
 	pgdbs, err := contexthelper.GetPGDBConfig(r.Context())
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
 
 	currentUser := r.Context().Value("currentUser").(*pg.UserRow)
 
@@ -51,6 +55,10 @@ func DeleteSavedQueriesID(w http.ResponseWriter, r *http.Request) {
 	}
 
 	pgdbs, err := contexthelper.GetPGDBConfig(r.Context())
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
 
 	currentUser := r.Context().Value("currentUser").(*pg.UserRow)
 

@@ -133,10 +133,14 @@ func GetHostsID(w http.ResponseWriter, r *http.Request) {
 	currentCluster := r.Context().Value("currentCluster").(*pg.ClusterRow)
 
 	pgdbs, err := contexthelper.GetPGDBConfig(r.Context())
+	if err != nil {
+		libhttp.HandleErrorHTML(w, err, 500)
+		return
+	}
 
 	id, err := getInt64SlugFromPath(w, r, "id")
 	if err != nil {
-		libhttp.HandleErrorJson(w, err)
+		libhttp.HandleErrorHTML(w, err, 500)
 		return
 	}
 
@@ -241,10 +245,14 @@ func PostHostsIDMasterTags(w http.ResponseWriter, r *http.Request) {
 	currentCluster := r.Context().Value("currentCluster").(*pg.ClusterRow)
 
 	pgdbs, err := contexthelper.GetPGDBConfig(r.Context())
+	if err != nil {
+		libhttp.HandleErrorHTML(w, err, 500)
+		return
+	}
 
 	id, err := getInt64SlugFromPath(w, r, "id")
 	if err != nil {
-		libhttp.HandleErrorJson(w, err)
+		libhttp.HandleErrorHTML(w, err, 500)
 		return
 	}
 
@@ -381,6 +389,10 @@ func GetApiHosts(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	pgdbs, err := contexthelper.GetPGDBConfig(r.Context())
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
 
 	accessTokenRow := r.Context().Value("accessToken").(*pg.AccessTokenRow)
 

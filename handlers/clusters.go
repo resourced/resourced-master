@@ -146,13 +146,13 @@ func PostPutDeleteClusterID(w http.ResponseWriter, r *http.Request) {
 func PutClusterID(w http.ResponseWriter, r *http.Request) {
 	pgdbs, err := contexthelper.GetPGDBConfig(r.Context())
 	if err != nil {
-		libhttp.HandleErrorJson(w, err)
+		libhttp.HandleErrorHTML(w, err, 500)
 		return
 	}
 
 	clusterID, err := getInt64SlugFromPath(w, r, "clusterID")
 	if err != nil {
-		libhttp.HandleErrorJson(w, err)
+		libhttp.HandleErrorHTML(w, err, 500)
 		return
 	}
 
@@ -192,6 +192,10 @@ func PutClusterID(w http.ResponseWriter, r *http.Request) {
 // DeleteClusterID deletes a cluster.
 func DeleteClusterID(w http.ResponseWriter, r *http.Request) {
 	pgdbs, err := contexthelper.GetPGDBConfig(r.Context())
+	if err != nil {
+		libhttp.HandleErrorHTML(w, err, 500)
+		return
+	}
 
 	clusterID, err := getInt64SlugFromPath(w, r, "clusterID")
 	if err != nil {
@@ -205,7 +209,7 @@ func DeleteClusterID(w http.ResponseWriter, r *http.Request) {
 
 	clustersByUser, err := cluster.AllByUserID(nil, currentUser.ID)
 	if err != nil {
-		libhttp.HandleErrorJson(w, err)
+		libhttp.HandleErrorHTML(w, err, 500)
 		return
 	}
 
@@ -216,7 +220,7 @@ func DeleteClusterID(w http.ResponseWriter, r *http.Request) {
 
 	_, err = cluster.DeleteByID(nil, clusterID)
 	if err != nil {
-		libhttp.HandleErrorJson(w, err)
+		libhttp.HandleErrorHTML(w, err, 500)
 		return
 	}
 
@@ -240,6 +244,10 @@ func PostPutDeleteClusterIDUsers(w http.ResponseWriter, r *http.Request) {
 // PutClusterIDUsers adds a user as a member to a particular cluster.
 func PutClusterIDUsers(w http.ResponseWriter, r *http.Request) {
 	pgdbs, err := contexthelper.GetPGDBConfig(r.Context())
+	if err != nil {
+		libhttp.HandleErrorHTML(w, err, 500)
+		return
+	}
 
 	clusterID, err := getInt64SlugFromPath(w, r, "clusterID")
 	if err != nil {
@@ -261,7 +269,7 @@ func PutClusterIDUsers(w http.ResponseWriter, r *http.Request) {
 		// 1. Create a user with temporary password
 		userRow, err = pg.NewUser(pgdbs.Core).SignupRandomPassword(nil, email)
 		if err != nil {
-			libhttp.HandleErrorJson(w, err)
+			libhttp.HandleErrorHTML(w, err, 500)
 			return
 		}
 
@@ -269,7 +277,7 @@ func PutClusterIDUsers(w http.ResponseWriter, r *http.Request) {
 		if userRow.EmailVerificationToken.String != "" {
 			clusterRow, err := pg.NewCluster(pgdbs.Core).GetByID(nil, clusterID)
 			if err != nil {
-				libhttp.HandleErrorJson(w, err)
+				libhttp.HandleErrorHTML(w, err, 500)
 				return
 			}
 
@@ -303,10 +311,14 @@ Your coleague has invited you to join cluster: %v. Click the following link to s
 // DeleteClusterIDUsers removes user's membership from a particular cluster.
 func DeleteClusterIDUsers(w http.ResponseWriter, r *http.Request) {
 	pgdbs, err := contexthelper.GetPGDBConfig(r.Context())
+	if err != nil {
+		libhttp.HandleErrorHTML(w, err, 500)
+		return
+	}
 
 	clusterID, err := getInt64SlugFromPath(w, r, "clusterID")
 	if err != nil {
-		libhttp.HandleErrorJson(w, err)
+		libhttp.HandleErrorHTML(w, err, 500)
 		return
 	}
 
@@ -316,7 +328,7 @@ func DeleteClusterIDUsers(w http.ResponseWriter, r *http.Request) {
 	if existingUser != nil {
 		err := pg.NewCluster(pgdbs.Core).RemoveMember(nil, clusterID, existingUser)
 		if err != nil {
-			libhttp.HandleErrorJson(w, err)
+			libhttp.HandleErrorHTML(w, err, 500)
 			return
 		}
 	}

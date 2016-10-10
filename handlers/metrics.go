@@ -17,6 +17,10 @@ import (
 
 func PostMetrics(w http.ResponseWriter, r *http.Request) {
 	pgdbs, err := contexthelper.GetPGDBConfig(r.Context())
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
 
 	clusterID, err := getInt64SlugFromPath(w, r, "clusterID")
 	if err != nil {
@@ -57,6 +61,10 @@ func PutMetricID(w http.ResponseWriter, r *http.Request) {
 // DeleteMetricID deletes metrics by ID
 func DeleteMetricID(w http.ResponseWriter, r *http.Request) {
 	pgdbs, err := contexthelper.GetPGDBConfig(r.Context())
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
 
 	clusterID, err := getInt64SlugFromPath(w, r, "clusterID")
 	if err != nil {
