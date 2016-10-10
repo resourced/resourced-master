@@ -12,7 +12,7 @@ import (
 )
 
 func GetGeneralConfig(ctx context.Context) (config.GeneralConfig, error) {
-	valInterface := ctx.Value("generalConfig")
+	valInterface := ctx.Value("GeneralConfig")
 	if valInterface == nil {
 		return config.GeneralConfig{}, errors.New("Application general config should never be nil")
 	}
@@ -21,7 +21,7 @@ func GetGeneralConfig(ctx context.Context) (config.GeneralConfig, error) {
 }
 
 func GetPGDBConfig(ctx context.Context) (*config.PGDBConfig, error) {
-	valInterface := ctx.Value("pg-dbs")
+	valInterface := ctx.Value("PGDBConfig")
 	if valInterface == nil {
 		return nil, errors.New("PG config should never be nil")
 	}
@@ -30,7 +30,7 @@ func GetPGDBConfig(ctx context.Context) (*config.PGDBConfig, error) {
 }
 
 func GetCassandraDBConfig(ctx context.Context) (*config.CassandraDBConfig, error) {
-	valInterface := ctx.Value("cassandra-dbs")
+	valInterface := ctx.Value("CassandraDBConfig")
 	if valInterface == nil {
 		return nil, errors.New("Cassandra config should never be nil")
 	}

@@ -12,7 +12,7 @@ import (
 	"github.com/gorilla/csrf"
 	"github.com/gorilla/sessions"
 
-	"github.com/resourced/resourced-master/config"
+	"github.com/resourced/resourced-master/contexthelper"
 	"github.com/resourced/resourced-master/libhttp"
 	"github.com/resourced/resourced-master/mailer"
 	"github.com/resourced/resourced-master/models/pg"
@@ -22,7 +22,11 @@ import (
 func GetClusters(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html")
 
-	dbs := r.Context().Value("pg-dbs").(*config.PGDBConfig)
+	pgdbs, err := contexthelper.GetPGDBConfig(r.Context())
+	if err != nil {
+		libhttp.HandleErrorHTML(w, err, 500)
+		return
+	}
 
 	currentUser := r.Context().Value("currentUser").(*pg.UserRow)
 
@@ -33,7 +37,7 @@ func GetClusters(w http.ResponseWriter, r *http.Request) {
 	accessTokens := make(map[int64][]*pg.AccessTokenRow)
 
 	for _, cluster := range clusters {
-		accessTokensSlice, err := pg.NewAccessToken(dbs.Core).AllByClusterID(nil, cluster.ID)
+		accessTokensSlice, err := pg.NewAccessToken(pgdbs.Core).AllByClusterID(nil, cluster.ID)
 		if err != nil {
 			libhttp.HandleErrorHTML(w, err, 500)
 			return
@@ -57,7 +61,6 @@ func GetClusters(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var tmpl *template.Template
-	var err error
 
 	currentUserPermission := currentCluster.GetLevelByUserID(currentUser.ID)
 	if currentUserPermission == "read" {
@@ -75,11 +78,15 @@ func GetClusters(w http.ResponseWriter, r *http.Request) {
 
 // PostClusters creates a new cluster.
 func PostClusters(w http.ResponseWriter, r *http.Request) {
-	dbs := r.Context().Value("pg-dbs").(*config.PGDBConfig)
+	pgdbs, err := contexthelper.GetPGDBConfig(r.Context())
+	if err != nil {
+		libhttp.HandleErrorHTML(w, err, 500)
+		return
+	}
 
 	currentUser := r.Context().Value("currentUser").(*pg.UserRow)
 
-	_, err := pg.NewCluster(dbs.Core).Create(nil, currentUser, r.FormValue("Name"))
+	_, err = pg.NewCluster(pgdbs.Core).Create(nil, currentUser, r.FormValue("Name"))
 	if err != nil {
 		libhttp.HandleErrorHTML(w, err, 500)
 		return
@@ -90,7 +97,7 @@ func PostClusters(w http.ResponseWriter, r *http.Request) {
 
 // PostClusterIDCurrent sets a cluster to be the current one on the UI.
 func PostClusterIDCurrent(w http.ResponseWriter, r *http.Request) {
-	cookieStore := r.Context().Value("cookieStore").(*sessions.CookieStore)
+	cookieStore := r.Context().Value("CookieStore").(*sessions.CookieStore)
 
 	session, _ := cookieStore.Get(r, "resourcedmaster-session")
 
@@ -137,7 +144,11 @@ func PostPutDeleteClusterID(w http.ResponseWriter, r *http.Request) {
 
 // PutClusterID updates a cluster's information.
 func PutClusterID(w http.ResponseWriter, r *http.Request) {
-	dbs := r.Context().Value("pg-dbs").(*config.PGDBConfig)
+	pgdbs, err := contexthelper.GetPGDBConfig(r.Context())
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
 
 	clusterID, err := getInt64SlugFromPath(w, r, "clusterID")
 	if err != nil {
@@ -169,7 +180,7 @@ func PutClusterID(w http.ResponseWriter, r *http.Request) {
 	data["name"] = name
 	data["data_retention"] = dataRetentionJSON
 
-	_, err = pg.NewCluster(dbs.Core).UpdateByID(nil, data, clusterID)
+	_, err = pg.NewCluster(pgdbs.Core).UpdateByID(nil, data, clusterID)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
@@ -180,7 +191,7 @@ func PutClusterID(w http.ResponseWriter, r *http.Request) {
 
 // DeleteClusterID deletes a cluster.
 func DeleteClusterID(w http.ResponseWriter, r *http.Request) {
-	dbs := r.Context().Value("pg-dbs").(*config.PGDBConfig)
+	pgdbs, err := contexthelper.GetPGDBConfig(r.Context())
 
 	clusterID, err := getInt64SlugFromPath(w, r, "clusterID")
 	if err != nil {
@@ -190,7 +201,7 @@ func DeleteClusterID(w http.ResponseWriter, r *http.Request) {
 
 	currentUser := r.Context().Value("currentUser").(*pg.UserRow)
 
-	cluster := pg.NewCluster(dbs.Core)
+	cluster := pg.NewCluster(pgdbs.Core)
 
 	clustersByUser, err := cluster.AllByUserID(nil, currentUser.ID)
 	if err != nil {
@@ -228,7 +239,7 @@ func PostPutDeleteClusterIDUsers(w http.ResponseWriter, r *http.Request) {
 
 // PutClusterIDUsers adds a user as a member to a particular cluster.
 func PutClusterIDUsers(w http.ResponseWriter, r *http.Request) {
-	dbs := r.Context().Value("pg-dbs").(*config.PGDBConfig)
+	pgdbs, err := contexthelper.GetPGDBConfig(r.Context())
 
 	clusterID, err := getInt64SlugFromPath(w, r, "clusterID")
 	if err != nil {
@@ -244,11 +255,11 @@ func PutClusterIDUsers(w http.ResponseWriter, r *http.Request) {
 		enabled = true
 	}
 
-	userRow, err := pg.NewUser(dbs.Core).GetByEmail(nil, email)
+	userRow, err := pg.NewUser(pgdbs.Core).GetByEmail(nil, email)
 	if err != nil && strings.Contains(err.Error(), "no rows in result set") {
 
 		// 1. Create a user with temporary password
-		userRow, err = pg.NewUser(dbs.Core).SignupRandomPassword(nil, email)
+		userRow, err = pg.NewUser(pgdbs.Core).SignupRandomPassword(nil, email)
 		if err != nil {
 			libhttp.HandleErrorJson(w, err)
 			return
@@ -256,7 +267,7 @@ func PutClusterIDUsers(w http.ResponseWriter, r *http.Request) {
 
 		// 2. Send email invite to user
 		if userRow.EmailVerificationToken.String != "" {
-			clusterRow, err := pg.NewCluster(dbs.Core).GetByID(nil, clusterID)
+			clusterRow, err := pg.NewCluster(pgdbs.Core).GetByID(nil, clusterID)
 			if err != nil {
 				libhttp.HandleErrorJson(w, err)
 				return
@@ -280,7 +291,7 @@ Your coleague has invited you to join cluster: %v. Click the following link to s
 	}
 
 	// Add user as a member to this cluster
-	err = pg.NewCluster(dbs.Core).UpdateMember(nil, clusterID, userRow, level, enabled)
+	err = pg.NewCluster(pgdbs.Core).UpdateMember(nil, clusterID, userRow, level, enabled)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
@@ -291,7 +302,7 @@ Your coleague has invited you to join cluster: %v. Click the following link to s
 
 // DeleteClusterIDUsers removes user's membership from a particular cluster.
 func DeleteClusterIDUsers(w http.ResponseWriter, r *http.Request) {
-	dbs := r.Context().Value("pg-dbs").(*config.PGDBConfig)
+	pgdbs, err := contexthelper.GetPGDBConfig(r.Context())
 
 	clusterID, err := getInt64SlugFromPath(w, r, "clusterID")
 	if err != nil {
@@ -301,9 +312,9 @@ func DeleteClusterIDUsers(w http.ResponseWriter, r *http.Request) {
 
 	email := r.FormValue("Email")
 
-	existingUser, _ := pg.NewUser(dbs.Core).GetByEmail(nil, email)
+	existingUser, _ := pg.NewUser(pgdbs.Core).GetByEmail(nil, email)
 	if existingUser != nil {
-		err := pg.NewCluster(dbs.Core).RemoveMember(nil, clusterID, existingUser)
+		err := pg.NewCluster(pgdbs.Core).RemoveMember(nil, clusterID, existingUser)
 		if err != nil {
 			libhttp.HandleErrorJson(w, err)
 			return

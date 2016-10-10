@@ -3,6 +3,7 @@
 package application
 
 import (
+	"context"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -101,6 +102,25 @@ type Application struct {
 	OutLogger          *logrus.Logger
 	ErrLogger          *logrus.Logger
 	sync.RWMutex
+}
+
+func (app *Application) GetContext() context.Context {
+	ctx := context.Background()
+	ctx = context.WithValue(ctx, "GeneralConfig", app.GeneralConfig)
+	ctx = context.WithValue(ctx, "PGDBConfig", app.PGDBConfig)
+	ctx = context.WithValue(ctx, "CassandraDBConfig", app.CassandraDBConfig)
+	ctx = context.WithValue(ctx, "OutLogger", app.OutLogger)
+	ctx = context.WithValue(ctx, "ErrLogger", app.ErrLogger)
+	ctx = context.WithValue(ctx, "Addr", app.FullAddr())
+	ctx = context.WithValue(ctx, "CookieStore", app.cookieStore)
+
+	for key, mailr := range app.Mailers {
+		ctx = context.WithValue(ctx, "mailer."+key, mailr)
+	}
+
+	ctx = context.WithValue(ctx, "bus", app.MessageBus)
+
+	return ctx
 }
 
 func (app *Application) FullAddr() string {

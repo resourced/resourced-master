@@ -9,7 +9,6 @@ import (
 	"github.com/Sirupsen/logrus"
 	"github.com/pressly/chi"
 
-	"github.com/resourced/resourced-master/config"
 	"github.com/resourced/resourced-master/contexthelper"
 	"github.com/resourced/resourced-master/libhttp"
 	"github.com/resourced/resourced-master/models/pg"
@@ -17,7 +16,7 @@ import (
 )
 
 func PostMetrics(w http.ResponseWriter, r *http.Request) {
-	dbs := r.Context().Value("pg-dbs").(*config.PGDBConfig)
+	pgdbs, err := contexthelper.GetPGDBConfig(r.Context())
 
 	clusterID, err := getInt64SlugFromPath(w, r, "clusterID")
 	if err != nil {
@@ -27,7 +26,7 @@ func PostMetrics(w http.ResponseWriter, r *http.Request) {
 
 	key := r.FormValue("Key")
 
-	_, err = pg.NewMetric(dbs.Core).CreateOrUpdate(nil, clusterID, key)
+	_, err = pg.NewMetric(pgdbs.Core).CreateOrUpdate(nil, clusterID, key)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
@@ -57,7 +56,7 @@ func PutMetricID(w http.ResponseWriter, r *http.Request) {
 
 // DeleteMetricID deletes metrics by ID
 func DeleteMetricID(w http.ResponseWriter, r *http.Request) {
-	dbs := r.Context().Value("pg-dbs").(*config.PGDBConfig)
+	pgdbs, err := contexthelper.GetPGDBConfig(r.Context())
 
 	clusterID, err := getInt64SlugFromPath(w, r, "clusterID")
 	if err != nil {
@@ -71,13 +70,13 @@ func DeleteMetricID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err = pg.NewMetric(dbs.Core).DeleteByClusterIDAndID(nil, clusterID, id)
+	_, err = pg.NewMetric(pgdbs.Core).DeleteByClusterIDAndID(nil, clusterID, id)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
 	}
 
-	err = pg.NewGraph(dbs.Core).DeleteMetricFromGraphs(nil, clusterID, id)
+	err = pg.NewGraph(pgdbs.Core).DeleteMetricFromGraphs(nil, clusterID, id)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
@@ -101,7 +100,7 @@ func GetApiTSMetricsByHost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	errLogger, err := contexthelper.GetLogger(r.Context(), "errLogger")
+	errLogger, err := contexthelper.GetLogger(r.Context(), "ErrLogger")
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
@@ -199,7 +198,7 @@ func GetApiTSMetrics(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	errLogger, err := contexthelper.GetLogger(r.Context(), "errLogger")
+	errLogger, err := contexthelper.GetLogger(r.Context(), "ErrLogger")
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return

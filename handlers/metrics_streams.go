@@ -8,7 +8,7 @@ import (
 	"github.com/Sirupsen/logrus"
 	"github.com/pressly/chi"
 
-	"github.com/resourced/resourced-master/config"
+	"github.com/resourced/resourced-master/contexthelper"
 	"github.com/resourced/resourced-master/libhttp"
 	"github.com/resourced/resourced-master/messagebus"
 	"github.com/resourced/resourced-master/models/pg"
@@ -117,7 +117,7 @@ func ApiMetricIDStreams(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	dbs := r.Context().Value("pg-dbs").(*config.PGDBConfig)
+	pgdbs, err := contexthelper.GetPGDBConfig(r.Context())
 
 	bus := r.Context().Value("bus").(*messagebus.MessageBus)
 
@@ -129,7 +129,7 @@ func ApiMetricIDStreams(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	metricRow, err := pg.NewMetric(dbs.Core).GetByID(nil, metricID)
+	metricRow, err := pg.NewMetric(pgdbs.Core).GetByID(nil, metricID)
 	if err != nil {
 		libhttp.HandleErrorHTML(w, err, 500)
 		return

@@ -5,18 +5,14 @@ import (
 	"context"
 	"errors"
 	"net/http"
-	"strings"
 
 	"github.com/Sirupsen/logrus"
 	"github.com/didip/stopwatch"
 	"github.com/gorilla/csrf"
 	"github.com/gorilla/sessions"
-	chi_middleware "github.com/pressly/chi/middleware"
 
-	"github.com/resourced/resourced-master/config"
+	"github.com/resourced/resourced-master/contexthelper"
 	"github.com/resourced/resourced-master/libhttp"
-	"github.com/resourced/resourced-master/mailer"
-	"github.com/resourced/resourced-master/messagebus"
 	"github.com/resourced/resourced-master/models/pg"
 )
 
@@ -29,93 +25,21 @@ func CSRFMiddleware(useHTTPS bool, salt string) func(http.Handler) http.Handler 
 	return csrf.Protect([]byte(salt), CSRFOptions)
 }
 
-// SetLogger passes logger struct to every request handler
-func SetLogger(loggerType string, logger *logrus.Logger) func(http.Handler) http.Handler {
-	return chi_middleware.WithValue(loggerType, logger)
-}
-
-// SetAddr passes daemon host and port to every request handler
-func SetAddr(addr string) func(http.Handler) http.Handler {
-	if strings.HasPrefix(addr, ":") {
-		addr = "localhost" + addr
-	}
-	return chi_middleware.WithValue("addr", addr)
-}
-
-// SetVIPAddr passes VIP host and port to every request handler
-func SetVIPAddr(vipAddr string) func(http.Handler) http.Handler {
-	if strings.HasPrefix(vipAddr, ":") {
-		vipAddr = "localhost" + vipAddr
-	}
-	return chi_middleware.WithValue("vipAddr", vipAddr)
-}
-
-// SetVIPProtocol passes VIP protocol to every request handler
-func SetVIPProtocol(vipProtocol string) func(http.Handler) http.Handler {
-	return chi_middleware.WithValue("vipProtocol", vipProtocol)
-}
-
-// SetPGDBs passes all PG database connections to every request handler
-func SetPGDBs(dbConfig *config.PGDBConfig) func(http.Handler) http.Handler {
+// SetContext assigns context struct to every request handler
+func SetContext(ctx context.Context) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			r = r.WithContext(context.WithValue(r.Context(), "pg-dbs", dbConfig))
-
+		fn := func(w http.ResponseWriter, r *http.Request) {
+			r = r.WithContext(ctx)
 			next.ServeHTTP(w, r)
-		})
-	}
-}
-
-// SetCassandraDBs passes all Cassandra database connections to every request handler
-func SetCassandraDBs(dbConfig *config.CassandraDBConfig) func(http.Handler) http.Handler {
-	return func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			r = r.WithContext(context.WithValue(r.Context(), "cassandra-dbs", dbConfig))
-
-			next.ServeHTTP(w, r)
-		})
-	}
-}
-
-// SetCookieStore passes cookie storage to every request handler
-func SetCookieStore(cookieStore *sessions.CookieStore) func(http.Handler) http.Handler {
-	return func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			r = r.WithContext(context.WithValue(r.Context(), "cookieStore", cookieStore))
-
-			next.ServeHTTP(w, r)
-		})
-	}
-}
-
-// SetMailers passes all mailers to every request handler
-func SetMailers(mailers map[string]*mailer.Mailer) func(http.Handler) http.Handler {
-	return func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			for key, mailr := range mailers {
-				r = r.WithContext(context.WithValue(r.Context(), "mailer."+key, mailr))
-			}
-
-			next.ServeHTTP(w, r)
-		})
-	}
-}
-
-// SetMessageBus passes a message bus to every request handler
-func SetMessageBus(bus *messagebus.MessageBus) func(http.Handler) http.Handler {
-	return func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			r = r.WithContext(context.WithValue(r.Context(), "bus", bus))
-
-			next.ServeHTTP(w, r)
-		})
+		}
+		return http.HandlerFunc(fn)
 	}
 }
 
 // SetClusters sets clusters data in context based on logged in user ID.
 func SetClusters(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		cookieStore := r.Context().Value("cookieStore").(*sessions.CookieStore)
+		cookieStore := r.Context().Value("CookieStore").(*sessions.CookieStore)
 		session, _ := cookieStore.Get(r, "resourcedmaster-session")
 		userRowInterface := session.Values["user"]
 
@@ -126,13 +50,16 @@ func SetClusters(next http.Handler) http.Handler {
 
 		userRow := userRowInterface.(*pg.UserRow)
 
-		dbs := r.Context().Value("pg-dbs").(*config.PGDBConfig)
+		pgdbs, err := contexthelper.GetPGDBConfig(r.Context())
+		if err != nil {
+			libhttp.HandleErrorJson(w, err)
+			return
+		}
 
 		var clusterRows []*pg.ClusterRow
-		var err error
 
 		f := func() {
-			clusterRows, err = pg.NewCluster(dbs.Core).AllByUserID(nil, userRow.ID)
+			clusterRows, err = pg.NewCluster(pgdbs.Core).AllByUserID(nil, userRow.ID)
 		}
 
 		// Measure the latency of AllByUserID because it is called on every request.
@@ -180,7 +107,7 @@ func SetClusters(next http.Handler) http.Handler {
 // SetAccessTokens sets clusters data in context based on logged in user ID.
 func SetAccessTokens(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		dbs := r.Context().Value("pg-dbs").(*config.PGDBConfig)
+		pgdbs, err := contexthelper.GetPGDBConfig(r.Context())
 
 		currentClusterInterface := r.Context().Value("currentCluster")
 		if currentClusterInterface == nil {
@@ -188,7 +115,7 @@ func SetAccessTokens(next http.Handler) http.Handler {
 			return
 		}
 
-		accessTokenRows, err := pg.NewAccessToken(dbs.Core).AllByClusterID(nil, currentClusterInterface.(*pg.ClusterRow).ID)
+		accessTokenRows, err := pg.NewAccessToken(pgdbs.Core).AllByClusterID(nil, currentClusterInterface.(*pg.ClusterRow).ID)
 		if err != nil {
 			libhttp.HandleErrorJson(w, err)
 			return
@@ -203,12 +130,12 @@ func SetAccessTokens(next http.Handler) http.Handler {
 // MustLogin is a middleware that checks existence of current user.
 func MustLogin(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		cookieStore := r.Context().Value("cookieStore").(*sessions.CookieStore)
+		cookieStore := r.Context().Value("CookieStore").(*sessions.CookieStore)
 		session, _ := cookieStore.Get(r, "resourcedmaster-session")
 		userRowInterface := session.Values["user"]
 
 		if userRowInterface == nil {
-			cookieStore := r.Context().Value("cookieStore").(*sessions.CookieStore)
+			cookieStore := r.Context().Value("CookieStore").(*sessions.CookieStore)
 			session, err := cookieStore.Get(r, "resourcedmaster-session")
 			if err == nil {
 				delete(session.Values, "user")
@@ -241,9 +168,9 @@ func MustLoginApi(next http.Handler) http.Handler {
 			return
 		}
 
-		dbs := r.Context().Value("pg-dbs").(*config.PGDBConfig)
+		pgdbs, err := contexthelper.GetPGDBConfig(r.Context())
 
-		accessTokenRow, err := pg.NewAccessToken(dbs.Core).GetByAccessToken(nil, accessTokenString)
+		accessTokenRow, err := pg.NewAccessToken(pgdbs.Core).GetByAccessToken(nil, accessTokenString)
 		if err != nil {
 			libhttp.BasicAuthUnauthorized(w, nil)
 			return
@@ -293,9 +220,9 @@ func MustLoginApiStream(next http.Handler) http.Handler {
 			return
 		}
 
-		dbs := r.Context().Value("pg-dbs").(*config.PGDBConfig)
+		pgdbs, err := contexthelper.GetPGDBConfig(r.Context())
 
-		accessTokenRow, err := pg.NewAccessToken(dbs.Core).GetByAccessToken(nil, accessTokenString)
+		accessTokenRow, err := pg.NewAccessToken(pgdbs.Core).GetByAccessToken(nil, accessTokenString)
 		if err != nil {
 			libhttp.BasicAuthUnauthorized(w, nil)
 			return

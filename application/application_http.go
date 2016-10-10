@@ -9,7 +9,6 @@ import (
 	"github.com/didip/stopwatch"
 	"github.com/didip/tollbooth"
 	"github.com/pressly/chi"
-	chi_middleware "github.com/pressly/chi/middleware"
 	"gopkg.in/tylerb/graceful.v1"
 
 	"github.com/resourced/resourced-master/handlers"
@@ -45,18 +44,8 @@ func (app *Application) Mux() *chi.Mux {
 
 	r := chi.NewRouter()
 
-	// Set middlewares which impact every request.
-	r.Use(chi_middleware.WithValue("generalConfig", app.GeneralConfig))
-	r.Use(middlewares.SetAddr(app.GeneralConfig.Addr))
-	r.Use(middlewares.SetVIPAddr(app.GeneralConfig.VIPAddr))
-	r.Use(middlewares.SetVIPProtocol(app.GeneralConfig.VIPProtocol))
-	r.Use(middlewares.SetPGDBs(app.PGDBConfig))
-	r.Use(middlewares.SetCassandraDBs(app.CassandraDBConfig))
-	r.Use(middlewares.SetCookieStore(app.cookieStore))
-	r.Use(middlewares.SetMailers(app.Mailers))
-	r.Use(middlewares.SetMessageBus(app.MessageBus))
-	r.Use(middlewares.SetLogger("outLogger", app.OutLogger))
-	r.Use(middlewares.SetLogger("errLogger", app.ErrLogger))
+	// Set application context for every request.
+	r.Use(middlewares.SetContext(app.GetContext()))
 
 	if !app.GeneralConfig.JustAPI {
 		r.Get("/signup", handlers.GetSignup)

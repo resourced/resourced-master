@@ -10,11 +10,6 @@ RequestShutdownTimeout = "1s"
 # Change this!
 CookieSecret = "T0PS3CR3T"
 
-# In production, change this to your VIP host and port
-VIPAddr = "localhost:55655"
-
-VIPProtocol = "http"
-
 # When set to true, master daemon will create background jobs to cleanup old timeseries rows.
 # You may want to disable this if you have a huge number (> 100k) of incoming timeseries data per second,
 # and create your own cronjob to drop tables instead.

@@ -76,8 +76,6 @@ type GeneralConfig struct {
 	LogLevel                string
 	CookieSecret            string
 	RequestShutdownTimeout  string
-	VIPAddr                 string
-	VIPProtocol             string
 	EnablePeriodicPruneJobs bool
 	JustAPI                 bool
 

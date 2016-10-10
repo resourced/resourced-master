@@ -12,7 +12,7 @@ import (
 	"github.com/gorilla/csrf"
 	"github.com/pressly/chi"
 
-	"github.com/resourced/resourced-master/config"
+	"github.com/resourced/resourced-master/contexthelper"
 	"github.com/resourced/resourced-master/libhttp"
 	"github.com/resourced/resourced-master/libslice"
 	"github.com/resourced/resourced-master/messagebus"
@@ -22,7 +22,7 @@ import (
 func GetChecks(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html")
 
-	dbs := r.Context().Value("pg-dbs").(*config.PGDBConfig)
+	pgdbs, err := contexthelper.GetPGDBConfig(r.Context())
 
 	currentUser := r.Context().Value("currentUser").(*pg.UserRow)
 
@@ -48,13 +48,13 @@ func GetChecks(w http.ResponseWriter, r *http.Request) {
 	// --------------------------
 	go func(currentCluster *pg.ClusterRow) {
 		checksWithError := &pg.CheckRowsWithError{}
-		checksWithError.Checks, checksWithError.Error = pg.NewCheck(dbs.Core).AllByClusterID(nil, currentCluster.ID)
+		checksWithError.Checks, checksWithError.Error = pg.NewCheck(pgdbs.Core).AllByClusterID(nil, currentCluster.ID)
 		checksChan <- checksWithError
 	}(currentCluster)
 
 	go func(currentCluster *pg.ClusterRow) {
 		metricsWithError := &pg.MetricRowsWithError{}
-		metricsWithError.Metrics, metricsWithError.Error = pg.NewMetric(dbs.Core).AllByClusterID(nil, currentCluster.ID)
+		metricsWithError.Metrics, metricsWithError.Error = pg.NewMetric(pgdbs.Core).AllByClusterID(nil, currentCluster.ID)
 		metricsChan <- metricsWithError
 	}(currentCluster)
 
@@ -90,7 +90,7 @@ func GetChecks(w http.ResponseWriter, r *http.Request) {
 		Metrics        []*pg.MetricRow
 	}{
 		csrf.Token(r),
-		r.Context().Value("addr").(string),
+		r.Context().Value("Addr").(string),
 		currentUser,
 		accessToken,
 		r.Context().Value("clusters").([]*pg.ClusterRow),
@@ -116,7 +116,7 @@ func GetChecks(w http.ResponseWriter, r *http.Request) {
 }
 
 func PostChecks(w http.ResponseWriter, r *http.Request) {
-	dbs := r.Context().Value("pg-dbs").(*config.PGDBConfig)
+	pgdbs, err := contexthelper.GetPGDBConfig(r.Context())
 
 	w.Header().Set("Content-Type", "text/html")
 
@@ -149,7 +149,7 @@ func PostChecks(w http.ResponseWriter, r *http.Request) {
 	data["last_result_hosts"] = []byte("[]")
 	data["last_result_expressions"] = []byte("[]")
 
-	_, err = pg.NewCheck(dbs.Core).Create(nil, currentCluster.ID, data)
+	_, err = pg.NewCheck(pgdbs.Core).Create(nil, currentCluster.ID, data)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
@@ -190,7 +190,7 @@ func PostPutDeleteCheckID(w http.ResponseWriter, r *http.Request) {
 }
 
 func PutCheckID(w http.ResponseWriter, r *http.Request) {
-	dbs := r.Context().Value("pg-dbs").(*config.PGDBConfig)
+	pgdbs, err := contexthelper.GetPGDBConfig(r.Context())
 
 	id, err := getInt64SlugFromPath(w, r, "checkID")
 	if err != nil {
@@ -220,7 +220,7 @@ func PutCheckID(w http.ResponseWriter, r *http.Request) {
 	data["hosts_list"] = hostsListJSON
 	data["expressions"] = r.FormValue("Expressions")
 
-	_, err = pg.NewCheck(dbs.Core).UpdateByID(nil, data, id)
+	_, err = pg.NewCheck(pgdbs.Core).UpdateByID(nil, data, id)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
@@ -236,11 +236,11 @@ func DeleteCheckID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	dbs := r.Context().Value("pg-dbs").(*config.PGDBConfig)
+	pgdbs, err := contexthelper.GetPGDBConfig(r.Context())
 
 	currentCluster := r.Context().Value("currentCluster").(*pg.ClusterRow)
 
-	_, err = pg.NewCheck(dbs.Core).DeleteByClusterIDAndID(nil, currentCluster.ID, id)
+	_, err = pg.NewCheck(pgdbs.Core).DeleteByClusterIDAndID(nil, currentCluster.ID, id)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
@@ -250,7 +250,7 @@ func DeleteCheckID(w http.ResponseWriter, r *http.Request) {
 }
 
 func PostCheckIDSilence(w http.ResponseWriter, r *http.Request) {
-	dbs := r.Context().Value("pg-dbs").(*config.PGDBConfig)
+	pgdbs, err := contexthelper.GetPGDBConfig(r.Context())
 
 	id, err := getInt64SlugFromPath(w, r, "checkID")
 	if err != nil {
@@ -258,7 +258,7 @@ func PostCheckIDSilence(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	check := pg.NewCheck(dbs.Core)
+	check := pg.NewCheck(pgdbs.Core)
 
 	checkRow, err := check.GetByID(nil, id)
 	if err != nil {
@@ -323,7 +323,7 @@ func newCheckTriggerFromForm(r *http.Request) (pg.CheckTrigger, error) {
 }
 
 func PostChecksTriggers(w http.ResponseWriter, r *http.Request) {
-	dbs := r.Context().Value("pg-dbs").(*config.PGDBConfig)
+	pgdbs, err := contexthelper.GetPGDBConfig(r.Context())
 
 	errLogger := r.Context().Value("errLogger").(*logrus.Logger)
 
@@ -347,7 +347,7 @@ func PostChecksTriggers(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	check := pg.NewCheck(dbs.Core)
+	check := pg.NewCheck(pgdbs.Core)
 
 	trigger.ID = check.NewExplicitID()
 
@@ -424,9 +424,9 @@ func PutCheckTriggerID(w http.ResponseWriter, r *http.Request) {
 
 	trigger.ID = triggerID
 
-	dbs := r.Context().Value("pg-dbs").(*config.PGDBConfig)
+	pgdbs, err := contexthelper.GetPGDBConfig(r.Context())
 
-	check := pg.NewCheck(dbs.Core)
+	check := pg.NewCheck(pgdbs.Core)
 
 	checkRow, err := check.GetByID(nil, checkID)
 	if err != nil {
@@ -465,9 +465,9 @@ func DeleteCheckTriggerID(w http.ResponseWriter, r *http.Request) {
 	trigger := pg.CheckTrigger{}
 	trigger.ID = triggerID
 
-	dbs := r.Context().Value("pg-dbs").(*config.PGDBConfig)
+	pgdbs, err := contexthelper.GetPGDBConfig(r.Context())
 
-	check := pg.NewCheck(dbs.Core)
+	check := pg.NewCheck(pgdbs.Core)
 
 	checkRow, err := check.GetByID(nil, checkID)
 	if err != nil {
@@ -487,7 +487,11 @@ func DeleteCheckTriggerID(w http.ResponseWriter, r *http.Request) {
 func GetApiCheckIDResults(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	dbs := r.Context().Value("pg-dbs").(*config.PGDBConfig)
+	pgdbs, err := contexthelper.GetPGDBConfig(r.Context())
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
 
 	accessTokenRow := r.Context().Value("accessToken").(*pg.AccessTokenRow)
 
@@ -508,7 +512,7 @@ func GetApiCheckIDResults(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	checkRow, err := pg.NewCheck(dbs.Core).GetByID(nil, id)
+	checkRow, err := pg.NewCheck(pgdbs.Core).GetByID(nil, id)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
@@ -519,7 +523,7 @@ func GetApiCheckIDResults(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tsCheckRows, err := pg.NewTSCheck(dbs.GetTSCheck(checkRow.ClusterID)).LastByClusterIDCheckIDAndLimit(nil, checkRow.ClusterID, checkRow.ID, limit)
+	tsCheckRows, err := pg.NewTSCheck(pgdbs.GetTSCheck(checkRow.ClusterID)).LastByClusterIDCheckIDAndLimit(nil, checkRow.ClusterID, checkRow.ID, limit)
 
 	tsCheckRowsJSON, err := json.Marshal(tsCheckRows)
 	if err != nil {
