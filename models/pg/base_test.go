@@ -7,9 +7,10 @@ import (
 	"github.com/Sirupsen/logrus"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
+	"github.com/satori/go.uuid"
+
 	"github.com/resourced/resourced-master/config"
 	"github.com/resourced/resourced-master/libunix"
-	"github.com/satori/go.uuid"
 )
 
 func init() {
