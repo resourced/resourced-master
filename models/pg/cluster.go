@@ -1,6 +1,7 @@
 package pg
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json"
 	"fmt"
@@ -11,9 +12,9 @@ import (
 	sqlx_types "github.com/jmoiron/sqlx/types"
 )
 
-func NewCluster(db *sqlx.DB) *Cluster {
+func NewCluster(ctx context.Context) *Cluster {
 	c := &Cluster{}
-	c.db = db
+	c.AppContext = ctx
 	c.table = "clusters"
 	c.hasID = true
 
@@ -96,9 +97,14 @@ func (c *Cluster) clusterRowFromSqlResult(tx *sqlx.Tx, sqlResult sql.Result) (*C
 
 // GetByID returns one record by id.
 func (c *Cluster) GetByID(tx *sqlx.Tx, id int64) (*ClusterRow, error) {
+	pgdb, err := c.GetPGDB()
+	if err != nil {
+		return nil, err
+	}
+
 	row := &ClusterRow{}
 	query := fmt.Sprintf("SELECT * FROM %v WHERE id=$1", c.table)
-	err := c.db.Get(row, query, id)
+	err = pgdb.Get(row, query, id)
 
 	return row, err
 }
@@ -149,10 +155,15 @@ func (c *Cluster) Create(tx *sqlx.Tx, creator *UserRow, name string) (*ClusterRo
 
 // AllByUserID returns all clusters rows by user ID.
 func (c *Cluster) AllByUserID(tx *sqlx.Tx, userId int64) ([]*ClusterRow, error) {
+	pgdb, err := c.GetPGDB()
+	if err != nil {
+		return nil, err
+	}
+
 	rows := []*ClusterRow{}
 
 	query := fmt.Sprintf(`SELECT * from %v WHERE members @> '[{"ID" : %v}]'`, c.table, userId)
-	err := c.db.Select(&rows, query)
+	err = pgdb.Select(&rows, query)
 	if err != nil {
 		logrus.WithFields(logrus.Fields{"Query": query}).Error(err)
 	}
@@ -162,9 +173,14 @@ func (c *Cluster) AllByUserID(tx *sqlx.Tx, userId int64) ([]*ClusterRow, error) 
 
 // All returns all clusters rows.
 func (c *Cluster) All(tx *sqlx.Tx) ([]*ClusterRow, error) {
+	pgdb, err := c.GetPGDB()
+	if err != nil {
+		return nil, err
+	}
+
 	rows := []*ClusterRow{}
 	query := fmt.Sprintf("SELECT * FROM %v", c.table)
-	err := c.db.Select(&rows, query)
+	err = pgdb.Select(&rows, query)
 
 	return rows, err
 }

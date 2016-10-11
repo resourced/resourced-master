@@ -88,7 +88,8 @@ func (app *Application) CheckAndRunTriggers() {
 						}
 
 						// 3. Run check's triggers.
-						err = checkRow.RunTriggers(app.GeneralConfig, app.PGDBConfig.Core, app.PGDBConfig.GetTSCheck(checkRow.ClusterID), app.Mailers["GeneralConfig.Checks"])
+						err = checkRow.RunTriggers(app.GetContext())
+						// err = checkRow.RunTriggers(app.GeneralConfig, app.PGDBConfig.Core, app.PGDBConfig.GetTSCheck(checkRow.ClusterID), app.Mailers["GeneralConfig.Checks"])
 						if err != nil {
 							app.ErrLogger.WithFields(logrus.Fields{
 								"Method":    "checkRow.RunTriggers",

@@ -1,6 +1,7 @@
 package pg
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 
@@ -9,9 +10,9 @@ import (
 	"github.com/resourced/resourced-master/libstring"
 )
 
-func NewAccessToken(db *sqlx.DB) *AccessToken {
+func NewAccessToken(ctx context.Context) *AccessToken {
 	token := &AccessToken{}
-	token.db = db
+	token.AppContext = ctx
 	token.table = "access_tokens"
 	token.hasID = true
 
@@ -42,36 +43,56 @@ func (t *AccessToken) tokenRowFromSqlResult(tx *sqlx.Tx, sqlResult sql.Result) (
 
 // GetByID returns one record by id.
 func (t *AccessToken) GetByID(tx *sqlx.Tx, id int64) (*AccessTokenRow, error) {
+	pgdb, err := t.GetPGDB()
+	if err != nil {
+		return nil, err
+	}
+
 	tokenRow := &AccessTokenRow{}
 	query := fmt.Sprintf("SELECT * FROM %v WHERE id=$1", t.table)
-	err := t.db.Get(tokenRow, query, id)
+	err = pgdb.Get(tokenRow, query, id)
 
 	return tokenRow, err
 }
 
 // GetByAccessToken returns one record by token.
 func (t *AccessToken) GetByAccessToken(tx *sqlx.Tx, token string) (*AccessTokenRow, error) {
+	pgdb, err := t.GetPGDB()
+	if err != nil {
+		return nil, err
+	}
+
 	tokenRow := &AccessTokenRow{}
 	query := fmt.Sprintf("SELECT * FROM %v WHERE token=$1", t.table)
-	err := t.db.Get(tokenRow, query, token)
+	err = pgdb.Get(tokenRow, query, token)
 
 	return tokenRow, err
 }
 
 // GetByUserID returns one record by user_id.
 func (t *AccessToken) GetByUserID(tx *sqlx.Tx, userID int64) (*AccessTokenRow, error) {
+	pgdb, err := t.GetPGDB()
+	if err != nil {
+		return nil, err
+	}
+
 	tokenRow := &AccessTokenRow{}
 	query := fmt.Sprintf("SELECT * FROM %v WHERE user_id=$1", t.table)
-	err := t.db.Get(tokenRow, query, userID)
+	err = pgdb.Get(tokenRow, query, userID)
 
 	return tokenRow, err
 }
 
 // GetByClusterID returns one record by cluster_id.
 func (t *AccessToken) GetByClusterID(tx *sqlx.Tx, clusterID int64) (*AccessTokenRow, error) {
+	pgdb, err := t.GetPGDB()
+	if err != nil {
+		return nil, err
+	}
+
 	tokenRow := &AccessTokenRow{}
 	query := fmt.Sprintf("SELECT * FROM %v WHERE cluster_id=$1", t.table)
-	err := t.db.Get(tokenRow, query, clusterID)
+	err = pgdb.Get(tokenRow, query, clusterID)
 
 	return tokenRow, err
 }
@@ -99,18 +120,28 @@ func (t *AccessToken) Create(tx *sqlx.Tx, userID, clusterID int64, level string)
 
 // AllAccessTokens returns all access tokens.
 func (t *AccessToken) AllAccessTokens(tx *sqlx.Tx) ([]*AccessTokenRow, error) {
+	pgdb, err := t.GetPGDB()
+	if err != nil {
+		return nil, err
+	}
+
 	accessTokens := []*AccessTokenRow{}
 	query := fmt.Sprintf("SELECT * FROM %v", t.table)
-	err := t.db.Select(&accessTokens, query)
+	err = pgdb.Select(&accessTokens, query)
 
 	return accessTokens, err
 }
 
 // AllAccessTokens returns all access tokens by cluster id.
 func (t *AccessToken) AllByClusterID(tx *sqlx.Tx, clusterID int64) ([]*AccessTokenRow, error) {
+	pgdb, err := t.GetPGDB()
+	if err != nil {
+		return nil, err
+	}
+
 	accessTokens := []*AccessTokenRow{}
 	query := fmt.Sprintf("SELECT * FROM %v WHERE cluster_id=$1", t.table)
-	err := t.db.Select(&accessTokens, query, clusterID)
+	err = pgdb.Select(&accessTokens, query, clusterID)
 
 	return accessTokens, err
 }

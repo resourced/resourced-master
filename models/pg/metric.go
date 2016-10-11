@@ -1,15 +1,16 @@
 package pg
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 
 	"github.com/jmoiron/sqlx"
 )
 
-func NewMetric(db *sqlx.DB) *Metric {
+func NewMetric(ctx context.Context) *Metric {
 	m := &Metric{}
-	m.db = db
+	m.AppContext = ctx
 	m.table = "metrics"
 	m.hasID = true
 
@@ -36,35 +37,45 @@ type Metric struct {
 	Base
 }
 
-func (d *Metric) metricRowFromSqlResult(tx *sqlx.Tx, sqlResult sql.Result) (*MetricRow, error) {
+func (m *Metric) metricRowFromSqlResult(tx *sqlx.Tx, sqlResult sql.Result) (*MetricRow, error) {
 	id, err := sqlResult.LastInsertId()
 	if err != nil {
 		return nil, err
 	}
 
-	return d.GetByID(tx, id)
+	return m.GetByID(tx, id)
 }
 
 // GetByID returns one record by id.
-func (d *Metric) GetByID(tx *sqlx.Tx, id int64) (*MetricRow, error) {
+func (m *Metric) GetByID(tx *sqlx.Tx, id int64) (*MetricRow, error) {
+	pgdb, err := m.GetPGDB()
+	if err != nil {
+		return nil, err
+	}
+
 	row := &MetricRow{}
-	query := fmt.Sprintf("SELECT * FROM %v WHERE id=$1", d.table)
-	err := d.db.Get(row, query, id)
+	query := fmt.Sprintf("SELECT * FROM %v WHERE id=$1", m.table)
+	err = pgdb.Get(row, query, id)
 
 	return row, err
 }
 
 // GetByClusterIDAndKey returns one record by cluster_id and key.
-func (d *Metric) GetByClusterIDAndKey(tx *sqlx.Tx, clusterID int64, key string) (*MetricRow, error) {
+func (m *Metric) GetByClusterIDAndKey(tx *sqlx.Tx, clusterID int64, key string) (*MetricRow, error) {
+	pgdb, err := m.GetPGDB()
+	if err != nil {
+		return nil, err
+	}
+
 	row := &MetricRow{}
-	query := fmt.Sprintf("SELECT * FROM %v WHERE cluster_id=$1 AND key=$2", d.table)
-	err := d.db.Get(row, query, clusterID, key)
+	query := fmt.Sprintf("SELECT * FROM %v WHERE cluster_id=$1 AND key=$2", m.table)
+	err = pgdb.Get(row, query, clusterID, key)
 
 	return row, err
 }
 
-func (d *Metric) CreateOrUpdate(tx *sqlx.Tx, clusterID int64, key string) (*MetricRow, error) {
-	metricRow, err := d.GetByClusterIDAndKey(tx, clusterID, key)
+func (m *Metric) CreateOrUpdate(tx *sqlx.Tx, clusterID int64, key string) (*MetricRow, error) {
+	metricRow, err := m.GetByClusterIDAndKey(tx, clusterID, key)
 
 	data := make(map[string]interface{})
 	data["cluster_id"] = clusterID
@@ -72,16 +83,16 @@ func (d *Metric) CreateOrUpdate(tx *sqlx.Tx, clusterID int64, key string) (*Metr
 
 	// Perform INSERT
 	if metricRow == nil || err != nil {
-		sqlResult, err := d.InsertIntoTable(tx, data)
+		sqlResult, err := m.InsertIntoTable(tx, data)
 		if err != nil {
 			return nil, err
 		}
 
-		return d.metricRowFromSqlResult(tx, sqlResult)
+		return m.metricRowFromSqlResult(tx, sqlResult)
 	}
 
 	// Perform UPDATE
-	_, err = d.UpdateFromTable(tx, data, fmt.Sprintf("cluster_id=%v AND key=%v", clusterID, key))
+	_, err = m.UpdateFromTable(tx, data, fmt.Sprintf("cluster_id=%v AND key=%v", clusterID, key))
 	if err != nil {
 		return nil, err
 	}
@@ -90,19 +101,24 @@ func (d *Metric) CreateOrUpdate(tx *sqlx.Tx, clusterID int64, key string) (*Metr
 }
 
 // AllByClusterID returns all rows.
-func (d *Metric) AllByClusterID(tx *sqlx.Tx, clusterID int64) ([]*MetricRow, error) {
+func (m *Metric) AllByClusterID(tx *sqlx.Tx, clusterID int64) ([]*MetricRow, error) {
+	pgdb, err := m.GetPGDB()
+	if err != nil {
+		return nil, err
+	}
+
 	rows := []*MetricRow{}
-	query := fmt.Sprintf("SELECT * FROM %v WHERE cluster_id=$1", d.table)
-	err := d.db.Select(&rows, query, clusterID)
+	query := fmt.Sprintf("SELECT * FROM %v WHERE cluster_id=$1", m.table)
+	err = pgdb.Select(&rows, query, clusterID)
 
 	return rows, err
 }
 
 // AllByClusterIDAsMap returns all rows.
-func (d *Metric) AllByClusterIDAsMap(tx *sqlx.Tx, clusterID int64) (map[string]int64, error) {
+func (m *Metric) AllByClusterIDAsMap(tx *sqlx.Tx, clusterID int64) (map[string]int64, error) {
 	result := make(map[string]int64)
 
-	rows, err := d.AllByClusterID(tx, clusterID)
+	rows, err := m.AllByClusterID(tx, clusterID)
 	if err != nil {
 		return result, err
 	}

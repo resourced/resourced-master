@@ -13,8 +13,13 @@ func newUserForTest(t *testing.T) *User {
 }
 
 func TestUserCRUD(t *testing.T) {
-	u := newUserForTest(t)
-	defer u.db.Close()
+	u := NewUser(shared.AppContextForTest())
+
+	pgdb, err := u.GetPGDB()
+	if err != nil {
+		t.Errorf("There should be a legit db. Error: %v", err)
+	}
+	defer pgdb.Close()
 
 	// Signup
 	userRow, err := u.Signup(nil, newEmailForTest(), "abc123", "abc123")

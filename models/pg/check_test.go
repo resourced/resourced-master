@@ -7,10 +7,12 @@ import (
 	"time"
 
 	_ "github.com/lib/pq"
+
+	"github.com/resourced/resourced-master/models/shared"
 )
 
 func newCheckForTest(t *testing.T) *Check {
-	return NewCheck(newDbForTest(t))
+	return NewCheck(shared.AppContextForTest())
 }
 
 func checkHostExpressionSetupForTest(t *testing.T) map[string]interface{} {
@@ -18,10 +20,17 @@ func checkHostExpressionSetupForTest(t *testing.T) map[string]interface{} {
 
 	hostname, _ := os.Hostname()
 
-	// Signup
-	u := newUserForTest(t)
-	defer u.db.Close()
+	appContext := shared.AppContextForTest()
 
+	u := NewUser(appContext)
+
+	pgdb, err := u.GetPGDB()
+	if err != nil {
+		t.Errorf("There should be a legit db. Error: %v", err)
+	}
+	defer pgdb.Close()
+
+	// Signup
 	userRow, err := u.Signup(nil, newEmailForTest(), "abc123", "abc123")
 	if err != nil {
 		t.Fatalf("Signing up user should work. Error: %v", err)
@@ -29,8 +38,7 @@ func checkHostExpressionSetupForTest(t *testing.T) map[string]interface{} {
 	setupRows["userRow"] = userRow
 
 	// Create cluster for user
-	c := newClusterForTest(t)
-	defer c.db.Close()
+	c := NewCluster(appContext)
 
 	clusterRow, err := c.Create(nil, userRow, "cluster-name")
 	if err != nil {
@@ -39,8 +47,7 @@ func checkHostExpressionSetupForTest(t *testing.T) map[string]interface{} {
 	setupRows["clusterRow"] = clusterRow
 
 	// Create access token
-	at := newAccessTokenForTest(t)
-	defer at.db.Close()
+	at := NewAccessToken(appContext)
 
 	tokenRow, err := at.Create(nil, userRow.ID, clusterRow.ID, "write")
 	if err != nil {
@@ -49,8 +56,7 @@ func checkHostExpressionSetupForTest(t *testing.T) map[string]interface{} {
 	setupRows["tokenRow"] = tokenRow
 
 	// Create host
-	h := newHostForTest(t)
-	defer h.db.Close()
+	h := NewHost(appContext)
 
 	hostRow, err := h.CreateOrUpdate(nil, tokenRow, []byte(fmt.Sprintf(`{"Host": {"Name": "%v", "Tags": {"aaa": "bbb"}}, "Data": {"/stuff": {"Score": 100}}}`, hostname)))
 	if err != nil {
@@ -59,8 +65,7 @@ func checkHostExpressionSetupForTest(t *testing.T) map[string]interface{} {
 	setupRows["hostRow"] = hostRow
 
 	// Create Metric
-	m := newMetricForTest(t)
-	defer m.db.Close()
+	m := NewMetric(appContext)
 
 	metricRow, err := m.CreateOrUpdate(nil, clusterRow.ID, "/stuff.Score")
 	if err != nil {
@@ -81,17 +86,24 @@ func checkHostExpressionSetupForTest(t *testing.T) map[string]interface{} {
 }
 
 func checkHostExpressionTeardownForTest(t *testing.T, setupRows map[string]interface{}) {
-	// DELETE FROM hosts WHERE id=...
-	h := newHostForTest(t)
-	defer h.db.Close()
+	appContext := shared.AppContextForTest()
 
-	_, err := h.DeleteByID(nil, setupRows["hostRow"].(*HostRow).ID)
+	pgdb, err := u.GetPGDB()
+	if err != nil {
+		t.Errorf("There should be a legit db. Error: %v", err)
+	}
+	defer pgdb.Close()
+
+	// DELETE FROM hosts WHERE id=...
+	h := NewHost(appContext)
+
+	_, err = h.DeleteByID(nil, setupRows["hostRow"].(*HostRow).ID)
 	if err != nil {
 		t.Fatalf("Deleting access_tokens by id should not fail. Error: %v", err)
 	}
 
 	// DELETE FROM access_tokens WHERE id=...
-	at := newAccessTokenForTest(t)
+	at := NewAccessToken(appContext)
 	defer at.db.Close()
 
 	_, err = at.DeleteByID(nil, setupRows["tokenRow"].(*AccessTokenRow).ID)
@@ -100,8 +112,7 @@ func checkHostExpressionTeardownForTest(t *testing.T, setupRows map[string]inter
 	}
 
 	// DELETE FROM metrics WHERE id=...
-	m := newMetricForTest(t)
-	defer m.db.Close()
+	m := NewMetric(appContext)
 
 	_, err = m.DeleteByID(nil, setupRows["metricRow"].(*MetricRow).ID)
 	if err != nil {
@@ -109,8 +120,7 @@ func checkHostExpressionTeardownForTest(t *testing.T, setupRows map[string]inter
 	}
 
 	// DELETE FROM clusters WHERE id=...
-	c := newClusterForTest(t)
-	defer c.db.Close()
+	c := NewCluster(appContext)
 
 	_, err = c.DeleteByID(nil, setupRows["clusterRow"].(*ClusterRow).ID)
 	if err != nil {
@@ -118,8 +128,7 @@ func checkHostExpressionTeardownForTest(t *testing.T, setupRows map[string]inter
 	}
 
 	// DELETE FROM users WHERE id=...
-	u := newUserForTest(t)
-	defer u.db.Close()
+	u := NewUser(appContext)
 
 	_, err = u.DeleteByID(nil, setupRows["userRow"].(*UserRow).ID)
 	if err != nil {
@@ -128,8 +137,15 @@ func checkHostExpressionTeardownForTest(t *testing.T, setupRows map[string]inter
 }
 
 func TestCheckCRUD(t *testing.T) {
-	u := newUserForTest(t)
-	defer u.db.Close()
+	appContext := shared.AppContextForTest()
+
+	u := NewUser(appContext)
+
+	pgdb, err := u.GetPGDB()
+	if err != nil {
+		t.Errorf("There should be a legit db. Error: %v", err)
+	}
+	defer pgdb.Close()
 
 	// Signup
 	userRow, err := u.Signup(nil, newEmailForTest(), "abc123", "abc123")
@@ -144,8 +160,7 @@ func TestCheckCRUD(t *testing.T) {
 	}
 
 	// Create cluster for user
-	c := newClusterForTest(t)
-	defer c.db.Close()
+	c := NewCluster(appContext)
 
 	clusterRow, err := c.Create(nil, userRow, "cluster-name")
 	if err != nil {
@@ -171,8 +186,7 @@ func TestCheckCRUD(t *testing.T) {
 	data["last_result_hosts"] = []byte("[]")
 	data["last_result_expressions"] = []byte("[]")
 
-	chk := newCheckForTest(t)
-	defer chk.db.Close()
+	chk := NewCheck(appContext)
 
 	checkRow, err := chk.Create(nil, clusterRow.ID, data)
 	if err != nil {

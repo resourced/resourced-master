@@ -2,6 +2,7 @@ package pg
 
 import (
 	"bytes"
+	"context"
 	"database/sql"
 	"encoding/json"
 	"fmt"
@@ -19,9 +20,9 @@ import (
 	"github.com/resourced/resourced-master/mailer"
 )
 
-func NewCheck(db *sqlx.DB) *Check {
+func NewCheck(ctx context.Context) *Check {
 	g := &Check{}
-	g.db = db
+	g.AppContext = ctx
 	g.table = "checks"
 	g.hasID = true
 
@@ -93,62 +94,77 @@ type Check struct {
 	Base
 }
 
-func (a *Check) rowFromSqlResult(tx *sqlx.Tx, sqlResult sql.Result) (*CheckRow, error) {
+func (c *Check) rowFromSqlResult(tx *sqlx.Tx, sqlResult sql.Result) (*CheckRow, error) {
 	id, err := sqlResult.LastInsertId()
 	if err != nil {
 		return nil, err
 	}
 
-	return a.GetByID(tx, id)
+	return c.GetByID(tx, id)
 }
 
 // GetByID returns one record by id.
-func (a *Check) GetByID(tx *sqlx.Tx, id int64) (*CheckRow, error) {
-	row := &CheckRow{}
-	query := fmt.Sprintf("SELECT * FROM %v WHERE id=$1", a.table)
-	err := a.db.Get(row, query, id)
-
-	return row, err
-}
-
-func (a *Check) Create(tx *sqlx.Tx, clusterID int64, data map[string]interface{}) (*CheckRow, error) {
-	data["cluster_id"] = clusterID
-
-	sqlResult, err := a.InsertIntoTable(tx, data)
+func (c *Check) GetByID(tx *sqlx.Tx, id int64) (*CheckRow, error) {
+	pgdb, err := c.GetPGDB()
 	if err != nil {
 		return nil, err
 	}
 
-	return a.rowFromSqlResult(tx, sqlResult)
+	row := &CheckRow{}
+	query := fmt.Sprintf("SELECT * FROM %v WHERE id=$1", c.table)
+	err = pgdb.Get(row, query, id)
+
+	return row, err
+}
+
+func (c *Check) Create(tx *sqlx.Tx, clusterID int64, data map[string]interface{}) (*CheckRow, error) {
+	data["cluster_id"] = clusterID
+
+	sqlResult, err := c.InsertIntoTable(tx, data)
+	if err != nil {
+		return nil, err
+	}
+
+	return c.rowFromSqlResult(tx, sqlResult)
 }
 
 // AllByClusterID returns all rows by cluster_id.
-func (a *Check) AllByClusterID(tx *sqlx.Tx, clusterID int64) ([]*CheckRow, error) {
+func (c *Check) AllByClusterID(tx *sqlx.Tx, clusterID int64) ([]*CheckRow, error) {
+	pgdb, err := c.GetPGDB()
+	if err != nil {
+		return nil, err
+	}
+
 	rows := []*CheckRow{}
-	query := fmt.Sprintf("SELECT * FROM %v WHERE cluster_id=$1 ORDER BY id DESC", a.table)
-	err := a.db.Select(&rows, query, clusterID)
+	query := fmt.Sprintf("SELECT * FROM %v WHERE cluster_id=$1 ORDER BY id DESC", c.table)
+	err = pgdb.Select(&rows, query, clusterID)
 
 	return rows, err
 }
 
 // All returns all rows.
-func (a *Check) All(tx *sqlx.Tx) ([]*CheckRow, error) {
+func (c *Check) All(tx *sqlx.Tx) ([]*CheckRow, error) {
+	pgdb, err := c.GetPGDB()
+	if err != nil {
+		return nil, err
+	}
+
 	rows := []*CheckRow{}
-	query := fmt.Sprintf("SELECT * FROM %v ORDER BY id DESC", a.table)
-	err := a.db.Select(&rows, query)
+	query := fmt.Sprintf("SELECT * FROM %v ORDER BY id DESC", c.table)
+	err = pgdb.Select(&rows, query)
 
 	return rows, err
 }
 
 // AllSplitToDaemons returns all rows divided into daemons equally.
-func (a *Check) AllSplitToDaemons(tx *sqlx.Tx, daemons []string) (map[string][]*CheckRow, error) {
+func (c *Check) AllSplitToDaemons(tx *sqlx.Tx, daemons []string) (map[string][]*CheckRow, error) {
 	result := make(map[string][]*CheckRow)
 
 	if len(daemons) == 0 {
 		return result, nil
 	}
 
-	rows, err := a.All(tx)
+	rows, err := c.All(tx)
 	if err != nil {
 		return nil, err
 	}
@@ -175,7 +191,7 @@ func (a *Check) AllSplitToDaemons(tx *sqlx.Tx, daemons []string) (map[string][]*
 	return result, err
 }
 
-func (a *Check) AddTrigger(tx *sqlx.Tx, checkRow *CheckRow, trigger CheckTrigger) ([]CheckTrigger, error) {
+func (c *Check) AddTrigger(tx *sqlx.Tx, checkRow *CheckRow, trigger CheckTrigger) ([]CheckTrigger, error) {
 	triggers, err := checkRow.UnmarshalTriggers()
 	if err != nil {
 		return nil, err
@@ -191,12 +207,12 @@ func (a *Check) AddTrigger(tx *sqlx.Tx, checkRow *CheckRow, trigger CheckTrigger
 	data := make(map[string]interface{})
 	data["triggers"] = triggersJSON
 
-	_, err = a.UpdateByID(tx, data, checkRow.ID)
+	_, err = c.UpdateByID(tx, data, checkRow.ID)
 
 	return triggers, err
 }
 
-func (a *Check) UpdateTrigger(tx *sqlx.Tx, checkRow *CheckRow, trigger CheckTrigger) ([]CheckTrigger, error) {
+func (c *Check) UpdateTrigger(tx *sqlx.Tx, checkRow *CheckRow, trigger CheckTrigger) ([]CheckTrigger, error) {
 	triggers, err := checkRow.UnmarshalTriggers()
 	if err != nil {
 		return nil, err
@@ -217,12 +233,12 @@ func (a *Check) UpdateTrigger(tx *sqlx.Tx, checkRow *CheckRow, trigger CheckTrig
 	data := make(map[string]interface{})
 	data["triggers"] = triggersJSON
 
-	_, err = a.UpdateByID(tx, data, checkRow.ID)
+	_, err = c.UpdateByID(tx, data, checkRow.ID)
 
 	return triggers, err
 }
 
-func (a *Check) DeleteTrigger(tx *sqlx.Tx, checkRow *CheckRow, trigger CheckTrigger) ([]CheckTrigger, error) {
+func (c *Check) DeleteTrigger(tx *sqlx.Tx, checkRow *CheckRow, trigger CheckTrigger) ([]CheckTrigger, error) {
 	triggers, err := checkRow.UnmarshalTriggers()
 	if err != nil {
 		return nil, err
@@ -244,7 +260,7 @@ func (a *Check) DeleteTrigger(tx *sqlx.Tx, checkRow *CheckRow, trigger CheckTrig
 	data := make(map[string]interface{})
 	data["triggers"] = triggersJSON
 
-	_, err = a.UpdateByID(tx, data, checkRow.ID)
+	_, err = c.UpdateByID(tx, data, checkRow.ID)
 
 	return newTriggers, err
 }
@@ -288,7 +304,8 @@ func (checkRow *CheckRow) GetExpressions() ([]CheckExpression, error) {
 	return expressions, nil
 }
 
-func (checkRow *CheckRow) RunTriggers(appConfig config.GeneralConfig, coreDB *sqlx.DB, tsCheckDB *sqlx.DB, mailr *mailer.Mailer) error {
+// func (checkRow *CheckRow) RunTriggers(appConfig config.GeneralConfig, coreDB *sqlx.DB, tsCheckDB *sqlx.DB, mailr *mailer.Mailer) error {
+func (checkRow *CheckRow) RunTriggers(ctx context.Context) error {
 	if checkRow.IsSilenced {
 		return nil
 	}
@@ -299,7 +316,7 @@ func (checkRow *CheckRow) RunTriggers(appConfig config.GeneralConfig, coreDB *sq
 		return err
 	}
 
-	clusterRow, err := NewCluster(coreDB).GetByID(nil, checkRow.ClusterID)
+	clusterRow, err := NewCluster(ctx).GetByID(nil, checkRow.ClusterID)
 	if err != nil {
 		logrus.Error(err)
 		return err

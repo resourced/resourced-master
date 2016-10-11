@@ -1,6 +1,7 @@
 package pg
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json"
 	"fmt"
@@ -9,9 +10,9 @@ import (
 	sqlx_types "github.com/jmoiron/sqlx/types"
 )
 
-func NewGraph(db *sqlx.DB) *Graph {
+func NewGraph(ctx context.Context) *Graph {
 	g := &Graph{}
-	g.db = db
+	g.AppContext = ctx
 	g.table = "graphs"
 	g.hasID = true
 
@@ -71,18 +72,28 @@ func (g *Graph) rowFromSqlResult(tx *sqlx.Tx, sqlResult sql.Result) (*GraphRow, 
 
 // GetByClusterIDAndID returns one record by id.
 func (g *Graph) GetByClusterIDAndID(tx *sqlx.Tx, clusterID, id int64) (*GraphRow, error) {
+	pgdb, err := g.GetPGDB()
+	if err != nil {
+		return nil, err
+	}
+
 	row := &GraphRow{}
 	query := fmt.Sprintf("SELECT * FROM %v WHERE cluster_id=$1 AND id=$2", g.table)
-	err := g.db.Get(row, query, clusterID, id)
+	err = pgdb.Get(row, query, clusterID, id)
 
 	return row, err
 }
 
 // GetByID returns one record by id.
 func (g *Graph) GetByID(tx *sqlx.Tx, id int64) (*GraphRow, error) {
+	pgdb, err := g.GetPGDB()
+	if err != nil {
+		return nil, err
+	}
+
 	row := &GraphRow{}
 	query := fmt.Sprintf("SELECT * FROM %v WHERE id=$1", g.table)
-	err := g.db.Get(row, query, id)
+	err = pgdb.Get(row, query, id)
 
 	return row, err
 }
@@ -101,18 +112,28 @@ func (g *Graph) Create(tx *sqlx.Tx, clusterID int64, data map[string]interface{}
 
 // AllByClusterID returns all rows by cluster_id.
 func (g *Graph) AllByClusterID(tx *sqlx.Tx, clusterID int64) ([]*GraphRow, error) {
+	pgdb, err := g.GetPGDB()
+	if err != nil {
+		return nil, err
+	}
+
 	rows := []*GraphRow{}
 	query := fmt.Sprintf("SELECT * FROM %v WHERE cluster_id=$1", g.table)
-	err := g.db.Select(&rows, query, clusterID)
+	err = pgdb.Select(&rows, query, clusterID)
 
 	return rows, err
 }
 
 // AllGraphs returns all rows.
 func (g *Graph) AllGraphs(tx *sqlx.Tx) ([]*GraphRow, error) {
+	pgdb, err := g.GetPGDB()
+	if err != nil {
+		return nil, err
+	}
+
 	rows := []*GraphRow{}
 	query := fmt.Sprintf("SELECT * FROM %v", g.table)
-	err := g.db.Select(&rows, query)
+	err = pgdb.Select(&rows, query)
 
 	return rows, err
 }

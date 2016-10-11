@@ -4,14 +4,24 @@ import (
 	"testing"
 
 	_ "github.com/lib/pq"
+
+	"github.com/resourced/resourced-master/models/shared"
 )
 
 func newAccessTokenForTest(t *testing.T) *AccessToken {
-	return NewAccessToken(newDbForTest(t))
+	return NewAccessToken(shared.AppContextForTest())
 }
 
 func TestAccessTokenCRUD(t *testing.T) {
-	u := newUserForTest(t)
+	appContext := shared.AppContextForTest()
+
+	u := NewUser(appContext)
+
+	pgdb, err := u.GetPGDB()
+	if err != nil {
+		t.Errorf("There should be a legit db. Error: %v", err)
+	}
+	defer pgdb.Close()
 
 	// Signup
 	userRow, err := u.Signup(nil, newEmailForTest(), "abc123", "abc123")
@@ -25,7 +35,7 @@ func TestAccessTokenCRUD(t *testing.T) {
 		t.Fatal("Signing up user should work.")
 	}
 
-	cl := newClusterForTest(t)
+	cl := NewCluster(appContext)
 
 	// Create cluster for user
 	clusterRow, err := cl.Create(nil, userRow, "cluster-name")
@@ -36,7 +46,7 @@ func TestAccessTokenCRUD(t *testing.T) {
 		t.Fatalf("Cluster ID should be assign properly. clusterRow.ID: %v", clusterRow.ID)
 	}
 
-	at := newAccessTokenForTest(t)
+	at := NewAccessToken(appContext)
 
 	// Create access token
 	tokenRow, err := at.Create(nil, userRow.ID, clusterRow.ID, "write")

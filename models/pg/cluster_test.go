@@ -4,15 +4,24 @@ import (
 	"testing"
 
 	_ "github.com/lib/pq"
+
+	"github.com/resourced/resourced-master/models/shared"
 )
 
 func newClusterForTest(t *testing.T) *Cluster {
-	return NewCluster(newDbForTest(t))
+	return NewCluster(shared.AppContextForTest())
 }
 
 func TestClusterCRUD(t *testing.T) {
-	u := newUserForTest(t)
-	defer u.db.Close()
+	appContext := shared.AppContextForTest()
+
+	u := NewUser(appContext)
+
+	pgdb, err := u.GetPGDB()
+	if err != nil {
+		t.Errorf("There should be a legit db. Error: %v", err)
+	}
+	defer pgdb.Close()
 
 	// Signup
 	userRow, err := u.Signup(nil, newEmailForTest(), "abc123", "abc123")
@@ -26,7 +35,7 @@ func TestClusterCRUD(t *testing.T) {
 		t.Fatal("Signing up user should work.")
 	}
 
-	c := newClusterForTest(t)
+	c := NewCluster(appContext)
 	defer c.db.Close()
 
 	// Create cluster for user
@@ -39,13 +48,13 @@ func TestClusterCRUD(t *testing.T) {
 	}
 
 	// SELECT * FROM clusters
-	_, err = NewCluster(u.db).AllByUserID(nil, userRow.ID)
+	_, err = c.AllByUserID(nil, userRow.ID)
 	if err != nil {
 		t.Fatalf("Selecting all clusters should not fail. Error: %v, userRow.ID: %v", err, userRow.ID)
 	}
 
 	// DELETE FROM clusters WHERE id=...
-	_, err = NewCluster(u.db).DeleteByID(nil, clusterRow.ID)
+	_, err = c.DeleteByID(nil, clusterRow.ID)
 	if err != nil {
 		t.Fatalf("Deleting clusters by id should not fail. Error: %v", err)
 	}

@@ -4,15 +4,24 @@ import (
 	"testing"
 
 	_ "github.com/lib/pq"
+
+	"github.com/resourced/resourced-master/models/shared"
 )
 
 func newMetricForTest(t *testing.T) *Metric {
-	return NewMetric(newDbForTest(t))
+	return NewMetric(shared.AppContextForTest())
 }
 
 func TestMetricCRUD(t *testing.T) {
-	u := newUserForTest(t)
-	defer u.db.Close()
+	appContext := shared.AppContextForTest()
+
+	u := NewUser(appContext)
+
+	pgdb, err := u.GetPGDB()
+	if err != nil {
+		t.Errorf("There should be a legit db. Error: %v", err)
+	}
+	defer pgdb.Close()
 
 	// Signup
 	userRow, err := u.Signup(nil, newEmailForTest(), "abc123", "abc123")
@@ -26,8 +35,7 @@ func TestMetricCRUD(t *testing.T) {
 		t.Fatal("Signing up user should work.")
 	}
 
-	cl := newClusterForTest(t)
-	defer cl.db.Close()
+	cl := NewCluster(appContext)
 
 	// Create cluster for user
 	clusterRow, err := cl.Create(nil, userRow, "cluster-name")
@@ -39,8 +47,7 @@ func TestMetricCRUD(t *testing.T) {
 	}
 
 	// Create Metric
-	m := newMetricForTest(t)
-	defer m.db.Close()
+	m := NewMetric(appContext)
 
 	metricRow, err := m.CreateOrUpdate(nil, clusterRow.ID, "/test.metric.key")
 	if err != nil {

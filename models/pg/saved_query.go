@@ -1,14 +1,16 @@
 package pg
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
+
 	"github.com/jmoiron/sqlx"
 )
 
-func NewSavedQuery(db *sqlx.DB) *SavedQuery {
+func NewSavedQuery(ctx context.Context) *SavedQuery {
 	savedQuery := &SavedQuery{}
-	savedQuery.db = db
+	savedQuery.AppContext = ctx
 	savedQuery.table = "saved_queries"
 	savedQuery.hasID = true
 
@@ -43,36 +45,56 @@ func (sq *SavedQuery) savedQueryRowFromSqlResult(tx *sqlx.Tx, sqlResult sql.Resu
 
 // AllByClusterID returns all saved_query rows.
 func (sq *SavedQuery) AllByClusterID(tx *sqlx.Tx, clusterID int64) ([]*SavedQueryRow, error) {
+	pgdb, err := sq.GetPGDB()
+	if err != nil {
+		return nil, err
+	}
+
 	savedQueries := []*SavedQueryRow{}
 	query := fmt.Sprintf("SELECT * FROM %v WHERE cluster_id=$1", sq.table)
-	err := sq.db.Select(&savedQueries, query, clusterID)
+	err = pgdb.Select(&savedQueries, query, clusterID)
 
 	return savedQueries, err
 }
 
 // AllByClusterIDAndType returns all saved_query rows.
 func (sq *SavedQuery) AllByClusterIDAndType(tx *sqlx.Tx, clusterID int64, savedQueryType string) ([]*SavedQueryRow, error) {
+	pgdb, err := sq.GetPGDB()
+	if err != nil {
+		return nil, err
+	}
+
 	savedQueries := []*SavedQueryRow{}
 	query := fmt.Sprintf("SELECT * FROM %v WHERE cluster_id=$1 AND type=$2", sq.table)
-	err := sq.db.Select(&savedQueries, query, clusterID, savedQueryType)
+	err = pgdb.Select(&savedQueries, query, clusterID, savedQueryType)
 
 	return savedQueries, err
 }
 
 // GetByID returns record by id.
 func (sq *SavedQuery) GetByID(tx *sqlx.Tx, id int64) (*SavedQueryRow, error) {
+	pgdb, err := sq.GetPGDB()
+	if err != nil {
+		return nil, err
+	}
+
 	savedQueryRow := &SavedQueryRow{}
 	query := fmt.Sprintf("SELECT * FROM %v WHERE id=$1", sq.table)
-	err := sq.db.Get(savedQueryRow, query, id)
+	err = pgdb.Get(savedQueryRow, query, id)
 
 	return savedQueryRow, err
 }
 
 // GetByAccessTokenAndQuery returns record by savedQuery.
 func (sq *SavedQuery) GetByAccessTokenAndQuery(tx *sqlx.Tx, accessTokenRow *AccessTokenRow, savedQueryType, savedQuery string) (*SavedQueryRow, error) {
+	pgdb, err := sq.GetPGDB()
+	if err != nil {
+		return nil, err
+	}
+
 	savedQueryRow := &SavedQueryRow{}
 	query := fmt.Sprintf("SELECT * FROM %v WHERE cluster_id=$1 AND type=$2 AND query=$3", sq.table)
-	err := sq.db.Get(savedQueryRow, query, accessTokenRow.ClusterID, savedQueryType, savedQuery)
+	err = pgdb.Get(savedQueryRow, query, accessTokenRow.ClusterID, savedQueryType, savedQuery)
 
 	return savedQueryRow, err
 }
