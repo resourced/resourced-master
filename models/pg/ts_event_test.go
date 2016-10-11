@@ -16,7 +16,7 @@ func TestTSEventCreate(t *testing.T) {
 
 	pgdb, err := u.GetPGDB()
 	if err != nil {
-		t.Errorf("There should be a legit db. Error: %v", err)
+		t.Fatalf("There should be a legit db. Error: %v", err)
 	}
 	defer pgdb.Close()
 
@@ -44,6 +44,12 @@ func TestTSEventCreate(t *testing.T) {
 	}
 
 	tsEvent := NewTSEvent(appContext, clusterRow.ID)
+
+	pgdb, err = tsEvent.GetPGDB()
+	if err != nil {
+		t.Fatalf("There should be a legit db. Error: %v", err)
+	}
+	defer pgdb.Close()
 
 	// Create TSEvent without passing dates
 	tsEventRow, err := tsEvent.Create(nil, c.NewExplicitID(), clusterRow.ID, -1, -1, "Launched uber feature", time.Now().Unix()+int64(900))

@@ -22,7 +22,7 @@ func checkHostExpressionSetupForTest(t *testing.T) map[string]interface{} {
 
 	pgdb, err := u.GetPGDB()
 	if err != nil {
-		t.Errorf("There should be a legit db. Error: %v", err)
+		t.Fatalf("There should be a legit db. Error: %v", err)
 	}
 	defer pgdb.Close()
 
@@ -86,7 +86,13 @@ func checkHostExpressionTeardownForTest(t *testing.T, setupRows map[string]inter
 	// DELETE FROM hosts WHERE id=...
 	h := NewHost(appContext, setupRows["clusterRow"].(*ClusterRow).ID)
 
-	_, err := h.DeleteByID(nil, setupRows["hostRow"].(*HostRow).ID)
+	pgdb, err := h.GetPGDB()
+	if err != nil {
+		t.Fatalf("There should be a legit db. Error: %v", err)
+	}
+	defer pgdb.Close()
+
+	_, err = h.DeleteByID(nil, setupRows["hostRow"].(*HostRow).ID)
 	if err != nil {
 		t.Fatalf("Deleting access_tokens by id should not fail. Error: %v", err)
 	}
@@ -118,9 +124,9 @@ func checkHostExpressionTeardownForTest(t *testing.T, setupRows map[string]inter
 	// DELETE FROM users WHERE id=...
 	u := NewUser(appContext)
 
-	pgdb, err := u.GetPGDB()
+	pgdb, err = u.GetPGDB()
 	if err != nil {
-		t.Errorf("There should be a legit db. Error: %v", err)
+		t.Fatalf("There should be a legit db. Error: %v", err)
 	}
 	defer pgdb.Close()
 
@@ -137,7 +143,7 @@ func TestCheckCRUD(t *testing.T) {
 
 	pgdb, err := u.GetPGDB()
 	if err != nil {
-		t.Errorf("There should be a legit db. Error: %v", err)
+		t.Fatalf("There should be a legit db. Error: %v", err)
 	}
 	defer pgdb.Close()
 
@@ -230,6 +236,12 @@ func TestBuildEmailTriggerContent(t *testing.T) {
 	data["last_result_expressions"] = []byte("[]")
 
 	chk := NewCheck(appContext)
+
+	pgdb, err := chk.GetPGDB()
+	if err != nil {
+		t.Fatalf("There should be a legit db. Error: %v", err)
+	}
+	defer pgdb.Close()
 
 	// Create a Check
 	checkRow, err := chk.Create(nil, setupRows["clusterRow"].(*ClusterRow).ID, data)

@@ -28,7 +28,7 @@ func checkHostExpressionSetupForTest(t *testing.T) map[string]interface{} {
 
 	pgdb, err := u.GetPGDB()
 	if err != nil {
-		t.Errorf("There should be a legit db. Error: %v", err)
+		t.Fatalf("There should be a legit db. Error: %v", err)
 	}
 	defer pgdb.Close()
 
@@ -124,6 +124,12 @@ func checkHostExpressionTeardownForTest(t *testing.T, setupRows map[string]inter
 	// DELETE FROM users WHERE id=...
 	u := pg.NewUser(appContext)
 
+	pgdb, err := u.GetPGDB()
+	if err != nil {
+		t.Fatalf("There should be a legit db. Error: %v", err)
+	}
+	defer pgdb.Close()
+
 	_, err = u.DeleteByID(nil, setupRows["userRow"].(*pg.UserRow).ID)
 	if err != nil {
 		t.Fatalf("Deleting user by id should not fail. Error: %v", err)
@@ -152,6 +158,12 @@ func TestCheckEvalRawHostDataExpression(t *testing.T) {
 	data["last_result_expressions"] = []byte("[]")
 
 	chk := pg.NewCheck(appContext)
+
+	pgdb, err := chk.GetPGDB()
+	if err != nil {
+		t.Fatalf("There should be a legit db. Error: %v", err)
+	}
+	defer pgdb.Close()
 
 	checkRow, err := chk.Create(nil, setupRows["clusterRow"].(*pg.ClusterRow).ID, data)
 	if err != nil {
@@ -289,6 +301,12 @@ func TestCheckEvalRelativeHostDataExpression(t *testing.T) {
 
 	chk := pg.NewCheck(appContext)
 
+	pgdb, err := chk.GetPGDB()
+	if err != nil {
+		t.Fatalf("There should be a legit db. Error: %v", err)
+	}
+	defer pgdb.Close()
+
 	checkRow, err := chk.Create(nil, setupRows["clusterRow"].(*pg.ClusterRow).ID, data)
 	if err != nil {
 		t.Fatalf("Creating a Check should not fail. Error: %v", err)
@@ -401,6 +419,12 @@ func TestCheckEvalLogDataExpression(t *testing.T) {
 
 	chk := pg.NewCheck(appContext)
 
+	pgdb, err := chk.GetPGDB()
+	if err != nil {
+		t.Fatalf("There should be a legit db. Error: %v", err)
+	}
+	defer pgdb.Close()
+
 	// Create a Check
 	checkRow, err := chk.Create(nil, setupRows["clusterRow"].(*pg.ClusterRow).ID, data)
 	if err != nil {
@@ -472,6 +496,12 @@ func TestCheckEvalPingExpression(t *testing.T) {
 
 	chk := pg.NewCheck(appContext)
 
+	pgdb, err := chk.GetPGDB()
+	if err != nil {
+		t.Fatalf("There should be a legit db. Error: %v", err)
+	}
+	defer pgdb.Close()
+
 	// Create a Check
 	checkRow, err := chk.Create(nil, setupRows["clusterRow"].(*pg.ClusterRow).ID, data)
 	if err != nil {
@@ -529,6 +559,12 @@ func TestCheckEvalSSHExpression(t *testing.T) {
 	data["last_result_expressions"] = []byte("[]")
 
 	chk := pg.NewCheck(appContext)
+
+	pgdb, err := chk.GetPGDB()
+	if err != nil {
+		t.Fatalf("There should be a legit db. Error: %v", err)
+	}
+	defer pgdb.Close()
 
 	// Create a Check
 	checkRow, err := chk.Create(nil, setupRows["clusterRow"].(*pg.ClusterRow).ID, data)
@@ -590,6 +626,12 @@ func TestCheckEvalHTTPExpression(t *testing.T) {
 	data["last_result_expressions"] = []byte("[]")
 
 	chk := pg.NewCheck(appContext)
+
+	pgdb, err := chk.GetPGDB()
+	if err != nil {
+		t.Fatalf("There should be a legit db. Error: %v", err)
+	}
+	defer pgdb.Close()
 
 	// Create a Check
 	checkRow, err := chk.Create(nil, setupRows["clusterRow"].(*pg.ClusterRow).ID, data)

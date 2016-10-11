@@ -15,7 +15,7 @@ func TestHostCRUD(t *testing.T) {
 
 	pgdb, err := u.GetPGDB()
 	if err != nil {
-		t.Errorf("There should be a legit db. Error: %v", err)
+		t.Fatalf("There should be a legit db. Error: %v", err)
 	}
 	defer pgdb.Close()
 
@@ -54,6 +54,12 @@ func TestHostCRUD(t *testing.T) {
 	}
 
 	h := NewHost(appContext, clusterRow.ID)
+
+	pgdb, err = h.GetPGDB()
+	if err != nil {
+		t.Fatalf("There should be a legit db. Error: %v", err)
+	}
+	defer pgdb.Close()
 
 	// Create host
 	hostRow, err := h.CreateOrUpdate(nil, tokenRow, []byte(`{"/stuff": {"Data": {"Score": 100}, "Host": {"Name": "localhost", "Tags": {"aaa": "bbb"}}}}`))

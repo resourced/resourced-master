@@ -73,6 +73,9 @@ func (ts *TSLog) GetPGDB() (*sqlx.DB, error) {
 	if err != nil {
 		return nil, err
 	}
+	if pgdbs == nil {
+		return nil, fmt.Errorf("Database handler went missing")
+	}
 
 	return pgdbs.GetTSLog(ts.clusterID), nil
 }

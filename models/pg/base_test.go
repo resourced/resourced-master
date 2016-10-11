@@ -31,7 +31,7 @@ func TestNewTransactionIfNeeded(t *testing.T) {
 
 	pgdb, err := base.GetPGDB()
 	if err != nil {
-		t.Errorf("There should be a legit db. Error: %v", err)
+		t.Fatalf("There should be a legit db. Error: %v", err)
 	}
 	defer pgdb.Close()
 
@@ -69,7 +69,7 @@ func TestCreateDeleteGeneric(t *testing.T) {
 
 	pgdb, err := base.GetPGDB()
 	if err != nil {
-		t.Errorf("There should be a legit db. Error: %v", err)
+		t.Fatalf("There should be a legit db. Error: %v", err)
 	}
 	defer pgdb.Close()
 
@@ -104,7 +104,7 @@ func TestCreateDeleteByID(t *testing.T) {
 
 	pgdb, err := base.GetPGDB()
 	if err != nil {
-		t.Errorf("There should be a legit db. Error: %v", err)
+		t.Fatalf("There should be a legit db. Error: %v", err)
 	}
 	defer pgdb.Close()
 
@@ -137,7 +137,7 @@ func TestCreateUpdateGenericDelete(t *testing.T) {
 
 	pgdb, err := base.GetPGDB()
 	if err != nil {
-		t.Errorf("There should be a legit db. Error: %v", err)
+		t.Fatalf("There should be a legit db. Error: %v", err)
 	}
 	defer pgdb.Close()
 
@@ -179,7 +179,7 @@ func TestCreateUpdateByIDDelete(t *testing.T) {
 
 	pgdb, err := base.GetPGDB()
 	if err != nil {
-		t.Errorf("There should be a legit db. Error: %v", err)
+		t.Fatalf("There should be a legit db. Error: %v", err)
 	}
 	defer pgdb.Close()
 
@@ -220,7 +220,7 @@ func TestCreateUpdateByKeyValueStringDelete(t *testing.T) {
 
 	pgdb, err := base.GetPGDB()
 	if err != nil {
-		t.Errorf("There should be a legit db. Error: %v", err)
+		t.Fatalf("There should be a legit db. Error: %v", err)
 	}
 	defer pgdb.Close()
 

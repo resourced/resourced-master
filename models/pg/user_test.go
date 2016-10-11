@@ -13,7 +13,7 @@ func TestUserCRUD(t *testing.T) {
 
 	pgdb, err := u.GetPGDB()
 	if err != nil {
-		t.Errorf("There should be a legit db. Error: %v", err)
+		t.Fatalf("There should be a legit db. Error: %v", err)
 	}
 	defer pgdb.Close()
 

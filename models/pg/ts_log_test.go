@@ -18,7 +18,7 @@ func TestTSLogCreateValue(t *testing.T) {
 
 	pgdb, err := u.GetPGDB()
 	if err != nil {
-		t.Errorf("There should be a legit db. Error: %v", err)
+		t.Fatalf("There should be a legit db. Error: %v", err)
 	}
 	defer pgdb.Close()
 
@@ -48,7 +48,15 @@ func TestTSLogCreateValue(t *testing.T) {
 	// Create TSLog
 	dataJSONString := fmt.Sprintf(`{"Host": {"Name": "%v", "Tags": {}}, "Data": {"Filename":"", "Loglines": [{"Created": 123, "Content": "aaa"}, {"Created": 123, "Content": "bbb"}]}}`, hostname)
 
-	err = NewTSLog(appContext, clusterRow.ID).CreateFromJSON(nil, clusterRow.ID, []byte(dataJSONString), time.Now().Unix()+int64(900))
+	tsLog := NewTSLog(appContext, clusterRow.ID)
+
+	pgdb, err = tsLog.GetPGDB()
+	if err != nil {
+		t.Fatalf("There should be a legit db. Error: %v", err)
+	}
+	defer pgdb.Close()
+
+	err = tsLog.CreateFromJSON(nil, clusterRow.ID, []byte(dataJSONString), time.Now().Unix()+int64(900))
 	if err != nil {
 		t.Fatalf("Creating a TSLog should work. Error: %v", err)
 	}

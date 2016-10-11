@@ -40,6 +40,9 @@ func (ts *TSMetric) GetPGDB() (*sqlx.DB, error) {
 	if err != nil {
 		return nil, err
 	}
+	if pgdbs == nil {
+		return nil, fmt.Errorf("Database handler went missing")
+	}
 
 	return pgdbs.GetTSMetric(ts.clusterID), nil
 }
