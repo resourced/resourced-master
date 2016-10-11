@@ -1,7 +1,6 @@
 package application
 
 import (
-	"context"
 	"os"
 	"testing"
 )

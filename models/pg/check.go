@@ -374,7 +374,7 @@ func (checkRow *CheckRow) BuildEmailTriggerContent(lastViolation *TSCheckRow, te
 		},
 	}
 
-	t, err := template.New("email-trigger.txt.tmpl").Funcs(funcMap).ParseFiles(templateRoot + "/templates/checks/email-trigger.txt.tmpl")
+	t, err := template.New("email-trigger.txt.tmpl").Funcs(funcMap).ParseFiles(libstring.ExpandTildeAndEnv(templateRoot + "/templates/checks/email-trigger.txt.tmpl"))
 	if err != nil {
 		return "", err
 	}

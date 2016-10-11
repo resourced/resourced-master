@@ -71,7 +71,6 @@ func checkHostExpressionSetupForTest(t *testing.T) map[string]interface{} {
 
 	// Create TSMetric
 	tsm := NewTSMetric(appContext, clusterRow.ID)
-	defer tsm.db.Close()
 
 	err = tsm.Create(nil, clusterRow.ID, metricRow.ID, hostname, "/stuff.Score", float64(100), time.Now().Unix()+int64(900))
 	if err != nil {
@@ -94,7 +93,6 @@ func checkHostExpressionTeardownForTest(t *testing.T, setupRows map[string]inter
 
 	// DELETE FROM access_tokens WHERE id=...
 	at := NewAccessToken(appContext)
-	defer at.db.Close()
 
 	_, err = at.DeleteByID(nil, setupRows["tokenRow"].(*AccessTokenRow).ID)
 	if err != nil {
@@ -207,72 +205,73 @@ func TestCheckCRUD(t *testing.T) {
 	}
 }
 
-// func TestBuildEmailTriggerContent(t *testing.T) {
-// 	setupRows := checkHostExpressionSetupForTest(t)
+func TestBuildEmailTriggerContent(t *testing.T) {
+	setupRows := checkHostExpressionSetupForTest(t)
 
-// 	hosts := make([]*HostRow, 1)
-// 	hosts[0] = setupRows["hostRow"].(*HostRow)
+	hosts := make([]*HostRow, 1)
+	hosts[0] = setupRows["hostRow"].(*HostRow)
 
-// 	// ----------------------------------------------------------------------
-// 	// Real test begins here
+	appContext := shared.AppContextForTest()
 
-// 	hostname, _ := os.Hostname()
+	// ----------------------------------------------------------------------
+	// Real test begins here
 
-// 	// Create Check
-// 	data := make(map[string]interface{})
-// 	data["name"] = "check-name"
-// 	data["interval"] = "60s"
-// 	data["hosts_query"] = ""
-// 	data["hosts_list"] = []byte("[\"" + hostname + "\"]")
-// 	data["expressions"] = []byte("[]")
-// 	data["triggers"] = []byte("[]")
-// 	data["last_result_hosts"] = []byte("[]")
-// 	data["last_result_expressions"] = []byte("[]")
+	hostname, _ := os.Hostname()
 
-// 	chk := newCheckForTest(t)
-// 	defer chk.db.Close()
+	// Create Check
+	data := make(map[string]interface{})
+	data["name"] = "check-name"
+	data["interval"] = "60s"
+	data["hosts_query"] = ""
+	data["hosts_list"] = []byte("[\"" + hostname + "\"]")
+	data["expressions"] = []byte("[]")
+	data["triggers"] = []byte("[]")
+	data["last_result_hosts"] = []byte("[]")
+	data["last_result_expressions"] = []byte("[]")
 
-// 	// Create a Check
-// 	checkRow, err := chk.Create(nil, setupRows["clusterRow"].(*ClusterRow).ID, data)
-// 	if err != nil {
-// 		t.Fatalf("Creating a Check should not fail. Error: %v", err)
-// 	}
+	chk := NewCheck(appContext)
 
-// 	expression := CheckExpression{}
-// 	expression.Type = "RawHostData"
-// 	expression.Metric = "/stuff.Score"
-// 	expression.Operator = ">="
-// 	expression.MinHost = 1
-// 	expression.Value = float64(100)
+	// Create a Check
+	checkRow, err := chk.Create(nil, setupRows["clusterRow"].(*ClusterRow).ID, data)
+	if err != nil {
+		t.Fatalf("Creating a Check should not fail. Error: %v", err)
+	}
 
-// 	expressionResults := make([]CheckExpression, 1)
-// 	expressionResults[0] = checkRow.EvalRawHostDataExpression(hosts, expression)
+	expression := CheckExpression{}
+	expression.Type = "RawHostData"
+	expression.Metric = "/stuff.Score"
+	expression.Operator = ">="
+	expression.MinHost = 1
+	expression.Value = float64(100)
+	expression.Result.Value = true
 
-// 	tsCheck := NewTSCheck(newDbForTest(t))
-// 	defer tsCheck.db.Close()
+	expressionResults := make([]CheckExpression, 1)
+	expressionResults[0] = expression
 
-// 	err = tsCheck.Create(nil, checkRow.ClusterID, checkRow.ID, true, expressionResults, time.Now().Unix()+int64(900))
-// 	if err != nil {
-// 		t.Fatalf("Creating a TSCheck should not fail. Error: %v", err)
-// 	}
+	tsCheck := NewTSCheck(appContext, checkRow.ClusterID)
 
-// 	lastViolation, err := tsCheck.LastByClusterIDCheckIDAndResult(nil, checkRow.ClusterID, checkRow.ID, true)
-// 	if err != nil {
-// 		t.Fatalf("Fetching a TSCheck should not fail. Error: %v", err)
-// 	}
+	err = tsCheck.Create(nil, checkRow.ClusterID, checkRow.ID, true, expressionResults, time.Now().Unix()+int64(900))
+	if err != nil {
+		t.Fatalf("Creating a TSCheck should not fail. Error: %v", err)
+	}
 
-// 	_, err = checkRow.BuildEmailTriggerContent(lastViolation, "..")
-// 	if err != nil {
-// 		t.Fatalf("Generating the content of email alert should not fail. Error: %v", err)
-// 	}
+	lastViolation, err := tsCheck.LastByClusterIDCheckIDAndResult(nil, checkRow.ClusterID, checkRow.ID, true)
+	if err != nil {
+		t.Fatalf("Fetching a TSCheck should not fail. Error: %v", err)
+	}
 
-// 	// ----------------------------------------------------------------------
+	_, err = checkRow.BuildEmailTriggerContent(lastViolation, "$GOPATH/src/github.com/resourced/resourced-master")
+	if err != nil {
+		t.Fatalf("Generating the content of email alert should not fail. Error: %v", err)
+	}
 
-// 	// DELETE FROM Checks WHERE id=...
-// 	_, err = chk.DeleteByID(nil, checkRow.ID)
-// 	if err != nil {
-// 		t.Fatalf("Deleting Checks by id should not fail. Error: %v", err)
-// 	}
+	// ----------------------------------------------------------------------
 
-// 	checkHostExpressionTeardownForTest(t, setupRows)
-// }
+	// DELETE FROM Checks WHERE id=...
+	_, err = chk.DeleteByID(nil, checkRow.ID)
+	if err != nil {
+		t.Fatalf("Deleting Checks by id should not fail. Error: %v", err)
+	}
+
+	checkHostExpressionTeardownForTest(t, setupRows)
+}
