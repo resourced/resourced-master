@@ -8,10 +8,6 @@ import (
 	"github.com/resourced/resourced-master/models/shared"
 )
 
-func newAccessTokenForTest(t *testing.T) *AccessToken {
-	return NewAccessToken(shared.AppContextForTest())
-}
-
 func TestAccessTokenCRUD(t *testing.T) {
 	appContext := shared.AppContextForTest()
 

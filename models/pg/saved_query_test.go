@@ -8,10 +8,6 @@ import (
 	"github.com/resourced/resourced-master/models/shared"
 )
 
-func newSavedQueryForTest(t *testing.T) *SavedQuery {
-	return NewSavedQuery(shared.AppContextForTest())
-}
-
 func TestSavedQueryCRUD(t *testing.T) {
 	appContext := shared.AppContextForTest()
 

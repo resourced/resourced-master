@@ -7,10 +7,6 @@ import (
 	_ "github.com/lib/pq"
 )
 
-func newTSMetricForTest(t *testing.T) *TSMetric {
-	return NewTSMetric(newDbForTest(t))
-}
-
 func TestTSMetricCreateValue(t *testing.T) {
 	u := newUserForTest(t)
 

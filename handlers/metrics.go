@@ -16,12 +16,6 @@ import (
 )
 
 func PostMetrics(w http.ResponseWriter, r *http.Request) {
-	pgdbs, err := contexthelper.GetPGDBConfig(r.Context())
-	if err != nil {
-		libhttp.HandleErrorJson(w, err)
-		return
-	}
-
 	clusterID, err := getInt64SlugFromPath(w, r, "clusterID")
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
@@ -30,7 +24,7 @@ func PostMetrics(w http.ResponseWriter, r *http.Request) {
 
 	key := r.FormValue("Key")
 
-	_, err = pg.NewMetric(pgdbs.Core).CreateOrUpdate(nil, clusterID, key)
+	_, err = pg.NewMetric(r.Context()).CreateOrUpdate(nil, clusterID, key)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
@@ -60,12 +54,6 @@ func PutMetricID(w http.ResponseWriter, r *http.Request) {
 
 // DeleteMetricID deletes metrics by ID
 func DeleteMetricID(w http.ResponseWriter, r *http.Request) {
-	pgdbs, err := contexthelper.GetPGDBConfig(r.Context())
-	if err != nil {
-		libhttp.HandleErrorJson(w, err)
-		return
-	}
-
 	clusterID, err := getInt64SlugFromPath(w, r, "clusterID")
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
@@ -78,13 +66,13 @@ func DeleteMetricID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err = pg.NewMetric(pgdbs.Core).DeleteByClusterIDAndID(nil, clusterID, id)
+	_, err = pg.NewMetric(r.Context()).DeleteByClusterIDAndID(nil, clusterID, id)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
 	}
 
-	err = pg.NewGraph(pgdbs.Core).DeleteMetricFromGraphs(nil, clusterID, id)
+	err = pg.NewGraph(r.Context()).DeleteMetricFromGraphs(nil, clusterID, id)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
@@ -95,12 +83,6 @@ func DeleteMetricID(w http.ResponseWriter, r *http.Request) {
 
 func GetApiTSMetricsByHost(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-
-	pgdbs, err := contexthelper.GetPGDBConfig(r.Context())
-	if err != nil {
-		libhttp.HandleErrorJson(w, err)
-		return
-	}
 
 	errLogger, err := contexthelper.GetLogger(r.Context(), "ErrLogger")
 	if err != nil {
@@ -141,14 +123,14 @@ func GetApiTSMetricsByHost(w http.ResponseWriter, r *http.Request) {
 
 	host := chi.URLParam(r, "host")
 
-	metricRow, err := pg.NewMetric(pgdbs.Core).GetByID(nil, id)
+	metricRow, err := pg.NewMetric(r.Context()).GetByID(nil, id)
 	if err != nil {
 		errLogger.WithFields(logrus.Fields{"Error": err}).Error("Failed to fetch metric row")
 		libhttp.HandleErrorJson(w, err)
 		return
 	}
 
-	clusterRow, err := pg.NewCluster(pgdbs.Core).GetByID(nil, metricRow.ClusterID)
+	clusterRow, err := pg.NewCluster(r.Context()).GetByID(nil, metricRow.ClusterID)
 	if err != nil {
 		errLogger.WithFields(logrus.Fields{"Error": err}).Error("Failed to fetch cluster row")
 		libhttp.HandleErrorJson(w, err)
@@ -175,12 +157,6 @@ func GetApiTSMetricsByHost(w http.ResponseWriter, r *http.Request) {
 
 func GetApiTSMetrics(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-
-	pgdbs, err := contexthelper.GetPGDBConfig(r.Context())
-	if err != nil {
-		libhttp.HandleErrorJson(w, err)
-		return
-	}
 
 	errLogger, err := contexthelper.GetLogger(r.Context(), "ErrLogger")
 	if err != nil {
@@ -219,13 +195,13 @@ func GetApiTSMetrics(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	metricRow, err := pg.NewMetric(pgdbs.Core).GetByID(nil, id)
+	metricRow, err := pg.NewMetric(r.Context()).GetByID(nil, id)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
 	}
 
-	clusterRow, err := pg.NewCluster(pgdbs.Core).GetByID(nil, metricRow.ClusterID)
+	clusterRow, err := pg.NewCluster(r.Context()).GetByID(nil, metricRow.ClusterID)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return

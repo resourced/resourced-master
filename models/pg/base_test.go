@@ -5,12 +5,10 @@ import (
 	"testing"
 
 	"github.com/Sirupsen/logrus"
-	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
 	"github.com/satori/go.uuid"
 
-	"github.com/resourced/resourced-master/config"
-	"github.com/resourced/resourced-master/libunix"
+	"github.com/resourced/resourced-master/models/shared"
 )
 
 func init() {
@@ -21,43 +19,21 @@ func newEmailForTest() string {
 	return fmt.Sprintf("brotato-%v@example.com", uuid.NewV4().String())
 }
 
-func newPGDBConfigForTest(t *testing.T) *config.PGDBConfig {
-	conf := &config.PGDBConfig{}
-	conf.HostByClusterID = make(map[int64]*sqlx.DB)
-	conf.Core = newDbForTest(t)
-	conf.Host = conf.Core
-	conf.TSMetric = conf.Core
-	conf.TSMetricAggr15m = conf.Core
-	conf.TSEvent = conf.Core
-	conf.TSLog = conf.Core
-	conf.TSCheck = conf.Core
-
-	return conf
-}
-
-func newDbForTest(t *testing.T) *sqlx.DB {
-	u, err := libunix.CurrentUser()
-	if err != nil {
-		t.Fatalf("Getting current user should never fail. Error: %v", err)
-	}
-
-	db, err := sqlx.Connect("postgres", fmt.Sprintf("postgres://%v@localhost:5432/resourced-master-test?sslmode=disable", u))
-	if err != nil {
-		t.Fatalf("Connecting to local postgres should never fail. Error: %v", err)
-	}
-	return db
-}
-
 func newBaseForTest(t *testing.T) *Base {
 	base := &Base{}
-	base.db = newDbForTest(t)
+	base.AppContext = shared.AppContextForTest()
 
 	return base
 }
 
 func TestNewTransactionIfNeeded(t *testing.T) {
 	base := newBaseForTest(t)
-	defer base.db.Close()
+
+	pgdb, err := base.GetPGDB()
+	if err != nil {
+		t.Errorf("There should be a legit db. Error: %v", err)
+	}
+	defer pgdb.Close()
 
 	// New Transaction block
 	tx, wrapInSingleTransaction, err := base.newTransactionIfNeeded(nil)
@@ -90,7 +66,12 @@ func TestNewTransactionIfNeeded(t *testing.T) {
 func TestCreateDeleteGeneric(t *testing.T) {
 	base := newBaseForTest(t)
 	base.table = "users"
-	defer base.db.Close()
+
+	pgdb, err := base.GetPGDB()
+	if err != nil {
+		t.Errorf("There should be a legit db. Error: %v", err)
+	}
+	defer pgdb.Close()
 
 	// INSERT INTO users (name) VALUES (...)
 	data := make(map[string]interface{})
@@ -120,7 +101,12 @@ func TestCreateDeleteGeneric(t *testing.T) {
 func TestCreateDeleteByID(t *testing.T) {
 	base := newBaseForTest(t)
 	base.table = "users"
-	defer base.db.Close()
+
+	pgdb, err := base.GetPGDB()
+	if err != nil {
+		t.Errorf("There should be a legit db. Error: %v", err)
+	}
+	defer pgdb.Close()
 
 	// INSERT INTO users (...) VALUES (...)
 	data := make(map[string]interface{})
@@ -148,7 +134,12 @@ func TestCreateDeleteByID(t *testing.T) {
 func TestCreateUpdateGenericDelete(t *testing.T) {
 	base := newBaseForTest(t)
 	base.table = "users"
-	defer base.db.Close()
+
+	pgdb, err := base.GetPGDB()
+	if err != nil {
+		t.Errorf("There should be a legit db. Error: %v", err)
+	}
+	defer pgdb.Close()
 
 	// INSERT INTO users (...) VALUES (...)
 	data := make(map[string]interface{})
@@ -185,7 +176,12 @@ func TestCreateUpdateGenericDelete(t *testing.T) {
 func TestCreateUpdateByIDDelete(t *testing.T) {
 	base := newBaseForTest(t)
 	base.table = "users"
-	defer base.db.Close()
+
+	pgdb, err := base.GetPGDB()
+	if err != nil {
+		t.Errorf("There should be a legit db. Error: %v", err)
+	}
+	defer pgdb.Close()
 
 	// INSERT INTO users (...) VALUES (...)
 	data := make(map[string]interface{})
@@ -221,7 +217,12 @@ func TestCreateUpdateByIDDelete(t *testing.T) {
 func TestCreateUpdateByKeyValueStringDelete(t *testing.T) {
 	base := newBaseForTest(t)
 	base.table = "users"
-	defer base.db.Close()
+
+	pgdb, err := base.GetPGDB()
+	if err != nil {
+		t.Errorf("There should be a legit db. Error: %v", err)
+	}
+	defer pgdb.Close()
 
 	originalEmail := newEmailForTest()
 

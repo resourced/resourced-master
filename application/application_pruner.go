@@ -26,7 +26,7 @@ func (app *Application) PruneAll() {
 				daemons = append(daemons, hostAndPort)
 			}
 
-			groupedClustersByDaemon, err := pg.NewCluster(app.PGDBConfig.Core).AllSplitToDaemons(nil, daemons)
+			groupedClustersByDaemon, err := pg.NewCluster(app.GetContext()).AllSplitToDaemons(nil, daemons)
 			if err != nil {
 				app.ErrLogger.WithFields(logrus.Fields{
 					"Method": "Cluster.AllSplitToDaemons",
@@ -39,7 +39,7 @@ func (app *Application) PruneAll() {
 			clusters = groupedClustersByDaemon[app.FullAddr()]
 
 		} else {
-			clusters, err = pg.NewCluster(app.PGDBConfig.Core).All(nil)
+			clusters, err = pg.NewCluster(app.GetContext()).All(nil)
 		}
 
 		if err != nil {
@@ -76,7 +76,7 @@ func (app *Application) PruneAll() {
 // PruneTSCheckOnce deletes old ts_checks data.
 func (app *Application) PruneTSCheckOnce(clusterID int64) (err error) {
 	f := func() {
-		err = pg.NewTSCheck(app.PGDBConfig.GetTSCheck(clusterID)).DeleteDeleted(nil, clusterID)
+		err = pg.NewTSCheck(app.GetContext(), clusterID).DeleteDeleted(nil, clusterID)
 	}
 
 	latency := stopwatch.Measure(f)
@@ -103,7 +103,7 @@ func (app *Application) PruneTSMetricOnce(clusterID int64) (err error) {
 	}
 
 	f := func() {
-		err = pg.NewTSMetric(app.PGDBConfig.TSMetric).DeleteDeleted(nil, clusterID)
+		err = pg.NewTSMetric(app.GetContext(), clusterID).DeleteDeleted(nil, clusterID)
 	}
 
 	latency := stopwatch.Measure(f)
@@ -126,7 +126,7 @@ func (app *Application) PruneTSMetricOnce(clusterID int64) (err error) {
 // PruneTSEventOnce deletes old ts_events data.
 func (app *Application) PruneTSEventOnce(clusterID int64) (err error) {
 	f := func() {
-		err = pg.NewTSEvent(app.PGDBConfig.TSEvent).DeleteDeleted(nil, clusterID)
+		err = pg.NewTSEvent(app.GetContext(), clusterID).DeleteDeleted(nil, clusterID)
 	}
 
 	latency := stopwatch.Measure(f)
@@ -149,7 +149,7 @@ func (app *Application) PruneTSEventOnce(clusterID int64) (err error) {
 // PruneTSLogOnce deletes old ts_logs data.
 func (app *Application) PruneTSLogOnce(clusterID int64) (err error) {
 	f := func() {
-		err = pg.NewTSLog(app.PGDBConfig.TSLog).DeleteDeleted(nil, clusterID)
+		err = pg.NewTSLog(app.GetContext(), clusterID).DeleteDeleted(nil, clusterID)
 	}
 
 	latency := stopwatch.Measure(f)

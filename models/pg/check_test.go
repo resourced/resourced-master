@@ -11,10 +11,6 @@ import (
 	"github.com/resourced/resourced-master/models/shared"
 )
 
-func newCheckForTest(t *testing.T) *Check {
-	return NewCheck(shared.AppContextForTest())
-}
-
 func checkHostExpressionSetupForTest(t *testing.T) map[string]interface{} {
 	setupRows := make(map[string]interface{})
 

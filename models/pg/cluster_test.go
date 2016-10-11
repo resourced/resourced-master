@@ -8,10 +8,6 @@ import (
 	"github.com/resourced/resourced-master/models/shared"
 )
 
-func newClusterForTest(t *testing.T) *Cluster {
-	return NewCluster(shared.AppContextForTest())
-}
-
 func TestClusterCRUD(t *testing.T) {
 	appContext := shared.AppContextForTest()
 

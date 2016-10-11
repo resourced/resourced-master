@@ -45,11 +45,7 @@ func (ts *TSMetric) GetPGDB() (*sqlx.DB, error) {
 
 func (ts *TSMetric) CreateByHostRow(hostRow shared.IHostRow, metricsMap map[string]int64, deletedFrom int64, ttl time.Duration) error {
 	if ts.GetDBType() == "pg" {
-		pgdb, err := ts.GetPGDB()
-		if err != nil {
-			return err
-		}
-		return pg.NewTSMetric(pgdb).CreateByHostRow(nil, hostRow, metricsMap, deletedFrom)
+		return pg.NewTSMetric(ts.AppContext, ts.ClusterID).CreateByHostRow(nil, hostRow, metricsMap, deletedFrom)
 
 	} else if ts.GetDBType() == "cassandra" {
 		return cassandra.NewTSMetric(ts.AppContext).CreateByHostRow(hostRow, metricsMap, ttl)
@@ -60,11 +56,7 @@ func (ts *TSMetric) CreateByHostRow(hostRow shared.IHostRow, metricsMap map[stri
 
 func (ts *TSMetric) AllByMetricIDHostAndRangeForHighchart(clusterID, metricID int64, host string, from, to, deletedFrom int64) (*shared.TSMetricHighchartPayload, error) {
 	if ts.GetDBType() == "pg" {
-		pgdb, err := ts.GetPGDB()
-		if err != nil {
-			return nil, err
-		}
-		return pg.NewTSMetric(pgdb).AllByMetricIDHostAndRangeForHighchart(nil, clusterID, metricID, host, from, to, deletedFrom)
+		return pg.NewTSMetric(ts.AppContext, ts.ClusterID).AllByMetricIDHostAndRangeForHighchart(nil, clusterID, metricID, host, from, to, deletedFrom)
 
 	} else if ts.GetDBType() == "cassandra" {
 		return cassandra.NewTSMetric(ts.AppContext).AllByMetricIDHostAndRangeForHighchart(clusterID, metricID, host, from, to)
@@ -75,11 +67,7 @@ func (ts *TSMetric) AllByMetricIDHostAndRangeForHighchart(clusterID, metricID in
 
 func (ts *TSMetric) AllByMetricIDAndRangeForHighchart(clusterID, metricID, from, to, deletedFrom int64) ([]*shared.TSMetricHighchartPayload, error) {
 	if ts.GetDBType() == "pg" {
-		pgdb, err := ts.GetPGDB()
-		if err != nil {
-			return nil, err
-		}
-		return pg.NewTSMetric(pgdb).AllByMetricIDAndRangeForHighchart(nil, clusterID, metricID, from, to, deletedFrom)
+		return pg.NewTSMetric(ts.AppContext, ts.ClusterID).AllByMetricIDAndRangeForHighchart(nil, clusterID, metricID, from, to, deletedFrom)
 
 	} else if ts.GetDBType() == "cassandra" {
 		return cassandra.NewTSMetric(ts.AppContext).AllByMetricIDAndRangeForHighchart(clusterID, metricID, from, to)
@@ -90,11 +78,7 @@ func (ts *TSMetric) AllByMetricIDAndRangeForHighchart(clusterID, metricID, from,
 
 func (ts *TSMetric) GetAggregateXMinutesByMetricIDAndHostname(clusterID, metricID int64, minutes int, hostname string) (*shared.TSMetricAggregateRow, error) {
 	if ts.GetDBType() == "pg" {
-		pgdb, err := ts.GetPGDB()
-		if err != nil {
-			return nil, err
-		}
-		return pg.NewTSMetric(pgdb).GetAggregateXMinutesByMetricIDAndHostname(nil, clusterID, metricID, minutes, hostname)
+		return pg.NewTSMetric(ts.AppContext, ts.ClusterID).GetAggregateXMinutesByMetricIDAndHostname(nil, clusterID, metricID, minutes, hostname)
 
 	} else if ts.GetDBType() == "cassandra" {
 		return cassandra.NewTSMetric(ts.AppContext).GetAggregateXMinutesByMetricIDAndHostname(clusterID, metricID, minutes, hostname)

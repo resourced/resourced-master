@@ -1,19 +1,22 @@
 package pg
 
 import (
+	"context"
 	"fmt"
 	"time"
 
 	"github.com/Sirupsen/logrus"
 	"github.com/jmoiron/sqlx"
 
+	"github.com/resourced/resourced-master/contexthelper"
 	"github.com/resourced/resourced-master/models/shared"
 )
 
-func NewTSMetric(db *sqlx.DB) *TSMetric {
+func NewTSMetric(ctx context.Context, clusterID int64) *TSMetric {
 	ts := &TSMetric{}
-	ts.db = db
+	ts.AppContext = ctx
 	ts.table = "ts_metrics"
+	ts.clusterID = clusterID
 
 	return ts
 }
@@ -30,6 +33,15 @@ type TSMetricRow struct {
 
 type TSMetric struct {
 	TSBase
+}
+
+func (ts *TSMetric) GetPGDB() (*sqlx.DB, error) {
+	pgdbs, err := contexthelper.GetPGDBConfig(ts.AppContext)
+	if err != nil {
+		return nil, err
+	}
+
+	return pgdbs.GetTSMetric(ts.clusterID), nil
 }
 
 func (ts *TSMetric) metricRowsForHighchart(tx *sqlx.Tx, host string, tsMetricRows []*TSMetricRow) (*shared.TSMetricHighchartPayload, error) {
@@ -92,6 +104,11 @@ func (ts *TSMetric) CreateByHostRow(tx *sqlx.Tx, hostRow shared.IHostRow, metric
 }
 
 func (ts *TSMetric) AllByMetricIDHostAndRange(tx *sqlx.Tx, clusterID, metricID int64, host string, from, to, deletedFrom int64) ([]*TSMetricRow, error) {
+	pgdb, err := ts.GetPGDB()
+	if err != nil {
+		return nil, err
+	}
+
 	rows := []*TSMetricRow{}
 	query := fmt.Sprintf(`SELECT * FROM %v WHERE cluster_id=$1 AND metric_id=$2 AND host=$3 AND
 created >= to_timestamp($4) at time zone 'utc' AND
@@ -99,7 +116,7 @@ created <= to_timestamp($5) at time zone 'utc' AND
 deleted >= to_timestamp($6) at time zone 'utc'
 ORDER BY cluster_id,metric_id,created ASC`, ts.table)
 
-	err := ts.db.Select(&rows, query, clusterID, metricID, host, from, to, deletedFrom)
+	err = pgdb.Select(&rows, query, clusterID, metricID, host, from, to, deletedFrom)
 
 	if err != nil {
 		err = fmt.Errorf("%v. Query: %v", err.Error(), query)
@@ -127,6 +144,11 @@ func (ts *TSMetric) AllByMetricIDHostAndRangeForHighchart(tx *sqlx.Tx, clusterID
 }
 
 func (ts *TSMetric) AllByMetricIDAndRange(tx *sqlx.Tx, clusterID, metricID, from, to, deletedFrom int64) ([]*TSMetricRow, error) {
+	pgdb, err := ts.GetPGDB()
+	if err != nil {
+		return nil, err
+	}
+
 	rows := []*TSMetricRow{}
 	query := fmt.Sprintf(`SELECT * FROM %v WHERE cluster_id=$1 AND metric_id=$2 AND
 created >= to_timestamp($3) at time zone 'utc' AND
@@ -134,7 +156,7 @@ created <= to_timestamp($4) at time zone 'utc' AND
 deleted >= to_timestamp($5) at time zone 'utc'
 ORDER BY cluster_id,metric_id,created ASC`, ts.table)
 
-	err := ts.db.Select(&rows, query, clusterID, metricID, from, to, deletedFrom)
+	err = pgdb.Select(&rows, query, clusterID, metricID, from, to, deletedFrom)
 
 	if err != nil {
 		err = fmt.Errorf("%v. Query: %v", err.Error(), query)
@@ -176,12 +198,17 @@ func (ts *TSMetric) AllByMetricIDAndRangeForHighchart(tx *sqlx.Tx, clusterID, me
 }
 
 func (ts *TSMetric) GetAggregateXMinutesByMetricIDAndHostname(tx *sqlx.Tx, clusterID, metricID int64, minutes int, hostname string) (*shared.TSMetricAggregateRow, error) {
+	pgdb, err := ts.GetPGDB()
+	if err != nil {
+		return nil, err
+	}
+
 	now := time.Now().UTC()
 	from := now.Add(-1 * time.Duration(minutes) * time.Minute).UTC().Unix()
 
 	row := &shared.TSMetricAggregateRow{}
 	query := fmt.Sprintf("SELECT cluster_id, host, key, avg(value) as avg, max(value) as max, min(value) as min, sum(value) as sum FROM %v WHERE cluster_id=$1 AND metric_id=$2 AND created >= to_timestamp($2) at time zone 'utc' AND host=$3 GROUP BY cluster_id, metric_id, host", ts.table)
-	err := ts.db.Get(row, query, clusterID, metricID, from, hostname)
+	err = pgdb.Get(row, query, clusterID, metricID, from, hostname)
 
 	if err != nil {
 		err = fmt.Errorf("%v. Query: %v, ClusterID: %v, Hostname: %v, MetricID: %v", err.Error(), query, clusterID, hostname, metricID)

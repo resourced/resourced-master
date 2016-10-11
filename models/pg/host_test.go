@@ -4,15 +4,20 @@ import (
 	"testing"
 
 	_ "github.com/lib/pq"
+
+	"github.com/resourced/resourced-master/models/shared"
 )
 
-func newHostForTest(t *testing.T) *Host {
-	return NewHost(newDbForTest(t))
-}
-
 func TestHostCRUD(t *testing.T) {
-	u := newUserForTest(t)
-	defer u.db.Close()
+	appContext := shared.AppContextForTest()
+
+	u := NewUser(appContext)
+
+	pgdb, err := u.GetPGDB()
+	if err != nil {
+		t.Errorf("There should be a legit db. Error: %v", err)
+	}
+	defer pgdb.Close()
 
 	// Signup
 	userRow, err := u.Signup(nil, newEmailForTest(), "abc123", "abc123")
@@ -26,8 +31,7 @@ func TestHostCRUD(t *testing.T) {
 		t.Fatal("Signing up user should work.")
 	}
 
-	cl := newClusterForTest(t)
-	defer cl.db.Close()
+	cl := NewCluster(appContext)
 
 	// Create cluster for user
 	clusterRow, err := cl.Create(nil, userRow, "cluster-name")
@@ -38,8 +42,7 @@ func TestHostCRUD(t *testing.T) {
 		t.Fatalf("Cluster ID should be assign properly. clusterRow.ID: %v", clusterRow.ID)
 	}
 
-	at := newAccessTokenForTest(t)
-	defer at.db.Close()
+	at := NewAccessToken(appContext)
 
 	// Create access token
 	tokenRow, err := at.Create(nil, userRow.ID, clusterRow.ID, "write")
@@ -50,8 +53,7 @@ func TestHostCRUD(t *testing.T) {
 		t.Fatalf("AccessToken ID should be assign properly. tokenRow.ID: %v", tokenRow.ID)
 	}
 
-	h := newHostForTest(t)
-	defer h.db.Close()
+	h := NewHost(appContext, clusterRow.ID)
 
 	// Create host
 	hostRow, err := h.CreateOrUpdate(nil, tokenRow, []byte(`{"/stuff": {"Data": {"Score": 100}, "Host": {"Name": "localhost", "Tags": {"aaa": "bbb"}}}}`))

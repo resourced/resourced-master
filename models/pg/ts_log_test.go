@@ -9,10 +9,6 @@ import (
 	_ "github.com/lib/pq"
 )
 
-func newTSLogForTest(t *testing.T) *TSLog {
-	return NewTSLog(newDbForTest(t))
-}
-
 func TestTSLogCreateValue(t *testing.T) {
 	u := newUserForTest(t)
 

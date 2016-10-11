@@ -8,10 +8,6 @@ import (
 	"github.com/resourced/resourced-master/models/shared"
 )
 
-func newUserForTest(t *testing.T) *User {
-	return NewUser(shared.AppContextForTest())
-}
-
 func TestUserCRUD(t *testing.T) {
 	u := NewUser(shared.AppContextForTest())
 

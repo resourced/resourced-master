@@ -25,12 +25,6 @@ func GetHosts(w http.ResponseWriter, r *http.Request) {
 
 	currentCluster := r.Context().Value("currentCluster").(*pg.ClusterRow)
 
-	pgdbs, err := contexthelper.GetPGDBConfig(r.Context())
-	if err != nil {
-		libhttp.HandleErrorHTML(w, err, 500)
-		return
-	}
-
 	query := r.URL.Query().Get("q")
 
 	interval := strings.TrimSpace(r.URL.Query().Get("interval"))
@@ -58,13 +52,13 @@ func GetHosts(w http.ResponseWriter, r *http.Request) {
 	// --------------------------
 	go func(currentCluster *pg.ClusterRow, query string) {
 		hostsWithError := &pg.HostRowsWithError{}
-		hostsWithError.Hosts, hostsWithError.Error = pg.NewHost(pgdbs.GetHost(currentCluster.ID)).AllCompactByClusterIDQueryAndUpdatedInterval(nil, currentCluster.ID, query, interval)
+		hostsWithError.Hosts, hostsWithError.Error = pg.NewHost(r.Context(), currentCluster.ID).AllCompactByClusterIDQueryAndUpdatedInterval(nil, currentCluster.ID, query, interval)
 		hostsChan <- hostsWithError
 	}(currentCluster, query)
 
 	go func(currentCluster *pg.ClusterRow) {
 		savedQueriesWithError := &pg.SavedQueryRowsWithError{}
-		savedQueriesWithError.SavedQueries, savedQueriesWithError.Error = pg.NewSavedQuery(pgdbs.Core).AllByClusterIDAndType(nil, currentCluster.ID, "hosts")
+		savedQueriesWithError.SavedQueries, savedQueriesWithError.Error = pg.NewSavedQuery(r.Context()).AllByClusterIDAndType(nil, currentCluster.ID, "hosts")
 		savedQueriesChan <- savedQueriesWithError
 	}(currentCluster)
 
@@ -132,12 +126,6 @@ func GetHostsID(w http.ResponseWriter, r *http.Request) {
 
 	currentCluster := r.Context().Value("currentCluster").(*pg.ClusterRow)
 
-	pgdbs, err := contexthelper.GetPGDBConfig(r.Context())
-	if err != nil {
-		libhttp.HandleErrorHTML(w, err, 500)
-		return
-	}
-
 	id, err := getInt64SlugFromPath(w, r, "id")
 	if err != nil {
 		libhttp.HandleErrorHTML(w, err, 500)
@@ -150,7 +138,7 @@ func GetHostsID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	host, err := pg.NewHost(pgdbs.GetHost(currentCluster.ID)).GetByID(nil, id)
+	host, err := pg.NewHost(r.Context(), currentCluster.ID).GetByID(nil, id)
 	if err != nil {
 		libhttp.HandleErrorHTML(w, err, 500)
 		return
@@ -170,13 +158,13 @@ func GetHostsID(w http.ResponseWriter, r *http.Request) {
 	// --------------------------
 	go func(currentCluster *pg.ClusterRow) {
 		savedQueriesWithError := &pg.SavedQueryRowsWithError{}
-		savedQueriesWithError.SavedQueries, savedQueriesWithError.Error = pg.NewSavedQuery(pgdbs.Core).AllByClusterIDAndType(nil, currentCluster.ID, "hosts")
+		savedQueriesWithError.SavedQueries, savedQueriesWithError.Error = pg.NewSavedQuery(r.Context()).AllByClusterIDAndType(nil, currentCluster.ID, "hosts")
 		savedQueriesChan <- savedQueriesWithError
 	}(currentCluster)
 
 	go func(currentCluster *pg.ClusterRow) {
 		metricsMapWithError := &pg.MetricsMapWithError{}
-		metricsMapWithError.MetricsMap, metricsMapWithError.Error = pg.NewMetric(pgdbs.Core).AllByClusterIDAsMap(nil, currentCluster.ID)
+		metricsMapWithError.MetricsMap, metricsMapWithError.Error = pg.NewMetric(r.Context()).AllByClusterIDAsMap(nil, currentCluster.ID)
 		metricsMapChan <- metricsMapWithError
 	}(currentCluster)
 
@@ -244,12 +232,6 @@ func PostHostsIDMasterTags(w http.ResponseWriter, r *http.Request) {
 
 	currentCluster := r.Context().Value("currentCluster").(*pg.ClusterRow)
 
-	pgdbs, err := contexthelper.GetPGDBConfig(r.Context())
-	if err != nil {
-		libhttp.HandleErrorHTML(w, err, 500)
-		return
-	}
-
 	id, err := getInt64SlugFromPath(w, r, "id")
 	if err != nil {
 		libhttp.HandleErrorHTML(w, err, 500)
@@ -275,7 +257,7 @@ func PostHostsIDMasterTags(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	err = pg.NewHost(pgdbs.GetHost(currentCluster.ID)).UpdateMasterTagsByID(nil, id, masterTags)
+	err = pg.NewHost(r.Context(), currentCluster.ID).UpdateMasterTagsByID(nil, id, masterTags)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
@@ -307,13 +289,7 @@ func PostApiHosts(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	pgdbs, err := contexthelper.GetPGDBConfig(r.Context())
-	if err != nil {
-		libhttp.HandleErrorJson(w, err)
-		return
-	}
-
-	hostRow, err := pg.NewHost(pgdbs.GetHost(accessTokenRow.ClusterID)).CreateOrUpdate(nil, accessTokenRow, dataJson)
+	hostRow, err := pg.NewHost(r.Context(), accessTokenRow.ClusterID).CreateOrUpdate(nil, accessTokenRow, dataJson)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
@@ -321,7 +297,7 @@ func PostApiHosts(w http.ResponseWriter, r *http.Request) {
 
 	// Asynchronously write timeseries data
 	go func() {
-		metricsMap, err := pg.NewMetric(pgdbs.Core).AllByClusterIDAsMap(nil, hostRow.ClusterID)
+		metricsMap, err := pg.NewMetric(r.Context()).AllByClusterIDAsMap(nil, hostRow.ClusterID)
 		if err != nil {
 			errLogger.WithFields(logrus.Fields{
 				"Error": err.Error(),
@@ -331,7 +307,7 @@ func PostApiHosts(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		clusterRow, err := pg.NewCluster(pgdbs.Core).GetByID(nil, hostRow.ClusterID)
+		clusterRow, err := pg.NewCluster(r.Context()).GetByID(nil, hostRow.ClusterID)
 		if err != nil {
 			errLogger.WithFields(logrus.Fields{
 				"Error": err.Error(),
@@ -366,12 +342,6 @@ func PostApiHosts(w http.ResponseWriter, r *http.Request) {
 func GetApiHosts(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	pgdbs, err := contexthelper.GetPGDBConfig(r.Context())
-	if err != nil {
-		libhttp.HandleErrorJson(w, err)
-		return
-	}
-
 	accessTokenRow := r.Context().Value("accessToken").(*pg.AccessTokenRow)
 
 	query := r.URL.Query().Get("q")
@@ -382,7 +352,7 @@ func GetApiHosts(w http.ResponseWriter, r *http.Request) {
 		interval = "1h"
 	}
 
-	hosts, err := pg.NewHost(pgdbs.GetHost(accessTokenRow.ClusterID)).AllCompactByClusterIDQueryAndUpdatedInterval(nil, accessTokenRow.ClusterID, query, interval)
+	hosts, err := pg.NewHost(r.Context(), accessTokenRow.ClusterID).AllCompactByClusterIDQueryAndUpdatedInterval(nil, accessTokenRow.ClusterID, query, interval)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return

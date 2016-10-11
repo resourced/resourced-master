@@ -10,7 +10,6 @@ import (
 	"github.com/gorilla/sessions"
 	"github.com/pressly/chi"
 
-	"github.com/resourced/resourced-master/contexthelper"
 	"github.com/resourced/resourced-master/libhttp"
 	"github.com/resourced/resourced-master/mailer"
 	"github.com/resourced/resourced-master/models/pg"
@@ -43,12 +42,6 @@ func GetSignup(w http.ResponseWriter, r *http.Request) {
 func PostSignup(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html")
 
-	pgdbs, err := contexthelper.GetPGDBConfig(r.Context())
-	if err != nil {
-		libhttp.HandleErrorJson(w, err)
-		return
-	}
-
 	email := r.FormValue("Email")
 	password := r.FormValue("Password")
 	passwordAgain := r.FormValue("PasswordAgain")
@@ -67,14 +60,14 @@ func PostSignup(w http.ResponseWriter, r *http.Request) {
 		}
 
 		// Create a default cluster
-		clusterRow, err := pg.NewCluster(pgdbs.Core).Create(nil, userRow, "Default")
+		clusterRow, err := pg.NewCluster(r.Context()).Create(nil, userRow, "Default")
 		if err != nil {
 			libhttp.HandleErrorHTML(w, err, 500)
 			return
 		}
 
 		// Create a default access-token
-		_, err = pg.NewAccessToken(pgdbs.Core).Create(nil, userRow.ID, clusterRow.ID, "write")
+		_, err = pg.NewAccessToken(r.Context()).Create(nil, userRow.ID, clusterRow.ID, "write")
 		if err != nil {
 			libhttp.HandleErrorHTML(w, err, 500)
 			return

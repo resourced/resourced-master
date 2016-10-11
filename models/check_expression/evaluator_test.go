@@ -15,53 +15,8 @@ import (
 	"github.com/resourced/resourced-master/models/shared"
 )
 
-func newDbForTest(t *testing.T) *sqlx.DB {
-	u, err := libunix.CurrentUser()
-	if err != nil {
-		t.Fatalf("Getting current user should never fail. Error: %v", err)
-	}
-
-	db, err := sqlx.Connect("postgres", fmt.Sprintf("postgres://%v@localhost:5432/resourced-master-test?sslmode=disable", u))
-	if err != nil {
-		t.Fatalf("Connecting to local postgres should never fail. Error: %v", err)
-	}
-	return db
-}
-
 func newEmailForTest() string {
 	return fmt.Sprintf("brotato-%v@example.com", uuid.NewV4().String())
-}
-
-func newUserForTest(t *testing.T) *pg.User {
-	return pg.NewUser(shared.AppContextForTest())
-}
-
-func newClusterForTest(t *testing.T) *pg.Cluster {
-	return pg.NewCluster(newDbForTest(t))
-}
-
-func newAccessTokenForTest(t *testing.T) *pg.AccessToken {
-	return pg.NewAccessToken(newDbForTest(t))
-}
-
-func newHostForTest(t *testing.T) *pg.Host {
-	return pg.NewHost(newDbForTest(t))
-}
-
-func newMetricForTest(t *testing.T) *pg.Metric {
-	return pg.NewMetric(newDbForTest(t))
-}
-
-func newTSMetricForTest(t *testing.T) *pg.TSMetric {
-	return pg.NewTSMetric(newDbForTest(t))
-}
-
-func newTSLogForTest(t *testing.T) *pg.TSLog {
-	return pg.NewTSLog(newDbForTest(t))
-}
-
-func newCheckForTest(t *testing.T) *pg.Check {
-	return pg.NewCheck(newDbForTest(t))
 }
 
 func checkHostExpressionSetupForTest(t *testing.T) map[string]interface{} {

@@ -7,10 +7,6 @@ import (
 	_ "github.com/lib/pq"
 )
 
-func newTSEventForTest(t *testing.T) *TSEvent {
-	return NewTSEvent(newDbForTest(t))
-}
-
 func TestTSEventCreate(t *testing.T) {
 	u := newUserForTest(t)
 

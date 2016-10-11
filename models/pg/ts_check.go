@@ -1,6 +1,7 @@
 package pg
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"strings"
@@ -9,12 +10,15 @@ import (
 	"github.com/Sirupsen/logrus"
 	"github.com/jmoiron/sqlx"
 	sqlx_types "github.com/jmoiron/sqlx/types"
+
+	"github.com/resourced/resourced-master/contexthelper"
 )
 
-func NewTSCheck(db *sqlx.DB) *TSCheck {
+func NewTSCheck(ctx context.Context, clusterID int64) *TSCheck {
 	ts := &TSCheck{}
-	ts.db = db
+	ts.AppContext = ctx
 	ts.table = "ts_checks"
+	ts.clusterID = clusterID
 
 	return ts
 }
@@ -40,11 +44,25 @@ type TSCheck struct {
 	TSBase
 }
 
+func (ts *TSCheck) GetPGDB() (*sqlx.DB, error) {
+	pgdbs, err := contexthelper.GetPGDBConfig(ts.AppContext)
+	if err != nil {
+		return nil, err
+	}
+
+	return pgdbs.GetTSCheck(ts.clusterID), nil
+}
+
 // LastByClusterIDCheckIDAndLimit returns a row by cluster_id, check_id and result.
 func (ts *TSCheck) LastByClusterIDCheckIDAndLimit(tx *sqlx.Tx, clusterID, checkID, limit int64) ([]*TSCheckRow, error) {
+	pgdb, err := ts.GetPGDB()
+	if err != nil {
+		return nil, err
+	}
+
 	rows := []*TSCheckRow{}
 	query := fmt.Sprintf("SELECT * FROM %v WHERE cluster_id=$1 AND check_id=$2 ORDER BY cluster_id,check_id,created DESC LIMIT $3", ts.table)
-	err := ts.db.Select(&rows, query, clusterID, checkID, limit)
+	err = pgdb.Select(&rows, query, clusterID, checkID, limit)
 
 	logrus.WithFields(logrus.Fields{
 		"Method":    "TSCheck.LastByClusterIDCheckIDAndResult",
@@ -59,9 +77,14 @@ func (ts *TSCheck) LastByClusterIDCheckIDAndLimit(tx *sqlx.Tx, clusterID, checkI
 
 // LastByClusterIDCheckIDAndResult returns a row by cluster_id, check_id and result.
 func (ts *TSCheck) LastByClusterIDCheckIDAndResult(tx *sqlx.Tx, clusterID, checkID int64, result bool) (*TSCheckRow, error) {
+	pgdb, err := ts.GetPGDB()
+	if err != nil {
+		return nil, err
+	}
+
 	row := &TSCheckRow{}
 	query := fmt.Sprintf("SELECT * FROM %v WHERE cluster_id=$1 AND check_id=$2 AND result=$3 ORDER BY cluster_id,check_id,created DESC LIMIT 1", ts.table)
-	err := ts.db.Get(row, query, clusterID, checkID, result)
+	err = pgdb.Get(row, query, clusterID, checkID, result)
 
 	logrus.WithFields(logrus.Fields{
 		"Method":    "TSCheck.LastByClusterIDCheckIDAndResult",
@@ -76,6 +99,11 @@ func (ts *TSCheck) LastByClusterIDCheckIDAndResult(tx *sqlx.Tx, clusterID, check
 
 // AllViolationsByClusterIDCheckIDAndInterval returns all ts_checks rows since last good marker.
 func (ts *TSCheck) AllViolationsByClusterIDCheckIDAndInterval(tx *sqlx.Tx, clusterID, CheckID, createdIntervalMinute, deletedFrom int64) ([]*TSCheckRow, error) {
+	pgdb, err := ts.GetPGDB()
+	if err != nil {
+		return nil, err
+	}
+
 	lastGoodOne, err := ts.LastByClusterIDCheckIDAndResult(tx, clusterID, CheckID, false)
 	if err != nil {
 		if strings.Contains(err.Error(), "no rows in result set") {
@@ -98,7 +126,7 @@ result = $5 AND
 deleted >= to_timestamp($6) at time zone 'utc'
 ORDER BY cluster_id,check_id,created DESC`, ts.table)
 
-		err = ts.db.Select(&rows, query, clusterID, CheckID, lastGoodOne.Created.UTC(), from, true, deletedFrom)
+		err = pgdb.Select(&rows, query, clusterID, CheckID, lastGoodOne.Created.UTC(), from, true, deletedFrom)
 
 	} else {
 		query := fmt.Sprintf(`SELECT * FROM %v WHERE cluster_id=$1 AND
@@ -108,7 +136,7 @@ result = $4 AND
 deleted >= to_timestamp($5) at time zone 'utc'
 ORDER BY cluster_id,check_id,created DESC`, ts.table)
 
-		err = ts.db.Select(&rows, query, clusterID, CheckID, from, true, deletedFrom)
+		err = pgdb.Select(&rows, query, clusterID, CheckID, from, true, deletedFrom)
 	}
 
 	return rows, err

@@ -8,10 +8,6 @@ import (
 	"github.com/resourced/resourced-master/models/shared"
 )
 
-func newMetricForTest(t *testing.T) *Metric {
-	return NewMetric(shared.AppContextForTest())
-}
-
 func TestMetricCRUD(t *testing.T) {
 	appContext := shared.AppContextForTest()
 

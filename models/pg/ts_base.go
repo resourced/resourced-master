@@ -10,6 +10,7 @@ import (
 
 type TSBase struct {
 	Base
+	clusterID int64
 }
 
 // DeleteDeleted deletes all "deleted" records.

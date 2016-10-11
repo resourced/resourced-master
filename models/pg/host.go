@@ -1,6 +1,7 @@
 package pg
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json"
 	"errors"
@@ -12,14 +13,16 @@ import (
 	sqlx_types "github.com/jmoiron/sqlx/types"
 	"github.com/nytlabs/gojsonexplode"
 
+	"github.com/resourced/resourced-master/contexthelper"
 	"github.com/resourced/resourced-master/querybuilder"
 )
 
-func NewHost(db *sqlx.DB) *Host {
+func NewHost(ctx context.Context, clusterID int64) *Host {
 	host := &Host{}
-	host.db = db
+	host.AppContext = ctx
 	host.table = "hosts"
 	host.hasID = true
+	host.clusterID = clusterID
 
 	return host
 }
@@ -105,6 +108,16 @@ func (h *HostRow) DataAsFlatKeyValue() map[string]map[string]interface{} {
 
 type Host struct {
 	Base
+	clusterID int64
+}
+
+func (h *Host) GetPGDB() (*sqlx.DB, error) {
+	pgdbs, err := contexthelper.GetPGDBConfig(h.AppContext)
+	if err != nil {
+		return nil, err
+	}
+
+	return pgdbs.GetHost(h.clusterID), nil
 }
 
 func (h *Host) hostRowFromSqlResult(tx *sqlx.Tx, sqlResult sql.Result) (*HostRow, error) {
@@ -118,17 +131,27 @@ func (h *Host) hostRowFromSqlResult(tx *sqlx.Tx, sqlResult sql.Result) (*HostRow
 
 // AllByClusterID returns all rows.
 func (h *Host) AllByClusterID(tx *sqlx.Tx, clusterID int64) ([]*HostRow, error) {
+	pgdb, err := h.GetPGDB()
+	if err != nil {
+		return nil, err
+	}
+
 	hosts := []*HostRow{}
 	query := fmt.Sprintf("SELECT * FROM %v WHERE cluster_id=$1 ORDER BY updated DESC", h.table)
-	err := h.db.Select(&hosts, query, clusterID)
+	err = pgdb.Select(&hosts, query, clusterID)
 
 	return hosts, err
 }
 
 // CountByClusterIDAndUpdatedInterval returns the count of all rows.
 func (h *Host) CountByClusterIDAndUpdatedInterval(tx *sqlx.Tx, clusterID int64, updatedInterval string) (int, error) {
+	pgdb, err := h.GetPGDB()
+	if err != nil {
+		return -1, err
+	}
+
 	query := fmt.Sprintf("SELECT COUNT(*) as count FROM %v WHERE cluster_id=$1 AND updated >= (NOW() at time zone 'utc' - INTERVAL '%v')", h.table, updatedInterval)
-	rows, err := h.db.Query(query, clusterID)
+	rows, err := pgdb.Query(query, clusterID)
 	if err != nil {
 		return -1, err
 	}
@@ -147,15 +170,25 @@ func (h *Host) CountByClusterIDAndUpdatedInterval(tx *sqlx.Tx, clusterID int64, 
 
 // AllByClusterIDAndUpdatedInterval returns all rows.
 func (h *Host) AllByClusterIDAndUpdatedInterval(tx *sqlx.Tx, clusterID int64, updatedInterval string) ([]*HostRow, error) {
+	pgdb, err := h.GetPGDB()
+	if err != nil {
+		return nil, err
+	}
+
 	hosts := []*HostRow{}
 	query := fmt.Sprintf("SELECT * FROM %v WHERE cluster_id=$1 AND updated >= (NOW() at time zone 'utc' - INTERVAL '%v')", h.table, updatedInterval)
-	err := h.db.Select(&hosts, query, clusterID)
+	err = pgdb.Select(&hosts, query, clusterID)
 
 	return hosts, err
 }
 
 // AllCompactByClusterIDQueryAndUpdatedInterval returns all rows by resourced query.
 func (h *Host) AllCompactByClusterIDQueryAndUpdatedInterval(tx *sqlx.Tx, clusterID int64, resourcedQuery, updatedInterval string) ([]*HostRow, error) {
+	pgdb, err := h.GetPGDB()
+	if err != nil {
+		return nil, err
+	}
+
 	pgQuery := querybuilder.Parse(resourcedQuery)
 	if pgQuery == "" {
 		return h.AllByClusterID(tx, clusterID)
@@ -164,13 +197,18 @@ func (h *Host) AllCompactByClusterIDQueryAndUpdatedInterval(tx *sqlx.Tx, cluster
 	hosts := []*HostRow{}
 	query := fmt.Sprintf("SELECT id, cluster_id, access_token_id, hostname, updated, tags, master_tags FROM %v WHERE cluster_id=$1 AND updated >= (NOW() at time zone 'utc' - INTERVAL '%v') AND %v", h.table, updatedInterval, pgQuery)
 
-	err := h.db.Select(&hosts, query, clusterID)
+	err = pgdb.Select(&hosts, query, clusterID)
 
 	return hosts, err
 }
 
 // AllByClusterIDQueryAndUpdatedInterval returns all rows by resourced query.
 func (h *Host) AllByClusterIDQueryAndUpdatedInterval(tx *sqlx.Tx, clusterID int64, resourcedQuery, updatedInterval string) ([]*HostRow, error) {
+	pgdb, err := h.GetPGDB()
+	if err != nil {
+		return nil, err
+	}
+
 	pgQuery := querybuilder.Parse(resourcedQuery)
 	if pgQuery == "" {
 		return h.AllByClusterIDAndUpdatedInterval(tx, clusterID, updatedInterval)
@@ -178,13 +216,18 @@ func (h *Host) AllByClusterIDQueryAndUpdatedInterval(tx *sqlx.Tx, clusterID int6
 
 	hosts := []*HostRow{}
 	query := fmt.Sprintf("SELECT * FROM %v WHERE cluster_id=$1 AND updated >= (NOW() at time zone 'utc' - INTERVAL '%v') AND %v", h.table, updatedInterval, pgQuery)
-	err := h.db.Select(&hosts, query, clusterID)
+	err = pgdb.Select(&hosts, query, clusterID)
 
 	return hosts, err
 }
 
 // AllByClusterIDAndHostnames returns all rows by hostnames.
 func (h *Host) AllByClusterIDAndHostnames(tx *sqlx.Tx, clusterID int64, hostnames []string) ([]*HostRow, error) {
+	pgdb, err := h.GetPGDB()
+	if err != nil {
+		return nil, err
+	}
+
 	inPlaceHolders := make([]string, len(hostnames))
 
 	for i := 0; i < len(hostnames); i++ {
@@ -202,25 +245,35 @@ func (h *Host) AllByClusterIDAndHostnames(tx *sqlx.Tx, clusterID int64, hostname
 		args[i] = hostnames[i-1]
 	}
 
-	err := h.db.Select(&hosts, query, args...)
+	err = pgdb.Select(&hosts, query, args...)
 
 	return hosts, err
 }
 
 // GetByID returns record by id.
 func (h *Host) GetByID(tx *sqlx.Tx, id int64) (*HostRow, error) {
+	pgdb, err := h.GetPGDB()
+	if err != nil {
+		return nil, err
+	}
+
 	hostRow := &HostRow{}
 	query := fmt.Sprintf("SELECT * FROM %v WHERE id=$1", h.table)
-	err := h.db.Get(hostRow, query, id)
+	err = pgdb.Get(hostRow, query, id)
 
 	return hostRow, err
 }
 
 // GetByHostname returns record by hostname.
 func (h *Host) GetByHostname(tx *sqlx.Tx, hostname string) (*HostRow, error) {
+	pgdb, err := h.GetPGDB()
+	if err != nil {
+		return nil, err
+	}
+
 	hostRow := &HostRow{}
 	query := fmt.Sprintf("SELECT * FROM %v WHERE hostname=$1", h.table)
-	err := h.db.Get(hostRow, query, hostname)
+	err = pgdb.Get(hostRow, query, hostname)
 
 	return hostRow, err
 }

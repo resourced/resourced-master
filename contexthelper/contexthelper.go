@@ -7,6 +7,7 @@ import (
 	"github.com/Sirupsen/logrus"
 
 	"github.com/resourced/resourced-master/config"
+	"github.com/resourced/resourced-master/mailer"
 	"github.com/resourced/resourced-master/messagebus"
 )
 
@@ -53,4 +54,13 @@ func GetLogger(ctx context.Context, name string) (*logrus.Logger, error) {
 	}
 
 	return valInterface.(*logrus.Logger), nil
+}
+
+func GetMailer(ctx context.Context, name string) (*mailer.Mailer, error) {
+	valInterface := ctx.Value("mailer." + name)
+	if valInterface == nil {
+		return nil, errors.New(name + " is nil")
+	}
+
+	return valInterface.(*mailer.Mailer), nil
 }

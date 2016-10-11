@@ -10,7 +10,6 @@ import (
 
 	"github.com/Sirupsen/logrus"
 
-	"github.com/resourced/resourced-master/contexthelper"
 	"github.com/resourced/resourced-master/models/pg"
 	"github.com/resourced/resourced-master/models/shims"
 )
@@ -27,12 +26,7 @@ func (evaluator *CheckExpressionEvaluator) EvalExpressions(checkRow *pg.CheckRow
 	var hostRows []*pg.HostRow
 	var err error
 
-	pgdbs, err := contexthelper.GetPGDBConfig(evaluator.AppContext)
-	if err != nil {
-		return nil, false, err
-	}
-
-	host := pg.NewHost(pgdbs.GetHost(checkRow.ClusterID))
+	host := pg.NewHost(evaluator.AppContext, checkRow.ClusterID)
 
 	if checkRow.HostsQuery != "" {
 		hostRows, err = host.AllByClusterIDQueryAndUpdatedInterval(nil, checkRow.ClusterID, checkRow.HostsQuery, "5m")
@@ -176,18 +170,10 @@ func (evaluator *CheckExpressionEvaluator) EvalRelativeHostDataExpression(checkR
 	badHostnames := make([]string, 0)
 	goodHostnames := make([]string, 0)
 
-	pgdbs, err := contexthelper.GetPGDBConfig(evaluator.AppContext)
-	if err != nil {
-		// If we are unable to get database connection, expression should not go bad.
-		expression.Result.Value = false
-		expression.Result.Message = "Unable to get database connections, will re-check later"
-		return expression
-	}
-
 	var perHostResult bool
 
 	for _, hostRow := range hostRows {
-		metric, err := pg.NewMetric(pgdbs.Core).GetByClusterIDAndKey(nil, checkRow.ClusterID, expression.Metric)
+		metric, err := pg.NewMetric(evaluator.AppContext).GetByClusterIDAndKey(nil, checkRow.ClusterID, expression.Metric)
 		if err != nil {
 			// If we are unable to pull metric metadata,
 			// We assume that there's something wrong with it.
@@ -292,19 +278,11 @@ func (evaluator *CheckExpressionEvaluator) EvalLogDataExpression(checkRow *pg.Ch
 		return expression
 	}
 
-	pgdbs, err := contexthelper.GetPGDBConfig(evaluator.AppContext)
-	if err != nil {
-		// If we are unable to get database connection, expression should not go bad.
-		expression.Result.Value = false
-		expression.Result.Message = "Unable to get database connections, will re-check later"
-		return expression
-	}
-
 	affectedHosts := 0
 	badHostnames := make([]string, 0)
 	goodHostnames := make([]string, 0)
 
-	clusterRow, err := pg.NewCluster(pgdbs.Core).GetByID(nil, checkRow.ClusterID)
+	clusterRow, err := pg.NewCluster(evaluator.AppContext).GetByID(nil, checkRow.ClusterID)
 	if err != nil {
 		expression.Result.Value = false
 		return expression
@@ -319,7 +297,7 @@ func (evaluator *CheckExpressionEvaluator) EvalLogDataExpression(checkRow *pg.Ch
 		from := now.Add(-1 * time.Duration(expression.PrevRange) * time.Minute).UTC().Unix()
 		searchQuery := fmt.Sprintf(`logline search "%v"`, expression.Search)
 
-		valInt64, err := pg.NewTSLog(pgdbs.GetTSLog(checkRow.ClusterID)).CountByClusterIDFromTimestampHostAndQuery(nil, checkRow.ClusterID, from, hostname, searchQuery, deletedFrom)
+		valInt64, err := pg.NewTSLog(evaluator.AppContext, checkRow.ClusterID).CountByClusterIDFromTimestampHostAndQuery(nil, checkRow.ClusterID, from, hostname, searchQuery, deletedFrom)
 		if err != nil {
 			continue
 		}

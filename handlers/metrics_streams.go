@@ -121,12 +121,6 @@ func ApiMetricIDStreams(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	pgdbs, err := contexthelper.GetPGDBConfig(r.Context())
-	if err != nil {
-		libhttp.HandleErrorJson(w, err)
-		return
-	}
-
 	bus := r.Context().Value("bus").(*messagebus.MessageBus)
 
 	accessTokenRow := r.Context().Value("accessToken").(*pg.AccessTokenRow)
@@ -137,7 +131,7 @@ func ApiMetricIDStreams(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	metricRow, err := pg.NewMetric(pgdbs.Core).GetByID(nil, metricID)
+	metricRow, err := pg.NewMetric(r.Context()).GetByID(nil, metricID)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return

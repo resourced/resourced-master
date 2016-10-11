@@ -7,7 +7,6 @@ import (
 
 	"github.com/pressly/chi"
 
-	"github.com/resourced/resourced-master/contexthelper"
 	"github.com/resourced/resourced-master/libhttp"
 	"github.com/resourced/resourced-master/models/pg"
 )
@@ -15,15 +14,9 @@ import (
 func GetApiMetadata(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	pgdbs, err := contexthelper.GetPGDBConfig(r.Context())
-	if err != nil {
-		libhttp.HandleErrorJson(w, err)
-		return
-	}
-
 	accessTokenRow := r.Context().Value("accessToken").(*pg.AccessTokenRow)
 
-	metadataRows, err := pg.NewMetadata(pgdbs.Core).AllByClusterID(nil, accessTokenRow.ClusterID)
+	metadataRows, err := pg.NewMetadata(r.Context()).AllByClusterID(nil, accessTokenRow.ClusterID)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
@@ -41,12 +34,6 @@ func GetApiMetadata(w http.ResponseWriter, r *http.Request) {
 func PostApiMetadataKey(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	pgdbs, err := contexthelper.GetPGDBConfig(r.Context())
-	if err != nil {
-		libhttp.HandleErrorJson(w, err)
-		return
-	}
-
 	accessTokenRow := r.Context().Value("accessToken").(*pg.AccessTokenRow)
 
 	dataJson, err := ioutil.ReadAll(r.Body)
@@ -57,7 +44,7 @@ func PostApiMetadataKey(w http.ResponseWriter, r *http.Request) {
 
 	key := chi.URLParam(r, "key")
 
-	metadataRow, err := pg.NewMetadata(pgdbs.Core).CreateOrUpdate(nil, accessTokenRow.ClusterID, key, dataJson)
+	metadataRow, err := pg.NewMetadata(r.Context()).CreateOrUpdate(nil, accessTokenRow.ClusterID, key, dataJson)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
@@ -75,17 +62,11 @@ func PostApiMetadataKey(w http.ResponseWriter, r *http.Request) {
 func DeleteApiMetadataKey(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	pgdbs, err := contexthelper.GetPGDBConfig(r.Context())
-	if err != nil {
-		libhttp.HandleErrorJson(w, err)
-		return
-	}
-
 	accessTokenRow := r.Context().Value("accessToken").(*pg.AccessTokenRow)
 
 	key := chi.URLParam(r, "key")
 
-	metadataRow, err := pg.NewMetadata(pgdbs.Core).DeleteByClusterIDAndKey(nil, accessTokenRow.ClusterID, key)
+	metadataRow, err := pg.NewMetadata(r.Context()).DeleteByClusterIDAndKey(nil, accessTokenRow.ClusterID, key)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
@@ -103,17 +84,11 @@ func DeleteApiMetadataKey(w http.ResponseWriter, r *http.Request) {
 func GetApiMetadataKey(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	pgdbs, err := contexthelper.GetPGDBConfig(r.Context())
-	if err != nil {
-		libhttp.HandleErrorJson(w, err)
-		return
-	}
-
 	accessTokenRow := r.Context().Value("accessToken").(*pg.AccessTokenRow)
 
 	key := chi.URLParam(r, "key")
 
-	metadataRow, err := pg.NewMetadata(pgdbs.Core).GetByClusterIDAndKey(nil, accessTokenRow.ClusterID, key)
+	metadataRow, err := pg.NewMetadata(r.Context()).GetByClusterIDAndKey(nil, accessTokenRow.ClusterID, key)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return

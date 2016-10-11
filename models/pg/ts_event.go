@@ -1,18 +1,22 @@
 package pg
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"time"
 
 	"github.com/jmoiron/sqlx"
+
+	"github.com/resourced/resourced-master/contexthelper"
 )
 
-func NewTSEvent(db *sqlx.DB) *TSEvent {
+func NewTSEvent(ctx context.Context, clusterID int64) *TSEvent {
 	ts := &TSEvent{}
-	ts.db = db
+	ts.AppContext = ctx
 	ts.table = "ts_events"
+	ts.clusterID = clusterID
 
 	return ts
 }
@@ -43,8 +47,22 @@ type TSEvent struct {
 	TSBase
 }
 
+func (ts *TSEvent) GetPGDB() (*sqlx.DB, error) {
+	pgdbs, err := contexthelper.GetPGDBConfig(ts.AppContext)
+	if err != nil {
+		return nil, err
+	}
+
+	return pgdbs.GetTSEvent(ts.clusterID), nil
+}
+
 // AllLinesByClusterIDAndCreatedFromRangeForHighchart returns all rows given created_from range.
 func (ts *TSEvent) AllLinesByClusterIDAndCreatedFromRangeForHighchart(tx *sqlx.Tx, clusterID, from, to, deletedFrom int64) ([]TSEventHighchartLinePayload, error) {
+	pgdb, err := ts.GetPGDB()
+	if err != nil {
+		return nil, err
+	}
+
 	rows := []*TSEventRow{}
 	query := fmt.Sprintf(`SELECT * FROM %v WHERE cluster_id=$1 AND
 created_from = created_to AND
@@ -52,7 +70,7 @@ created_from >= to_timestamp($2) at time zone 'utc' AND
 created_from <= to_timestamp($3) at time zone 'utc' AND
 deleted >= to_timestamp($4) at time zone 'utc'`, ts.table)
 
-	err := ts.db.Select(&rows, query, clusterID, from, to, deletedFrom)
+	err = pgdb.Select(&rows, query, clusterID, from, to, deletedFrom)
 	if err != nil {
 		return nil, err
 	}
@@ -74,6 +92,11 @@ deleted >= to_timestamp($4) at time zone 'utc'`, ts.table)
 
 // AllBandsByClusterIDAndCreatedFromRangeForHighchart returns all rows with time stretch between created_from and created_to.
 func (ts *TSEvent) AllBandsByClusterIDAndCreatedFromRangeForHighchart(tx *sqlx.Tx, clusterID, from, to, deletedFrom int64) ([]TSEventHighchartLinePayload, error) {
+	pgdb, err := ts.GetPGDB()
+	if err != nil {
+		return nil, err
+	}
+
 	rows := []*TSEventRow{}
 	query := fmt.Sprintf(`SELECT * FROM %v WHERE cluster_id=$1 AND
 created_from < created_to AND
@@ -81,7 +104,7 @@ created_from >= to_timestamp($2) at time zone 'utc' AND
 created_from <= to_timestamp($3) at time zone 'utc' AND
 deleted >= to_timestamp($4) at time zone 'utc'`, ts.table)
 
-	err := ts.db.Select(&rows, query, clusterID, from, to, deletedFrom)
+	err = pgdb.Select(&rows, query, clusterID, from, to, deletedFrom)
 	if err != nil {
 		return nil, err
 	}
@@ -103,9 +126,14 @@ deleted >= to_timestamp($4) at time zone 'utc'`, ts.table)
 
 // GetByID returns record by id.
 func (ts *TSEvent) GetByID(tx *sqlx.Tx, id int64) (*TSEventRow, error) {
+	pgdb, err := ts.GetPGDB()
+	if err != nil {
+		return nil, err
+	}
+
 	row := &TSEventRow{}
 	query := fmt.Sprintf("SELECT * FROM %v WHERE id=$1", ts.table)
-	err := ts.db.Get(row, query, id)
+	err = pgdb.Get(row, query, id)
 
 	return row, err
 }

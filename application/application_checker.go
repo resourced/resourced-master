@@ -24,7 +24,7 @@ func (app *Application) CheckAndRunTriggers() {
 					daemons = append(daemons, hostAndPort)
 				}
 
-				groupedCheckRows, _ := pg.NewCheck(app.PGDBConfig.Core).AllSplitToDaemons(nil, daemons)
+				groupedCheckRows, _ := pg.NewCheck(app.GetContext()).AllSplitToDaemons(nil, daemons)
 				checkRowsChan <- groupedCheckRows[app.FullAddr()]
 			}
 		}
@@ -64,7 +64,7 @@ func (app *Application) CheckAndRunTriggers() {
 						}
 
 						// 2. Store the check result.
-						clusterRow, err := pg.NewCluster(app.PGDBConfig.Core).GetByID(nil, checkRow.ClusterID)
+						clusterRow, err := pg.NewCluster(app.GetContext()).GetByID(nil, checkRow.ClusterID)
 						if err != nil {
 							app.ErrLogger.WithFields(logrus.Fields{
 								"Method":    "Cluster.GetByID",
@@ -76,7 +76,7 @@ func (app *Application) CheckAndRunTriggers() {
 
 						deletedFrom := clusterRow.GetDeletedFromUNIXTimestampForInsert("ts_checks")
 
-						err = pg.NewTSCheck(app.PGDBConfig.GetTSCheck(checkRow.ClusterID)).Create(nil, checkRow.ClusterID, checkRow.ID, finalResult, expressionResults, deletedFrom)
+						err = pg.NewTSCheck(app.GetContext(), checkRow.ClusterID).Create(nil, checkRow.ClusterID, checkRow.ID, finalResult, expressionResults, deletedFrom)
 						if err != nil {
 							app.ErrLogger.WithFields(logrus.Fields{
 								"Method":    "TSCheck.Create",

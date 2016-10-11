@@ -15,9 +15,8 @@ import (
 	sqlx_types "github.com/jmoiron/sqlx/types"
 	"github.com/marcw/pagerduty"
 
-	"github.com/resourced/resourced-master/config"
+	"github.com/resourced/resourced-master/contexthelper"
 	"github.com/resourced/resourced-master/libstring"
-	"github.com/resourced/resourced-master/mailer"
 )
 
 func NewCheck(ctx context.Context) *Check {
@@ -325,7 +324,7 @@ func (checkRow *CheckRow) RunTriggers(ctx context.Context) error {
 	deletedFrom := clusterRow.GetDeletedFromUNIXTimestampForSelect("ts_checks")
 
 	for _, trigger := range triggers {
-		tsCheckRows, err := NewTSCheck(tsCheckDB).AllViolationsByClusterIDCheckIDAndInterval(nil, checkRow.ClusterID, checkRow.ID, trigger.CreatedIntervalMinute, deletedFrom)
+		tsCheckRows, err := NewTSCheck(ctx, checkRow.ClusterID).AllViolationsByClusterIDCheckIDAndInterval(nil, checkRow.ClusterID, checkRow.ID, trigger.CreatedIntervalMinute, deletedFrom)
 		if err != nil {
 			return err
 		}
@@ -342,21 +341,21 @@ func (checkRow *CheckRow) RunTriggers(ctx context.Context) error {
 				// Do nothing
 
 			} else if trigger.Action.Transport == "email" {
-				err = checkRow.RunEmailTrigger(trigger, lastViolation, violationsCount, mailr, appConfig)
+				err = checkRow.RunEmailTrigger(ctx, trigger, lastViolation, violationsCount)
 				if err != nil {
 					logrus.Error(err)
 					continue
 				}
 
 			} else if trigger.Action.Transport == "sms" {
-				err = checkRow.RunSMSTrigger(trigger, lastViolation, violationsCount, mailr, appConfig)
+				err = checkRow.RunSMSTrigger(ctx, trigger, lastViolation, violationsCount)
 				if err != nil {
 					logrus.Error(err)
 					continue
 				}
 
 			} else if trigger.Action.Transport == "pagerduty" {
-				err = checkRow.RunPagerDutyTrigger(trigger, lastViolation)
+				err = checkRow.RunPagerDutyTrigger(ctx, trigger, lastViolation)
 				if err != nil {
 					logrus.Error(err)
 					continue
@@ -398,9 +397,15 @@ func (checkRow *CheckRow) BuildEmailTriggerContent(lastViolation *TSCheckRow, te
 	return contentBuffer.String(), nil
 }
 
-func (checkRow *CheckRow) RunEmailTrigger(trigger CheckTrigger, lastViolation *TSCheckRow, violationsCount int, mailr *mailer.Mailer, appConfig config.GeneralConfig) (err error) {
+func (checkRow *CheckRow) RunEmailTrigger(ctx context.Context, trigger CheckTrigger, lastViolation *TSCheckRow, violationsCount int) (err error) {
 	if trigger.Action.Email == "" {
 		return fmt.Errorf("Unable to send email because trigger.Action.Email is empty")
+	}
+
+	mailr, err := contexthelper.GetMailer(ctx, "GeneralConfig.Checks")
+	if err != nil {
+		logrus.Error(err)
+		return err
 	}
 
 	to := trigger.Action.Email
@@ -429,12 +434,24 @@ func (checkRow *CheckRow) RunEmailTrigger(trigger CheckTrigger, lastViolation *T
 	return err
 }
 
-func (checkRow *CheckRow) RunSMSTrigger(trigger CheckTrigger, lastViolation *TSCheckRow, violationsCount int, mailr *mailer.Mailer, appConfig config.GeneralConfig) (err error) {
+func (checkRow *CheckRow) RunSMSTrigger(ctx context.Context, trigger CheckTrigger, lastViolation *TSCheckRow, violationsCount int) (err error) {
 	carrier := strings.ToLower(trigger.Action.SMSCarrier)
 
-	gateway, ok := appConfig.Checks.SMSEmailGateway[carrier]
+	generalConfig, err := contexthelper.GetGeneralConfig(ctx)
+	if err != nil {
+		logrus.Error(err)
+		return err
+	}
+
+	gateway, ok := generalConfig.Checks.SMSEmailGateway[carrier]
 	if !ok {
 		return fmt.Errorf("Unable to lookup SMS Gateway for carrier: %v", carrier)
+	}
+
+	mailr, err := contexthelper.GetMailer(ctx, "GeneralConfig.Checks")
+	if err != nil {
+		logrus.Error(err)
+		return err
 	}
 
 	flattenPhone := libstring.FlattenPhone(trigger.Action.SMSPhone)
@@ -462,7 +479,7 @@ func (checkRow *CheckRow) RunSMSTrigger(trigger CheckTrigger, lastViolation *TSC
 	return err
 }
 
-func (checkRow *CheckRow) RunPagerDutyTrigger(trigger CheckTrigger, lastViolation *TSCheckRow) (err error) {
+func (checkRow *CheckRow) RunPagerDutyTrigger(ctx context.Context, trigger CheckTrigger, lastViolation *TSCheckRow) (err error) {
 	// Create a new PD "trigger" event
 	event := pagerduty.NewTriggerEvent(trigger.Action.PagerDutyServiceKey, trigger.Action.PagerDutyDescription)
 

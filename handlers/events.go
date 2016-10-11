@@ -8,19 +8,12 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/resourced/resourced-master/contexthelper"
 	"github.com/resourced/resourced-master/libhttp"
 	"github.com/resourced/resourced-master/models/pg"
 )
 
 func GetApiEventsLine(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-
-	pgdbs, err := contexthelper.GetPGDBConfig(r.Context())
-	if err != nil {
-		libhttp.HandleErrorJson(w, err)
-		return
-	}
 
 	accessTokenRow := r.Context().Value("accessToken").(*pg.AccessTokenRow)
 
@@ -49,7 +42,7 @@ func GetApiEventsLine(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	clusterRow, err := pg.NewCluster(pgdbs.Core).GetByID(nil, accessTokenRow.ClusterID)
+	clusterRow, err := pg.NewCluster(r.Context()).GetByID(nil, accessTokenRow.ClusterID)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
@@ -57,7 +50,7 @@ func GetApiEventsLine(w http.ResponseWriter, r *http.Request) {
 
 	deletedFrom := clusterRow.GetDeletedFromUNIXTimestampForSelect("ts_events")
 
-	rows, err := pg.NewTSEvent(pgdbs.GetTSEvent(accessTokenRow.ClusterID)).AllLinesByClusterIDAndCreatedFromRangeForHighchart(nil, accessTokenRow.ClusterID, from, to, deletedFrom)
+	rows, err := pg.NewTSEvent(r.Context(), accessTokenRow.ClusterID).AllLinesByClusterIDAndCreatedFromRangeForHighchart(nil, accessTokenRow.ClusterID, from, to, deletedFrom)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
@@ -75,12 +68,6 @@ func GetApiEventsLine(w http.ResponseWriter, r *http.Request) {
 func GetApiEventsBand(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	pgdbs, err := contexthelper.GetPGDBConfig(r.Context())
-	if err != nil {
-		libhttp.HandleErrorJson(w, err)
-		return
-	}
-
 	accessTokenRow := r.Context().Value("accessToken").(*pg.AccessTokenRow)
 
 	qParams := r.URL.Query()
@@ -108,7 +95,7 @@ func GetApiEventsBand(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	clusterRow, err := pg.NewCluster(pgdbs.Core).GetByID(nil, accessTokenRow.ClusterID)
+	clusterRow, err := pg.NewCluster(r.Context()).GetByID(nil, accessTokenRow.ClusterID)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
@@ -116,7 +103,7 @@ func GetApiEventsBand(w http.ResponseWriter, r *http.Request) {
 
 	deletedFrom := clusterRow.GetDeletedFromUNIXTimestampForSelect("ts_events")
 
-	rows, err := pg.NewTSEvent(pgdbs.GetTSEvent(accessTokenRow.ClusterID)).AllBandsByClusterIDAndCreatedFromRangeForHighchart(nil, accessTokenRow.ClusterID, from, to, deletedFrom)
+	rows, err := pg.NewTSEvent(r.Context(), accessTokenRow.ClusterID).AllBandsByClusterIDAndCreatedFromRangeForHighchart(nil, accessTokenRow.ClusterID, from, to, deletedFrom)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
@@ -134,12 +121,6 @@ func GetApiEventsBand(w http.ResponseWriter, r *http.Request) {
 func PostApiEvents(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	pgdbs, err := contexthelper.GetPGDBConfig(r.Context())
-	if err != nil {
-		libhttp.HandleErrorJson(w, err)
-		return
-	}
-
 	accessTokenRow := r.Context().Value("accessToken").(*pg.AccessTokenRow)
 
 	dataJson, err := ioutil.ReadAll(r.Body)
@@ -148,17 +129,17 @@ func PostApiEvents(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	clusterRow, err := pg.NewCluster(pgdbs.Core).GetByID(nil, accessTokenRow.ClusterID)
+	clusterRow, err := pg.NewCluster(r.Context()).GetByID(nil, accessTokenRow.ClusterID)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
 	}
 
-	id := pg.NewTSEvent(pgdbs.Core).NewExplicitID()
+	id := pg.NewTSEvent(r.Context(), clusterRow.ID).NewExplicitID()
 
 	deletedFrom := clusterRow.GetDeletedFromUNIXTimestampForInsert("ts_events")
 
-	tsEventRow, err := pg.NewTSEvent(pgdbs.GetTSEvent(accessTokenRow.ClusterID)).CreateFromJSON(nil, id, accessTokenRow.ClusterID, dataJson, deletedFrom)
+	tsEventRow, err := pg.NewTSEvent(r.Context(), accessTokenRow.ClusterID).CreateFromJSON(nil, id, accessTokenRow.ClusterID, dataJson, deletedFrom)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
@@ -176,12 +157,6 @@ func PostApiEvents(w http.ResponseWriter, r *http.Request) {
 func DeleteApiEventsID(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	pgdbs, err := contexthelper.GetPGDBConfig(r.Context())
-	if err != nil {
-		libhttp.HandleErrorJson(w, err)
-		return
-	}
-
 	accessTokenRow := r.Context().Value("accessToken").(*pg.AccessTokenRow)
 
 	id, err := getInt64SlugFromPath(w, r, "id")
@@ -190,7 +165,7 @@ func DeleteApiEventsID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err = pg.NewTSEvent(pgdbs.GetTSEvent(accessTokenRow.ClusterID)).DeleteByClusterIDAndID(nil, accessTokenRow.ClusterID, id)
+	_, err = pg.NewTSEvent(r.Context(), accessTokenRow.ClusterID).DeleteByClusterIDAndID(nil, accessTokenRow.ClusterID, id)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return

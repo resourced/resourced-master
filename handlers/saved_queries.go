@@ -5,21 +5,14 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/resourced/resourced-master/contexthelper"
 	"github.com/resourced/resourced-master/libhttp"
 	"github.com/resourced/resourced-master/models/pg"
 )
 
 func PostSavedQueries(w http.ResponseWriter, r *http.Request) {
-	pgdbs, err := contexthelper.GetPGDBConfig(r.Context())
-	if err != nil {
-		libhttp.HandleErrorJson(w, err)
-		return
-	}
-
 	currentUser := r.Context().Value("currentUser").(*pg.UserRow)
 
-	accessTokenRow, err := pg.NewAccessToken(pgdbs.Core).GetByUserID(nil, currentUser.ID)
+	accessTokenRow, err := pg.NewAccessToken(r.Context()).GetByUserID(nil, currentUser.ID)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
@@ -28,7 +21,7 @@ func PostSavedQueries(w http.ResponseWriter, r *http.Request) {
 	savedQueryType := r.FormValue("Type")
 	savedQuery := r.FormValue("SavedQuery")
 
-	_, err = pg.NewSavedQuery(pgdbs.Core).CreateOrUpdate(nil, accessTokenRow, savedQueryType, savedQuery)
+	_, err = pg.NewSavedQuery(r.Context()).CreateOrUpdate(nil, accessTokenRow, savedQueryType, savedQuery)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
@@ -54,17 +47,11 @@ func DeleteSavedQueriesID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	pgdbs, err := contexthelper.GetPGDBConfig(r.Context())
-	if err != nil {
-		libhttp.HandleErrorJson(w, err)
-		return
-	}
-
 	currentUser := r.Context().Value("currentUser").(*pg.UserRow)
 
 	currentCluster := r.Context().Value("currentCluster").(*pg.ClusterRow)
 
-	sq := pg.NewSavedQuery(pgdbs.Core)
+	sq := pg.NewSavedQuery(r.Context())
 
 	savedQueryRow, err := sq.GetByID(nil, savedQueryID)
 

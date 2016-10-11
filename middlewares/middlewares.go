@@ -12,7 +12,6 @@ import (
 	"github.com/gorilla/sessions"
 	"github.com/pressly/chi"
 
-	"github.com/resourced/resourced-master/contexthelper"
 	"github.com/resourced/resourced-master/libhttp"
 	"github.com/resourced/resourced-master/models/pg"
 )
@@ -56,16 +55,11 @@ func SetClusters(next http.Handler) http.Handler {
 
 		userRow := userRowInterface.(*pg.UserRow)
 
-		pgdbs, err := contexthelper.GetPGDBConfig(r.Context())
-		if err != nil {
-			libhttp.HandleErrorJson(w, err)
-			return
-		}
-
 		var clusterRows []*pg.ClusterRow
+		var err error
 
 		f := func() {
-			clusterRows, err = pg.NewCluster(pgdbs.Core).AllByUserID(nil, userRow.ID)
+			clusterRows, err = pg.NewCluster(r.Context()).AllByUserID(nil, userRow.ID)
 		}
 
 		// Measure the latency of AllByUserID because it is called on every request.
@@ -113,19 +107,13 @@ func SetClusters(next http.Handler) http.Handler {
 // SetAccessTokens sets clusters data in context based on logged in user ID.
 func SetAccessTokens(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		pgdbs, err := contexthelper.GetPGDBConfig(r.Context())
-		if err != nil {
-			libhttp.HandleErrorJson(w, err)
-			return
-		}
-
 		currentClusterInterface := r.Context().Value("currentCluster")
 		if currentClusterInterface == nil {
 			libhttp.HandleErrorJson(w, errors.New("Unable to get access tokens because current cluster is nil."))
 			return
 		}
 
-		accessTokenRows, err := pg.NewAccessToken(pgdbs.Core).AllByClusterID(nil, currentClusterInterface.(*pg.ClusterRow).ID)
+		accessTokenRows, err := pg.NewAccessToken(r.Context()).AllByClusterID(nil, currentClusterInterface.(*pg.ClusterRow).ID)
 		if err != nil {
 			libhttp.HandleErrorJson(w, err)
 			return
@@ -178,13 +166,7 @@ func MustLoginApi(next http.Handler) http.Handler {
 			return
 		}
 
-		pgdbs, err := contexthelper.GetPGDBConfig(r.Context())
-		if err != nil {
-			libhttp.BasicAuthUnauthorized(w, nil)
-			return
-		}
-
-		accessTokenRow, err := pg.NewAccessToken(pgdbs.Core).GetByAccessToken(nil, accessTokenString)
+		accessTokenRow, err := pg.NewAccessToken(r.Context()).GetByAccessToken(nil, accessTokenString)
 		if err != nil {
 			libhttp.BasicAuthUnauthorized(w, nil)
 			return
@@ -234,13 +216,7 @@ func MustLoginApiStream(next http.Handler) http.Handler {
 			return
 		}
 
-		pgdbs, err := contexthelper.GetPGDBConfig(r.Context())
-		if err != nil {
-			libhttp.BasicAuthUnauthorized(w, nil)
-			return
-		}
-
-		accessTokenRow, err := pg.NewAccessToken(pgdbs.Core).GetByAccessToken(nil, accessTokenString)
+		accessTokenRow, err := pg.NewAccessToken(r.Context()).GetByAccessToken(nil, accessTokenString)
 		if err != nil {
 			libhttp.BasicAuthUnauthorized(w, nil)
 			return
