@@ -164,7 +164,9 @@ func TestCheckEvalRawHostDataExpression(t *testing.T) {
 	hosts := make([]*pg.HostRow, 1)
 	hosts[0] = setupRows["hostRow"].(*pg.HostRow)
 
-	evaluator := CheckExpressionEvaluator{}
+	evaluator := CheckExpressionEvaluator{
+		AppContext: appContext,
+	}
 
 	// EvalRawHostDataExpression where hosts list is nil
 	// The result should be true, which means that this expression is a fail.
@@ -298,7 +300,9 @@ func TestCheckEvalRelativeHostDataExpression(t *testing.T) {
 	hosts := make([]*pg.HostRow, 1)
 	hosts[0] = setupRows["hostRow"].(*pg.HostRow)
 
-	evaluator := CheckExpressionEvaluator{}
+	evaluator := CheckExpressionEvaluator{
+		AppContext: appContext,
+	}
 
 	// EvalRelativeHostDataExpression where hosts list is nil
 	// The result should be true, which means that this expression is a fail.
@@ -424,7 +428,9 @@ func TestCheckEvalLogDataExpression(t *testing.T) {
 	expression.MinHost = 1
 	expression.PrevRange = 15
 
-	evaluator := CheckExpressionEvaluator{}
+	evaluator := CheckExpressionEvaluator{
+		AppContext: appContext,
+	}
 
 	expression = evaluator.EvalLogDataExpression(checkRow, nil, expression)
 	if expression.Result.Value != true {
@@ -480,7 +486,9 @@ func TestCheckEvalPingExpression(t *testing.T) {
 	expression := pg.CheckExpression{}
 	expression.MinHost = 1
 
-	evaluator := CheckExpressionEvaluator{}
+	evaluator := CheckExpressionEvaluator{
+		AppContext: appContext,
+	}
 
 	expression = evaluator.EvalPingExpression(checkRow, nil, expression)
 	if expression.Result.Value != false {
@@ -537,7 +545,9 @@ func TestCheckEvalSSHExpression(t *testing.T) {
 	expression.MinHost = 1
 	expression.Port = "22"
 
-	evaluator := CheckExpressionEvaluator{}
+	evaluator := CheckExpressionEvaluator{
+		AppContext: appContext,
+	}
 
 	expression = evaluator.EvalSSHExpression(checkRow, nil, expression)
 	if expression.Result.Value != false {
@@ -598,7 +608,9 @@ func TestCheckEvalHTTPExpression(t *testing.T) {
 	expression.Protocol = "http"
 	expression.HTTPMethod = "GET"
 
-	evaluator := CheckExpressionEvaluator{}
+	evaluator := CheckExpressionEvaluator{
+		AppContext: appContext,
+	}
 
 	expression = evaluator.EvalHTTPExpression(checkRow, nil, expression)
 	if expression.Result.Value != false {

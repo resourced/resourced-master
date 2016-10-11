@@ -32,7 +32,6 @@ func TestClusterCRUD(t *testing.T) {
 	}
 
 	c := NewCluster(appContext)
-	defer c.db.Close()
 
 	// Create cluster for user
 	clusterRow, err := c.Create(nil, userRow, "cluster-name")
