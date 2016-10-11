@@ -52,7 +52,7 @@ func checkHostExpressionSetupForTest(t *testing.T) map[string]interface{} {
 	setupRows["tokenRow"] = tokenRow
 
 	// Create host
-	h := NewHost(appContext)
+	h := NewHost(appContext, clusterRow.ID)
 
 	hostRow, err := h.CreateOrUpdate(nil, tokenRow, []byte(fmt.Sprintf(`{"Host": {"Name": "%v", "Tags": {"aaa": "bbb"}}, "Data": {"/stuff": {"Score": 100}}}`, hostname)))
 	if err != nil {
@@ -70,7 +70,7 @@ func checkHostExpressionSetupForTest(t *testing.T) map[string]interface{} {
 	setupRows["metricRow"] = metricRow
 
 	// Create TSMetric
-	tsm := newTSMetricForTest(t)
+	tsm := NewTSMetric(appContext, clusterRow.ID)
 	defer tsm.db.Close()
 
 	err = tsm.Create(nil, clusterRow.ID, metricRow.ID, hostname, "/stuff.Score", float64(100), time.Now().Unix()+int64(900))
@@ -84,16 +84,10 @@ func checkHostExpressionSetupForTest(t *testing.T) map[string]interface{} {
 func checkHostExpressionTeardownForTest(t *testing.T, setupRows map[string]interface{}) {
 	appContext := shared.AppContextForTest()
 
-	pgdb, err := u.GetPGDB()
-	if err != nil {
-		t.Errorf("There should be a legit db. Error: %v", err)
-	}
-	defer pgdb.Close()
-
 	// DELETE FROM hosts WHERE id=...
-	h := NewHost(appContext)
+	h := NewHost(appContext, setupRows["clusterRow"].(*ClusterRow).ID)
 
-	_, err = h.DeleteByID(nil, setupRows["hostRow"].(*HostRow).ID)
+	_, err := h.DeleteByID(nil, setupRows["hostRow"].(*HostRow).ID)
 	if err != nil {
 		t.Fatalf("Deleting access_tokens by id should not fail. Error: %v", err)
 	}
@@ -125,6 +119,12 @@ func checkHostExpressionTeardownForTest(t *testing.T, setupRows map[string]inter
 
 	// DELETE FROM users WHERE id=...
 	u := NewUser(appContext)
+
+	pgdb, err := u.GetPGDB()
+	if err != nil {
+		t.Errorf("There should be a legit db. Error: %v", err)
+	}
+	defer pgdb.Close()
 
 	_, err = u.DeleteByID(nil, setupRows["userRow"].(*UserRow).ID)
 	if err != nil {

@@ -6,11 +6,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
 	"github.com/satori/go.uuid"
 
-	"github.com/resourced/resourced-master/libunix"
 	"github.com/resourced/resourced-master/models/pg"
 	"github.com/resourced/resourced-master/models/shared"
 )
@@ -24,9 +22,17 @@ func checkHostExpressionSetupForTest(t *testing.T) map[string]interface{} {
 
 	hostname, _ := os.Hostname()
 
-	// Signup
-	u := newUserForTest(t)
+	appContext := shared.AppContextForTest()
 
+	u := pg.NewUser(appContext)
+
+	pgdb, err := u.GetPGDB()
+	if err != nil {
+		t.Errorf("There should be a legit db. Error: %v", err)
+	}
+	defer pgdb.Close()
+
+	// Signup
 	userRow, err := u.Signup(nil, newEmailForTest(), "abc123", "abc123")
 	if err != nil {
 		t.Fatalf("Signing up user should work. Error: %v", err)
@@ -34,7 +40,7 @@ func checkHostExpressionSetupForTest(t *testing.T) map[string]interface{} {
 	setupRows["userRow"] = userRow
 
 	// Create cluster for user
-	c := newClusterForTest(t)
+	c := pg.NewCluster(appContext)
 
 	clusterRow, err := c.Create(nil, userRow, "cluster-name")
 	if err != nil {
@@ -43,7 +49,7 @@ func checkHostExpressionSetupForTest(t *testing.T) map[string]interface{} {
 	setupRows["clusterRow"] = clusterRow
 
 	// Create access token
-	at := newAccessTokenForTest(t)
+	at := pg.NewAccessToken(appContext)
 
 	tokenRow, err := at.Create(nil, userRow.ID, clusterRow.ID, "write")
 	if err != nil {
@@ -52,7 +58,7 @@ func checkHostExpressionSetupForTest(t *testing.T) map[string]interface{} {
 	setupRows["tokenRow"] = tokenRow
 
 	// Create host
-	h := newHostForTest(t)
+	h := pg.NewHost(appContext, clusterRow.ID)
 
 	hostRow, err := h.CreateOrUpdate(nil, tokenRow, []byte(fmt.Sprintf(`{"Host": {"Name": "%v", "Tags": {"aaa": "bbb"}}, "Data": {"/stuff": {"Score": 100}}}`, hostname)))
 	if err != nil {
@@ -61,7 +67,7 @@ func checkHostExpressionSetupForTest(t *testing.T) map[string]interface{} {
 	setupRows["hostRow"] = hostRow
 
 	// Create Metric
-	m := newMetricForTest(t)
+	m := pg.NewMetric(appContext)
 
 	metricRow, err := m.CreateOrUpdate(nil, clusterRow.ID, "/stuff.Score")
 	if err != nil {
@@ -70,7 +76,7 @@ func checkHostExpressionSetupForTest(t *testing.T) map[string]interface{} {
 	setupRows["metricRow"] = metricRow
 
 	// Create TSMetric
-	tsm := newTSMetricForTest(t)
+	tsm := pg.NewTSMetric(appContext, clusterRow.ID)
 
 	err = tsm.Create(nil, clusterRow.ID, metricRow.ID, hostname, "/stuff.Score", float64(100), time.Now().Unix()+int64(900))
 	if err != nil {
@@ -81,8 +87,10 @@ func checkHostExpressionSetupForTest(t *testing.T) map[string]interface{} {
 }
 
 func checkHostExpressionTeardownForTest(t *testing.T, setupRows map[string]interface{}) {
+	appContext := shared.AppContextForTest()
+
 	// DELETE FROM hosts WHERE id=...
-	h := newHostForTest(t)
+	h := pg.NewHost(appContext, setupRows["clusterRow"].(*pg.ClusterRow).ID)
 
 	_, err := h.DeleteByID(nil, setupRows["hostRow"].(*pg.HostRow).ID)
 	if err != nil {
@@ -90,7 +98,7 @@ func checkHostExpressionTeardownForTest(t *testing.T, setupRows map[string]inter
 	}
 
 	// DELETE FROM access_tokens WHERE id=...
-	at := newAccessTokenForTest(t)
+	at := pg.NewAccessToken(appContext)
 
 	_, err = at.DeleteByID(nil, setupRows["tokenRow"].(*pg.AccessTokenRow).ID)
 	if err != nil {
@@ -98,7 +106,7 @@ func checkHostExpressionTeardownForTest(t *testing.T, setupRows map[string]inter
 	}
 
 	// DELETE FROM metrics WHERE id=...
-	m := newMetricForTest(t)
+	m := pg.NewMetric(appContext)
 
 	_, err = m.DeleteByID(nil, setupRows["metricRow"].(*pg.MetricRow).ID)
 	if err != nil {
@@ -106,7 +114,7 @@ func checkHostExpressionTeardownForTest(t *testing.T, setupRows map[string]inter
 	}
 
 	// DELETE FROM clusters WHERE id=...
-	c := newClusterForTest(t)
+	c := pg.NewCluster(appContext)
 
 	_, err = c.DeleteByID(nil, setupRows["clusterRow"].(*pg.ClusterRow).ID)
 	if err != nil {
@@ -114,7 +122,7 @@ func checkHostExpressionTeardownForTest(t *testing.T, setupRows map[string]inter
 	}
 
 	// DELETE FROM users WHERE id=...
-	u := newUserForTest(t)
+	u := pg.NewUser(appContext)
 
 	_, err = u.DeleteByID(nil, setupRows["userRow"].(*pg.UserRow).ID)
 	if err != nil {
@@ -124,6 +132,8 @@ func checkHostExpressionTeardownForTest(t *testing.T, setupRows map[string]inter
 
 func TestCheckEvalRawHostDataExpression(t *testing.T) {
 	setupRows := checkHostExpressionSetupForTest(t)
+
+	appContext := shared.AppContextForTest()
 
 	// ----------------------------------------------------------------------
 	// Real test begins here
@@ -141,7 +151,7 @@ func TestCheckEvalRawHostDataExpression(t *testing.T) {
 	data["last_result_hosts"] = []byte("[]")
 	data["last_result_expressions"] = []byte("[]")
 
-	chk := newCheckForTest(t)
+	chk := pg.NewCheck(appContext)
 
 	checkRow, err := chk.Create(nil, setupRows["clusterRow"].(*pg.ClusterRow).ID, data)
 	if err != nil {
@@ -257,6 +267,8 @@ func TestCheckEvalRawHostDataExpression(t *testing.T) {
 func TestCheckEvalRelativeHostDataExpression(t *testing.T) {
 	setupRows := checkHostExpressionSetupForTest(t)
 
+	appContext := shared.AppContextForTest()
+
 	// ----------------------------------------------------------------------
 	// Real test begins here
 
@@ -273,7 +285,7 @@ func TestCheckEvalRelativeHostDataExpression(t *testing.T) {
 	data["last_result_hosts"] = []byte("[]")
 	data["last_result_expressions"] = []byte("[]")
 
-	chk := newCheckForTest(t)
+	chk := pg.NewCheck(appContext)
 
 	checkRow, err := chk.Create(nil, setupRows["clusterRow"].(*pg.ClusterRow).ID, data)
 	if err != nil {
@@ -314,7 +326,7 @@ func TestCheckEvalRelativeHostDataExpression(t *testing.T) {
 
 	// Arithmetic relative expression test.
 	// Create a tiny value for TSMetric
-	tsm := newTSMetricForTest(t)
+	tsm := pg.NewTSMetric(appContext, setupRows["clusterRow"].(*pg.ClusterRow).ID)
 
 	err = tsm.Create(nil, setupRows["clusterRow"].(*pg.ClusterRow).ID, setupRows["metricRow"].(*pg.MetricRow).ID, hostname, "/stuff.Score", float64(10), time.Now().Unix()+int64(900))
 	if err != nil {
@@ -365,6 +377,8 @@ func TestCheckEvalRelativeHostDataExpression(t *testing.T) {
 func TestCheckEvalLogDataExpression(t *testing.T) {
 	setupRows := checkHostExpressionSetupForTest(t)
 
+	appContext := shared.AppContextForTest()
+
 	// ----------------------------------------------------------------------
 	// Real test begins here
 
@@ -381,7 +395,7 @@ func TestCheckEvalLogDataExpression(t *testing.T) {
 	data["last_result_hosts"] = []byte("[]")
 	data["last_result_expressions"] = []byte("[]")
 
-	chk := newCheckForTest(t)
+	chk := pg.NewCheck(appContext)
 
 	// Create a Check
 	checkRow, err := chk.Create(nil, setupRows["clusterRow"].(*pg.ClusterRow).ID, data)
@@ -395,13 +409,10 @@ func TestCheckEvalLogDataExpression(t *testing.T) {
 	// Create TSLog
 	dataJSONString := fmt.Sprintf(`{"Host": {"Name": "%v", "Tags": {}}, "Data": {"Filename":"", "Loglines": [{"Created": %v, "Content": "aaa"}, {"Created": %v, "Content": "bbb"}]}}`, hostname, time.Now().Unix()+int64(900), time.Now().Unix()+int64(900))
 
-	err = newTSLogForTest(t).CreateFromJSON(nil, setupRows["clusterRow"].(*pg.ClusterRow).ID, []byte(dataJSONString), time.Now().Unix()+int64(900))
+	err = pg.NewTSLog(appContext, setupRows["clusterRow"].(*pg.ClusterRow).ID).CreateFromJSON(nil, setupRows["clusterRow"].(*pg.ClusterRow).ID, []byte(dataJSONString), time.Now().Unix()+int64(900))
 	if err != nil {
 		t.Fatalf("Creating a TSLog should work. Error: %v", err)
 	}
-
-	db := newDbForTest(t)
-	defer db.Close()
 
 	// EvalLogDataExpression with valid expression.
 	// This is a basic happy path test.
@@ -435,6 +446,8 @@ func TestCheckEvalLogDataExpression(t *testing.T) {
 func TestCheckEvalPingExpression(t *testing.T) {
 	setupRows := checkHostExpressionSetupForTest(t)
 
+	appContext := shared.AppContextForTest()
+
 	// ----------------------------------------------------------------------
 	// Real test begins here
 
@@ -451,7 +464,7 @@ func TestCheckEvalPingExpression(t *testing.T) {
 	data["last_result_hosts"] = []byte("[]")
 	data["last_result_expressions"] = []byte("[]")
 
-	chk := newCheckForTest(t)
+	chk := pg.NewCheck(appContext)
 
 	// Create a Check
 	checkRow, err := chk.Create(nil, setupRows["clusterRow"].(*pg.ClusterRow).ID, data)
@@ -489,6 +502,8 @@ func TestCheckEvalPingExpression(t *testing.T) {
 func TestCheckEvalSSHExpression(t *testing.T) {
 	setupRows := checkHostExpressionSetupForTest(t)
 
+	appContext := shared.AppContextForTest()
+
 	// ----------------------------------------------------------------------
 	// Real test begins here
 
@@ -505,7 +520,7 @@ func TestCheckEvalSSHExpression(t *testing.T) {
 	data["last_result_hosts"] = []byte("[]")
 	data["last_result_expressions"] = []byte("[]")
 
-	chk := newCheckForTest(t)
+	chk := pg.NewCheck(appContext)
 
 	// Create a Check
 	checkRow, err := chk.Create(nil, setupRows["clusterRow"].(*pg.ClusterRow).ID, data)
@@ -546,6 +561,8 @@ func TestCheckEvalSSHExpression(t *testing.T) {
 func TestCheckEvalHTTPExpression(t *testing.T) {
 	setupRows := checkHostExpressionSetupForTest(t)
 
+	appContext := shared.AppContextForTest()
+
 	// ----------------------------------------------------------------------
 	// Real test begins here
 
@@ -562,7 +579,7 @@ func TestCheckEvalHTTPExpression(t *testing.T) {
 	data["last_result_hosts"] = []byte("[]")
 	data["last_result_expressions"] = []byte("[]")
 
-	chk := newCheckForTest(t)
+	chk := pg.NewCheck(appContext)
 
 	// Create a Check
 	checkRow, err := chk.Create(nil, setupRows["clusterRow"].(*pg.ClusterRow).ID, data)
