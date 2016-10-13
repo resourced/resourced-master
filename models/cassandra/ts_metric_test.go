@@ -16,7 +16,12 @@ type mockHostRow struct {
 }
 
 func (mock *mockHostRow) DataAsFlatKeyValue() map[string]map[string]interface{} {
-	return nil
+	innerData := make(map[string]interface{})
+	innerData["metric.key"] = float64(1)
+
+	data := make(map[string]map[string]interface{})
+	data["/test"] = innerData
+	return data
 }
 
 func (mock *mockHostRow) GetClusterID() int64 {
@@ -80,9 +85,20 @@ func TestTSMetricCreateValue(t *testing.T) {
 	tsMetric := NewTSMetric(appContext)
 
 	// Create TSMetric
-	err = tsMetric.CreateByHostRow(mock, metricsMap, time.Hour)
+	err = tsMetric.CreateByHostRow(mock, metricsMap, time.Duration(60))
 	if err != nil {
 		t.Fatalf("Creating a TSMetric should work. Error: %v", err)
+	}
+
+	to := time.Now().UTC().Unix()
+	from := to - 60
+
+	result, err := tsMetric.AllByMetricIDAndRange(clusterRow.ID, metricRow.ID, from, to)
+	if err != nil {
+		t.Errorf("Fetching TSMetric should not fail. Error: %v", err)
+	}
+	if len(result) <= 0 {
+		t.Errorf("There should be a legit result.")
 	}
 
 	// Delete Metric
