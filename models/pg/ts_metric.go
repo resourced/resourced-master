@@ -17,6 +17,7 @@ func NewTSMetric(ctx context.Context, clusterID int64) *TSMetric {
 	ts.AppContext = ctx
 	ts.table = "ts_metrics"
 	ts.clusterID = clusterID
+	ts.i = ts
 
 	return ts
 }

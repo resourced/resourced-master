@@ -23,6 +23,7 @@ func NewHost(ctx context.Context, clusterID int64) *Host {
 	host.table = "hosts"
 	host.hasID = true
 	host.clusterID = clusterID
+	host.i = host
 
 	return host
 }

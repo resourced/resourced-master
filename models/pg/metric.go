@@ -13,6 +13,7 @@ func NewMetric(ctx context.Context) *Metric {
 	m.AppContext = ctx
 	m.table = "metrics"
 	m.hasID = true
+	m.i = m
 
 	return m
 }

@@ -13,6 +13,7 @@ func NewSavedQuery(ctx context.Context) *SavedQuery {
 	savedQuery.AppContext = ctx
 	savedQuery.table = "saved_queries"
 	savedQuery.hasID = true
+	savedQuery.i = savedQuery
 
 	return savedQuery
 }

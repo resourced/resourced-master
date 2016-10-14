@@ -15,6 +15,7 @@ func NewGraph(ctx context.Context) *Graph {
 	g.AppContext = ctx
 	g.table = "graphs"
 	g.hasID = true
+	g.i = g
 
 	return g
 }

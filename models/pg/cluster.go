@@ -17,6 +17,7 @@ func NewCluster(ctx context.Context) *Cluster {
 	c.AppContext = ctx
 	c.table = "clusters"
 	c.hasID = true
+	c.i = c
 
 	return c
 }

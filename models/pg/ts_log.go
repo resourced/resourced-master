@@ -22,6 +22,7 @@ func NewTSLog(ctx context.Context, clusterID int64) *TSLog {
 	ts.AppContext = ctx
 	ts.table = "ts_logs"
 	ts.clusterID = clusterID
+	ts.i = ts
 
 	return ts
 }

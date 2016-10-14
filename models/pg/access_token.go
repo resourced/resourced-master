@@ -15,6 +15,7 @@ func NewAccessToken(ctx context.Context) *AccessToken {
 	token.AppContext = ctx
 	token.table = "access_tokens"
 	token.hasID = true
+	token.i = token
 
 	return token
 }

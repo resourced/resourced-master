@@ -20,6 +20,10 @@ import (
 
 var PROJECT_EPOCH = 1451606400
 
+type IPGDBGetter interface {
+	GetPGDB() (*sqlx.DB, error)
+}
+
 type InsertResult struct {
 	lastInsertId int64
 	rowsAffected int64
@@ -69,6 +73,7 @@ func (br *BaseRow) JSONAttrFloat64(field sqlx_types.JSONText, attr string) float
 }
 
 type Base struct {
+	i          IPGDBGetter
 	AppContext context.Context
 	db         *sqlx.DB
 	table      string
@@ -106,7 +111,7 @@ func (b *Base) newTransactionIfNeeded(tx *sqlx.Tx) (*sqlx.Tx, bool, error) {
 		return tx, wrapInSingleTransaction, nil
 	}
 
-	db, err := b.GetPGDB()
+	db, err := b.i.GetPGDB()
 	if err != nil {
 		return nil, wrapInSingleTransaction, err
 	}

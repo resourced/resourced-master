@@ -17,6 +17,7 @@ func NewTSEvent(ctx context.Context, clusterID int64) *TSEvent {
 	ts.AppContext = ctx
 	ts.table = "ts_events"
 	ts.clusterID = clusterID
+	ts.i = ts
 
 	return ts
 }

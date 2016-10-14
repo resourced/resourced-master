@@ -20,12 +20,13 @@ import (
 )
 
 func NewCheck(ctx context.Context) *Check {
-	g := &Check{}
-	g.AppContext = ctx
-	g.table = "checks"
-	g.hasID = true
+	c := &Check{}
+	c.AppContext = ctx
+	c.table = "checks"
+	c.hasID = true
+	c.i = c
 
-	return g
+	return c
 }
 
 type CheckRowsWithError struct {

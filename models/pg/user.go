@@ -17,6 +17,7 @@ func NewUser(ctx context.Context) *User {
 	user.AppContext = ctx
 	user.table = "users"
 	user.hasID = true
+	user.i = user
 
 	return user
 }

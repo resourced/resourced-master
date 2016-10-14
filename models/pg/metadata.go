@@ -12,6 +12,7 @@ func NewMetadata(ctx context.Context) *Metadata {
 	metadata := &Metadata{}
 	metadata.AppContext = ctx
 	metadata.table = "metadata"
+	metadata.i = metadata
 
 	return metadata
 }
