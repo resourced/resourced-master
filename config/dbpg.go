@@ -12,7 +12,6 @@ func NewPGDBConfig(generalConfig GeneralConfig) (*PGDBConfig, error) {
 	conf := &PGDBConfig{}
 	conf.HostByClusterID = make(map[int64]*sqlx.DB)
 	conf.TSMetricByClusterID = make(map[int64]*sqlx.DB)
-	conf.TSMetricAggr15mByClusterID = make(map[int64]*sqlx.DB)
 	conf.TSEventByClusterID = make(map[int64]*sqlx.DB)
 	conf.TSLogByClusterID = make(map[int64]*sqlx.DB)
 	conf.TSCheckByClusterID = make(map[int64]*sqlx.DB)
@@ -193,19 +192,17 @@ func NewPGDBConfig(generalConfig GeneralConfig) (*PGDBConfig, error) {
 
 // PGDBConfig stores all database configuration data.
 type PGDBConfig struct {
-	Core                       *sqlx.DB
-	Host                       *sqlx.DB
-	HostByClusterID            map[int64]*sqlx.DB
-	TSMetric                   *sqlx.DB
-	TSMetricByClusterID        map[int64]*sqlx.DB
-	TSMetricAggr15m            *sqlx.DB
-	TSMetricAggr15mByClusterID map[int64]*sqlx.DB
-	TSEvent                    *sqlx.DB
-	TSEventByClusterID         map[int64]*sqlx.DB
-	TSLog                      *sqlx.DB
-	TSLogByClusterID           map[int64]*sqlx.DB
-	TSCheck                    *sqlx.DB
-	TSCheckByClusterID         map[int64]*sqlx.DB
+	Core                *sqlx.DB
+	Host                *sqlx.DB
+	HostByClusterID     map[int64]*sqlx.DB
+	TSMetric            *sqlx.DB
+	TSMetricByClusterID map[int64]*sqlx.DB
+	TSEvent             *sqlx.DB
+	TSEventByClusterID  map[int64]*sqlx.DB
+	TSLog               *sqlx.DB
+	TSLogByClusterID    map[int64]*sqlx.DB
+	TSCheck             *sqlx.DB
+	TSCheckByClusterID  map[int64]*sqlx.DB
 }
 
 func (dbconf *PGDBConfig) GetHost(clusterID int64) *sqlx.DB {
@@ -221,15 +218,6 @@ func (dbconf *PGDBConfig) GetTSMetric(clusterID int64) *sqlx.DB {
 	conn, ok := dbconf.TSMetricByClusterID[clusterID]
 	if !ok {
 		conn = dbconf.TSMetric
-	}
-
-	return conn
-}
-
-func (dbconf *PGDBConfig) GetTSMetricAggr15m(clusterID int64) *sqlx.DB {
-	conn, ok := dbconf.TSMetricAggr15mByClusterID[clusterID]
-	if !ok {
-		conn = dbconf.TSMetricAggr15m
 	}
 
 	return conn
