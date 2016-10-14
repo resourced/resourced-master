@@ -8,6 +8,29 @@ import (
 	"github.com/resourced/resourced-master/models/pg"
 )
 
+func (app *Application) myClusters() (clusters []*pg.ClusterRow, err error) {
+	daemons := make([]string, 0)
+	allPeers := app.Peers.Items()
+
+	if len(allPeers) > 0 {
+		for hostAndPort, _ := range allPeers {
+			daemons = append(daemons, hostAndPort)
+		}
+
+		groupedClustersByDaemon, err := pg.NewCluster(app.GetContext()).AllSplitToDaemons(nil, daemons)
+		if err != nil {
+			return nil, err
+		}
+
+		clusters = groupedClustersByDaemon[app.FullAddr()]
+
+	} else {
+		clusters, err = pg.NewCluster(app.GetContext()).All(nil)
+	}
+
+	return clusters, err
+}
+
 // PruneAll runs background job to prune all old timeseries data.
 func (app *Application) PruneAll() {
 	if !app.GeneralConfig.EnablePeriodicPruneJobs {
@@ -15,36 +38,10 @@ func (app *Application) PruneAll() {
 	}
 
 	for {
-		var clusters []*pg.ClusterRow
-		var err error
-
-		daemons := make([]string, 0)
-		allPeers := app.Peers.Items()
-
-		if len(allPeers) > 0 {
-			for hostAndPort, _ := range allPeers {
-				daemons = append(daemons, hostAndPort)
-			}
-
-			groupedClustersByDaemon, err := pg.NewCluster(app.GetContext()).AllSplitToDaemons(nil, daemons)
-			if err != nil {
-				app.ErrLogger.WithFields(logrus.Fields{
-					"Method": "Cluster.AllSplitToDaemons",
-				}).Error(err)
-
-				libtime.SleepString("24h")
-				continue
-			}
-
-			clusters = groupedClustersByDaemon[app.FullAddr()]
-
-		} else {
-			clusters, err = pg.NewCluster(app.GetContext()).All(nil)
-		}
-
+		clusters, err := app.myClusters()
 		if err != nil {
 			app.ErrLogger.WithFields(logrus.Fields{
-				"Method": "Application.PruneAll",
+				"Method": "Application.myClusters",
 			}).Error(err)
 
 			libtime.SleepString("24h")
@@ -56,9 +53,11 @@ func (app *Application) PruneAll() {
 				app.PruneTSCheckOnce(cluster.ID)
 			}(cluster)
 
-			go func(cluster *pg.ClusterRow) {
-				app.PruneTSMetricOnce(cluster.ID)
-			}(cluster)
+			if app.GeneralConfig.GetMetricsDB() == "pg" {
+				go func(cluster *pg.ClusterRow) {
+					app.PruneTSMetricOnce(cluster.ID)
+				}(cluster)
+			}
 
 			go func(cluster *pg.ClusterRow) {
 				app.PruneTSEventOnce(cluster.ID)
@@ -98,7 +97,7 @@ func (app *Application) PruneTSCheckOnce(clusterID int64) (err error) {
 
 // PruneTSMetricOnce deletes old ts_metrics data.
 func (app *Application) PruneTSMetricOnce(clusterID int64) (err error) {
-	if app.PGDBConfig.TSMetric == nil {
+	if app.GeneralConfig.GetMetricsDB() != "pg" {
 		return nil
 	}
 
