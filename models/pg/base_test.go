@@ -22,6 +22,7 @@ func newEmailForTest() string {
 func newBaseForTest(t *testing.T) *Base {
 	base := &Base{}
 	base.AppContext = shared.AppContextForTest()
+	base.i = base
 
 	return base
 }
