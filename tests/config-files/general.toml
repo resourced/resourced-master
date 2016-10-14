@@ -18,6 +18,9 @@ EnablePeriodicPruneJobs = true
 # When set to true, master daemon will not serve the HTML UI, just API.
 JustAPI = false
 
+VIPAddr = "localhost:55655"
+VIPProtocol = "http"
+
 [PostgreSQL]
 # DSN to core PostgreSQL database
 DSN = "postgres://localhost:5432/resourced-master?sslmode=disable"

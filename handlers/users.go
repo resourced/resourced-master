@@ -10,6 +10,7 @@ import (
 	"github.com/gorilla/sessions"
 	"github.com/pressly/chi"
 
+	"github.com/resourced/resourced-master/contexthelper"
 	"github.com/resourced/resourced-master/libhttp"
 	"github.com/resourced/resourced-master/mailer"
 	"github.com/resourced/resourced-master/models/pg"
@@ -41,6 +42,12 @@ func GetSignup(w http.ResponseWriter, r *http.Request) {
 
 func PostSignup(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html")
+
+	generalConfig, err := contexthelper.GetGeneralConfig(r.Context())
+	if err != nil {
+		libhttp.HandleErrorHTML(w, err, 500)
+		return
+	}
 
 	email := r.FormValue("Email")
 	password := r.FormValue("Password")
@@ -102,10 +109,7 @@ func PostSignup(w http.ResponseWriter, r *http.Request) {
 			if userRow.EmailVerificationToken.String != "" {
 				mailer := r.Context().Value("mailer.GeneralConfig").(*mailer.Mailer)
 
-				vipAddr := r.Context().Value("vipAddr").(string)
-				vipProtocol := r.Context().Value("vipProtocol").(string)
-
-				url := fmt.Sprintf("%v://%v/users/email-verification/%v", vipProtocol, vipAddr, userRow.EmailVerificationToken.String)
+				url := fmt.Sprintf("%v://%v/users/email-verification/%v", generalConfig.VIPProtocol, generalConfig.VIPAddr, userRow.EmailVerificationToken.String)
 
 				body := fmt.Sprintf("Click the following link to verify your email address:\n\n%v", url)
 

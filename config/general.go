@@ -78,6 +78,8 @@ type GeneralConfig struct {
 	RequestShutdownTimeout  string
 	EnablePeriodicPruneJobs bool
 	JustAPI                 bool
+	VIPAddr                 string
+	VIPProtocol             string
 
 	PostgreSQL struct {
 		DSN                string

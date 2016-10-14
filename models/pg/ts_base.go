@@ -20,11 +20,11 @@ func (ts *TSBase) DeleteDeleted(tx *sqlx.Tx, clusterID int64) error {
 	}
 
 	tx, wrapInSingleTransaction, err := ts.newTransactionIfNeeded(tx)
-	if tx == nil {
-		return errors.New("Transaction struct must not be empty.")
-	}
 	if err != nil {
 		return err
+	}
+	if tx == nil {
+		return errors.New("Transaction struct must not be empty.")
 	}
 
 	now := time.Now().UTC().Unix()
