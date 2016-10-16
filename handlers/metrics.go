@@ -98,26 +98,23 @@ func GetApiTSMetricsByHost(w http.ResponseWriter, r *http.Request) {
 
 	qParams := r.URL.Query()
 
-	fromString := qParams.Get("From")
-	if fromString == "" {
-		fromString = qParams.Get("from")
-	}
-	from, err := strconv.ParseInt(fromString, 10, 64)
+	from, err := strconv.ParseInt(qParams.Get("from"), 10, 64)
 	if err != nil {
 		from = -1
 	}
 
-	toString := qParams.Get("To")
-	if toString == "" {
-		toString = qParams.Get("to")
-	}
-	to, err := strconv.ParseInt(toString, 10, 64)
+	to, err := strconv.ParseInt(qParams.Get("to"), 10, 64)
 	if err != nil {
 		to = -1
 	}
 
+	downsample, err := strconv.ParseInt(qParams.Get("downsample"), 10, 64)
+	if err != nil {
+		downsample = -1
+	}
+
 	if from < 0 || to < 0 {
-		libhttp.HandleErrorJson(w, errors.New("From or To parameters are missing"))
+		libhttp.HandleErrorJson(w, errors.New("from or to parameters are missing"))
 		return
 	}
 
@@ -139,7 +136,7 @@ func GetApiTSMetricsByHost(w http.ResponseWriter, r *http.Request) {
 
 	shimsTSMetric := shims.NewTSMetric(r.Context(), metricRow.ClusterID)
 
-	hcMetrics, err := shimsTSMetric.AllByMetricIDHostAndRangeForHighchart(metricRow.ClusterID, id, host, from, to, clusterRow.GetDeletedFromUNIXTimestampForSelect("ts_metrics"))
+	hcMetrics, err := shimsTSMetric.AllByMetricIDHostAndRangeForHighchart(metricRow.ClusterID, id, host, from, to, clusterRow.GetDeletedFromUNIXTimestampForSelect("ts_metrics"), downsample)
 	if err != nil {
 		errLogger.WithFields(logrus.Fields{"Error": err}).Error("Failed to fetch metrics rows")
 		libhttp.HandleErrorJson(w, err)
@@ -166,20 +163,12 @@ func GetApiTSMetrics(w http.ResponseWriter, r *http.Request) {
 
 	qParams := r.URL.Query()
 
-	fromString := qParams.Get("From")
-	if fromString == "" {
-		fromString = qParams.Get("from")
-	}
-	from, err := strconv.ParseInt(fromString, 10, 64)
+	from, err := strconv.ParseInt(qParams.Get("from"), 10, 64)
 	if err != nil {
 		from = -1
 	}
 
-	toString := qParams.Get("To")
-	if toString == "" {
-		toString = qParams.Get("to")
-	}
-	to, err := strconv.ParseInt(toString, 10, 64)
+	to, err := strconv.ParseInt(qParams.Get("to"), 10, 64)
 	if err != nil {
 		to = -1
 	}
@@ -187,6 +176,11 @@ func GetApiTSMetrics(w http.ResponseWriter, r *http.Request) {
 	if from < 0 || to < 0 {
 		libhttp.HandleErrorJson(w, errors.New("From or To parameters are missing"))
 		return
+	}
+
+	downsample, err := strconv.ParseInt(qParams.Get("downsample"), 10, 64)
+	if err != nil {
+		downsample = -1
 	}
 
 	id, err := getInt64SlugFromPath(w, r, "id")
@@ -209,7 +203,7 @@ func GetApiTSMetrics(w http.ResponseWriter, r *http.Request) {
 
 	shimsTSMetric := shims.NewTSMetric(r.Context(), metricRow.ClusterID)
 
-	hcMetrics, err := shimsTSMetric.AllByMetricIDAndRangeForHighchart(metricRow.ClusterID, id, from, to, clusterRow.GetDeletedFromUNIXTimestampForSelect("ts_metrics"))
+	hcMetrics, err := shimsTSMetric.AllByMetricIDAndRangeForHighchart(metricRow.ClusterID, id, from, to, clusterRow.GetDeletedFromUNIXTimestampForSelect("ts_metrics"), downsample)
 	if err != nil {
 		errLogger.WithFields(logrus.Fields{"Error": err}).Error("Failed to fetch metrics rows")
 		libhttp.HandleErrorJson(w, err)

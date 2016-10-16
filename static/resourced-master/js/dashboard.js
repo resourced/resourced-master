@@ -228,10 +228,10 @@ ResourcedMaster.metrics.get = function(accessToken, metricID, options) {
         path = path + '/hosts/' + options.host;
     }
     if('from' in options) {
-        getParams = getParams + 'From=' + options.from;
+        getParams = getParams + 'from=' + options.from;
     }
     if('to' in options) {
-        getParams = getParams + '&To=' + options.to;
+        getParams = getParams + '&to=' + options.to;
     }
     if('aggr' in options) {
         getParams = getParams + '&aggr=' + options.aggr;
@@ -356,10 +356,10 @@ ResourcedMaster.metrics.getEvents = function(accessToken, eventType, options) {
     var getParams = '';
 
     if('from' in options) {
-        getParams = getParams + 'From=' + options.from;
+        getParams = getParams + 'from=' + options.from;
     }
     if('to' in options) {
-        getParams = getParams + '&To=' + options.to;
+        getParams = getParams + '&to=' + options.to;
     }
 
     return $.ajax({

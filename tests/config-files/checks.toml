@@ -2,6 +2,8 @@
 
 # DataRetention defines how long time series data are kept.
 # The unit is defined in days.
+# This is a global setting, each cluster can define its own retention days.
+# But it cannot be longer than the global setting.
 DataRetention = 1
 
 [Checks.PostgreSQL]

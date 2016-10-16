@@ -19,20 +19,12 @@ func GetApiEventsLine(w http.ResponseWriter, r *http.Request) {
 
 	qParams := r.URL.Query()
 
-	fromString := qParams.Get("From")
-	if fromString == "" {
-		fromString = qParams.Get("from")
-	}
-	from, err := strconv.ParseInt(fromString, 10, 64)
+	from, err := strconv.ParseInt(qParams.Get("from"), 10, 64)
 	if err != nil {
 		from = -1
 	}
 
-	toString := qParams.Get("To")
-	if toString == "" {
-		toString = qParams.Get("to")
-	}
-	to, err := strconv.ParseInt(toString, 10, 64)
+	to, err := strconv.ParseInt(qParams.Get("to"), 10, 64)
 	if err != nil {
 		to = -1
 	}
@@ -72,20 +64,12 @@ func GetApiEventsBand(w http.ResponseWriter, r *http.Request) {
 
 	qParams := r.URL.Query()
 
-	fromString := qParams.Get("From")
-	if fromString == "" {
-		fromString = qParams.Get("from")
-	}
-	from, err := strconv.ParseInt(fromString, 10, 64)
+	from, err := strconv.ParseInt(qParams.Get("from"), 10, 64)
 	if err != nil {
 		from = -1
 	}
 
-	toString := qParams.Get("To")
-	if toString == "" {
-		toString = qParams.Get("to")
-	}
-	to, err := strconv.ParseInt(toString, 10, 64)
+	to, err := strconv.ParseInt(qParams.Get("to"), 10, 64)
 	if err != nil {
 		to = -1
 	}

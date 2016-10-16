@@ -25,17 +25,8 @@ func GetLogs(w http.ResponseWriter, r *http.Request) {
 
 	qParams := r.URL.Query()
 
-	// Parse To/to get param
-	toString := qParams.Get("To")
-	if toString == "" {
-		toString = qParams.Get("to")
-	}
-
-	// Parse From/from get param
-	fromString := qParams.Get("From")
-	if fromString == "" {
-		fromString = qParams.Get("from")
-	}
+	toString := qParams.Get("to")
+	fromString := qParams.Get("from")
 
 	// Fetch the last log row if any of the from/to are missing.
 	var lastLogRow *pg.TSLogRow
@@ -151,17 +142,8 @@ func GetApiLogs(w http.ResponseWriter, r *http.Request) {
 
 	qParams := r.URL.Query()
 
-	// Parse To/to get param
-	toString := qParams.Get("To")
-	if toString == "" {
-		toString = qParams.Get("to")
-	}
-
-	// Parse From/from get param
-	fromString := qParams.Get("From")
-	if fromString == "" {
-		fromString = qParams.Get("from")
-	}
+	toString := qParams.Get("to")
+	fromString := qParams.Get("from")
 
 	// Fetch the last log row if any of the from/to are missing.
 	var lastLogRow *pg.TSLogRow

@@ -1,13 +1,14 @@
 [Logs]
+# DataRetention defines how long time series data are kept.
+# The unit is defined in days.
+# This is a global setting, each cluster can define its own retention days.
+# But it cannot be longer than the global setting.
+DataRetention = 1
 
 [Logs.PostgreSQL]
 DSN = "postgres://localhost:5432/resourced-master-ts-logs?sslmode=disable"
 
-MaxOpenConnections = 50
-
-# DataRetention defines how long time series data are kept.
-# The unit is defined in days.
-DataRetention = 1
+MaxOpenConnections = 2
 
 # Optimization Setting: Enable this option if you want to shard logs data by cluster_id.
 # Format: key:   cluster id.

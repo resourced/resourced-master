@@ -54,23 +54,60 @@ func (ts *TSMetric) CreateByHostRow(hostRow shared.IHostRow, metricsMap map[stri
 	return fmt.Errorf("Unrecognized DBType, valid options are: pg or cassandra")
 }
 
-func (ts *TSMetric) AllByMetricIDHostAndRangeForHighchart(clusterID, metricID int64, host string, from, to, deletedFrom int64) (*shared.TSMetricHighchartPayload, error) {
+func (ts *TSMetric) AllByMetricIDHostAndRangeForHighchart(clusterID, metricID int64, host string, from, to, deletedFrom, downsample int64) (*shared.TSMetricHighchartPayload, error) {
 	if ts.GetDBType() == "pg" {
-		return pg.NewTSMetric(ts.AppContext, ts.ClusterID).AllByMetricIDHostAndRangeForHighchart(nil, clusterID, metricID, host, from, to, deletedFrom)
+		highchartPayload, err := pg.NewTSMetric(ts.AppContext, ts.ClusterID).AllByMetricIDHostAndRangeForHighchart(nil, clusterID, metricID, host, from, to, deletedFrom)
+		if err != nil {
+			return nil, err
+		}
+
+		if downsample > 0 {
+			highchartPayload.Data = shared.LTTB(highchartPayload.Data, int(downsample))
+		}
+		return highchartPayload, err
 
 	} else if ts.GetDBType() == "cassandra" {
-		return cassandra.NewTSMetric(ts.AppContext).AllByMetricIDHostAndRangeForHighchart(clusterID, metricID, host, from, to)
+		highchartPayload, err := cassandra.NewTSMetric(ts.AppContext).AllByMetricIDHostAndRangeForHighchart(clusterID, metricID, host, from, to)
+		if err != nil {
+			return nil, err
+		}
+
+		if downsample > 0 {
+			highchartPayload.Data = shared.LTTB(highchartPayload.Data, int(downsample))
+		}
+		return highchartPayload, err
 	}
 
 	return nil, fmt.Errorf("Unrecognized DBType, valid options are: pg or cassandra")
 }
 
-func (ts *TSMetric) AllByMetricIDAndRangeForHighchart(clusterID, metricID, from, to, deletedFrom int64) ([]*shared.TSMetricHighchartPayload, error) {
+func (ts *TSMetric) AllByMetricIDAndRangeForHighchart(clusterID, metricID, from, to, deletedFrom, downsample int64) ([]*shared.TSMetricHighchartPayload, error) {
 	if ts.GetDBType() == "pg" {
-		return pg.NewTSMetric(ts.AppContext, ts.ClusterID).AllByMetricIDAndRangeForHighchart(nil, clusterID, metricID, from, to, deletedFrom)
+		highchartPayloads, err := pg.NewTSMetric(ts.AppContext, ts.ClusterID).AllByMetricIDAndRangeForHighchart(nil, clusterID, metricID, from, to, deletedFrom)
+		if err != nil {
+			return nil, err
+		}
+
+		if downsample > 0 {
+			for i, highchartPayload := range highchartPayloads {
+				highchartPayloads[i].Data = shared.LTTB(highchartPayload.Data, int(downsample))
+			}
+		}
+		return highchartPayloads, err
 
 	} else if ts.GetDBType() == "cassandra" {
-		return cassandra.NewTSMetric(ts.AppContext).AllByMetricIDAndRangeForHighchart(clusterID, metricID, from, to)
+		highchartPayloads, err := cassandra.NewTSMetric(ts.AppContext).AllByMetricIDAndRangeForHighchart(clusterID, metricID, from, to)
+
+		if err != nil {
+			return nil, err
+		}
+
+		if downsample > 0 {
+			for i, highchartPayload := range highchartPayloads {
+				highchartPayloads[i].Data = shared.LTTB(highchartPayload.Data, int(downsample))
+			}
+		}
+		return highchartPayloads, err
 	}
 
 	return nil, fmt.Errorf("Unrecognized DBType, valid options are: pg or cassandra")
