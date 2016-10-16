@@ -373,6 +373,46 @@ func GetApiHosts(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func GetApiHostsID(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	accessTokenRow := r.Context().Value("accessToken").(*pg.AccessTokenRow)
+
+	var hostRow *pg.HostRow
+	var hostname string
+
+	id, err := getInt64SlugFromPath(w, r, "id")
+	if err != nil {
+		hostname = chi.URLParam(r, "id")
+	}
+
+	if hostname != "" {
+		hostRow, err = pg.NewHost(r.Context(), accessTokenRow.ClusterID).GetByHostname(nil, hostname)
+		if err != nil {
+			libhttp.HandleErrorJson(w, err)
+			return
+		}
+
+	} else if id > 0 {
+		hostRow, err = pg.NewHost(r.Context(), accessTokenRow.ClusterID).GetByID(nil, id)
+		if err != nil {
+			libhttp.HandleErrorJson(w, err)
+			return
+		}
+	} else {
+		libhttp.HandleErrorJson(w, fmt.Errorf("Unrecognizable hostname or host ID"))
+		return
+	}
+
+	hostRowJSON, err := json.Marshal(hostRow)
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
+
+	w.Write(hostRowJSON)
+}
+
 func PutApiHostsNameOrIDMasterTags(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html")
 
