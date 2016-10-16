@@ -233,8 +233,8 @@ ResourcedMaster.metrics.get = function(accessToken, metricID, options) {
     if('to' in options) {
         getParams = getParams + '&to=' + options.to;
     }
-    if('aggr' in options) {
-        getParams = getParams + '&aggr=' + options.aggr;
+    if('downsample' in options) {
+        getParams = getParams + '&downsample=' + options.downsample;
     }
 
     return $.ajax({
@@ -258,34 +258,6 @@ ResourcedMaster.metrics.renderOneChart = function(accessToken, metricID, eventLi
 
         if(result.length <= 0 && toastr) {
             toastr.warning('API for Metric(ID: ' + metricID + ') returned no data');
-        }
-
-        // Check if result is aggregated data.
-        // If so, then the result payload need to be rearranged.
-        if(result[0] && result[0]['data'][0]) {
-            var firstValue = result[0]['data'][0][1];
-
-            if(typeof firstValue === 'object') {
-                var avgResult = {'name': result[0]['name'] + ' avg', 'data': []};
-                var maxResult = {'name': result[0]['name'] + ' max', 'data': []};
-                var minResult = {'name': result[0]['name'] + ' min', 'data': []};
-                var sumResult = {'name': result[0]['name'] + ' sum', 'data': []};
-
-                for(i = 0; i < result.length; i++) {
-                    var data = result[i]['data'];
-
-                    for(j = 0; j < data.length; j++) {
-                        var eachData = result[i]['data'][j];
-
-                        avgResult['data'].push([eachData[0], eachData[1]['avg']]);
-                        maxResult['data'].push([eachData[0], eachData[1]['max']]);
-                        minResult['data'].push([eachData[0], eachData[1]['min']]);
-                        sumResult['data'].push([eachData[0], eachData[1]['sum']]);
-                    }
-                }
-
-                result = [avgResult, maxResult, minResult, sumResult];
-            }
         }
 
         var hcPlotLines = [];

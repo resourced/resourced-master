@@ -11,7 +11,6 @@
 #
 # Examples:
 # ./scripts/migrations/drop-ts-daily.py ts_metrics 2016 > ./migrations/pg/down/0006_ts-metrics-2016.sql
-# ./scripts/migrations/drop-ts-daily.py ts_metrics_aggr_15m 2016 > ./migrations/pg/down/0007_ts-metrics-aggr-15m-2016.sql
 # ./scripts/migrations/drop-ts-daily.py ts_logs 2016 > ./migrations/pg/down/0027_ts-logs-2016.sql
 # ./scripts/migrations/drop-ts-daily.py ts_checks 2016 > ./migrations/pg/down/0032_ts-checks-2016.sql
 

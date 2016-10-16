@@ -157,7 +157,7 @@ function execWhenAllChartsRendered(numCharts) {
     }
 }
 
-function renderChartRange(numCharts, daterangepicker, from, to, aggr) {
+function renderChartRange(numCharts, daterangepicker, from, to) {
     var elem = daterangepicker.closest('.panel-heading');
     var metricID = elem.data('id');
     var metricKey = elem.data('key');
@@ -168,7 +168,6 @@ function renderChartRange(numCharts, daterangepicker, from, to, aggr) {
         to: to,
         containerDOM: containerDOM,
         title: metricKey,
-        aggr: aggr,
         onLoad: function() {
             // Begin streaming Server Side Events after the graph is loaded
             var chart = this;
@@ -213,7 +212,7 @@ function renderAllChart() {
         var from = drp.startDate.utc().unix();
         var to = drp.endDate.utc().unix();
 
-        renderChartRange($('.graphs-metrics-brick-layout .panel-heading').length, drpElem, from, to, 'avg');
+        renderChartRange($('.graphs-metrics-brick-layout .panel-heading').length, drpElem, from, to);
     });
 }
 
@@ -246,7 +245,7 @@ $(document).ready(function() {
             drpElem.daterangepicker(settings, function(start, end, label) {
                 var from = start.utc().unix();
                 var to = end.utc().unix();
-                renderChartRange($('input.daterange').length, drpElem, from, to, 'avg');
+                renderChartRange($('input.daterange').length, drpElem, from, to);
             });
         });
 

@@ -12,7 +12,6 @@
 #
 # Examples:
 # ./scripts/migrations/create-ts-daily.py ts_metrics 2016 metric_id created deleted > ./migrations/pg/up/0006_ts-metrics-2016.sql
-# ./scripts/migrations/create-ts-daily.py ts_metrics_aggr_15m 2016 metric_id created deleted > ./migrations/pg/up/0007_ts-metrics-aggr-15m-2016.sql
 # ./scripts/migrations/create-ts-daily.py ts_logs 2016 created deleted > ./migrations/pg/up/0027_ts-logs-2016.sql
 # ./scripts/migrations/create-ts-daily.py ts_checks 2016 check_id created deleted > ./migrations/pg/up/0032_ts-checks-2016.sql
 

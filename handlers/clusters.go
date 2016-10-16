@@ -141,7 +141,7 @@ func PutClusterID(w http.ResponseWriter, r *http.Request) {
 	name := r.FormValue("Name")
 
 	dataRetention := make(map[string]int)
-	for _, table := range []string{"ts_checks", "ts_events", "ts_executor_logs", "ts_logs", "ts_metrics", "ts_metrics_aggr_15m"} {
+	for _, table := range []string{"ts_checks", "ts_events", "ts_executor_logs", "ts_logs", "ts_metrics"} {
 		dataRetentionValue, err := strconv.ParseInt(r.FormValue("Table:"+table), 10, 64)
 		if err != nil {
 			dataRetentionValue = int64(1)

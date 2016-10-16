@@ -115,7 +115,6 @@ func (c *Cluster) Create(tx *sqlx.Tx, creator *UserRow, name string) (*ClusterRo
 	dataRetention := make(map[string]int)
 	dataRetention["ts_checks"] = 1
 	dataRetention["ts_metrics"] = 1
-	dataRetention["ts_metrics_aggr_15m"] = 1
 	dataRetention["ts_events"] = 1
 	dataRetention["ts_executor_logs"] = 1
 	dataRetention["ts_logs"] = 1
