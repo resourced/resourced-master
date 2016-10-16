@@ -82,6 +82,18 @@ function renderChartPreview() {
     var lastMetric = ResourcedMaster.globals.Charts[ResourcedMaster.globals.Charts.length - 1];
     var containerDOM = $('#add-chart-modal').find('.add-chart-modal-container');
     var nowUnix = moment().utc().unix();
+    var downsample = ResourcedMaster.url.getParams('downsample');
+    var renderOptions = {
+        'from': nowUnix - 900,
+        'to': nowUnix,
+        'containerDOM': containerDOM,
+        'height': ResourcedMaster.highcharts.defaultHeight + 6,
+        'title': lastMetric['Key']
+    };
+
+    if(downsample && downsample > 0) {
+        renderOptions['downsample'] = downsample;
+    }
 
     if(lastMetric) {
         ResourcedMaster.metrics.renderOneChart(
@@ -92,13 +104,7 @@ function renderChartPreview() {
             ResourcedMaster.globals.TSEventBands,
             ResourcedMaster.globals.TSEventBandColors,
             ResourcedMaster.globals.TSEventBandTextColors,
-            {
-                'from': nowUnix - 900,
-                'to': nowUnix,
-                'containerDOM': containerDOM,
-                'height': ResourcedMaster.highcharts.defaultHeight + 6,
-                'title': lastMetric['Key']
-            }
+            renderOptions
         );
     }
 }
@@ -162,6 +168,7 @@ function renderChartRange(numCharts, daterangepicker, from, to) {
     var metricID = elem.data('id');
     var metricKey = elem.data('key');
     var containerDOM = elem.siblings('.panel-body');
+    var downsample = ResourcedMaster.url.getParams('downsample');
 
     var renderOptions = {
         from: from,
@@ -192,6 +199,10 @@ function renderChartRange(numCharts, daterangepicker, from, to) {
             execWhenAllChartsRendered(numCharts);
         }
     };
+
+    if(downsample && downsample > 0) {
+        metricsParams['downsample'] = downsample;
+    }
 
     ResourcedMaster.metrics.renderOneChart(
         ResourcedMaster.globals.AccessToken,
@@ -307,6 +318,7 @@ $('#graph-lg-modal').on('shown.bs.modal', function (event) {
     var button = $(event.relatedTarget);   // Button that triggered the modal
     var metricID = button.data('metric-id');
     var metricKey = button.data('metric-key');
+    var downsample = ResourcedMaster.url.getParams('downsample');
 
     var from = ResourcedMaster.daterange.defaultSettings.startDate.utc().unix();
     var to = ResourcedMaster.daterange.defaultSettings.endDate.utc().unix();
@@ -338,6 +350,10 @@ $('#graph-lg-modal').on('shown.bs.modal', function (event) {
         }
     };
 
+    if(downsample && downsample > 0) {
+        renderOptions['downsample'] = downsample;
+    }
+
     ResourcedMaster.metrics.renderOneChart(
         ResourcedMaster.globals.AccessToken,
         metricID,
@@ -355,6 +371,7 @@ $('#graph-lg-modal').on('show.bs.modal', function (event) {
     var button = $(event.relatedTarget);   // Button that triggered the modal
     var metricID = button.data('metric-id');
     var metricKey = button.data('metric-key');
+    var downsample = ResourcedMaster.url.getParams('downsample');
 
     var modal = $(this);
     modal.data('metric-id', metricID);
@@ -374,6 +391,10 @@ $('#graph-lg-modal').on('show.bs.modal', function (event) {
             containerDOM: containerDOM,
             title: metricKey
         };
+
+        if(downsample && downsample > 0) {
+            renderOptions['downsample'] = downsample;
+        }
 
         ResourcedMaster.metrics.renderOneChart(
             ResourcedMaster.globals.AccessToken,

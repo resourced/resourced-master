@@ -304,6 +304,7 @@ $(document).on('shown.bs.modal', '#graph-modal', function(event) {
     var metricID = button.data('metric-id');
     var metricKey = button.data('metric-key');
     var host = button.data('host');
+    var downsample = ResourcedMaster.url.getParams('downsample');
 
     var from = ResourcedMaster.daterange.defaultSettings.startDate.utc().unix();
     var to = ResourcedMaster.daterange.defaultSettings.endDate.utc().unix();
@@ -337,6 +338,10 @@ $(document).on('shown.bs.modal', '#graph-modal', function(event) {
         }
     };
 
+    if(downsample && downsample > 0) {
+        renderOptions['downsample'] = downsample;
+    }
+
     ResourcedMaster.metrics.renderOneChart(
         ResourcedMaster.globals.AccessToken,
         metricID,
@@ -355,6 +360,7 @@ $(document).on('show.bs.modal', '#graph-modal', function(event) {
     var metricID = button.data('metric-id');
     var metricKey = button.data('metric-key');
     var host = button.data('host');
+    var downsample = ResourcedMaster.url.getParams('downsample');
 
     var modal = $(this);
     modal.data('metric-id', metricID);
@@ -376,6 +382,10 @@ $(document).on('show.bs.modal', '#graph-modal', function(event) {
             containerDOM: containerDOM,
             title: metricKey
         };
+
+        if(downsample && downsample > 0) {
+            renderOptions['downsample'] = downsample;
+        }
 
         // If we have an established EventSource, disconnect it.
         var es = $('#graph-modal').data('eventsource');

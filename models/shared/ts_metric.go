@@ -63,7 +63,7 @@ func LTTB(data [][]interface{}, threshold int) [][]interface{} {
 
 		var avgX, avgY float64
 		for ; avgRangeStart < avgRangeEnd; avgRangeStart++ {
-			avgX += data[avgRangeStart][0].(float64)
+			avgX += float64(data[avgRangeStart][0].(int64))
 			avgY += data[avgRangeStart][1].(float64)
 		}
 		avgX /= avgRangeLength
@@ -74,7 +74,7 @@ func LTTB(data [][]interface{}, threshold int) [][]interface{} {
 		rangeTo := bucketCenter
 
 		// Point a
-		pointAX := data[a][0].(float64)
+		pointAX := float64(data[a][0].(int64))
 		pointAY := data[a][1].(float64)
 
 		var maxArea float64
@@ -82,7 +82,7 @@ func LTTB(data [][]interface{}, threshold int) [][]interface{} {
 		var nextA int
 		for ; rangeOffs < rangeTo; rangeOffs++ {
 			// Calculate triangle area over three buckets
-			area := math.Abs((pointAX-avgX)*(data[rangeOffs][1].(float64)-pointAY) - (pointAX-data[rangeOffs][0].(float64))*(avgY-pointAY))
+			area := math.Abs((pointAX-avgX)*(data[rangeOffs][1].(float64)-pointAY) - (pointAX-float64(data[rangeOffs][0].(int64)))*(avgY-pointAY))
 			if area > maxArea {
 				maxArea = area
 				nextA = rangeOffs // Next a is this b
