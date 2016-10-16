@@ -360,3 +360,13 @@ func (h *Host) UpdateMasterTagsByID(tx *sqlx.Tx, id int64, tags map[string]inter
 	_, err = h.UpdateByID(tx, data, id)
 	return err
 }
+
+// UpdateMasterTagsByHostname updates master tags by hostname.
+func (h *Host) UpdateMasterTagsByHostname(tx *sqlx.Tx, hostname string, tags map[string]interface{}) error {
+	hostRow, err := h.GetByHostname(tx, hostname)
+	if err != nil {
+		return err
+	}
+
+	return h.UpdateMasterTagsByID(tx, hostRow.ID, tags)
+}

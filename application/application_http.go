@@ -185,6 +185,11 @@ func (app *Application) Mux() *chi.Mux {
 			r.Use(middlewares.MustLoginApi)
 			r.Get("/", tollbooth.LimitFuncHandler(generalAPILimiter, handlers.GetApiHosts).(http.HandlerFunc))
 			r.Post("/", handlers.PostApiHosts)
+
+			r.Route("/:id", func(r chi.Router) {
+				r.Use(middlewares.MustLoginApi)
+				r.Put("/master-tags", handlers.PutApiHostsNameOrIDMasterTags)
+			})
 		})
 
 		r.Route("/graphs/:id", func(r chi.Router) {

@@ -11,6 +11,7 @@ import (
 
 	"github.com/Sirupsen/logrus"
 	"github.com/gorilla/csrf"
+	"github.com/pressly/chi"
 
 	"github.com/resourced/resourced-master/contexthelper"
 	"github.com/resourced/resourced-master/libhttp"
@@ -370,4 +371,51 @@ func GetApiHosts(w http.ResponseWriter, r *http.Request) {
 
 		w.Write(hostRowsJson)
 	}
+}
+
+func PutApiHostsNameOrIDMasterTags(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "text/html")
+
+	accessTokenRow := r.Context().Value("accessToken").(*pg.AccessTokenRow)
+
+	dataJson, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
+
+	var hostname string
+
+	id, err := getInt64SlugFromPath(w, r, "id")
+	if err != nil {
+		hostname = chi.URLParam(r, "id")
+	}
+
+	masterTags := make(map[string]interface{})
+
+	err = json.Unmarshal(dataJson, &masterTags)
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
+
+	if hostname != "" {
+		err = pg.NewHost(r.Context(), accessTokenRow.ClusterID).UpdateMasterTagsByHostname(nil, hostname, masterTags)
+		if err != nil {
+			libhttp.HandleErrorJson(w, err)
+			return
+		}
+
+	} else if id > 0 {
+		err = pg.NewHost(r.Context(), accessTokenRow.ClusterID).UpdateMasterTagsByID(nil, id, masterTags)
+		if err != nil {
+			libhttp.HandleErrorJson(w, err)
+			return
+		}
+	} else {
+		libhttp.HandleErrorJson(w, fmt.Errorf("Unrecognizable hostname or host ID"))
+		return
+	}
+
+	w.Write([]byte(`{"Message": "Success"}`))
 }
