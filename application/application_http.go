@@ -241,18 +241,6 @@ func (app *Application) Mux() *chi.Mux {
 			r.Use(middlewares.MustLoginApi)
 			r.Get("/results", tollbooth.LimitFuncHandler(generalAPILimiter, handlers.GetApiCheckIDResults).(http.HandlerFunc))
 		})
-
-		r.Route("/metadata", func(r chi.Router) {
-			r.Use(middlewares.MustLoginApi)
-			r.Get("/", tollbooth.LimitFuncHandler(generalAPILimiter, handlers.GetApiMetadata).(http.HandlerFunc))
-
-			r.Route("/:key", func(r chi.Router) {
-				r.Use(middlewares.MustLoginApi)
-				r.Get("/", tollbooth.LimitFuncHandler(generalAPILimiter, handlers.GetApiMetadataKey).(http.HandlerFunc))
-				r.Post("/", tollbooth.LimitFuncHandler(generalAPILimiter, handlers.PostApiMetadataKey).(http.HandlerFunc))
-				r.Delete("/", tollbooth.LimitFuncHandler(generalAPILimiter, handlers.DeleteApiMetadataKey).(http.HandlerFunc))
-			})
-		})
 	})
 
 	// Path to /static files

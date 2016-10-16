@@ -6,7 +6,7 @@ set -x
 # This script helps a contributor to cut a new release of resourced-master.
 #
 # Prerequisites:
-# - Ensure you(contributor) has Go 1.6.x or newer.
+# - Ensure you(contributor) has Go 1.7.x or newer.
 # - Ensure govendor is installed.
 #
 # Arguments:

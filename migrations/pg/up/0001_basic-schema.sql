@@ -46,14 +46,6 @@ CREATE TABLE IF NOT EXISTS saved_queries (
 CREATE INDEX IF NOT EXISTS idx_saved_queries_type on saved_queries (type);
 CREATE INDEX IF NOT EXISTS idx_saved_queries_query on saved_queries (query);
 
-CREATE TABLE IF NOT EXISTS metadata (
-    cluster_id bigint REFERENCES clusters (id),
-    key TEXT NOT NULL,
-    data JSONB
-);
-
-CREATE INDEX IF NOT EXISTS idx_metadata_key on metadata (key);
-
 CREATE TABLE IF NOT EXISTS metrics (
     id BIGSERIAL PRIMARY KEY NOT NULL,
     cluster_id bigint REFERENCES clusters (id),

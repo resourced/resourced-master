@@ -4,7 +4,7 @@
 
 1. Install PostgreSQL 9.5.x
 
-2. Install Go 1.6.x, git, setup $GOPATH, and PATH=$PATH:$GOPATH/bin
+2. Install Go 1.7.x, git, setup $GOPATH, and PATH=$PATH:$GOPATH/bin
 
 3. Create PostgreSQL database.
     ```
