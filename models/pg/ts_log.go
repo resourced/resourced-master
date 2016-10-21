@@ -15,6 +15,7 @@ import (
 	"github.com/resourced/resourced-master/contexthelper"
 	"github.com/resourced/resourced-master/libstring"
 	"github.com/resourced/resourced-master/models/pg/querybuilder"
+	"github.com/resourced/resourced-master/models/shared"
 )
 
 func NewTSLog(ctx context.Context, clusterID int64) *TSLog {
@@ -25,22 +26,6 @@ func NewTSLog(ctx context.Context, clusterID int64) *TSLog {
 	ts.i = ts
 
 	return ts
-}
-
-type AgentLoglinePayload struct {
-	Created int64
-	Content string
-}
-
-type AgentLogPayload struct {
-	Host struct {
-		Name string
-		Tags map[string]string
-	}
-	Data struct {
-		Loglines []AgentLoglinePayload
-		Filename string
-	}
 }
 
 type TSLogRowsWithError struct {
@@ -82,7 +67,7 @@ func (ts *TSLog) GetPGDB() (*sqlx.DB, error) {
 }
 
 func (ts *TSLog) CreateFromJSON(tx *sqlx.Tx, clusterID int64, jsonData []byte, deletedFrom int64) error {
-	payload := &AgentLogPayload{}
+	payload := &shared.AgentLogPayload{}
 
 	err := json.Unmarshal(jsonData, payload)
 	if err != nil {
@@ -93,7 +78,7 @@ func (ts *TSLog) CreateFromJSON(tx *sqlx.Tx, clusterID int64, jsonData []byte, d
 }
 
 // Create a new record.
-func (ts *TSLog) Create(tx *sqlx.Tx, clusterID int64, hostname string, tags map[string]string, loglines []AgentLoglinePayload, filename string, deletedFrom int64) (err error) {
+func (ts *TSLog) Create(tx *sqlx.Tx, clusterID int64, hostname string, tags map[string]string, loglines []shared.AgentLoglinePayload, filename string, deletedFrom int64) (err error) {
 	pgdb, err := ts.GetPGDB()
 	if err != nil {
 		return err
@@ -170,7 +155,7 @@ func (ts *TSLog) LastByClusterID(tx *sqlx.Tx, clusterID int64) (*TSLogRow, error
 	return row, err
 }
 
-// AllByClusterIDAndRange returns all logs withing time range.
+// AllByClusterIDAndRange returns all logs within time range.
 func (ts *TSLog) AllByClusterIDAndRange(tx *sqlx.Tx, clusterID int64, from, to, deletedFrom int64) ([]*TSLogRow, error) {
 	pgdb, err := ts.GetPGDB()
 	if err != nil {

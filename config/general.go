@@ -122,7 +122,8 @@ type GeneralConfig struct {
 	}
 
 	Logs struct {
-		PostgreSQL    PostgreSQLPerClusterConfig
+		PostgreSQL    PostgreSQLPerClusterConfig `toml:",omitempty"`
+		Cassandra     CassandraConfig            `toml:",omitempty"`
 		DataRetention int
 	}
 
