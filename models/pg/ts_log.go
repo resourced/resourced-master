@@ -14,7 +14,7 @@ import (
 
 	"github.com/resourced/resourced-master/contexthelper"
 	"github.com/resourced/resourced-master/libstring"
-	"github.com/resourced/resourced-master/querybuilder"
+	"github.com/resourced/resourced-master/models/pg/querybuilder"
 )
 
 func NewTSLog(ctx context.Context, clusterID int64) *TSLog {

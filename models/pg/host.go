@@ -14,7 +14,7 @@ import (
 	"github.com/nytlabs/gojsonexplode"
 
 	"github.com/resourced/resourced-master/contexthelper"
-	"github.com/resourced/resourced-master/querybuilder"
+	"github.com/resourced/resourced-master/models/pg/querybuilder"
 )
 
 func NewHost(ctx context.Context, clusterID int64) *Host {
