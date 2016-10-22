@@ -19,17 +19,3 @@ CREATE TABLE IF NOT EXISTS ts_logs (
   AND memtable_flush_period_in_ms = 0
   AND read_repair_chance = 0.0
   AND speculative_retry = '99PERCENTILE';
-
-CREATE CUSTOM INDEX idx_ts_logs_lucene ON ts_logs (lucene) USING 'com.stratio.cassandra.lucene.Index' WITH OPTIONS = {
-    'schema' : '{
-        fields : {
-            id : {type : "integer"},
-            cluster_id: {type : "integer"},
-            created: {type : "integer"},
-            hostname : {type : "string"},
-            tags : {type : "string"},
-            filename : {type : "string"},
-            logline : {type : "text", analyzer : "english"}
-        }
-    }'
-};

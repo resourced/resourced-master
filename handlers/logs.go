@@ -14,6 +14,7 @@ import (
 	"github.com/resourced/resourced-master/contexthelper"
 	"github.com/resourced/resourced-master/libhttp"
 	"github.com/resourced/resourced-master/models/pg"
+	"github.com/resourced/resourced-master/models/shims"
 )
 
 func GetLogs(w http.ResponseWriter, r *http.Request) {
@@ -123,10 +124,10 @@ func PostApiLogs(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	deletedFrom := clusterRow.GetDeletedFromUNIXTimestampForInsert("ts_logs")
+	shimsTSLog := shims.NewTSLog(r.Context(), accessTokenRow.ClusterID)
 
 	go func() {
-		err = pg.NewTSLog(r.Context(), accessTokenRow.ClusterID).CreateFromJSON(nil, accessTokenRow.ClusterID, dataJson, deletedFrom)
+		err = shimsTSLog.CreateFromJSON(accessTokenRow.ClusterID, dataJson, clusterRow.GetDeletedFromUNIXTimestampForInsert("ts_logs"), clusterRow.GetTTLDurationForInsert("ts_logs"))
 		if err != nil {
 			errLogger.Error(err)
 		}
