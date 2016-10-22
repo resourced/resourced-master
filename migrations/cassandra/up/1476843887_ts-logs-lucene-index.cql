@@ -1,4 +1,4 @@
-CREATE CUSTOM INDEX idx_ts_logs_lucene ON ts_logs (lucene) USING 'com.stratio.cassandra.lucene.Index' WITH OPTIONS = {
+CREATE CUSTOM INDEX IF NOT EXISTS idx_ts_logs_lucene ON ts_logs (lucene) USING 'com.stratio.cassandra.lucene.Index' WITH OPTIONS = {
     'schema' : '{
         fields : {
             id : {type : "integer"},

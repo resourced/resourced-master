@@ -53,7 +53,7 @@ func (app *Application) PruneAll() {
 				app.PruneTSCheckOnce(cluster.ID)
 			}(cluster)
 
-			if app.GeneralConfig.GetMetricsDB() == "pg" {
+			if app.GeneralConfig.GetMetricsDBType() == "pg" {
 				go func(cluster *pg.ClusterRow) {
 					app.PruneTSMetricOnce(cluster.ID)
 				}(cluster)
@@ -97,7 +97,7 @@ func (app *Application) PruneTSCheckOnce(clusterID int64) (err error) {
 
 // PruneTSMetricOnce deletes old ts_metrics data.
 func (app *Application) PruneTSMetricOnce(clusterID int64) (err error) {
-	if app.GeneralConfig.GetMetricsDB() != "pg" {
+	if app.GeneralConfig.GetMetricsDBType() != "pg" {
 		return nil
 	}
 

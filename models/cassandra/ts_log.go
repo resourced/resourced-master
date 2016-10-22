@@ -77,11 +77,6 @@ func (ts *TSLog) Create(clusterID int64, hostname string, tags map[string]string
 	query := fmt.Sprintf("INSERT INTO %v (id, cluster_id, hostname, logline, filename, tags, created) VALUES (?, ?, ?, ?, ?, ?, ?) USING TTL ?", ts.table)
 
 	for _, loglinePayload := range loglines {
-		tagsInJson, err := json.Marshal(tags)
-		if err != nil {
-			tagsInJson = []byte("{}")
-		}
-
 		id := time.Now().UTC().UnixNano()
 
 		// Try to parse created from payload, if not use current unix timestamp
@@ -104,12 +99,17 @@ func (ts *TSLog) Create(clusterID int64, hostname string, tags map[string]string
 			hostname,
 			content,
 			filename,
-			string(tagsInJson),
+			tags,
 			created,
 			ttl,
 		).Exec()
 
 		if err != nil {
+			tagsInJson, err := json.Marshal(tags)
+			if err != nil {
+				tagsInJson = []byte("{}")
+			}
+
 			logrus.WithFields(logrus.Fields{
 				"Method":    "TSLog.Create",
 				"Query":     query,

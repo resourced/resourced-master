@@ -31,7 +31,7 @@ func (ts *TSMetric) GetDBType() string {
 		return ""
 	}
 
-	return generalConfig.GetMetricsDB()
+	return generalConfig.GetMetricsDBType()
 }
 
 func (ts *TSMetric) GetPGDB() (*sqlx.DB, error) {
