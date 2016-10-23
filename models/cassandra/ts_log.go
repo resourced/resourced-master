@@ -13,7 +13,7 @@ import (
 
 	"github.com/resourced/resourced-master/contexthelper"
 	"github.com/resourced/resourced-master/libstring"
-	"github.com/resourced/resourced-master/models/pg/querybuilder"
+	"github.com/resourced/resourced-master/models/cassandra/querybuilder"
 	"github.com/resourced/resourced-master/models/shared"
 )
 
@@ -142,14 +142,12 @@ func (ts *TSLog) LastByClusterID(clusterID int64) (*TSLogRow, error) {
 	var scannedHostname, scannedLogline, scannedFilename string
 	var scannedTags map[string]string
 
-	/* Search for a specific set of records whose 'timeline' column matches
-	 * the value 'me'. The secondary index that we created earlier will be
-	 * used for optimizing the search */
-	err = session.Query(
-		fmt.Sprintf("SELECT cluster_id, hostname, logline, filename, tags, created FROM %v WHERE cluster_id=? ORDER BY created DESC limit 1", ts.table),
-		clusterID,
-	).Scan(&scannedClusterID, &scannedHostname, &scannedLogline, &scannedFilename, &scannedTags, &scannedCreated)
+	query := fmt.Sprintf(`SELECT cluster_id, hostname, logline, filename, tags, created FROM %v WHERE lucene='{
+    filter: {type: "match", field: "cluster_id", value: %v},
+    sort: {field: "created", reverse: true}
+}' limit 1;`, ts.table, clusterID)
 
+	err = session.Query(query).Scan(&scannedClusterID, &scannedHostname, &scannedLogline, &scannedFilename, &scannedTags, &scannedCreated)
 	if err != nil {
 		return nil, err
 	}
@@ -182,13 +180,23 @@ func (ts *TSLog) AllByClusterIDAndRange(clusterID int64, from, to int64) ([]*TSL
 	}
 
 	rows := []*TSLogRow{}
-	query := fmt.Sprintf(`SELECT cluster_id, hostname, logline, filename, tags, created FROM %v WHERE cluster_id=? AND created >= ? AND created <= ? ORDER BY created DESC`, ts.table)
+
+	query := fmt.Sprintf(`SELECT cluster_id, hostname, logline, filename, tags, created FROM %v WHERE lucene='{
+    filter: {
+        type: "boolean",
+        must: [
+            {type: "match", field: "cluster_id", value: %v},
+            {type:"range", field:"created", lower:%v, upper:%v}
+        ]
+    },
+    sort: {field: "created", reverse: true}
+}';`, ts.table, clusterID, from, to)
 
 	var scannedClusterID, scannedCreated int64
 	var scannedLogline, scannedHostname, scannedFilename string
 	var scannedTags map[string]string
 
-	iter := session.Query(query, clusterID, from, to).Iter()
+	iter := session.Query(query).Iter()
 	for iter.Scan(&scannedClusterID, &scannedHostname, &scannedLogline, &scannedFilename, &scannedTags, &scannedCreated) {
 		rows = append(rows, &TSLogRow{
 			ClusterID: scannedClusterID,
@@ -221,21 +229,30 @@ func (ts *TSLog) AllByClusterIDRangeAndQuery(clusterID int64, from, to int64, re
 		return nil, err
 	}
 
-	luceneQuery := ""
-	// luceneQuery := querybuilder.Parse(resourcedQuery)
-
+	luceneQuery := querybuilder.Parse(resourcedQuery)
 	if luceneQuery == "" {
 		return ts.AllByClusterIDAndRange(clusterID, from, to)
 	}
 
 	rows := []*TSLogRow{}
-	query := fmt.Sprintf(`SELECT * FROM %v WHERE cluster_id=? AND created >= ? AND created <= ? AND %v ORDER BY created DESC`, ts.table, luceneQuery)
+
+	query := fmt.Sprintf(`SELECT cluster_id, hostname, logline, filename, tags, created FROM %v WHERE lucene='{
+    filter: {
+        type: "boolean",
+        must: [
+            {type: "match", field: "cluster_id", value: %v},
+            {type:"range", field:"created", lower:%v, upper:%v}
+        ]
+    },
+    query: %v,
+    sort: {field: "created", reverse: true}
+}';`, ts.table, clusterID, from, to, luceneQuery)
 
 	var scannedClusterID, scannedCreated int64
 	var scannedLogline, scannedHostname, scannedFilename string
 	var scannedTags map[string]string
 
-	iter := session.Query(query, clusterID, from, to).Iter()
+	iter := session.Query(query).Iter()
 	for iter.Scan(&scannedClusterID, &scannedHostname, &scannedLogline, &scannedFilename, &scannedTags, &scannedCreated) {
 		rows = append(rows, &TSLogRow{
 			ClusterID: scannedClusterID,
@@ -275,9 +292,19 @@ func (ts *TSLog) CountByClusterIDFromTimestampHostAndQuery(clusterID int64, from
 
 	var count int64
 
-	query := fmt.Sprintf(`SELECT count(logline) FROM %v WHERE cluster_id=? AND created >= ? AND hostname=? AND %v`, ts.table, luceneQuery)
+	query := fmt.Sprintf(`SELECT count(logline) FROM %v WHERE lucene='{
+    filter: {
+        type: "boolean",
+        must: [
+            {type: "match", field: "cluster_id", value: %v},
+            {type: "match", field: "hostname", value: %v},
+            {type:"range", field:"created", lower:%v}
+        ]
+    },
+    query: %v
+}';`, ts.table, clusterID, hostname, from, luceneQuery)
 
-	err = session.Query(query, clusterID, from, hostname).Scan(&count)
+	err = session.Query(query).Scan(&count)
 	if err != nil {
 		err = fmt.Errorf("%v. Query: %v, ClusterID: %v, From: %v, Hostname: %v", err.Error(), query, clusterID, from, hostname)
 		return -1, err
