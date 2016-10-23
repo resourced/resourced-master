@@ -50,6 +50,10 @@ func (tsr *TSLogRow) GetTags() map[string]string {
 	return tags
 }
 
+func (tsr *TSLogRow) CreatedUnix() int64 {
+	return tsr.Created.Unix()
+}
+
 type TSLog struct {
 	TSBase
 }

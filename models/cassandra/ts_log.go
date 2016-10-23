@@ -43,6 +43,10 @@ func (tsr *TSLogRow) GetTags() map[string]string {
 	return tsr.Tags
 }
 
+func (tsr *TSLogRow) CreatedUnix() int64 {
+	return tsr.Created
+}
+
 type TSLog struct {
 	Base
 }

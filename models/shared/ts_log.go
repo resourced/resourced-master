@@ -15,3 +15,7 @@ type AgentLogPayload struct {
 		Filename string
 	}
 }
+
+type ICreatedUnix interface {
+	CreatedUnix() int64
+}
