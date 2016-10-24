@@ -5,6 +5,9 @@
 # But it cannot be longer than the global setting.
 DataRetention = 1
 
+# With logs timeseries data, users can choose between PostgreSQL or Cassandra.
+# Do not enable both! You must choose one.
+
 [Logs.PostgreSQL]
 DSN = "postgres://localhost:5432/resourced-master-ts-logs?sslmode=disable"
 
@@ -16,13 +19,13 @@ MaxOpenConnections = 2
 # [Logs.PostgreSQL.DSNByClusterID]
 # 1 = "postgres://localhost:5432/resourced-master-logs-1?sslmode=disable"
 
-[Logs.Cassandra]
-Hosts = ["127.0.0.1"]
-ProtoVersion = 4
-Port = 9042
-Keyspace = "resourced_master_ts_logs"
-NumConns = 2
-Consistency = "one"
-MaxPreparedStmts  = 1000
-MaxRoutingKeyInfo = 1000
-PageSize = 5000
+# [Logs.Cassandra]
+# Hosts = ["127.0.0.1"]
+# ProtoVersion = 4
+# Port = 9042
+# Keyspace = "resourced_master_ts_logs"
+# NumConns = 2
+# Consistency = "one"
+# MaxPreparedStmts  = 1000
+# MaxRoutingKeyInfo = 1000
+# PageSize = 5000
