@@ -229,7 +229,7 @@ func (ts *TSLog) AllByClusterIDRangeAndQuery(clusterID int64, from, to int64, re
 		return nil, err
 	}
 
-	luceneQuery := querybuilder.Parse(resourcedQuery)
+	luceneQuery := querybuilder.Parse(resourcedQuery, []string{"master_tags"})
 	if luceneQuery == "" {
 		return ts.AllByClusterIDAndRange(clusterID, from, to)
 	}
@@ -285,7 +285,7 @@ func (ts *TSLog) CountByClusterIDFromTimestampHostAndQuery(clusterID int64, from
 		return -1, err
 	}
 
-	luceneQuery := querybuilder.Parse(resourcedQuery)
+	luceneQuery := querybuilder.Parse(resourcedQuery, []string{"master_tags"})
 	if luceneQuery == "" {
 		return -1, errors.New("Query is unparsable")
 	}

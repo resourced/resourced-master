@@ -9,12 +9,12 @@ import (
 )
 
 // Parse parses ResourceD query and turns it into Cassandra + Lucene query.
-func Parse(input string) string {
-	return parseAnd(input)
+func Parse(input string, skipFields []string) string {
+	return parseAnd(input, skipFields)
 }
 
 // parseAnd parses and conjunctive operator.
-func parseAnd(input string) string {
+func parseAnd(input string, skipFields []string) string {
 	pgQueryParts := make([]string, 0)
 
 	// normalize variation of AND
@@ -22,7 +22,7 @@ func parseAnd(input string) string {
 
 	statements := strings.Split(input, " and ")
 	for _, statement := range statements {
-		pgStatement := parseStatement(statement)
+		pgStatement := parseStatement(statement, skipFields)
 		if pgStatement != "" {
 			pgQueryParts = append(pgQueryParts, pgStatement)
 		}
@@ -38,20 +38,8 @@ func parseAnd(input string) string {
 	return ""
 }
 
-// parseFullTextSearchField parses ResourceD "search" query and turns it into postgres statement.
-// Operator is "search" in this context.
-func parseFullTextSearchField(statement, field, operator string) string {
-	parts := strings.Split(statement, operator)
-
-	searchQuery := parts[len(parts)-1]
-	searchQuery = strings.TrimSpace(searchQuery)
-	searchQuery = libstring.StripChars(searchQuery, `"'`)
-
-	return fmt.Sprintf(`{type: "phrase", field: "logline", value: "%v", slop: 1}`, searchQuery)
-}
-
 // parseStatement parses ResourceD statement and turns it into postgres statement.
-func parseStatement(statement string) string {
+func parseStatement(statement string, skipFields []string) string {
 	statement = strings.TrimSpace(statement)
 
 	// Querying tags.
@@ -60,13 +48,30 @@ func parseStatement(statement string) string {
 		if strings.Contains(statement, "=") {
 			parts := strings.Split(statement, "=")
 
-			field := strings.Replace(parts[0], ".", "$", 1)
-
 			data := parts[len(parts)-1]
 			data = strings.TrimSpace(data)
 			data = libstring.StripChars(data, `"'`)
 
-			return fmt.Sprintf(`{type: "%v", field: "%v", value: "%v"}`, "match", field, data)
+			fieldTags := strings.Replace(parts[0], ".", "$", 1)
+			fieldTags = strings.TrimSpace(fieldTags)
+
+			foundMasterTagsToSkip := false
+			for _, skipField := range skipFields {
+				if skipField == "master_tags" {
+					foundMasterTagsToSkip = true
+					break
+				}
+			}
+
+			// Skip master_tags
+			if foundMasterTagsToSkip {
+				return fmt.Sprintf(`{type: "match", field: "%v", value: "%v"}`, fieldTags, data)
+			}
+
+			// Not skipping master_tags
+			fieldMasterTags := strings.Replace(fieldTags, "tags$", "master_tags$", 1)
+
+			return fmt.Sprintf(`{type: "boolean", should: [{type: "match", field: "%v", value: "%v"},{type: "match", field: "%v", value: "%v"}]}`, fieldTags, data, fieldMasterTags, data)
 		}
 	}
 
@@ -195,7 +200,13 @@ func parseStatement(statement string) string {
 	// "search" : Full text search.
 	if strings.HasPrefix(statement, "Logline") || strings.HasPrefix(statement, "logline") {
 		if strings.Contains(statement, "search") {
-			return parseFullTextSearchField(statement, "logline", "search")
+			parts := strings.Split(statement, "search")
+
+			searchQuery := parts[len(parts)-1]
+			searchQuery = strings.TrimSpace(searchQuery)
+			searchQuery = libstring.StripChars(searchQuery, `"'`)
+
+			return fmt.Sprintf(`{type: "phrase", field: "logline", value: "%v", slop: 1}`, searchQuery)
 		}
 	}
 
