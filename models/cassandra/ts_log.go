@@ -186,7 +186,7 @@ func (ts *TSLog) AllByClusterIDAndRange(clusterID int64, from, to int64) ([]*TSL
         type: "boolean",
         must: [
             {type: "match", field: "cluster_id", value: %v},
-            {type:"range", field:"created", lower:%v, upper:%v}
+            {type:"range", field:"created", lower:%v, upper:%v, include_lower: true, include_upper: true}
         ]
     },
     sort: {field: "created", reverse: true}
@@ -241,7 +241,7 @@ func (ts *TSLog) AllByClusterIDRangeAndQuery(clusterID int64, from, to int64, re
         type: "boolean",
         must: [
             {type: "match", field: "cluster_id", value: %v},
-            {type:"range", field:"created", lower:%v, upper:%v}
+            {type:"range", field:"created", lower:%v, upper:%v, include_lower: true, include_upper: true}
         ]
     },
     query: %v,
@@ -298,7 +298,7 @@ func (ts *TSLog) CountByClusterIDFromTimestampHostAndQuery(clusterID int64, from
         must: [
             {type: "match", field: "cluster_id", value: %v},
             {type: "match", field: "hostname", value: %v},
-            {type:"range", field:"created", lower:%v}
+            {type:"range", field:"created", lower:%v, include_lower: true}
         ]
     },
     query: %v

@@ -1,4 +1,4 @@
-// Package querybuilder parses ResourceD query and turn it into PostgreSQL query.
+// Package querybuilder parses ResourceD query and turn it into Cassandra + Lucene query.
 package querybuilder
 
 import (
@@ -8,7 +8,7 @@ import (
 	"github.com/resourced/resourced-master/libstring"
 )
 
-// Parse parses ResourceD query and turns it into postgres query.
+// Parse parses ResourceD query and turns it into Cassandra + Lucene query.
 func Parse(input string) string {
 	return parseAnd(input)
 }
@@ -29,7 +29,8 @@ func parseAnd(input string) string {
 	}
 
 	if len(pgQueryParts) > 1 {
-		return strings.Join(pgQueryParts, " and ")
+		return fmt.Sprintf(`{type: "boolean", must: [%v]}`, strings.Join(pgQueryParts, ","))
+
 	} else if len(pgQueryParts) == 1 {
 		return pgQueryParts[0]
 	}
@@ -45,7 +46,17 @@ func parseStringField(statement, field, operator string) string {
 	data = strings.TrimSpace(data)
 	data = libstring.StripChars(data, `"'`)
 
-	return fmt.Sprintf("%v %v '%v'", field, operator, data)
+	if operator == "contains" {
+		dataSlice := strings.Split(data, ",")
+
+		for i, datum := range dataSlice {
+			dataSlice[i] = `"` + strings.TrimSpace(datum) + `"`
+		}
+
+		return fmt.Sprintf(`{type: "%v", field: "%v", values: "%v"}`, operator, field, strings.Join(dataSlice, `,`))
+	}
+
+	return fmt.Sprintf(`{type: "%v", field: "%v", value: "%v"}`, operator, field, data)
 }
 
 // parseFullTextSearchField parses ResourceD "search" query and turns it into postgres statement.
@@ -67,136 +78,78 @@ func parseStatement(statement string) string {
 	// Querying tags.
 	// There can only be 1 operator for tags: "="
 	if strings.HasPrefix(statement, "Tags") || strings.HasPrefix(statement, "tags") {
-		operator := ""
-
 		if strings.Contains(statement, "=") {
-			operator = "="
-		}
+			parts := strings.Split(statement, "=")
 
-		if operator != "" {
-			parts := strings.Split(statement, operator)
+			field := strings.Replace(parts[0], ".", "$", 1)
 
-			// Remove tags prefix
-			parts[0] = strings.Replace(parts[0], "tags.", "", -1)
+			data := parts[len(parts)-1]
+			data = strings.TrimSpace(data)
+			data = libstring.StripChars(data, `"'`)
 
-			pgJsonPath := strings.Replace(parts[0], ".", ",", -1)
-			pgJsonPath = strings.TrimSpace(pgJsonPath)
-
-			value := parts[len(parts)-1]
-			value = strings.TrimSpace(value)
-			value = libstring.StripChars(value, `"'`)
-
-			return fmt.Sprintf("(tags #>> '{%v}' %v '%v' OR master_tags #>> '{%v}' %v '%v')", pgJsonPath, operator, value, pgJsonPath, operator, value)
+			return fmt.Sprintf(`{type: "%v", field: "%v", value: "%v"}`, "match", field, data)
 		}
 	}
 
 	// Querying hostname.
 	// Operators:
-	// "="   : Exact match.
-	// "!~*" : Does not match regular expression, case insensitive.
-	// "!~"  : Does not match regular expression, case sensitive.
-	// "~*"  : Matches regular expression, case insensitive.
-	// "~^"  : Starts with, case sensitive.
-	// "~"   : Matches regular expression, case sensitive.
+	// "="        : Exact match.
+	// "^"        : Starts with, case sensitive.
+	// "~"        : Matches regular expression, case sensitive.
+	// "contains" : Contains the following values.
+	// "wildcard" : Perform wildcard search.
 	if strings.HasPrefix(statement, "Hostname") || strings.HasPrefix(statement, "hostname") {
 		if strings.Contains(statement, "=") {
-			return parseStringField(statement, "hostname", "=")
+			parts := strings.Split(statement, "=")
 
-		} else if strings.Contains(statement, "!~*") {
-			return parseStringField(statement, "hostname", "!~*")
+			data := parts[len(parts)-1]
+			data = strings.TrimSpace(data)
+			data = libstring.StripChars(data, `"'`)
 
-		} else if strings.Contains(statement, "!~") {
-			return parseStringField(statement, "hostname", "!~")
+			return fmt.Sprintf(`{type: "%v", field: "%v", value: "%v"}`, "match", "hostname", data)
 
-		} else if strings.Contains(statement, "~*") {
-			return parseStringField(statement, "hostname", "~*")
+		} else if strings.Contains(statement, "contains") {
+			return parseStringField(statement, "hostname", "contains")
 
-		} else if strings.Contains(statement, "~^") {
-			parts := strings.Split(statement, "~^")
+		} else if strings.Contains(statement, "wildcard") {
+			return parseStringField(statement, "hostname", "wildcard")
 
-			hostname := parts[len(parts)-1]
-			hostname = strings.TrimSpace(hostname)
-			hostname = libstring.StripChars(hostname, `"'`)
-
-			return `hostname LIKE '` + hostname + `%'`
+		} else if strings.Contains(statement, "^") {
+			return parseStringField(statement, "hostname", "prefix")
 
 		} else if strings.Contains(statement, "~") {
-			return parseStringField(statement, "hostname", "~")
+			return parseStringField(statement, "hostname", "regexp")
 		}
 	}
 
 	// Querying filename.
 	// Operators:
-	// "="   : Exact match.
-	// "!~*" : Does not match regular expression, case insensitive.
-	// "!~"  : Does not match regular expression, case sensitive.
-	// "~*"  : Matches regular expression, case insensitive.
-	// "~^"  : Starts with, case sensitive.
-	// "~"   : Matches regular expression, case sensitive.
+	// "="        : Exact match.
+	// "^"        : Starts with, case sensitive.
+	// "~"        : Matches regular expression, case sensitive.
+	// "contains" : Contains the following values.
+	// "wildcard" : Perform wildcard search.
 	if strings.HasPrefix(statement, "Filename") || strings.HasPrefix(statement, "filename") {
 		if strings.Contains(statement, "=") {
-			return parseStringField(statement, "filename", "=")
+			parts := strings.Split(statement, "=")
 
-		} else if strings.Contains(statement, "!~*") {
-			return parseStringField(statement, "filename", "!~*")
+			data := parts[len(parts)-1]
+			data = strings.TrimSpace(data)
+			data = libstring.StripChars(data, `"'`)
 
-		} else if strings.Contains(statement, "!~") {
-			return parseStringField(statement, "filename", "!~")
+			return fmt.Sprintf(`{type: "%v", field: "%v", value: "%v"}`, "match", "filename", data)
 
-		} else if strings.Contains(statement, "~*") {
-			return parseStringField(statement, "filename", "~*")
+		} else if strings.Contains(statement, "contains") {
+			return parseStringField(statement, "filename", "contains")
 
-		} else if strings.Contains(statement, "~^") {
-			parts := strings.Split(statement, "~^")
+		} else if strings.Contains(statement, "wildcard") {
+			return parseStringField(statement, "filename", "wildcard")
 
-			filename := parts[len(parts)-1]
-			filename = strings.TrimSpace(filename)
-			filename = libstring.StripChars(filename, `"'`)
-
-			return `filename LIKE '` + filename + `%'`
+		} else if strings.Contains(statement, "^") {
+			return parseStringField(statement, "filename", "prefix")
 
 		} else if strings.Contains(statement, "~") {
-			return parseStringField(statement, "filename", "~")
-		}
-	}
-
-	// Querying data.
-	// Operators for floating point data: >=, <=, =, <, >
-	//     Expected output: (data #>> '{/free,Memory.TotalGB}')::float8
-	// Operators for string data:
-	//     "!~*" : Does not match regular expression, case insensitive.
-	//     "!~"  : Does not match regular expression, case sensitive.
-	//     "~*"  : Matches regular expression, case insensitive.
-	//     "~^"  : Starts with, case sensitive.
-	//     "~"   : Matches regular expression, case sensitive.
-	if strings.HasPrefix(statement, "/") {
-		operator := ""
-
-		for _, op := range []string{">=", "<=", "=", "<", ">", "!~*", "!~", "~*", "~^", "~"} {
-			if strings.Contains(statement, op) {
-				operator = op
-				break
-			}
-		}
-
-		if operator != "" {
-			parts := strings.Split(statement, operator)
-
-			// On metric key, replace only the first dot because we flatten every metric key stored in hosts JSON data.
-			pgJsonPath := strings.Replace(parts[0], ".", ",", 1)
-			pgJsonPath = strings.TrimSpace(pgJsonPath)
-
-			value := parts[len(parts)-1]
-			value = strings.TrimSpace(value)
-			value = libstring.StripChars(value, `"'`)
-
-			// The following operators should be able to handle string data types.
-			if operator == "=" || operator == "!~*" || operator == "!~" || operator == "~*" || operator == "~^" || operator == "~" {
-				return fmt.Sprintf("data #>> '{%v}' %v '%v'", pgJsonPath, operator, value)
-			}
-
-			// Example: (data #>> '{/free,Memory.TotalGB}')::float8
-			return fmt.Sprintf("(data #>> '{%v}')::float8 %v %v", pgJsonPath, operator, value)
+			return parseStringField(statement, "filename", "regexp")
 		}
 	}
 
