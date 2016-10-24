@@ -38,27 +38,6 @@ func parseAnd(input string) string {
 	return ""
 }
 
-// parseStringField parses ResourceD "string" query and turns it into lucene search condition.
-func parseStringField(statement, field, operator string) string {
-	parts := strings.Split(statement, operator)
-
-	data := parts[len(parts)-1]
-	data = strings.TrimSpace(data)
-	data = libstring.StripChars(data, `"'`)
-
-	if operator == "contains" {
-		dataSlice := strings.Split(data, ",")
-
-		for i, datum := range dataSlice {
-			dataSlice[i] = `"` + strings.TrimSpace(datum) + `"`
-		}
-
-		return fmt.Sprintf(`{type: "%v", field: "%v", values: "%v"}`, operator, field, strings.Join(dataSlice, `,`))
-	}
-
-	return fmt.Sprintf(`{type: "%v", field: "%v", value: "%v"}`, operator, field, data)
-}
-
 // parseFullTextSearchField parses ResourceD "search" query and turns it into postgres statement.
 // Operator is "search" in this context.
 func parseFullTextSearchField(statement, field, operator string) string {
@@ -109,16 +88,45 @@ func parseStatement(statement string) string {
 			return fmt.Sprintf(`{type: "%v", field: "%v", value: "%v"}`, "match", "hostname", data)
 
 		} else if strings.Contains(statement, "contains") {
-			return parseStringField(statement, "hostname", "contains")
+			parts := strings.Split(statement, "contains")
+
+			data := parts[len(parts)-1]
+			data = strings.TrimSpace(data)
+			data = libstring.StripChars(data, `"'`)
+
+			dataSlice := strings.Split(data, ",")
+			for i, datum := range dataSlice {
+				dataSlice[i] = `"` + strings.TrimSpace(datum) + `"`
+			}
+
+			return fmt.Sprintf(`{type: "%v", field: "%v", values: "%v"}`, "contains", "hostname", strings.Join(dataSlice, `,`))
 
 		} else if strings.Contains(statement, "wildcard") {
-			return parseStringField(statement, "hostname", "wildcard")
+			parts := strings.Split(statement, "wildcard")
+
+			data := parts[len(parts)-1]
+			data = strings.TrimSpace(data)
+			data = libstring.StripChars(data, `"'`)
+
+			return fmt.Sprintf(`{type: "%v", field: "%v", value: "%v"}`, "wildcard", "hostname", data)
 
 		} else if strings.Contains(statement, "^") {
-			return parseStringField(statement, "hostname", "prefix")
+			parts := strings.Split(statement, "^")
+
+			data := parts[len(parts)-1]
+			data = strings.TrimSpace(data)
+			data = libstring.StripChars(data, `"'`)
+
+			return fmt.Sprintf(`{type: "%v", field: "%v", value: "%v"}`, "prefix", "hostname", data)
 
 		} else if strings.Contains(statement, "~") {
-			return parseStringField(statement, "hostname", "regexp")
+			parts := strings.Split(statement, "~")
+
+			data := parts[len(parts)-1]
+			data = strings.TrimSpace(data)
+			data = libstring.StripChars(data, `"'`)
+
+			return fmt.Sprintf(`{type: "%v", field: "%v", value: "%v"}`, "regexp", "hostname", data)
 		}
 	}
 
@@ -140,16 +148,45 @@ func parseStatement(statement string) string {
 			return fmt.Sprintf(`{type: "%v", field: "%v", value: "%v"}`, "match", "filename", data)
 
 		} else if strings.Contains(statement, "contains") {
-			return parseStringField(statement, "filename", "contains")
+			parts := strings.Split(statement, "contains")
+
+			data := parts[len(parts)-1]
+			data = strings.TrimSpace(data)
+			data = libstring.StripChars(data, `"'`)
+
+			dataSlice := strings.Split(data, ",")
+			for i, datum := range dataSlice {
+				dataSlice[i] = `"` + strings.TrimSpace(datum) + `"`
+			}
+
+			return fmt.Sprintf(`{type: "%v", field: "%v", values: "%v"}`, "contains", "filename", strings.Join(dataSlice, `,`))
 
 		} else if strings.Contains(statement, "wildcard") {
-			return parseStringField(statement, "filename", "wildcard")
+			parts := strings.Split(statement, "wildcard")
+
+			data := parts[len(parts)-1]
+			data = strings.TrimSpace(data)
+			data = libstring.StripChars(data, `"'`)
+
+			return fmt.Sprintf(`{type: "%v", field: "%v", value: "%v"}`, "wildcard", "filename", data)
 
 		} else if strings.Contains(statement, "^") {
-			return parseStringField(statement, "filename", "prefix")
+			parts := strings.Split(statement, "^")
+
+			data := parts[len(parts)-1]
+			data = strings.TrimSpace(data)
+			data = libstring.StripChars(data, `"'`)
+
+			return fmt.Sprintf(`{type: "%v", field: "%v", value: "%v"}`, "prefix", "filename", data)
 
 		} else if strings.Contains(statement, "~") {
-			return parseStringField(statement, "filename", "regexp")
+			parts := strings.Split(statement, "~")
+
+			data := parts[len(parts)-1]
+			data = strings.TrimSpace(data)
+			data = libstring.StripChars(data, `"'`)
+
+			return fmt.Sprintf(`{type: "%v", field: "%v", value: "%v"}`, "regexp", "filename", data)
 		}
 	}
 
