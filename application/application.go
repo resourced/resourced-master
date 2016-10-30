@@ -282,6 +282,20 @@ func (app *Application) MigrateAllCassandra(direction string) error {
 		if err != nil {
 			return fmt.Errorf("Failed to execute migration file on %v. File: %v, Error: %v", app.GeneralConfig.Metrics.Cassandra.Keyspace, fullFilename, err)
 		}
+
+		// -----------------------------------------------
+		// Logs
+		err = app.CassandraDBConfig.TSLogSession.Query(sql).Exec()
+		if err != nil {
+			return fmt.Errorf("Failed to execute migration file on %v. File: %v, Error: %v", app.GeneralConfig.Metrics.Cassandra.Keyspace, fullFilename, err)
+		}
+
+		// -----------------------------------------------
+		// Events
+		err = app.CassandraDBConfig.TSEventSession.Query(sql).Exec()
+		if err != nil {
+			return fmt.Errorf("Failed to execute migration file on %v. File: %v, Error: %v", app.GeneralConfig.Metrics.Cassandra.Keyspace, fullFilename, err)
+		}
 	}
 
 	return nil

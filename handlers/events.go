@@ -10,6 +10,7 @@ import (
 
 	"github.com/resourced/resourced-master/libhttp"
 	"github.com/resourced/resourced-master/models/pg"
+	"github.com/resourced/resourced-master/models/shims"
 )
 
 func GetApiEventsLine(w http.ResponseWriter, r *http.Request) {
@@ -40,9 +41,7 @@ func GetApiEventsLine(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	deletedFrom := clusterRow.GetDeletedFromUNIXTimestampForSelect("ts_events")
-
-	rows, err := pg.NewTSEvent(r.Context(), accessTokenRow.ClusterID).AllLinesByClusterIDAndCreatedFromRangeForHighchart(nil, accessTokenRow.ClusterID, from, to, deletedFrom)
+	rows, err := shims.NewTSEvent(r.Context(), accessTokenRow.ClusterID).AllLinesByClusterIDAndCreatedFromRangeForHighchart(accessTokenRow.ClusterID, from, to, clusterRow.GetDeletedFromUNIXTimestampForSelect("ts_events"))
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
@@ -85,9 +84,7 @@ func GetApiEventsBand(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	deletedFrom := clusterRow.GetDeletedFromUNIXTimestampForSelect("ts_events")
-
-	rows, err := pg.NewTSEvent(r.Context(), accessTokenRow.ClusterID).AllBandsByClusterIDAndCreatedFromRangeForHighchart(nil, accessTokenRow.ClusterID, from, to, deletedFrom)
+	rows, err := shims.NewTSEvent(r.Context(), accessTokenRow.ClusterID).AllBandsByClusterIDAndCreatedFromRangeForHighchart(accessTokenRow.ClusterID, from, to, clusterRow.GetDeletedFromUNIXTimestampForSelect("ts_events"))
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
@@ -107,7 +104,7 @@ func PostApiEvents(w http.ResponseWriter, r *http.Request) {
 
 	accessTokenRow := r.Context().Value("accessToken").(*pg.AccessTokenRow)
 
-	dataJson, err := ioutil.ReadAll(r.Body)
+	dataJSON, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
@@ -119,11 +116,13 @@ func PostApiEvents(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	id := pg.NewTSEvent(r.Context(), clusterRow.ID).NewExplicitID()
-
-	deletedFrom := clusterRow.GetDeletedFromUNIXTimestampForInsert("ts_events")
-
-	tsEventRow, err := pg.NewTSEvent(r.Context(), accessTokenRow.ClusterID).CreateFromJSON(nil, id, accessTokenRow.ClusterID, dataJson, deletedFrom)
+	tsEventRow, err := shims.NewTSEvent(r.Context(), accessTokenRow.ClusterID).CreateFromJSON(
+		shims.NewExplicitID(),
+		accessTokenRow.ClusterID,
+		dataJSON,
+		clusterRow.GetDeletedFromUNIXTimestampForInsert("ts_events"),
+		clusterRow.GetTTLDurationForInsert("ts_events"),
+	)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return

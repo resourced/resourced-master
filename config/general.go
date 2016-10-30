@@ -117,7 +117,8 @@ type GeneralConfig struct {
 	}
 
 	Events struct {
-		PostgreSQL    PostgreSQLPerClusterConfig
+		PostgreSQL    PostgreSQLPerClusterConfig `toml:",omitempty"`
+		Cassandra     CassandraConfig            `toml:",omitempty"`
 		DataRetention int
 	}
 
@@ -151,6 +152,15 @@ func (conf GeneralConfig) GetMetricsDBType() string {
 
 func (conf GeneralConfig) GetLogsDBType() string {
 	if len(conf.Logs.Cassandra.Hosts) > 0 {
+		return "cassandra"
+	}
+
+	// Default
+	return "pg"
+}
+
+func (conf GeneralConfig) GetEventsDBType() string {
+	if len(conf.Events.Cassandra.Hosts) > 0 {
 		return "cassandra"
 	}
 

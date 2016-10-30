@@ -10,6 +10,7 @@ import (
 	"github.com/jmoiron/sqlx"
 
 	"github.com/resourced/resourced-master/contexthelper"
+	"github.com/resourced/resourced-master/models/shared"
 )
 
 func NewTSEvent(ctx context.Context, clusterID int64) *TSEvent {
@@ -20,19 +21,6 @@ func NewTSEvent(ctx context.Context, clusterID int64) *TSEvent {
 	ts.i = ts
 
 	return ts
-}
-
-type TSEventHighchartLinePayload struct {
-	ID          int64  `json:"ID"`
-	CreatedFrom int64  `json:"CreatedFrom"`
-	CreatedTo   int64  `json:"CreatedTo"`
-	Description string `json:"Description"`
-}
-
-type TSEventCreatePayload struct {
-	From        int64  `json:"from"`
-	To          int64  `json:"to"`
-	Description string `json:"description"`
 }
 
 type TSEventRow struct {
@@ -61,7 +49,7 @@ func (ts *TSEvent) GetPGDB() (*sqlx.DB, error) {
 }
 
 // AllLinesByClusterIDAndCreatedFromRangeForHighchart returns all rows given created_from range.
-func (ts *TSEvent) AllLinesByClusterIDAndCreatedFromRangeForHighchart(tx *sqlx.Tx, clusterID, from, to, deletedFrom int64) ([]TSEventHighchartLinePayload, error) {
+func (ts *TSEvent) AllLinesByClusterIDAndCreatedFromRangeForHighchart(tx *sqlx.Tx, clusterID, from, to, deletedFrom int64) ([]shared.TSEventHighchartLinePayload, error) {
 	pgdb, err := ts.GetPGDB()
 	if err != nil {
 		return nil, err
@@ -79,10 +67,10 @@ deleted >= to_timestamp($4) at time zone 'utc'`, ts.table)
 		return nil, err
 	}
 
-	hcRows := make([]TSEventHighchartLinePayload, len(rows))
+	hcRows := make([]shared.TSEventHighchartLinePayload, len(rows))
 
 	for i, row := range rows {
-		hcRow := TSEventHighchartLinePayload{}
+		hcRow := shared.TSEventHighchartLinePayload{}
 		hcRow.ID = row.ID
 		hcRow.CreatedFrom = row.CreatedFrom.UnixNano() / 1000000
 		hcRow.CreatedTo = row.CreatedTo.UnixNano() / 1000000
@@ -95,7 +83,7 @@ deleted >= to_timestamp($4) at time zone 'utc'`, ts.table)
 }
 
 // AllBandsByClusterIDAndCreatedFromRangeForHighchart returns all rows with time stretch between created_from and created_to.
-func (ts *TSEvent) AllBandsByClusterIDAndCreatedFromRangeForHighchart(tx *sqlx.Tx, clusterID, from, to, deletedFrom int64) ([]TSEventHighchartLinePayload, error) {
+func (ts *TSEvent) AllBandsByClusterIDAndCreatedFromRangeForHighchart(tx *sqlx.Tx, clusterID, from, to, deletedFrom int64) ([]shared.TSEventHighchartLinePayload, error) {
 	pgdb, err := ts.GetPGDB()
 	if err != nil {
 		return nil, err
@@ -113,10 +101,10 @@ deleted >= to_timestamp($4) at time zone 'utc'`, ts.table)
 		return nil, err
 	}
 
-	hcRows := make([]TSEventHighchartLinePayload, len(rows))
+	hcRows := make([]shared.TSEventHighchartLinePayload, len(rows))
 
 	for i, row := range rows {
-		hcRow := TSEventHighchartLinePayload{}
+		hcRow := shared.TSEventHighchartLinePayload{}
 		hcRow.ID = row.ID
 		hcRow.CreatedFrom = row.CreatedFrom.UnixNano() / 1000000
 		hcRow.CreatedTo = row.CreatedTo.UnixNano() / 1000000
@@ -143,7 +131,7 @@ func (ts *TSEvent) GetByID(tx *sqlx.Tx, id int64) (*TSEventRow, error) {
 }
 
 func (ts *TSEvent) CreateFromJSON(tx *sqlx.Tx, id, clusterID int64, jsonData []byte, deletedFrom int64) (*TSEventRow, error) {
-	payload := &TSEventCreatePayload{}
+	payload := &shared.TSEventCreatePayload{}
 
 	err := json.Unmarshal(jsonData, payload)
 	if err != nil {

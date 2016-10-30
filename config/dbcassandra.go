@@ -127,6 +127,66 @@ func NewCassandraDBConfig(generalConfig GeneralConfig) (*CassandraDBConfig, erro
 		conf.TSLog = cluster
 		conf.TSLogSession = session
 	}
+
+	// ---------------------------------------------------------
+	// ts_events table
+	//
+	if len(generalConfig.Events.Cassandra.Hosts) > 0 {
+		cluster := gocql.NewCluster(generalConfig.Events.Cassandra.Hosts...)
+		cluster.Keyspace = generalConfig.Events.Cassandra.Keyspace
+
+		if generalConfig.Events.Cassandra.ProtoVersion > 0 {
+			cluster.ProtoVersion = generalConfig.Events.Cassandra.ProtoVersion
+		} else {
+			cluster.ProtoVersion = 4
+		}
+
+		if generalConfig.Events.Cassandra.Port > 0 {
+			cluster.Port = generalConfig.Events.Cassandra.Port
+		} else {
+			cluster.Port = 9042
+		}
+
+		if generalConfig.Events.Cassandra.NumConns > 0 {
+			cluster.NumConns = generalConfig.Events.Cassandra.NumConns
+		} else {
+			cluster.NumConns = 2
+		}
+
+		if generalConfig.Events.Cassandra.MaxPreparedStmts > 0 {
+			cluster.MaxPreparedStmts = generalConfig.Events.Cassandra.MaxPreparedStmts
+		} else {
+			cluster.MaxPreparedStmts = 1000
+		}
+
+		if generalConfig.Events.Cassandra.MaxRoutingKeyInfo > 0 {
+			cluster.MaxRoutingKeyInfo = generalConfig.Events.Cassandra.MaxRoutingKeyInfo
+		} else {
+			cluster.MaxRoutingKeyInfo = 1000
+		}
+
+		if generalConfig.Events.Cassandra.PageSize > 0 {
+			cluster.PageSize = generalConfig.Events.Cassandra.PageSize
+		} else {
+			cluster.PageSize = 5000
+		}
+
+		if generalConfig.Events.Cassandra.Consistency == "one" {
+			cluster.Consistency = gocql.One
+		} else if generalConfig.Events.Cassandra.Consistency == "quorum" {
+			cluster.Consistency = gocql.Quorum
+		} else if generalConfig.Events.Cassandra.Consistency == "" {
+			cluster.Consistency = gocql.One
+		}
+
+		session, err := cluster.CreateSession()
+		if err != nil {
+			return nil, err
+		}
+
+		conf.TSEvent = cluster
+		conf.TSEventSession = session
+	}
 	return conf, nil
 }
 
@@ -137,4 +197,7 @@ type CassandraDBConfig struct {
 
 	TSLog        *gocql.ClusterConfig
 	TSLogSession *gocql.Session
+
+	TSEvent        *gocql.ClusterConfig
+	TSEventSession *gocql.Session
 }

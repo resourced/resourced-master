@@ -16,3 +16,14 @@ MaxOpenConnections = 2
 #         value: DSN.
 # [Events.PostgreSQL.DSNByClusterID]
 # 1 = "postgres://localhost:5432/resourced-master-events-1?sslmode=disable"
+
+[Events.Cassandra]
+Hosts = ["127.0.0.1"]
+ProtoVersion = 4
+Port = 9042
+Keyspace = "resourced_master_ts_events"
+NumConns = 2
+Consistency = "one"
+MaxPreparedStmts  = 1000
+MaxRoutingKeyInfo = 1000
+PageSize = 5000
