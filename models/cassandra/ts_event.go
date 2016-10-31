@@ -50,7 +50,7 @@ func (ts *TSEvent) AllLinesByClusterIDAndCreatedFromRangeForHighchart(clusterID,
 	}
 
 	rows := []*TSEventRow{}
-	query := fmt.Sprintf(`SELECT id, cluster_id, created_from, created_to, description FROM %v WHERE cluster_id=? AND created_from = created_to AND created_from >= ? AND created_from <= ?`, ts.table)
+	query := fmt.Sprintf(`SELECT id, cluster_id, created_from, created_to, description FROM %v WHERE cluster_id=? AND created_from >= ? AND created_from <= ?`, ts.table)
 
 	var scannedID, scannedClusterID, scannedCreatedFrom, scannedCreatedTo int64
 	var scannedDescription string
@@ -68,12 +68,10 @@ func (ts *TSEvent) AllLinesByClusterIDAndCreatedFromRangeForHighchart(clusterID,
 	if err := iter.Close(); err != nil {
 		err = fmt.Errorf("%v. Query: %v", err.Error(), query)
 		logrus.WithFields(logrus.Fields{
-			"Method":      "TSMetric.AllLinesByClusterIDAndCreatedFromRangeForHighchart",
-			"ID":          scannedID,
-			"ClusterID":   scannedClusterID,
-			"CreatedFrom": scannedCreatedFrom,
-			"CreatedTo":   scannedCreatedTo,
-			"Description": scannedDescription,
+			"Method":    "TSMetric.AllLinesByClusterIDAndCreatedFromRangeForHighchart",
+			"ClusterID": clusterID,
+			"From":      from,
+			"To":        to,
 		}).Error(err)
 
 		return nil, err
@@ -82,13 +80,15 @@ func (ts *TSEvent) AllLinesByClusterIDAndCreatedFromRangeForHighchart(clusterID,
 	hcRows := make([]shared.TSEventHighchartLinePayload, len(rows))
 
 	for i, row := range rows {
-		hcRow := shared.TSEventHighchartLinePayload{}
-		hcRow.ID = row.ID
-		hcRow.CreatedFrom = row.CreatedFrom * 1000
-		hcRow.CreatedTo = row.CreatedTo * 1000
-		hcRow.Description = row.Description
+		if row.CreatedFrom == row.CreatedTo {
+			hcRow := shared.TSEventHighchartLinePayload{}
+			hcRow.ID = row.ID
+			hcRow.CreatedFrom = row.CreatedFrom * 1000
+			hcRow.CreatedTo = row.CreatedTo * 1000
+			hcRow.Description = row.Description
 
-		hcRows[i] = hcRow
+			hcRows[i] = hcRow
+		}
 	}
 
 	return hcRows, err
@@ -108,7 +108,7 @@ func (ts *TSEvent) AllBandsByClusterIDAndCreatedFromRangeForHighchart(clusterID,
 	// description text,
 
 	rows := []*TSEventRow{}
-	query := fmt.Sprintf(`SELECT id, cluster_id, created_from, created_to, description FROM %v WHERE cluster_id=? AND created_from < created_to AND created_from >= ? AND created_from <= ?`, ts.table)
+	query := fmt.Sprintf(`SELECT id, cluster_id, created_from, created_to, description FROM %v WHERE cluster_id=? AND created_from >= ? AND created_from <= ?`, ts.table)
 
 	var scannedID, scannedClusterID, scannedCreatedFrom, scannedCreatedTo int64
 	var scannedDescription string
@@ -126,12 +126,10 @@ func (ts *TSEvent) AllBandsByClusterIDAndCreatedFromRangeForHighchart(clusterID,
 	if err := iter.Close(); err != nil {
 		err = fmt.Errorf("%v. Query: %v", err.Error(), query)
 		logrus.WithFields(logrus.Fields{
-			"Method":      "TSEvent.AllLinesByClusterIDAndCreatedFromRangeForHighchart",
-			"ID":          scannedID,
-			"ClusterID":   scannedClusterID,
-			"CreatedFrom": scannedCreatedFrom,
-			"CreatedTo":   scannedCreatedTo,
-			"Description": scannedDescription,
+			"Method":    "TSEvent.AllLinesByClusterIDAndCreatedFromRangeForHighchart",
+			"ClusterID": clusterID,
+			"From":      from,
+			"To":        to,
 		}).Error(err)
 
 		return nil, err
@@ -139,13 +137,15 @@ func (ts *TSEvent) AllBandsByClusterIDAndCreatedFromRangeForHighchart(clusterID,
 	hcRows := make([]shared.TSEventHighchartLinePayload, len(rows))
 
 	for i, row := range rows {
-		hcRow := shared.TSEventHighchartLinePayload{}
-		hcRow.ID = row.ID
-		hcRow.CreatedFrom = row.CreatedFrom * 1000
-		hcRow.CreatedTo = row.CreatedTo * 1000
-		hcRow.Description = row.Description
+		if row.CreatedFrom < row.CreatedTo {
+			hcRow := shared.TSEventHighchartLinePayload{}
+			hcRow.ID = row.ID
+			hcRow.CreatedFrom = row.CreatedFrom * 1000
+			hcRow.CreatedTo = row.CreatedTo * 1000
+			hcRow.Description = row.Description
 
-		hcRows[i] = hcRow
+			hcRows[i] = hcRow
+		}
 	}
 
 	return hcRows, err
@@ -159,7 +159,7 @@ func (ts *TSEvent) GetByClusterIDAndID(clusterID, id int64) (*TSEventRow, error)
 	}
 
 	row := &TSEventRow{}
-	query := fmt.Sprintf(`SELECT id, cluster_id, created_from, created_to, description FROM %v WHERE cluster_id=? AND id=? LIMIT 1`, ts.table)
+	query := fmt.Sprintf(`SELECT id, cluster_id, created_from, created_to, description FROM %v WHERE cluster_id=? AND id=? LIMIT 1 ALLOW FILTERING`, ts.table)
 
 	var scannedID, scannedClusterID, scannedCreatedFrom, scannedCreatedTo int64
 	var scannedDescription string

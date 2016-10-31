@@ -4,7 +4,7 @@ CREATE TABLE IF NOT EXISTS ts_events (
     created_from bigint,
     created_to bigint,
     description text,
-    PRIMARY KEY ((id, cluster_id), created_from, created_to)
+    PRIMARY KEY (cluster_id, created_from, created_to)
 ) WITH CLUSTERING ORDER BY (created_from ASC, created_to ASC)
   AND compaction = {'compaction_window_unit': 'HOURS', 'compaction_window_size': '24', 'class':'com.jeffjirsa.cassandra.db.compaction.TimeWindowCompactionStrategy'}
   AND caching = {'keys': 'NONE', 'rows_per_partition': 'NONE'}

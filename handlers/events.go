@@ -41,7 +41,12 @@ func GetApiEventsLine(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	rows, err := shims.NewTSEvent(r.Context(), accessTokenRow.ClusterID).AllLinesByClusterIDAndCreatedFromRangeForHighchart(accessTokenRow.ClusterID, from, to, clusterRow.GetDeletedFromUNIXTimestampForSelect("ts_events"))
+	rows, err := shims.NewTSEvent(r.Context(), accessTokenRow.ClusterID).AllLinesByClusterIDAndCreatedFromRangeForHighchart(
+		accessTokenRow.ClusterID,
+		from,
+		to,
+		clusterRow.GetDeletedFromUNIXTimestampForSelect("ts_events"),
+	)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
