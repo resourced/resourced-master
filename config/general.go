@@ -81,11 +81,6 @@ type GeneralConfig struct {
 	VIPAddr                 string
 	VIPProtocol             string
 
-	PostgreSQL struct {
-		DSN                string
-		MaxOpenConnections int64
-	}
-
 	LocalAgent struct {
 		GraphiteTCPPort       string
 		ReportMetricsInterval string
@@ -105,6 +100,13 @@ type GeneralConfig struct {
 		URL   string
 		Peers []string
 	}
+
+	PostgreSQL struct {
+		DSN                string
+		MaxOpenConnections int64
+	}
+
+	Cassandra CassandraConfig `toml:",omitempty"`
 
 	Hosts struct {
 		PostgreSQL PostgreSQLPerClusterConfig
@@ -139,6 +141,15 @@ type GeneralConfig struct {
 	}
 
 	Email *EmailConfig
+}
+
+func (conf GeneralConfig) GetCoreDBType() string {
+	if len(conf.Cassandra.Hosts) > 0 {
+		return "cassandra"
+	}
+
+	// Default
+	return "pg"
 }
 
 func (conf GeneralConfig) GetMetricsDBType() string {

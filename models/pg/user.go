@@ -157,8 +157,8 @@ func (u *User) Signup(tx *sqlx.Tx, email, password, passwordAgain string) (*User
 	return u.userRowFromSqlResult(tx, sqlResult)
 }
 
-// UpdateEmailAndPasswordById updates user email and password.
-func (u *User) UpdateEmailAndPasswordById(tx *sqlx.Tx, userId int64, email, password, passwordAgain string) (*UserRow, error) {
+// UpdateEmailAndPasswordByID updates user email and password.
+func (u *User) UpdateEmailAndPasswordByID(tx *sqlx.Tx, userId int64, email, password, passwordAgain string) (*UserRow, error) {
 	data := make(map[string]interface{})
 
 	if email != "" {

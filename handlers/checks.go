@@ -349,7 +349,7 @@ func PostChecksTriggers(w http.ResponseWriter, r *http.Request) {
 
 	check := pg.NewCheck(r.Context())
 
-	trigger.ID = check.NewExplicitID()
+	trigger.ID = pg.NewExplicitID()
 
 	checkRow, err := check.GetByID(nil, checkID)
 	if err != nil {

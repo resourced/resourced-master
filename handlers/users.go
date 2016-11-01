@@ -89,7 +89,7 @@ func PostSignup(w http.ResponseWriter, r *http.Request) {
 		emailValidated = true
 
 		// There's an existing user in the database, update email and password info.
-		userRow, err = pg.NewUser(r.Context()).UpdateEmailAndPasswordById(nil, userRow.ID, email, password, passwordAgain)
+		userRow, err = pg.NewUser(r.Context()).UpdateEmailAndPasswordByID(nil, userRow.ID, email, password, passwordAgain)
 		if err != nil {
 			libhttp.HandleErrorHTML(w, err, 500)
 			return
@@ -216,7 +216,7 @@ func PutUsersID(w http.ResponseWriter, r *http.Request) {
 
 	u := pg.NewUser(r.Context())
 
-	currentUser, err = u.UpdateEmailAndPasswordById(nil, currentUser.ID, email, password, passwordAgain)
+	currentUser, err = u.UpdateEmailAndPasswordByID(nil, currentUser.ID, email, password, passwordAgain)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return

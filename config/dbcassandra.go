@@ -9,6 +9,66 @@ func NewCassandraDBConfig(generalConfig GeneralConfig) (*CassandraDBConfig, erro
 	conf := &CassandraDBConfig{}
 
 	// ---------------------------------------------------------
+	// core table
+	//
+	if len(generalConfig.Cassandra.Hosts) > 0 {
+		cluster := gocql.NewCluster(generalConfig.Cassandra.Hosts...)
+		cluster.Keyspace = generalConfig.Cassandra.Keyspace
+
+		if generalConfig.Cassandra.ProtoVersion > 0 {
+			cluster.ProtoVersion = generalConfig.Cassandra.ProtoVersion
+		} else {
+			cluster.ProtoVersion = 4
+		}
+
+		if generalConfig.Cassandra.Port > 0 {
+			cluster.Port = generalConfig.Cassandra.Port
+		} else {
+			cluster.Port = 9042
+		}
+
+		if generalConfig.Cassandra.NumConns > 0 {
+			cluster.NumConns = generalConfig.Cassandra.NumConns
+		} else {
+			cluster.NumConns = 2
+		}
+
+		if generalConfig.Cassandra.MaxPreparedStmts > 0 {
+			cluster.MaxPreparedStmts = generalConfig.Cassandra.MaxPreparedStmts
+		} else {
+			cluster.MaxPreparedStmts = 1000
+		}
+
+		if generalConfig.Cassandra.MaxRoutingKeyInfo > 0 {
+			cluster.MaxRoutingKeyInfo = generalConfig.Cassandra.MaxRoutingKeyInfo
+		} else {
+			cluster.MaxRoutingKeyInfo = 1000
+		}
+
+		if generalConfig.Cassandra.PageSize > 0 {
+			cluster.PageSize = generalConfig.Cassandra.PageSize
+		} else {
+			cluster.PageSize = 5000
+		}
+
+		if generalConfig.Cassandra.Consistency == "one" {
+			cluster.Consistency = gocql.One
+		} else if generalConfig.Cassandra.Consistency == "quorum" {
+			cluster.Consistency = gocql.Quorum
+		} else if generalConfig.Cassandra.Consistency == "" {
+			cluster.Consistency = gocql.One
+		}
+
+		session, err := cluster.CreateSession()
+		if err != nil {
+			return nil, err
+		}
+
+		conf.Core = cluster
+		conf.CoreSession = session
+	}
+
+	// ---------------------------------------------------------
 	// ts_metrics table
 	//
 	if len(generalConfig.Metrics.Cassandra.Hosts) > 0 {
@@ -192,6 +252,9 @@ func NewCassandraDBConfig(generalConfig GeneralConfig) (*CassandraDBConfig, erro
 
 // CassandraDBConfig stores all database configuration data.
 type CassandraDBConfig struct {
+	Core        *gocql.ClusterConfig
+	CoreSession *gocql.Session
+
 	TSMetric        *gocql.ClusterConfig
 	TSMetricSession *gocql.Session
 

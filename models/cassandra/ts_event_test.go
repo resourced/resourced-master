@@ -52,7 +52,7 @@ func TestTSEventCreate(t *testing.T) {
 	defer pgdb.Close()
 
 	// Create TSEvent without passing dates
-	tsEventRow, err := tsEvent.Create(nil, c.NewExplicitID(), clusterRow.ID, -1, -1, "Launched uber feature", time.Now().Unix()+int64(900))
+	tsEventRow, err := tsEvent.Create(nil, NewExplicitID(), clusterRow.ID, -1, -1, "Launched uber feature", time.Now().Unix()+int64(900))
 	if err != nil {
 		t.Fatalf("Creating a TSEvent should work. Error: %v", err)
 	}
@@ -65,7 +65,7 @@ func TestTSEventCreate(t *testing.T) {
 	}
 
 	// Create TSEvent with from timestamp only
-	tsEventRow, err = tsEvent.Create(nil, c.NewExplicitID(), clusterRow.ID, time.Now().Unix(), -1, "Launched uber feature 2", time.Now().Unix()+int64(900))
+	tsEventRow, err = tsEvent.Create(nil, NewExplicitID(), clusterRow.ID, time.Now().Unix(), -1, "Launched uber feature 2", time.Now().Unix()+int64(900))
 	if err != nil {
 		t.Fatalf("Creating a TSEvent should work. Error: %v", err)
 	}
@@ -78,7 +78,7 @@ func TestTSEventCreate(t *testing.T) {
 	}
 
 	// Create TSEvent with from and to timestamps only
-	tsEventRow, err = tsEvent.Create(nil, c.NewExplicitID(), clusterRow.ID, time.Now().Unix(), time.Now().Unix(), "Launched uber feature 3", time.Now().Unix()+int64(900))
+	tsEventRow, err = tsEvent.Create(nil, NewExplicitID(), clusterRow.ID, time.Now().Unix(), time.Now().Unix(), "Launched uber feature 3", time.Now().Unix()+int64(900))
 	if err != nil {
 		t.Fatalf("Creating a TSEvent should work. Error: %v", err)
 	}
