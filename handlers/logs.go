@@ -20,7 +20,7 @@ import (
 func GetLogs(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html")
 
-	currentUser := r.Context().Value("currentUser").(*pg.UserRow)
+	currentUser := r.Context().Value("currentUser").(*shared.UserRow)
 
 	currentCluster := r.Context().Value("currentCluster").(*pg.ClusterRow)
 
@@ -66,7 +66,7 @@ func GetLogs(w http.ResponseWriter, r *http.Request) {
 	data := struct {
 		CSRFToken      string
 		Addr           string
-		CurrentUser    *pg.UserRow
+		CurrentUser    *shared.UserRow
 		AccessToken    *pg.AccessTokenRow
 		Clusters       []*pg.ClusterRow
 		CurrentCluster *pg.ClusterRow

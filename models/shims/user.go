@@ -9,6 +9,7 @@ import (
 	"github.com/resourced/resourced-master/contexthelper"
 	"github.com/resourced/resourced-master/models/cassandra"
 	"github.com/resourced/resourced-master/models/pg"
+	"github.com/resourced/resourced-master/models/shared"
 )
 
 func NewUser(ctx context.Context) *User {
@@ -39,7 +40,7 @@ func (u *User) GetPGDB() (*sqlx.DB, error) {
 	return pgdbs.Core, nil
 }
 
-func (u *User) AllUsers() (interface{}, error) {
+func (u *User) AllUsers() ([]*shared.UserRow, error) {
 	if u.GetDBType() == "pg" {
 		return pg.NewUser(u.AppContext).AllUsers(nil)
 
@@ -50,7 +51,7 @@ func (u *User) AllUsers() (interface{}, error) {
 	return nil, fmt.Errorf("Unrecognized DBType, valid options are: pg or cassandra")
 }
 
-func (u *User) GetByID(id int64) (interface{}, error) {
+func (u *User) GetByID(id int64) (*shared.UserRow, error) {
 	if u.GetDBType() == "pg" {
 		return pg.NewUser(u.AppContext).GetByID(nil, id)
 
@@ -61,7 +62,7 @@ func (u *User) GetByID(id int64) (interface{}, error) {
 	return nil, fmt.Errorf("Unrecognized DBType, valid options are: pg or cassandra")
 }
 
-func (u *User) GetByEmail(email string) (interface{}, error) {
+func (u *User) GetByEmail(email string) (*shared.UserRow, error) {
 	if u.GetDBType() == "pg" {
 		return pg.NewUser(u.AppContext).GetByEmail(nil, email)
 
@@ -72,7 +73,7 @@ func (u *User) GetByEmail(email string) (interface{}, error) {
 	return nil, fmt.Errorf("Unrecognized DBType, valid options are: pg or cassandra")
 }
 
-func (u *User) GetByEmailVerificationToken(emailVerificationToken string) (interface{}, error) {
+func (u *User) GetByEmailVerificationToken(emailVerificationToken string) (*shared.UserRow, error) {
 	if u.GetDBType() == "pg" {
 		return pg.NewUser(u.AppContext).GetByEmailVerificationToken(nil, emailVerificationToken)
 
@@ -83,7 +84,7 @@ func (u *User) GetByEmailVerificationToken(emailVerificationToken string) (inter
 	return nil, fmt.Errorf("Unrecognized DBType, valid options are: pg or cassandra")
 }
 
-func (u *User) GetUserByEmailAndPassword(email, password string) (interface{}, error) {
+func (u *User) GetUserByEmailAndPassword(email, password string) (*shared.UserRow, error) {
 	if u.GetDBType() == "pg" {
 		return pg.NewUser(u.AppContext).GetUserByEmailAndPassword(nil, email, password)
 
@@ -94,7 +95,7 @@ func (u *User) GetUserByEmailAndPassword(email, password string) (interface{}, e
 	return nil, fmt.Errorf("Unrecognized DBType, valid options are: pg or cassandra")
 }
 
-func (u *User) SignupRandomPassword(email string) (interface{}, error) {
+func (u *User) SignupRandomPassword(email string) (*shared.UserRow, error) {
 	if u.GetDBType() == "pg" {
 		return pg.NewUser(u.AppContext).SignupRandomPassword(nil, email)
 
@@ -105,7 +106,7 @@ func (u *User) SignupRandomPassword(email string) (interface{}, error) {
 	return nil, fmt.Errorf("Unrecognized DBType, valid options are: pg or cassandra")
 }
 
-func (u *User) Signup(email, password, passwordAgain string) (interface{}, error) {
+func (u *User) Signup(email, password, passwordAgain string) (*shared.UserRow, error) {
 	if u.GetDBType() == "pg" {
 		return pg.NewUser(u.AppContext).Signup(nil, email, password, passwordAgain)
 
@@ -116,7 +117,7 @@ func (u *User) Signup(email, password, passwordAgain string) (interface{}, error
 	return nil, fmt.Errorf("Unrecognized DBType, valid options are: pg or cassandra")
 }
 
-func (u *User) UpdateEmailAndPasswordByID(id int64, email, password, passwordAgain string) (interface{}, error) {
+func (u *User) UpdateEmailAndPasswordByID(id int64, email, password, passwordAgain string) (*shared.UserRow, error) {
 	if u.GetDBType() == "pg" {
 		return pg.NewUser(u.AppContext).UpdateEmailAndPasswordByID(nil, id, email, password, passwordAgain)
 
@@ -127,7 +128,7 @@ func (u *User) UpdateEmailAndPasswordByID(id int64, email, password, passwordAga
 	return nil, fmt.Errorf("Unrecognized DBType, valid options are: pg or cassandra")
 }
 
-func (u *User) UpdateEmailVerification(emailVerificationToken string) (interface{}, error) {
+func (u *User) UpdateEmailVerification(emailVerificationToken string) (*shared.UserRow, error) {
 	if u.GetDBType() == "pg" {
 		return pg.NewUser(u.AppContext).UpdateEmailVerification(nil, emailVerificationToken)
 

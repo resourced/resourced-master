@@ -6,6 +6,7 @@ import (
 
 	"github.com/resourced/resourced-master/libtime"
 	"github.com/resourced/resourced-master/models/pg"
+	"github.com/resourced/resourced-master/models/shims"
 )
 
 func (app *Application) myClusters() (clusters []*pg.ClusterRow, err error) {
@@ -17,7 +18,7 @@ func (app *Application) myClusters() (clusters []*pg.ClusterRow, err error) {
 			daemons = append(daemons, hostAndPort)
 		}
 
-		groupedClustersByDaemon, err := pg.NewCluster(app.GetContext()).AllSplitToDaemons(nil, daemons)
+		groupedClustersByDaemon, err := shims.NewCluster(app.GetContext()).AllSplitToDaemons(daemons)
 		if err != nil {
 			return nil, err
 		}
@@ -25,7 +26,7 @@ func (app *Application) myClusters() (clusters []*pg.ClusterRow, err error) {
 		clusters = groupedClustersByDaemon[app.FullAddr()]
 
 	} else {
-		clusters, err = pg.NewCluster(app.GetContext()).All(nil)
+		clusters, err = shims.NewCluster(app.GetContext()).All()
 	}
 
 	return clusters, err
@@ -59,13 +60,17 @@ func (app *Application) PruneAll() {
 				}(cluster)
 			}
 
-			go func(cluster *pg.ClusterRow) {
-				app.PruneTSEventOnce(cluster.ID)
-			}(cluster)
+			if app.GeneralConfig.GetEventsDBType() == "pg" {
+				go func(cluster *pg.ClusterRow) {
+					app.PruneTSEventOnce(cluster.ID)
+				}(cluster)
+			}
 
-			go func(cluster *pg.ClusterRow) {
-				app.PruneTSLogOnce(cluster.ID)
-			}(cluster)
+			if app.GeneralConfig.GetLogsDBType() == "pg" {
+				go func(cluster *pg.ClusterRow) {
+					app.PruneTSLogOnce(cluster.ID)
+				}(cluster)
+			}
 		}
 
 		libtime.SleepString("24h")

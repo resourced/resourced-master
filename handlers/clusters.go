@@ -15,13 +15,14 @@ import (
 	"github.com/resourced/resourced-master/libhttp"
 	"github.com/resourced/resourced-master/mailer"
 	"github.com/resourced/resourced-master/models/pg"
+	"github.com/resourced/resourced-master/models/shared"
 )
 
 // GetClusters displays the /clusters UI.
 func GetClusters(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html")
 
-	currentUser := r.Context().Value("currentUser").(*pg.UserRow)
+	currentUser := r.Context().Value("currentUser").(*shared.UserRow)
 
 	clusters := r.Context().Value("clusters").([]*pg.ClusterRow)
 
@@ -41,7 +42,7 @@ func GetClusters(w http.ResponseWriter, r *http.Request) {
 
 	data := struct {
 		CSRFToken      string
-		CurrentUser    *pg.UserRow
+		CurrentUser    *shared.UserRow
 		Clusters       []*pg.ClusterRow
 		CurrentCluster *pg.ClusterRow
 		AccessTokens   map[int64][]*pg.AccessTokenRow
@@ -72,7 +73,7 @@ func GetClusters(w http.ResponseWriter, r *http.Request) {
 
 // PostClusters creates a new cluster.
 func PostClusters(w http.ResponseWriter, r *http.Request) {
-	currentUser := r.Context().Value("currentUser").(*pg.UserRow)
+	currentUser := r.Context().Value("currentUser").(*shared.UserRow)
 
 	_, err := pg.NewCluster(r.Context()).Create(nil, currentUser, r.FormValue("Name"))
 	if err != nil {
@@ -179,7 +180,7 @@ func DeleteClusterID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	currentUser := r.Context().Value("currentUser").(*pg.UserRow)
+	currentUser := r.Context().Value("currentUser").(*shared.UserRow)
 
 	cluster := pg.NewCluster(r.Context())
 
@@ -244,7 +245,7 @@ func PutClusterIDUsers(w http.ResponseWriter, r *http.Request) {
 		}
 
 		// 2. Send email invite to user
-		if userRow.EmailVerificationToken.String != "" {
+		if userRow.EmailVerificationToken != "" {
 			clusterRow, err := pg.NewCluster(r.Context()).GetByID(nil, clusterID)
 			if err != nil {
 				libhttp.HandleErrorHTML(w, err, 500)
@@ -256,7 +257,7 @@ func PutClusterIDUsers(w http.ResponseWriter, r *http.Request) {
 			vipAddr := r.Context().Value("vipAddr").(string)
 			vipProtocol := r.Context().Value("vipProtocol").(string)
 
-			url := fmt.Sprintf("%v://%v/signup?email=%v&token=%v", vipProtocol, vipAddr, email, userRow.EmailVerificationToken.String)
+			url := fmt.Sprintf("%v://%v/signup?email=%v&token=%v", vipProtocol, vipAddr, email, userRow.EmailVerificationToken)
 
 			body := fmt.Sprintf(`ResourceD is a monitoring and alerting service.
 

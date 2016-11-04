@@ -1,16 +1,15 @@
-package pg
+package cassandra
 
 import (
 	"context"
-	"database/sql"
 	"encoding/json"
 	"fmt"
 	"time"
 
 	"github.com/Sirupsen/logrus"
-	"github.com/jmoiron/sqlx"
-	sqlx_types "github.com/jmoiron/sqlx/types"
+	"github.com/gocql/gocql"
 
+	"github.com/resourced/resourced-master/contexthelper"
 	"github.com/resourced/resourced-master/models/shared"
 )
 
@@ -19,31 +18,23 @@ func NewCluster(ctx context.Context) *Cluster {
 	c.AppContext = ctx
 	c.table = "clusters"
 	c.hasID = true
-	c.i = c
 
 	return c
 }
 
-type ClusterMember struct {
-	ID      int64
-	Email   string
-	Level   string
-	Enabled bool
-}
-
 type ClusterRow struct {
-	ID            int64               `db:"id"`
-	Name          string              `db:"name"`
-	CreatorID     int64               `db:"creator_id"`
-	CreatorEmail  string              `db:"creator_email"`
-	DataRetention sqlx_types.JSONText `db:"data_retention"`
-	Members       sqlx_types.JSONText `db:"members"`
+	ID            int64  `db:"id"`
+	Name          string `db:"name"`
+	CreatorID     int64  `db:"creator_id"`
+	CreatorEmail  string `db:"creator_email"`
+	DataRetention string `db:"data_retention"`
+	Members       string `db:"members"`
 }
 
 // GetDataRetention returns DataRetention in map
 func (cr *ClusterRow) GetDataRetention() map[string]int {
 	retentions := make(map[string]int)
-	cr.DataRetention.Unmarshal(&retentions)
+	json.Unmarshal([]byte(cr.DataRetention), &retentions)
 
 	return retentions
 }
@@ -67,9 +58,9 @@ func (cr *ClusterRow) GetTTLDurationForInsert(tableName string) time.Duration {
 }
 
 // GetMembers returns Members in map
-func (cr *ClusterRow) GetMembers() []ClusterMember {
-	members := make([]ClusterMember, 0)
-	cr.Members.Unmarshal(&members)
+func (cr *ClusterRow) GetMembers() []shared.ClusterMember {
+	members := make([]shared.ClusterMember, 0)
+	json.Unmarshal([]byte(cr.Members), &members)
 
 	return members
 }
@@ -89,31 +80,58 @@ type Cluster struct {
 	Base
 }
 
-func (c *Cluster) clusterRowFromSqlResult(tx *sqlx.Tx, sqlResult sql.Result) (*ClusterRow, error) {
-	id, err := sqlResult.LastInsertId()
+func (c *Cluster) GetCassandraSession() (*gocql.Session, error) {
+	cassandradbs, err := contexthelper.GetCassandraDBConfig(c.AppContext)
 	if err != nil {
 		return nil, err
 	}
 
-	return c.GetByID(tx, id)
+	return cassandradbs.CoreSession, nil
 }
 
 // GetByID returns one record by id.
-func (c *Cluster) GetByID(tx *sqlx.Tx, id int64) (*ClusterRow, error) {
-	pgdb, err := c.GetPGDB()
+func (c *Cluster) GetByID(id int64) (*ClusterRow, error) {
+	session, err := c.GetCassandraSession()
 	if err != nil {
 		return nil, err
 	}
 
-	row := &ClusterRow{}
-	query := fmt.Sprintf("SELECT * FROM %v WHERE id=$1", c.table)
-	err = pgdb.Get(row, query, id)
+	// id bigint primary key,
+	// name text,
+	// creator_id bigint,
+	// creator_email text,
+	// data_retention text,
+	// members text
 
-	return row, err
+	query := fmt.Sprintf("SELECT id, name, creator_id, creator_email, data_retention, members FROM %v WHERE id=? LIMIT 1", c.table)
+
+	var scannedID, scannedCreatorID int64
+	var scannedName, scannedCreatorEmail, scannedDataRetention, scannedMembers string
+
+	err = session.Query(query, id).Scan(&scannedID, &scannedName, &scannedCreatorID, &scannedCreatorEmail, &scannedDataRetention, &scannedMembers)
+	if err != nil {
+		return nil, err
+	}
+
+	user := &ClusterRow{
+		ID:            scannedID,
+		Name:          scannedName,
+		CreatorID:     scannedCreatorID,
+		CreatorEmail:  scannedCreatorEmail,
+		DataRetention: scannedDataRetention,
+		Members:       scannedMembers,
+	}
+
+	return user, nil
 }
 
 // Create a cluster row record with default settings.
-func (c *Cluster) Create(tx *sqlx.Tx, creator *shared.UserRow, name string) (*ClusterRow, error) {
+func (c *Cluster) Create(creator *shared.UserRow, name string) (*ClusterRow, error) {
+	session, err := c.GetCassandraSession()
+	if err != nil {
+		return nil, err
+	}
+
 	dataRetention := make(map[string]int)
 	dataRetention["ts_checks"] = 1
 	dataRetention["ts_metrics"] = 1
@@ -126,13 +144,13 @@ func (c *Cluster) Create(tx *sqlx.Tx, creator *shared.UserRow, name string) (*Cl
 		return nil, err
 	}
 
-	member := ClusterMember{}
+	member := shared.ClusterMember{}
 	member.ID = creator.ID
 	member.Email = creator.Email
 	member.Level = "write"
 	member.Enabled = true
 
-	members := make([]ClusterMember, 1)
+	members := make([]shared.ClusterMember, 1)
 	members[0] = member
 
 	membersJSON, err := json.Marshal(members)
@@ -140,56 +158,74 @@ func (c *Cluster) Create(tx *sqlx.Tx, creator *shared.UserRow, name string) (*Cl
 		return nil, err
 	}
 
-	data := make(map[string]interface{})
-	data["name"] = name
-	data["creator_id"] = creator.ID
-	data["creator_email"] = creator.Email
-	data["data_retention"] = dataRetentionJSON
-	data["members"] = membersJSON
+	id := NewExplicitID()
 
-	sqlResult, err := c.InsertIntoTable(tx, data)
+	query := fmt.Sprintf("INSERT INTO %v (id, name, creator_id, creator_email, data_retention, members) VALUES (?, ?, ?, ?, ?, ?)", c.table)
+
+	err = session.Query(query, id, name, creator.ID, creator.Email, string(dataRetentionJSON), string(membersJSON)).Exec()
 	if err != nil {
 		return nil, err
 	}
 
-	return c.clusterRowFromSqlResult(tx, sqlResult)
+	return c.GetByID(id)
 }
 
 // AllByUserID returns all clusters rows by user ID.
-func (c *Cluster) AllByUserID(tx *sqlx.Tx, userId int64) ([]*ClusterRow, error) {
-	pgdb, err := c.GetPGDB()
-	if err != nil {
-		return nil, err
-	}
+func (c *Cluster) AllByUserID(userId int64) ([]*ClusterRow, error) {
+	// pgdb, err := c.GetPGDB()
+	// if err != nil {
+	// 	return nil, err
+	// }
 
-	rows := []*ClusterRow{}
+	// rows := []*ClusterRow{}
 
-	query := fmt.Sprintf(`SELECT * from %v WHERE members @> '[{"ID" : %v}]'`, c.table, userId)
-	err = pgdb.Select(&rows, query)
-	if err != nil {
-		logrus.WithFields(logrus.Fields{"Query": query}).Error(err)
-	}
+	// query := fmt.Sprintf(`SELECT * from %v WHERE members @> '[{"ID" : %v}]'`, c.table, userId)
+	// err = pgdb.Select(&rows, query)
+	// if err != nil {
+	// 	logrus.WithFields(logrus.Fields{"Query": query}).Error(err)
+	// }
 
-	return rows, err
+	// return rows, err
+	return nil, nil
 }
 
 // All returns all clusters rows.
-func (c *Cluster) All(tx *sqlx.Tx) ([]*ClusterRow, error) {
-	pgdb, err := c.GetPGDB()
+func (c *Cluster) All() ([]*ClusterRow, error) {
+	session, err := c.GetCassandraSession()
 	if err != nil {
 		return nil, err
 	}
 
-	rows := []*ClusterRow{}
-	query := fmt.Sprintf("SELECT * FROM %v", c.table)
-	err = pgdb.Select(&rows, query)
+	users := []*ClusterRow{}
 
-	return rows, err
+	query := fmt.Sprintf(`SELECT id, name, creator_id, creator_email, data_retention, members FROM %v`, c.table)
+
+	var scannedID, scannedCreatorID int64
+	var scannedName, scannedCreatorEmail, scannedDataRetention, scannedMembers string
+
+	iter := session.Query(query).Iter()
+	for iter.Scan(&scannedID, &scannedName, &scannedCreatorID, &scannedCreatorEmail, &scannedDataRetention, &scannedMembers) {
+		users = append(users, &ClusterRow{
+			ID:            scannedID,
+			Name:          scannedName,
+			CreatorID:     scannedCreatorID,
+			CreatorEmail:  scannedCreatorEmail,
+			DataRetention: scannedDataRetention,
+			Members:       scannedMembers,
+		})
+	}
+	if err := iter.Close(); err != nil {
+		err = fmt.Errorf("%v. Query: %v", err.Error(), query)
+		logrus.WithFields(logrus.Fields{"Method": "Cluster.All"}).Error(err)
+
+		return nil, err
+	}
+	return users, err
 }
 
 // AllSplitToDaemons returns all rows divided into daemons equally.
-func (c *Cluster) AllSplitToDaemons(tx *sqlx.Tx, daemons []string) (map[string][]*ClusterRow, error) {
-	rows, err := c.All(tx)
+func (c *Cluster) AllSplitToDaemons(daemons []string) (map[string][]*ClusterRow, error) {
+	rows, err := c.All()
 	if err != nil {
 		return nil, err
 	}
@@ -219,23 +255,19 @@ func (c *Cluster) AllSplitToDaemons(tx *sqlx.Tx, daemons []string) (map[string][
 }
 
 // UpdateMember adds or updates cluster member information.
-func (c *Cluster) UpdateMember(tx *sqlx.Tx, id int64, user *shared.UserRow, level string, enabled bool) error {
-	clusterRow, err := c.GetByID(tx, id)
-	if err != nil {
-		return err
-	}
-
-	members := make([]ClusterMember, 0)
-	err = clusterRow.Members.Unmarshal(&members)
+func (c *Cluster) UpdateMember(id int64, user *shared.UserRow, level string, enabled bool) error {
+	clusterRow, err := c.GetByID(id)
 	if err != nil {
 		return err
 	}
 
 	foundExisting := false
 
+	members := clusterRow.GetMembers()
+
 	for i, member := range members {
 		if member.ID == user.ID {
-			memberReplacement := ClusterMember{}
+			memberReplacement := shared.ClusterMember{}
 			memberReplacement.ID = member.ID
 			memberReplacement.Email = user.Email
 			memberReplacement.Level = level
@@ -248,7 +280,7 @@ func (c *Cluster) UpdateMember(tx *sqlx.Tx, id int64, user *shared.UserRow, leve
 	}
 
 	if !foundExisting {
-		member := ClusterMember{}
+		member := shared.ClusterMember{}
 		member.ID = int64(user.ID)
 		member.Email = user.Email
 		member.Level = level
@@ -265,25 +297,22 @@ func (c *Cluster) UpdateMember(tx *sqlx.Tx, id int64, user *shared.UserRow, leve
 	data := make(map[string]interface{})
 	data["members"] = membersJSON
 
-	_, err = c.UpdateByID(tx, data, id)
+	// TODO: implement this
+	// _, err = c.UpdateByID(tx, data, id)
 
 	return err
 }
 
 // RemoveMember from a cluster.
-func (c *Cluster) RemoveMember(tx *sqlx.Tx, id int64, user *shared.UserRow) error {
-	clusterRow, err := c.GetByID(tx, id)
+func (c *Cluster) RemoveMember(id int64, user *shared.UserRow) error {
+	clusterRow, err := c.GetByID(id)
 	if err != nil {
 		return err
 	}
 
-	members := make([]ClusterMember, 0)
-	err = clusterRow.Members.Unmarshal(&members)
-	if err != nil {
-		return err
-	}
+	members := clusterRow.GetMembers()
 
-	newMembers := make([]ClusterMember, 0)
+	newMembers := make([]shared.ClusterMember, 0)
 
 	for _, member := range members {
 		if member.ID != user.ID {
@@ -299,7 +328,8 @@ func (c *Cluster) RemoveMember(tx *sqlx.Tx, id int64, user *shared.UserRow) erro
 	data := make(map[string]interface{})
 	data["members"] = newMembersJSON
 
-	_, err = c.UpdateByID(tx, data, id)
+	// TODO: implement this
+	// _, err = c.UpdateByID(tx, data, id)
 
 	return err
 }

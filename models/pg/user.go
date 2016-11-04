@@ -10,6 +10,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 
 	"github.com/resourced/resourced-master/libstring"
+	"github.com/resourced/resourced-master/models/shared"
 )
 
 func NewUser(ctx context.Context) *User {
@@ -22,19 +23,11 @@ func NewUser(ctx context.Context) *User {
 	return user
 }
 
-type UserRow struct {
-	ID                     int64          `db:"id"`
-	Email                  string         `db:"email"`
-	Password               string         `db:"password"`
-	EmailVerificationToken sql.NullString `db:"email_verification_token"`
-	EmailVerified          bool           `db:"email_verified"`
-}
-
 type User struct {
 	Base
 }
 
-func (u *User) userRowFromSqlResult(tx *sqlx.Tx, sqlResult sql.Result) (*UserRow, error) {
+func (u *User) userRowFromSqlResult(tx *sqlx.Tx, sqlResult sql.Result) (*shared.UserRow, error) {
 	userId, err := sqlResult.LastInsertId()
 	if err != nil {
 		return nil, err
@@ -44,13 +37,13 @@ func (u *User) userRowFromSqlResult(tx *sqlx.Tx, sqlResult sql.Result) (*UserRow
 }
 
 // AllUsers returns all user rows.
-func (u *User) AllUsers(tx *sqlx.Tx) ([]*UserRow, error) {
+func (u *User) AllUsers(tx *sqlx.Tx) ([]*shared.UserRow, error) {
 	pgdb, err := u.GetPGDB()
 	if err != nil {
 		return nil, err
 	}
 
-	users := []*UserRow{}
+	users := []*shared.UserRow{}
 	query := fmt.Sprintf("SELECT * FROM %v", u.table)
 	err = pgdb.Select(&users, query)
 
@@ -58,13 +51,13 @@ func (u *User) AllUsers(tx *sqlx.Tx) ([]*UserRow, error) {
 }
 
 // GetByID returns record by id.
-func (u *User) GetByID(tx *sqlx.Tx, id int64) (*UserRow, error) {
+func (u *User) GetByID(tx *sqlx.Tx, id int64) (*shared.UserRow, error) {
 	pgdb, err := u.GetPGDB()
 	if err != nil {
 		return nil, err
 	}
 
-	user := &UserRow{}
+	user := &shared.UserRow{}
 	query := fmt.Sprintf("SELECT * FROM %v WHERE id=$1", u.table)
 	err = pgdb.Get(user, query, id)
 
@@ -72,13 +65,13 @@ func (u *User) GetByID(tx *sqlx.Tx, id int64) (*UserRow, error) {
 }
 
 // GetByEmail returns record by email.
-func (u *User) GetByEmail(tx *sqlx.Tx, email string) (*UserRow, error) {
+func (u *User) GetByEmail(tx *sqlx.Tx, email string) (*shared.UserRow, error) {
 	pgdb, err := u.GetPGDB()
 	if err != nil {
 		return nil, err
 	}
 
-	user := &UserRow{}
+	user := &shared.UserRow{}
 	query := fmt.Sprintf("SELECT * FROM %v WHERE email=$1", u.table)
 	err = pgdb.Get(user, query, email)
 
@@ -86,13 +79,13 @@ func (u *User) GetByEmail(tx *sqlx.Tx, email string) (*UserRow, error) {
 }
 
 // GetByEmailVerificationToken returns record by email_verification_token.
-func (u *User) GetByEmailVerificationToken(tx *sqlx.Tx, emailVerificationToken string) (*UserRow, error) {
+func (u *User) GetByEmailVerificationToken(tx *sqlx.Tx, emailVerificationToken string) (*shared.UserRow, error) {
 	pgdb, err := u.GetPGDB()
 	if err != nil {
 		return nil, err
 	}
 
-	user := &UserRow{}
+	user := &shared.UserRow{}
 	query := fmt.Sprintf("SELECT * FROM %v WHERE email_verification_token=$1", u.table)
 	err = pgdb.Get(user, query, emailVerificationToken)
 
@@ -100,7 +93,7 @@ func (u *User) GetByEmailVerificationToken(tx *sqlx.Tx, emailVerificationToken s
 }
 
 // GetByEmail returns record by email but checks password first.
-func (u *User) GetUserByEmailAndPassword(tx *sqlx.Tx, email, password string) (*UserRow, error) {
+func (u *User) GetUserByEmailAndPassword(tx *sqlx.Tx, email, password string) (*shared.UserRow, error) {
 	user, err := u.GetByEmail(tx, email)
 	if err != nil {
 		return nil, err
@@ -115,7 +108,7 @@ func (u *User) GetUserByEmailAndPassword(tx *sqlx.Tx, email, password string) (*
 }
 
 // SignupRandomPassword create a new record of user with random password.
-func (u *User) SignupRandomPassword(tx *sqlx.Tx, email string) (*UserRow, error) {
+func (u *User) SignupRandomPassword(tx *sqlx.Tx, email string) (*shared.UserRow, error) {
 	password, _ := libstring.GeneratePassword(32)
 	passwordAgain := password
 
@@ -123,7 +116,7 @@ func (u *User) SignupRandomPassword(tx *sqlx.Tx, email string) (*UserRow, error)
 }
 
 // Signup create a new record of user.
-func (u *User) Signup(tx *sqlx.Tx, email, password, passwordAgain string) (*UserRow, error) {
+func (u *User) Signup(tx *sqlx.Tx, email, password, passwordAgain string) (*shared.UserRow, error) {
 	if email == "" {
 		return nil, errors.New("Email cannot be blank.")
 	}
@@ -158,7 +151,7 @@ func (u *User) Signup(tx *sqlx.Tx, email, password, passwordAgain string) (*User
 }
 
 // UpdateEmailAndPasswordByID updates user email and password.
-func (u *User) UpdateEmailAndPasswordByID(tx *sqlx.Tx, userId int64, email, password, passwordAgain string) (*UserRow, error) {
+func (u *User) UpdateEmailAndPasswordByID(tx *sqlx.Tx, userId int64, email, password, passwordAgain string) (*shared.UserRow, error) {
 	data := make(map[string]interface{})
 
 	if email != "" {
@@ -185,7 +178,7 @@ func (u *User) UpdateEmailAndPasswordByID(tx *sqlx.Tx, userId int64, email, pass
 }
 
 // UpdateEmailVerification acknowledge email verification.
-func (u *User) UpdateEmailVerification(tx *sqlx.Tx, emailVerificationToken string) (*UserRow, error) {
+func (u *User) UpdateEmailVerification(tx *sqlx.Tx, emailVerificationToken string) (*shared.UserRow, error) {
 	if emailVerificationToken == "" {
 		return nil, errors.New("Token cannot be empty")
 	}

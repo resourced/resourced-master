@@ -5,10 +5,11 @@ import (
 
 	"github.com/resourced/resourced-master/libhttp"
 	"github.com/resourced/resourced-master/models/pg"
+	"github.com/resourced/resourced-master/models/shared"
 )
 
 func PostAccessTokens(w http.ResponseWriter, r *http.Request) {
-	currentUser := r.Context().Value("currentUser").(*pg.UserRow)
+	currentUser := r.Context().Value("currentUser").(*shared.UserRow)
 
 	clusterID, err := getInt64SlugFromPath(w, r, "clusterID")
 	if err != nil {

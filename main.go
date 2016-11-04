@@ -13,6 +13,7 @@ import (
 
 	"github.com/resourced/resourced-master/application"
 	"github.com/resourced/resourced-master/models/pg"
+	"github.com/resourced/resourced-master/models/shared"
 )
 
 var (
@@ -30,7 +31,7 @@ var (
 )
 
 func init() {
-	gob.Register(&pg.UserRow{})
+	gob.Register(&shared.UserRow{})
 	gob.Register(&pg.ClusterRow{})
 }
 

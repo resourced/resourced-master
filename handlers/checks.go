@@ -17,12 +17,13 @@ import (
 	"github.com/resourced/resourced-master/libslice"
 	"github.com/resourced/resourced-master/messagebus"
 	"github.com/resourced/resourced-master/models/pg"
+	"github.com/resourced/resourced-master/models/shared"
 )
 
 func GetChecks(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html")
 
-	currentUser := r.Context().Value("currentUser").(*pg.UserRow)
+	currentUser := r.Context().Value("currentUser").(*shared.UserRow)
 
 	currentCluster := r.Context().Value("currentCluster").(*pg.ClusterRow)
 
@@ -80,7 +81,7 @@ func GetChecks(w http.ResponseWriter, r *http.Request) {
 	data := struct {
 		CSRFToken      string
 		Addr           string
-		CurrentUser    *pg.UserRow
+		CurrentUser    *shared.UserRow
 		AccessToken    *pg.AccessTokenRow
 		Clusters       []*pg.ClusterRow
 		CurrentCluster *pg.ClusterRow

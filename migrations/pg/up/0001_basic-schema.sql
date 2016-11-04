@@ -2,7 +2,7 @@ CREATE TABLE IF NOT EXISTS users (
     id BIGSERIAL PRIMARY KEY NOT NULL,
     email TEXT NOT NULL,
     password TEXT NOT NULL,
-    email_verification_token TEXT,
+    email_verification_token TEXT NOT NULL DEFAULT '',
     email_verified BOOLEAN NOT NULL DEFAULT FALSE
 );
 

@@ -11,12 +11,13 @@ import (
 
 	"github.com/resourced/resourced-master/libhttp"
 	"github.com/resourced/resourced-master/models/pg"
+	"github.com/resourced/resourced-master/models/shared"
 )
 
 func GetGraphs(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html")
 
-	currentUser := r.Context().Value("currentUser").(*pg.UserRow)
+	currentUser := r.Context().Value("currentUser").(*shared.UserRow)
 
 	currentCluster := r.Context().Value("currentCluster").(*pg.ClusterRow)
 
@@ -29,7 +30,7 @@ func GetGraphs(w http.ResponseWriter, r *http.Request) {
 	data := struct {
 		CSRFToken      string
 		Addr           string
-		CurrentUser    *pg.UserRow
+		CurrentUser    *shared.UserRow
 		Clusters       []*pg.ClusterRow
 		CurrentCluster *pg.ClusterRow
 		Graphs         []*pg.GraphRow
@@ -96,7 +97,7 @@ func GetPostPutDeleteGraphsID(w http.ResponseWriter, r *http.Request) {
 func GetGraphsID(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html")
 
-	currentUser := r.Context().Value("currentUser").(*pg.UserRow)
+	currentUser := r.Context().Value("currentUser").(*shared.UserRow)
 
 	currentCluster := r.Context().Value("currentCluster").(*pg.ClusterRow)
 
@@ -168,7 +169,7 @@ func GetGraphsID(w http.ResponseWriter, r *http.Request) {
 	data := struct {
 		CSRFToken      string
 		Addr           string
-		CurrentUser    *pg.UserRow
+		CurrentUser    *shared.UserRow
 		AccessToken    *pg.AccessTokenRow
 		Clusters       []*pg.ClusterRow
 		CurrentCluster *pg.ClusterRow

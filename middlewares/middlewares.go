@@ -14,6 +14,7 @@ import (
 
 	"github.com/resourced/resourced-master/libhttp"
 	"github.com/resourced/resourced-master/models/pg"
+	"github.com/resourced/resourced-master/models/shared"
 )
 
 // CSRFMiddleware is a constructor that creates github.com/gorilla/csrf.CSRF struct
@@ -53,7 +54,7 @@ func SetClusters(next http.Handler) http.Handler {
 			return
 		}
 
-		userRow := userRowInterface.(*pg.UserRow)
+		userRow := userRowInterface.(*shared.UserRow)
 
 		var clusterRows []*pg.ClusterRow
 		var err error
@@ -144,7 +145,7 @@ func MustLogin(next http.Handler) http.Handler {
 			return
 		}
 
-		r = r.WithContext(context.WithValue(r.Context(), "currentUser", userRowInterface.(*pg.UserRow)))
+		r = r.WithContext(context.WithValue(r.Context(), "currentUser", userRowInterface.(*shared.UserRow)))
 
 		next.ServeHTTP(w, r)
 	})
@@ -252,7 +253,7 @@ func MustBeMember(next http.Handler) http.Handler {
 		}
 
 		currentCluster := currentClusterInterface.(*pg.ClusterRow)
-		currentUser := currentUserInterface.(*pg.UserRow)
+		currentUser := currentUserInterface.(*shared.UserRow)
 		foundCurrentUser := false
 
 		for _, member := range currentCluster.GetMembers() {

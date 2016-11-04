@@ -7,10 +7,11 @@ import (
 
 	"github.com/resourced/resourced-master/libhttp"
 	"github.com/resourced/resourced-master/models/pg"
+	"github.com/resourced/resourced-master/models/shared"
 )
 
 func PostSavedQueries(w http.ResponseWriter, r *http.Request) {
-	currentUser := r.Context().Value("currentUser").(*pg.UserRow)
+	currentUser := r.Context().Value("currentUser").(*shared.UserRow)
 
 	accessTokenRow, err := pg.NewAccessToken(r.Context()).GetByUserID(nil, currentUser.ID)
 	if err != nil {
@@ -47,7 +48,7 @@ func DeleteSavedQueriesID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	currentUser := r.Context().Value("currentUser").(*pg.UserRow)
+	currentUser := r.Context().Value("currentUser").(*shared.UserRow)
 
 	currentCluster := r.Context().Value("currentCluster").(*pg.ClusterRow)
 

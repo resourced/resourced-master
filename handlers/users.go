@@ -14,6 +14,8 @@ import (
 	"github.com/resourced/resourced-master/libhttp"
 	"github.com/resourced/resourced-master/mailer"
 	"github.com/resourced/resourced-master/models/pg"
+	"github.com/resourced/resourced-master/models/shared"
+	"github.com/resourced/resourced-master/models/shims"
 )
 
 func GetSignup(w http.ResponseWriter, r *http.Request) {
@@ -56,11 +58,11 @@ func PostSignup(w http.ResponseWriter, r *http.Request) {
 
 	emailValidated := false
 
-	userRow, err := pg.NewUser(r.Context()).GetByEmail(nil, email)
+	userRow, err := shims.NewUser(r.Context()).GetByEmail(email)
 
 	if err != nil && err.Error() == "sql: no rows in result set" {
 		// There's no existing user in the database, create a new one.
-		userRow, err = pg.NewUser(r.Context()).Signup(nil, email, password, passwordAgain)
+		userRow, err = shims.NewUser(r.Context()).Signup(email, password, passwordAgain)
 		if err != nil {
 			libhttp.HandleErrorHTML(w, err, 500)
 			return
@@ -81,7 +83,7 @@ func PostSignup(w http.ResponseWriter, r *http.Request) {
 		}
 
 	} else if userRow != nil {
-		if userRow.EmailVerificationToken.String != emailVerificationToken {
+		if userRow.EmailVerificationToken != emailVerificationToken {
 			libhttp.HandleErrorHTML(w, errors.New("Mismatch token"), 500)
 			return
 		}
@@ -89,14 +91,14 @@ func PostSignup(w http.ResponseWriter, r *http.Request) {
 		emailValidated = true
 
 		// There's an existing user in the database, update email and password info.
-		userRow, err = pg.NewUser(r.Context()).UpdateEmailAndPasswordByID(nil, userRow.ID, email, password, passwordAgain)
+		userRow, err = shims.NewUser(r.Context()).UpdateEmailAndPasswordByID(userRow.ID, email, password, passwordAgain)
 		if err != nil {
 			libhttp.HandleErrorHTML(w, err, 500)
 			return
 		}
 
 		// Verified that emailVerificationToken works.
-		_, err = pg.NewUser(r.Context()).UpdateEmailVerification(nil, emailVerificationToken)
+		_, err = shims.NewUser(r.Context()).UpdateEmailVerification(emailVerificationToken)
 		if err != nil {
 			libhttp.HandleErrorHTML(w, err, 500)
 			return
@@ -105,11 +107,11 @@ func PostSignup(w http.ResponseWriter, r *http.Request) {
 
 	// Send email verification if needed
 	if !emailValidated {
-		go func(userRow *pg.UserRow) {
-			if userRow.EmailVerificationToken.String != "" {
+		go func(userRow *shared.UserRow) {
+			if userRow.EmailVerificationToken != "" {
 				mailer := r.Context().Value("mailer.GeneralConfig").(*mailer.Mailer)
 
-				url := fmt.Sprintf("%v://%v/users/email-verification/%v", generalConfig.VIPProtocol, generalConfig.VIPAddr, userRow.EmailVerificationToken.String)
+				url := fmt.Sprintf("%v://%v/users/email-verification/%v", generalConfig.VIPProtocol, generalConfig.VIPAddr, userRow.EmailVerificationToken)
 
 				body := fmt.Sprintf("Click the following link to verify your email address:\n\n%v", url)
 
@@ -160,9 +162,9 @@ func PostLogin(w http.ResponseWriter, r *http.Request) {
 	email := r.FormValue("Email")
 	password := r.FormValue("Password")
 
-	u := pg.NewUser(r.Context())
+	u := shims.NewUser(r.Context())
 
-	user, err := u.GetUserByEmailAndPassword(nil, email, password)
+	user, err := u.GetUserByEmailAndPassword(email, password)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
@@ -202,7 +204,7 @@ func PutUsersID(w http.ResponseWriter, r *http.Request) {
 
 	session, _ := cookieStore.Get(r, "resourcedmaster-session")
 
-	currentUser := session.Values["user"].(*pg.UserRow)
+	currentUser := session.Values["user"].(*shared.UserRow)
 
 	if currentUser.ID != userId {
 		err := errors.New("Modifying other user is not allowed.")
@@ -214,9 +216,9 @@ func PutUsersID(w http.ResponseWriter, r *http.Request) {
 	password := r.FormValue("Password")
 	passwordAgain := r.FormValue("PasswordAgain")
 
-	u := pg.NewUser(r.Context())
+	u := shims.NewUser(r.Context())
 
-	currentUser, err = u.UpdateEmailAndPasswordByID(nil, currentUser.ID, email, password, passwordAgain)
+	currentUser, err = u.UpdateEmailAndPasswordByID(currentUser.ID, email, password, passwordAgain)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
@@ -245,7 +247,7 @@ func GetUsersEmailVerificationToken(w http.ResponseWriter, r *http.Request) {
 
 	emailVerificationToken := chi.URLParam(r, "token")
 
-	_, err := pg.NewUser(r.Context()).UpdateEmailVerification(nil, emailVerificationToken)
+	_, err := shims.NewUser(r.Context()).UpdateEmailVerification(emailVerificationToken)
 	if err != nil {
 		libhttp.HandleErrorHTML(w, err, 500)
 		return
