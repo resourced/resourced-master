@@ -39,12 +39,12 @@ func (u *User) GetPGDB() (*sqlx.DB, error) {
 	return pgdbs.Core, nil
 }
 
-func (u *User) AllUsers() (interface{}, error) {
+func (u *User) All() (interface{}, error) {
 	if u.GetDBType() == "pg" {
-		return pg.NewUser(u.AppContext).AllUsers(nil)
+		return pg.NewUser(u.AppContext).All(nil)
 
 	} else if u.GetDBType() == "cassandra" {
-		return cassandra.NewUser(u.AppContext).AllUsers()
+		return cassandra.NewUser(u.AppContext).All()
 	}
 
 	return nil, fmt.Errorf("Unrecognized DBType, valid options are: pg or cassandra")

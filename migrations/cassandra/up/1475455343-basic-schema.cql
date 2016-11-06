@@ -14,14 +14,13 @@ CREATE TABLE IF NOT EXISTS clusters (
     name text,
     creator_id bigint,
     creator_email text,
-    data_retention text,
-    members text
+    data_retention map<text, int>,
+    members list<text>
 );
 
 CREATE INDEX IF NOT EXISTS idx_clusters_name on clusters (name);
 CREATE INDEX IF NOT EXISTS idx_clusters_creator_id on clusters (creator_id);
 CREATE INDEX IF NOT EXISTS idx_clusters_creator_email on clusters (creator_email);
-CREATE INDEX IF NOT EXISTS idx_clusters_members ON clusters (members);
 
 CREATE TABLE IF NOT EXISTS access_tokens (
     id bigint primary key,

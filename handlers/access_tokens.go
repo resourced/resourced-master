@@ -4,11 +4,12 @@ import (
 	"net/http"
 
 	"github.com/resourced/resourced-master/libhttp"
-	"github.com/resourced/resourced-master/models/pg"
+	"github.com/resourced/resourced-master/models/cassandra"
+	"github.com/resourced/resourced-master/models/shared"
 )
 
 func PostAccessTokens(w http.ResponseWriter, r *http.Request) {
-	currentUser := r.Context().Value("currentUser").(*pg.UserRow)
+	currentUser := r.Context().Value("currentUser").(*shared.UserRow)
 
 	clusterID, err := getInt64SlugFromPath(w, r, "clusterID")
 	if err != nil {
@@ -18,7 +19,7 @@ func PostAccessTokens(w http.ResponseWriter, r *http.Request) {
 
 	level := r.FormValue("Level")
 
-	_, err = pg.NewAccessToken(r.Context()).Create(nil, currentUser.ID, clusterID, level)
+	_, err = cassandra.NewAccessToken(r.Context()).Create(currentUser.ID, clusterID, level)
 	if err != nil {
 		libhttp.HandleErrorHTML(w, err, 500)
 		return
@@ -36,10 +37,7 @@ func PostAccessTokensLevel(w http.ResponseWriter, r *http.Request) {
 
 	level := r.FormValue("Level")
 
-	data := make(map[string]interface{})
-	data["level"] = level
-
-	_, err = pg.NewAccessToken(r.Context()).UpdateByID(nil, data, tokenID)
+	err = cassandra.NewAccessToken(r.Context()).UpdateLevelByID(tokenID, level)
 	if err != nil {
 		libhttp.HandleErrorHTML(w, err, 500)
 		return
@@ -55,20 +53,17 @@ func PostAccessTokensEnabled(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	at := pg.NewAccessToken(r.Context())
+	at := cassandra.NewAccessToken(r.Context())
 
-	accessTokenRow, err := at.GetByID(nil, tokenID)
+	accessTokenRow, err := at.GetByID(tokenID)
 	if err != nil {
 		libhttp.HandleErrorHTML(w, err, 500)
 		return
 	}
 
-	data := make(map[string]interface{})
-	data["enabled"] = !accessTokenRow.Enabled
-
-	_, err = at.UpdateByID(nil, data, tokenID)
+	err = at.UpdateEnabledByID(tokenID, !accessTokenRow.Enabled)
 	if err != nil {
-		libhttp.HandleErrorJson(w, err)
+		libhttp.HandleErrorHTML(w, err, 500)
 		return
 	}
 
@@ -82,7 +77,7 @@ func PostAccessTokensDelete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err = pg.NewAccessToken(r.Context()).DeleteByID(nil, tokenID)
+	err = cassandra.NewAccessToken(r.Context()).DeleteByID(tokenID)
 	if err != nil {
 		libhttp.HandleErrorHTML(w, err, 500)
 		return

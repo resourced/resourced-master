@@ -43,8 +43,8 @@ func (u *User) userRowFromSqlResult(tx *sqlx.Tx, sqlResult sql.Result) (*UserRow
 	return u.GetByID(tx, userId)
 }
 
-// AllUsers returns all user rows.
-func (u *User) AllUsers(tx *sqlx.Tx) ([]*UserRow, error) {
+// All returns all user rows.
+func (u *User) All(tx *sqlx.Tx) ([]*UserRow, error) {
 	pgdb, err := u.GetPGDB()
 	if err != nil {
 		return nil, err

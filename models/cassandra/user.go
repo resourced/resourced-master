@@ -6,10 +6,8 @@ import (
 	"fmt"
 
 	"github.com/Sirupsen/logrus"
-	"github.com/gocql/gocql"
 	"golang.org/x/crypto/bcrypt"
 
-	"github.com/resourced/resourced-master/contexthelper"
 	"github.com/resourced/resourced-master/libstring"
 	"github.com/resourced/resourced-master/models/shared"
 )
@@ -27,23 +25,23 @@ type User struct {
 	Base
 }
 
-func (u *User) GetCassandraSession() (*gocql.Session, error) {
-	cassandradbs, err := contexthelper.GetCassandraDBConfig(u.AppContext)
-	if err != nil {
-		return nil, err
-	}
+// func (u *User) GetCassandraSession() (*gocql.Session, error) {
+// 	cassandradbs, err := contexthelper.GetCassandraDBConfig(u.AppContext)
+// 	if err != nil {
+// 		return nil, err
+// 	}
 
-	return cassandradbs.CoreSession, nil
-}
+// 	return cassandradbs.CoreSession, nil
+// }
 
-// AllUsers returns all user rows.
-func (u *User) AllUsers() ([]*shared.UserRow, error) {
+// All returns all user rows.
+func (u *User) All() ([]*shared.UserRow, error) {
 	session, err := u.GetCassandraSession()
 	if err != nil {
 		return nil, err
 	}
 
-	users := []*shared.UserRow{}
+	rows := []*shared.UserRow{}
 
 	query := fmt.Sprintf(`SELECT id, email, password, email_verification_token, email_verified FROM %v`, u.table)
 
@@ -53,7 +51,7 @@ func (u *User) AllUsers() ([]*shared.UserRow, error) {
 
 	iter := session.Query(query).Iter()
 	for iter.Scan(&scannedID, &scannedEmail, &scannedPassword, &scannedEmailVerificationToken, &scannedEmailVerified) {
-		users = append(users, &shared.UserRow{
+		rows = append(rows, &shared.UserRow{
 			ID:                     scannedID,
 			Email:                  scannedEmail,
 			Password:               scannedPassword,
@@ -63,11 +61,11 @@ func (u *User) AllUsers() ([]*shared.UserRow, error) {
 	}
 	if err := iter.Close(); err != nil {
 		err = fmt.Errorf("%v. Query: %v", err.Error(), query)
-		logrus.WithFields(logrus.Fields{"Method": "User.AllUsers"}).Error(err)
+		logrus.WithFields(logrus.Fields{"Method": "User.All"}).Error(err)
 
 		return nil, err
 	}
-	return users, err
+	return rows, err
 }
 
 // GetByID returns record by id.
@@ -88,7 +86,7 @@ func (u *User) GetByID(id int64) (*shared.UserRow, error) {
 		return nil, err
 	}
 
-	user := &shared.UserRow{
+	row := &shared.UserRow{
 		ID:                     scannedID,
 		Email:                  scannedEmail,
 		Password:               scannedPassword,
@@ -96,7 +94,7 @@ func (u *User) GetByID(id int64) (*shared.UserRow, error) {
 		EmailVerified:          scannedEmailVerified,
 	}
 
-	return user, nil
+	return row, nil
 }
 
 // GetByEmail returns record by email.

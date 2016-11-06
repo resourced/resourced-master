@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"html/template"
@@ -14,23 +13,24 @@ import (
 
 	"github.com/resourced/resourced-master/libhttp"
 	"github.com/resourced/resourced-master/mailer"
-	"github.com/resourced/resourced-master/models/pg"
+	"github.com/resourced/resourced-master/models/cassandra"
+	"github.com/resourced/resourced-master/models/shared"
 )
 
 // GetClusters displays the /clusters UI.
 func GetClusters(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html")
 
-	currentUser := r.Context().Value("currentUser").(*pg.UserRow)
+	currentUser := r.Context().Value("currentUser").(*shared.UserRow)
 
-	clusters := r.Context().Value("clusters").([]*pg.ClusterRow)
+	clusters := r.Context().Value("clusters").([]*cassandra.ClusterRow)
 
-	currentCluster := r.Context().Value("currentCluster").(*pg.ClusterRow)
+	currentCluster := r.Context().Value("currentCluster").(*cassandra.ClusterRow)
 
-	accessTokens := make(map[int64][]*pg.AccessTokenRow)
+	accessTokens := make(map[int64][]*cassandra.AccessTokenRow)
 
 	for _, cluster := range clusters {
-		accessTokensSlice, err := pg.NewAccessToken(r.Context()).AllByClusterID(nil, cluster.ID)
+		accessTokensSlice, err := cassandra.NewAccessToken(r.Context()).AllByClusterID(cluster.ID)
 		if err != nil {
 			libhttp.HandleErrorHTML(w, err, 500)
 			return
@@ -41,10 +41,10 @@ func GetClusters(w http.ResponseWriter, r *http.Request) {
 
 	data := struct {
 		CSRFToken      string
-		CurrentUser    *pg.UserRow
-		Clusters       []*pg.ClusterRow
-		CurrentCluster *pg.ClusterRow
-		AccessTokens   map[int64][]*pg.AccessTokenRow
+		CurrentUser    *shared.UserRow
+		Clusters       []*cassandra.ClusterRow
+		CurrentCluster *cassandra.ClusterRow
+		AccessTokens   map[int64][]*cassandra.AccessTokenRow
 	}{
 		csrf.Token(r),
 		currentUser,
@@ -72,9 +72,9 @@ func GetClusters(w http.ResponseWriter, r *http.Request) {
 
 // PostClusters creates a new cluster.
 func PostClusters(w http.ResponseWriter, r *http.Request) {
-	currentUser := r.Context().Value("currentUser").(*pg.UserRow)
+	currentUser := r.Context().Value("currentUser").(*shared.UserRow)
 
-	_, err := pg.NewCluster(r.Context()).Create(nil, currentUser, r.FormValue("Name"))
+	_, err := cassandra.NewCluster(r.Context()).Create(currentUser, r.FormValue("Name"))
 	if err != nil {
 		libhttp.HandleErrorHTML(w, err, 500)
 		return
@@ -95,7 +95,7 @@ func PostClusterIDCurrent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	clusterRows := r.Context().Value("clusters").([]*pg.ClusterRow)
+	clusterRows := r.Context().Value("clusters").([]*cassandra.ClusterRow)
 	for _, clusterRow := range clusterRows {
 		if clusterRow.ID == clusterID {
 			session.Values["currentCluster"] = clusterRow
@@ -152,17 +152,7 @@ func PutClusterID(w http.ResponseWriter, r *http.Request) {
 		dataRetention[table] = int(dataRetentionValue)
 	}
 
-	dataRetentionJSON, err := json.Marshal(dataRetention)
-	if err != nil {
-		libhttp.HandleErrorJson(w, err)
-		return
-	}
-
-	data := make(map[string]interface{})
-	data["name"] = name
-	data["data_retention"] = dataRetentionJSON
-
-	_, err = pg.NewCluster(r.Context()).UpdateByID(nil, data, clusterID)
+	err = cassandra.NewCluster(r.Context()).UpdateNameAndDataRetentionByID(clusterID, name, dataRetention)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
@@ -179,11 +169,11 @@ func DeleteClusterID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	currentUser := r.Context().Value("currentUser").(*pg.UserRow)
+	currentUser := r.Context().Value("currentUser").(*shared.UserRow)
 
-	cluster := pg.NewCluster(r.Context())
+	cluster := cassandra.NewCluster(r.Context())
 
-	clustersByUser, err := cluster.AllByUserID(nil, currentUser.ID)
+	clustersByUser, err := cluster.AllByUserID(currentUser.ID)
 	if err != nil {
 		libhttp.HandleErrorHTML(w, err, 500)
 		return
@@ -194,7 +184,7 @@ func DeleteClusterID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err = cluster.DeleteByID(nil, clusterID)
+	err = cluster.DeleteByID(clusterID)
 	if err != nil {
 		libhttp.HandleErrorHTML(w, err, 500)
 		return
@@ -233,19 +223,19 @@ func PutClusterIDUsers(w http.ResponseWriter, r *http.Request) {
 		enabled = true
 	}
 
-	userRow, err := pg.NewUser(r.Context()).GetByEmail(nil, email)
+	userRow, err := cassandra.NewUser(r.Context()).GetByEmail(email)
 	if err != nil && strings.Contains(err.Error(), "no rows in result set") {
 
 		// 1. Create a user with temporary password
-		userRow, err = pg.NewUser(r.Context()).SignupRandomPassword(nil, email)
+		userRow, err = cassandra.NewUser(r.Context()).SignupRandomPassword(email)
 		if err != nil {
 			libhttp.HandleErrorHTML(w, err, 500)
 			return
 		}
 
 		// 2. Send email invite to user
-		if userRow.EmailVerificationToken.String != "" {
-			clusterRow, err := pg.NewCluster(r.Context()).GetByID(nil, clusterID)
+		if userRow.EmailVerificationToken != "" {
+			clusterRow, err := cassandra.NewCluster(r.Context()).GetByID(clusterID)
 			if err != nil {
 				libhttp.HandleErrorHTML(w, err, 500)
 				return
@@ -256,7 +246,7 @@ func PutClusterIDUsers(w http.ResponseWriter, r *http.Request) {
 			vipAddr := r.Context().Value("vipAddr").(string)
 			vipProtocol := r.Context().Value("vipProtocol").(string)
 
-			url := fmt.Sprintf("%v://%v/signup?email=%v&token=%v", vipProtocol, vipAddr, email, userRow.EmailVerificationToken.String)
+			url := fmt.Sprintf("%v://%v/signup?email=%v&token=%v", vipProtocol, vipAddr, email, userRow.EmailVerificationToken)
 
 			body := fmt.Sprintf(`ResourceD is a monitoring and alerting service.
 
@@ -269,7 +259,7 @@ Your coleague has invited you to join cluster: %v. Click the following link to s
 	}
 
 	// Add user as a member to this cluster
-	err = pg.NewCluster(r.Context()).UpdateMember(nil, clusterID, userRow, level, enabled)
+	err = cassandra.NewCluster(r.Context()).UpdateMember(clusterID, userRow, level, enabled)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
@@ -288,9 +278,9 @@ func DeleteClusterIDUsers(w http.ResponseWriter, r *http.Request) {
 
 	email := r.FormValue("Email")
 
-	existingUser, _ := pg.NewUser(r.Context()).GetByEmail(nil, email)
+	existingUser, _ := cassandra.NewUser(r.Context()).GetByEmail(email)
 	if existingUser != nil {
-		err := pg.NewCluster(r.Context()).RemoveMember(nil, clusterID, existingUser)
+		err := cassandra.NewCluster(r.Context()).RemoveMember(clusterID, existingUser)
 		if err != nil {
 			libhttp.HandleErrorHTML(w, err, 500)
 			return
