@@ -14,14 +14,13 @@ import (
 	"github.com/resourced/resourced-master/libhttp"
 	"github.com/resourced/resourced-master/mailer"
 	"github.com/resourced/resourced-master/models/cassandra"
-	"github.com/resourced/resourced-master/models/shared"
 )
 
 // GetClusters displays the /clusters UI.
 func GetClusters(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html")
 
-	currentUser := r.Context().Value("currentUser").(*shared.UserRow)
+	currentUser := r.Context().Value("currentUser").(*cassandra.UserRow)
 
 	clusters := r.Context().Value("clusters").([]*cassandra.ClusterRow)
 
@@ -41,7 +40,7 @@ func GetClusters(w http.ResponseWriter, r *http.Request) {
 
 	data := struct {
 		CSRFToken      string
-		CurrentUser    *shared.UserRow
+		CurrentUser    *cassandra.UserRow
 		Clusters       []*cassandra.ClusterRow
 		CurrentCluster *cassandra.ClusterRow
 		AccessTokens   map[int64][]*cassandra.AccessTokenRow
@@ -72,7 +71,7 @@ func GetClusters(w http.ResponseWriter, r *http.Request) {
 
 // PostClusters creates a new cluster.
 func PostClusters(w http.ResponseWriter, r *http.Request) {
-	currentUser := r.Context().Value("currentUser").(*shared.UserRow)
+	currentUser := r.Context().Value("currentUser").(*cassandra.UserRow)
 
 	_, err := cassandra.NewCluster(r.Context()).Create(currentUser, r.FormValue("Name"))
 	if err != nil {
@@ -169,7 +168,7 @@ func DeleteClusterID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	currentUser := r.Context().Value("currentUser").(*shared.UserRow)
+	currentUser := r.Context().Value("currentUser").(*cassandra.UserRow)
 
 	cluster := cassandra.NewCluster(r.Context())
 

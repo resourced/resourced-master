@@ -16,15 +16,16 @@ import (
 	"github.com/resourced/resourced-master/libhttp"
 	"github.com/resourced/resourced-master/libslice"
 	"github.com/resourced/resourced-master/messagebus"
+	"github.com/resourced/resourced-master/models/cassandra"
 	"github.com/resourced/resourced-master/models/pg"
 )
 
 func GetChecks(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html")
 
-	currentUser := r.Context().Value("currentUser").(*pg.UserRow)
+	currentUser := r.Context().Value("currentUser").(*cassandra.UserRow)
 
-	currentCluster := r.Context().Value("currentCluster").(*pg.ClusterRow)
+	currentCluster := r.Context().Value("currentCluster").(*cassandra.ClusterRow)
 
 	accessToken, err := getAccessToken(w, r, "read")
 	if err != nil {
@@ -44,13 +45,13 @@ func GetChecks(w http.ResponseWriter, r *http.Request) {
 	// --------------------------
 	// Fetch SQL rows in parallel
 	// --------------------------
-	go func(currentCluster *pg.ClusterRow) {
+	go func(currentCluster *cassandra.ClusterRow) {
 		checksWithError := &pg.CheckRowsWithError{}
 		checksWithError.Checks, checksWithError.Error = pg.NewCheck(r.Context()).AllByClusterID(nil, currentCluster.ID)
 		checksChan <- checksWithError
 	}(currentCluster)
 
-	go func(currentCluster *pg.ClusterRow) {
+	go func(currentCluster *cassandra.ClusterRow) {
 		metricsWithError := &pg.MetricRowsWithError{}
 		metricsWithError.Metrics, metricsWithError.Error = pg.NewMetric(r.Context()).AllByClusterID(nil, currentCluster.ID)
 		metricsChan <- metricsWithError
@@ -80,10 +81,10 @@ func GetChecks(w http.ResponseWriter, r *http.Request) {
 	data := struct {
 		CSRFToken      string
 		Addr           string
-		CurrentUser    *pg.UserRow
-		AccessToken    *pg.AccessTokenRow
-		Clusters       []*pg.ClusterRow
-		CurrentCluster *pg.ClusterRow
+		CurrentUser    *cassandra.UserRow
+		AccessToken    *cassandra.AccessTokenRow
+		Clusters       []*cassandra.ClusterRow
+		CurrentCluster *cassandra.ClusterRow
 		Checks         []*pg.CheckRow
 		Metrics        []*pg.MetricRow
 	}{
@@ -91,7 +92,7 @@ func GetChecks(w http.ResponseWriter, r *http.Request) {
 		r.Context().Value("Addr").(string),
 		currentUser,
 		accessToken,
-		r.Context().Value("clusters").([]*pg.ClusterRow),
+		r.Context().Value("clusters").([]*cassandra.ClusterRow),
 		currentCluster,
 		checksWithError.Checks,
 		metricsWithError.Metrics,
@@ -116,7 +117,7 @@ func GetChecks(w http.ResponseWriter, r *http.Request) {
 func PostChecks(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html")
 
-	currentCluster := r.Context().Value("currentCluster").(*pg.ClusterRow)
+	currentCluster := r.Context().Value("currentCluster").(*cassandra.ClusterRow)
 
 	errLogger, err := contexthelper.GetLogger(r.Context(), "ErrLogger")
 	if err != nil {
@@ -238,7 +239,7 @@ func DeleteCheckID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	currentCluster := r.Context().Value("currentCluster").(*pg.ClusterRow)
+	currentCluster := r.Context().Value("currentCluster").(*cassandra.ClusterRow)
 
 	_, err = pg.NewCheck(r.Context()).DeleteByClusterIDAndID(nil, currentCluster.ID, id)
 	if err != nil {
@@ -487,7 +488,7 @@ func DeleteCheckTriggerID(w http.ResponseWriter, r *http.Request) {
 func GetApiCheckIDResults(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	accessTokenRow := r.Context().Value("accessToken").(*pg.AccessTokenRow)
+	accessTokenRow := r.Context().Value("accessToken").(*cassandra.AccessTokenRow)
 
 	qParams := r.URL.Query()
 

@@ -14,6 +14,7 @@ import (
 	"github.com/nytlabs/gojsonexplode"
 
 	"github.com/resourced/resourced-master/contexthelper"
+	"github.com/resourced/resourced-master/models/cassandra"
 	"github.com/resourced/resourced-master/models/pg/querybuilder"
 )
 
@@ -282,7 +283,7 @@ func (h *Host) GetByHostname(tx *sqlx.Tx, hostname string) (*HostRow, error) {
 	return hostRow, err
 }
 
-func (h *Host) parseAgentResourcePayload(tx *sqlx.Tx, accessTokenRow *AccessTokenRow, jsonData []byte) (map[string]interface{}, error) {
+func (h *Host) parseAgentResourcePayload(tx *sqlx.Tx, accessTokenRow *cassandra.AccessTokenRow, jsonData []byte) (map[string]interface{}, error) {
 	resourcedPayload := AgentResourcePayload{}
 
 	err := json.Unmarshal(jsonData, &resourcedPayload)
@@ -312,7 +313,7 @@ func (h *Host) parseAgentResourcePayload(tx *sqlx.Tx, accessTokenRow *AccessToke
 }
 
 // CreateOrUpdate performs insert/update for one host data.
-func (h *Host) CreateOrUpdate(tx *sqlx.Tx, accessTokenRow *AccessTokenRow, jsonData []byte) (*HostRow, error) {
+func (h *Host) CreateOrUpdate(tx *sqlx.Tx, accessTokenRow *cassandra.AccessTokenRow, jsonData []byte) (*HostRow, error) {
 	data, err := h.parseAgentResourcePayload(tx, accessTokenRow, jsonData)
 	if err != nil {
 		return nil, err

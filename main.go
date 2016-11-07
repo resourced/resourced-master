@@ -12,7 +12,7 @@ import (
 	gocache "github.com/patrickmn/go-cache"
 
 	"github.com/resourced/resourced-master/application"
-	"github.com/resourced/resourced-master/models/pg"
+	"github.com/resourced/resourced-master/models/cassandra"
 )
 
 var (
@@ -30,8 +30,8 @@ var (
 )
 
 func init() {
-	gob.Register(&pg.UserRow{})
-	gob.Register(&pg.ClusterRow{})
+	gob.Register(&cassandra.UserRow{})
+	gob.Register(&cassandra.ClusterRow{})
 }
 
 func main() {
@@ -87,10 +87,10 @@ func main() {
 		}()
 
 		// Run all checks
-		app.CheckAndRunTriggers()
+		// app.CheckAndRunTriggers()
 
 		// Prune old timeseries data
-		go app.PruneAll()
+		// go app.PruneAll()
 
 		// Publish metrics to local agent, which is a graphite endpoint.
 		go func() {

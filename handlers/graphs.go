@@ -10,15 +10,16 @@ import (
 	"github.com/gorilla/csrf"
 
 	"github.com/resourced/resourced-master/libhttp"
+	"github.com/resourced/resourced-master/models/cassandra"
 	"github.com/resourced/resourced-master/models/pg"
 )
 
 func GetGraphs(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html")
 
-	currentUser := r.Context().Value("currentUser").(*pg.UserRow)
+	currentUser := r.Context().Value("currentUser").(*cassandra.UserRow)
 
-	currentCluster := r.Context().Value("currentCluster").(*pg.ClusterRow)
+	currentCluster := r.Context().Value("currentCluster").(*cassandra.ClusterRow)
 
 	graphs, err := pg.NewGraph(r.Context()).AllByClusterID(nil, currentCluster.ID)
 	if err != nil {
@@ -29,15 +30,15 @@ func GetGraphs(w http.ResponseWriter, r *http.Request) {
 	data := struct {
 		CSRFToken      string
 		Addr           string
-		CurrentUser    *pg.UserRow
-		Clusters       []*pg.ClusterRow
-		CurrentCluster *pg.ClusterRow
+		CurrentUser    *cassandra.UserRow
+		Clusters       []*cassandra.ClusterRow
+		CurrentCluster *cassandra.ClusterRow
 		Graphs         []*pg.GraphRow
 	}{
 		csrf.Token(r),
 		r.Context().Value("Addr").(string),
 		currentUser,
-		r.Context().Value("clusters").([]*pg.ClusterRow),
+		r.Context().Value("clusters").([]*cassandra.ClusterRow),
 		currentCluster,
 		graphs,
 	}
@@ -61,7 +62,7 @@ func GetGraphs(w http.ResponseWriter, r *http.Request) {
 func PostGraphs(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html")
 
-	currentCluster := r.Context().Value("currentCluster").(*pg.ClusterRow)
+	currentCluster := r.Context().Value("currentCluster").(*cassandra.ClusterRow)
 
 	name := r.FormValue("Name")
 	description := r.FormValue("Description")
@@ -96,9 +97,9 @@ func GetPostPutDeleteGraphsID(w http.ResponseWriter, r *http.Request) {
 func GetGraphsID(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html")
 
-	currentUser := r.Context().Value("currentUser").(*pg.UserRow)
+	currentUser := r.Context().Value("currentUser").(*cassandra.UserRow)
 
-	currentCluster := r.Context().Value("currentCluster").(*pg.ClusterRow)
+	currentCluster := r.Context().Value("currentCluster").(*cassandra.ClusterRow)
 
 	id, err := getInt64SlugFromPath(w, r, "id")
 	if err != nil {
@@ -124,13 +125,13 @@ func GetGraphsID(w http.ResponseWriter, r *http.Request) {
 	// --------------------------
 	// Fetch SQL rows in parallel
 	// --------------------------
-	go func(currentCluster *pg.ClusterRow, id int64) {
+	go func(currentCluster *cassandra.ClusterRow, id int64) {
 		graphsWithError := &pg.GraphRowsWithError{}
 		graphsWithError.Graphs, graphsWithError.Error = pg.NewGraph(r.Context()).AllByClusterID(nil, currentCluster.ID)
 		graphsChan <- graphsWithError
 	}(currentCluster, id)
 
-	go func(currentCluster *pg.ClusterRow) {
+	go func(currentCluster *cassandra.ClusterRow) {
 		metricsWithError := &pg.MetricRowsWithError{}
 		metricsWithError.Metrics, metricsWithError.Error = pg.NewMetric(r.Context()).AllByClusterID(nil, currentCluster.ID)
 		metricsChan <- metricsWithError
@@ -168,10 +169,10 @@ func GetGraphsID(w http.ResponseWriter, r *http.Request) {
 	data := struct {
 		CSRFToken      string
 		Addr           string
-		CurrentUser    *pg.UserRow
-		AccessToken    *pg.AccessTokenRow
-		Clusters       []*pg.ClusterRow
-		CurrentCluster *pg.ClusterRow
+		CurrentUser    *cassandra.UserRow
+		AccessToken    *cassandra.AccessTokenRow
+		Clusters       []*cassandra.ClusterRow
+		CurrentCluster *cassandra.ClusterRow
 		CurrentGraph   *pg.GraphRow
 		Graphs         []*pg.GraphRow
 		Metrics        []*pg.MetricRow
@@ -180,7 +181,7 @@ func GetGraphsID(w http.ResponseWriter, r *http.Request) {
 		r.Context().Value("Addr").(string),
 		currentUser,
 		accessToken,
-		r.Context().Value("clusters").([]*pg.ClusterRow),
+		r.Context().Value("clusters").([]*cassandra.ClusterRow),
 		currentCluster,
 		currentGraph,
 		graphsWithError.Graphs,
@@ -250,7 +251,7 @@ func PutGraphsID(w http.ResponseWriter, r *http.Request) {
 }
 
 func DeleteGraphsID(w http.ResponseWriter, r *http.Request) {
-	currentCluster := r.Context().Value("currentCluster").(*pg.ClusterRow)
+	currentCluster := r.Context().Value("currentCluster").(*cassandra.ClusterRow)
 
 	id, err := getInt64SlugFromPath(w, r, "id")
 	if err != nil {
@@ -270,7 +271,7 @@ func DeleteGraphsID(w http.ResponseWriter, r *http.Request) {
 func PutApiGraphsIDMetrics(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	accessTokenRow := r.Context().Value("accessToken").(*pg.AccessTokenRow)
+	accessTokenRow := r.Context().Value("accessToken").(*cassandra.AccessTokenRow)
 
 	id, err := getInt64SlugFromPath(w, r, "id")
 	if err != nil {

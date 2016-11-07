@@ -15,6 +15,7 @@ import (
 
 	"github.com/resourced/resourced-master/contexthelper"
 	"github.com/resourced/resourced-master/libhttp"
+	"github.com/resourced/resourced-master/models/cassandra"
 	"github.com/resourced/resourced-master/models/pg"
 	"github.com/resourced/resourced-master/models/shims"
 )
@@ -22,9 +23,9 @@ import (
 func GetHosts(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html")
 
-	currentUser := r.Context().Value("currentUser").(*pg.UserRow)
+	currentUser := r.Context().Value("currentUser").(*cassandra.UserRow)
 
-	currentCluster := r.Context().Value("currentCluster").(*pg.ClusterRow)
+	currentCluster := r.Context().Value("currentCluster").(*cassandra.ClusterRow)
 
 	query := r.URL.Query().Get("q")
 
@@ -45,21 +46,21 @@ func GetHosts(w http.ResponseWriter, r *http.Request) {
 	hostsChan := make(chan *pg.HostRowsWithError)
 	defer close(hostsChan)
 
-	savedQueriesChan := make(chan *pg.SavedQueryRowsWithError)
+	savedQueriesChan := make(chan *cassandra.SavedQueryRowsWithError)
 	defer close(savedQueriesChan)
 
 	// --------------------------
 	// Fetch SQL rows in parallel
 	// --------------------------
-	go func(currentCluster *pg.ClusterRow, query string) {
+	go func(currentCluster *cassandra.ClusterRow, query string) {
 		hostsWithError := &pg.HostRowsWithError{}
 		hostsWithError.Hosts, hostsWithError.Error = pg.NewHost(r.Context(), currentCluster.ID).AllCompactByClusterIDQueryAndUpdatedInterval(nil, currentCluster.ID, query, interval)
 		hostsChan <- hostsWithError
 	}(currentCluster, query)
 
-	go func(currentCluster *pg.ClusterRow) {
-		savedQueriesWithError := &pg.SavedQueryRowsWithError{}
-		savedQueriesWithError.SavedQueries, savedQueriesWithError.Error = pg.NewSavedQuery(r.Context()).AllByClusterIDAndType(nil, currentCluster.ID, "hosts")
+	go func(currentCluster *cassandra.ClusterRow) {
+		savedQueriesWithError := &cassandra.SavedQueryRowsWithError{}
+		savedQueriesWithError.SavedQueries, savedQueriesWithError.Error = cassandra.NewSavedQuery(r.Context()).AllByClusterIDAndType(currentCluster.ID, "hosts")
 		savedQueriesChan <- savedQueriesWithError
 	}(currentCluster)
 
@@ -87,18 +88,18 @@ func GetHosts(w http.ResponseWriter, r *http.Request) {
 	data := struct {
 		CSRFToken      string
 		Addr           string
-		CurrentUser    *pg.UserRow
-		AccessToken    *pg.AccessTokenRow
-		Clusters       []*pg.ClusterRow
-		CurrentCluster *pg.ClusterRow
+		CurrentUser    *cassandra.UserRow
+		AccessToken    *cassandra.AccessTokenRow
+		Clusters       []*cassandra.ClusterRow
+		CurrentCluster *cassandra.ClusterRow
 		Hosts          []*pg.HostRow
-		SavedQueries   []*pg.SavedQueryRow
+		SavedQueries   []*cassandra.SavedQueryRow
 	}{
 		csrf.Token(r),
 		r.Context().Value("Addr").(string),
 		currentUser,
 		accessToken,
-		r.Context().Value("clusters").([]*pg.ClusterRow),
+		r.Context().Value("clusters").([]*cassandra.ClusterRow),
 		currentCluster,
 		hostsWithError.Hosts,
 		savedQueriesWithError.SavedQueries,
@@ -123,9 +124,9 @@ func GetHosts(w http.ResponseWriter, r *http.Request) {
 func GetHostsID(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html")
 
-	currentUser := r.Context().Value("currentUser").(*pg.UserRow)
+	currentUser := r.Context().Value("currentUser").(*cassandra.UserRow)
 
-	currentCluster := r.Context().Value("currentCluster").(*pg.ClusterRow)
+	currentCluster := r.Context().Value("currentCluster").(*cassandra.ClusterRow)
 
 	id, err := getInt64SlugFromPath(w, r, "id")
 	if err != nil {
@@ -148,7 +149,7 @@ func GetHostsID(w http.ResponseWriter, r *http.Request) {
 	// -----------------------------------
 	// Create channels to receive SQL rows
 	// -----------------------------------
-	savedQueriesChan := make(chan *pg.SavedQueryRowsWithError)
+	savedQueriesChan := make(chan *cassandra.SavedQueryRowsWithError)
 	defer close(savedQueriesChan)
 
 	metricsMapChan := make(chan *pg.MetricsMapWithError)
@@ -157,13 +158,13 @@ func GetHostsID(w http.ResponseWriter, r *http.Request) {
 	// --------------------------
 	// Fetch SQL rows in parallel
 	// --------------------------
-	go func(currentCluster *pg.ClusterRow) {
-		savedQueriesWithError := &pg.SavedQueryRowsWithError{}
-		savedQueriesWithError.SavedQueries, savedQueriesWithError.Error = pg.NewSavedQuery(r.Context()).AllByClusterIDAndType(nil, currentCluster.ID, "hosts")
+	go func(currentCluster *cassandra.ClusterRow) {
+		savedQueriesWithError := &cassandra.SavedQueryRowsWithError{}
+		savedQueriesWithError.SavedQueries, savedQueriesWithError.Error = cassandra.NewSavedQuery(r.Context()).AllByClusterIDAndType(currentCluster.ID, "hosts")
 		savedQueriesChan <- savedQueriesWithError
 	}(currentCluster)
 
-	go func(currentCluster *pg.ClusterRow) {
+	go func(currentCluster *cassandra.ClusterRow) {
 		metricsMapWithError := &pg.MetricsMapWithError{}
 		metricsMapWithError.MetricsMap, metricsMapWithError.Error = pg.NewMetric(r.Context()).AllByClusterIDAsMap(nil, currentCluster.ID)
 		metricsMapChan <- metricsMapWithError
@@ -193,19 +194,19 @@ func GetHostsID(w http.ResponseWriter, r *http.Request) {
 	data := struct {
 		CSRFToken      string
 		Addr           string
-		CurrentUser    *pg.UserRow
-		AccessToken    *pg.AccessTokenRow
-		Clusters       []*pg.ClusterRow
-		CurrentCluster *pg.ClusterRow
+		CurrentUser    *cassandra.UserRow
+		AccessToken    *cassandra.AccessTokenRow
+		Clusters       []*cassandra.ClusterRow
+		CurrentCluster *cassandra.ClusterRow
 		Host           *pg.HostRow
-		SavedQueries   []*pg.SavedQueryRow
+		SavedQueries   []*cassandra.SavedQueryRow
 		MetricsMap     map[string]int64
 	}{
 		csrf.Token(r),
 		r.Context().Value("Addr").(string),
 		currentUser,
 		accessToken,
-		r.Context().Value("clusters").([]*pg.ClusterRow),
+		r.Context().Value("clusters").([]*cassandra.ClusterRow),
 		currentCluster,
 		host,
 		savedQueriesWithError.SavedQueries,
@@ -231,7 +232,7 @@ func GetHostsID(w http.ResponseWriter, r *http.Request) {
 func PostHostsIDMasterTags(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html")
 
-	currentCluster := r.Context().Value("currentCluster").(*pg.ClusterRow)
+	currentCluster := r.Context().Value("currentCluster").(*cassandra.ClusterRow)
 
 	id, err := getInt64SlugFromPath(w, r, "id")
 	if err != nil {
@@ -270,7 +271,7 @@ func PostHostsIDMasterTags(w http.ResponseWriter, r *http.Request) {
 func PostApiHosts(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	accessTokenRow := r.Context().Value("accessToken").(*pg.AccessTokenRow)
+	accessTokenRow := r.Context().Value("accessToken").(*cassandra.AccessTokenRow)
 
 	bus, err := contexthelper.GetMessageBus(r.Context())
 	if err != nil {
@@ -343,7 +344,7 @@ func PostApiHosts(w http.ResponseWriter, r *http.Request) {
 func GetApiHosts(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	accessTokenRow := r.Context().Value("accessToken").(*pg.AccessTokenRow)
+	accessTokenRow := r.Context().Value("accessToken").(*cassandra.AccessTokenRow)
 
 	query := r.URL.Query().Get("q")
 	count := r.URL.Query().Get("count")
@@ -376,7 +377,7 @@ func GetApiHosts(w http.ResponseWriter, r *http.Request) {
 func GetApiHostsID(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	accessTokenRow := r.Context().Value("accessToken").(*pg.AccessTokenRow)
+	accessTokenRow := r.Context().Value("accessToken").(*cassandra.AccessTokenRow)
 
 	var hostRow *pg.HostRow
 	var hostname string
@@ -416,7 +417,7 @@ func GetApiHostsID(w http.ResponseWriter, r *http.Request) {
 func PutApiHostsNameOrIDMasterTags(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html")
 
-	accessTokenRow := r.Context().Value("accessToken").(*pg.AccessTokenRow)
+	accessTokenRow := r.Context().Value("accessToken").(*cassandra.AccessTokenRow)
 
 	dataJson, err := ioutil.ReadAll(r.Body)
 	if err != nil {

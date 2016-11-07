@@ -5,11 +5,10 @@ import (
 
 	"github.com/resourced/resourced-master/libhttp"
 	"github.com/resourced/resourced-master/models/cassandra"
-	"github.com/resourced/resourced-master/models/shared"
 )
 
 func PostAccessTokens(w http.ResponseWriter, r *http.Request) {
-	currentUser := r.Context().Value("currentUser").(*shared.UserRow)
+	currentUser := r.Context().Value("currentUser").(*cassandra.UserRow)
 
 	clusterID, err := getInt64SlugFromPath(w, r, "clusterID")
 	if err != nil {

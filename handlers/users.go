@@ -14,7 +14,6 @@ import (
 	"github.com/resourced/resourced-master/libhttp"
 	"github.com/resourced/resourced-master/mailer"
 	"github.com/resourced/resourced-master/models/cassandra"
-	"github.com/resourced/resourced-master/models/shared"
 )
 
 func GetSignup(w http.ResponseWriter, r *http.Request) {
@@ -59,7 +58,7 @@ func PostSignup(w http.ResponseWriter, r *http.Request) {
 
 	userRow, err := cassandra.NewUser(r.Context()).GetByEmail(email)
 
-	if err != nil && err.Error() == "sql: no rows in result set" {
+	if userRow == nil {
 		// There's no existing user in the database, create a new one.
 		userRow, err = cassandra.NewUser(r.Context()).Signup(email, password, passwordAgain)
 		if err != nil {
@@ -106,7 +105,7 @@ func PostSignup(w http.ResponseWriter, r *http.Request) {
 
 	// Send email verification if needed
 	if !emailValidated {
-		go func(userRow *shared.UserRow) {
+		go func(userRow *cassandra.UserRow) {
 			if userRow.EmailVerificationToken != "" {
 				mailer := r.Context().Value("mailer.GeneralConfig").(*mailer.Mailer)
 
@@ -201,7 +200,7 @@ func PutUsersID(w http.ResponseWriter, r *http.Request) {
 
 	session, _ := cookieStore.Get(r, "resourcedmaster-session")
 
-	currentUser := session.Values["user"].(*shared.UserRow)
+	currentUser := session.Values["user"].(*cassandra.UserRow)
 
 	if currentUser.ID != userId {
 		err := errors.New("Modifying other user is not allowed.")

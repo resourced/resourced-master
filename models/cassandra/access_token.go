@@ -197,7 +197,7 @@ func (t *AccessToken) AllByClusterID(clusterID int64) ([]*AccessTokenRow, error)
 
 	rows := []*AccessTokenRow{}
 
-	query := fmt.Sprintf(`SELECT id, user_id, cluster_id, token_, level, enabled FROM %v WHERE cluster_id=?`, t.table)
+	query := fmt.Sprintf(`SELECT id, user_id, cluster_id, token_, level, enabled FROM %v WHERE cluster_id=? ALLOW FILTERING`, t.table)
 
 	var scannedID, scannedUserID, scannedClusterID int64
 	var scannedToken, scannedLevel string
@@ -216,7 +216,7 @@ func (t *AccessToken) AllByClusterID(clusterID int64) ([]*AccessTokenRow, error)
 	}
 	if err := iter.Close(); err != nil {
 		err = fmt.Errorf("%v. Query: %v", err.Error(), query)
-		logrus.WithFields(logrus.Fields{"Method": "User.All"}).Error(err)
+		logrus.WithFields(logrus.Fields{"Method": "AccessToken.AllByClusterID"}).Error(err)
 
 		return nil, err
 	}

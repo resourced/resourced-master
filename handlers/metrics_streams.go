@@ -11,6 +11,7 @@ import (
 	"github.com/resourced/resourced-master/contexthelper"
 	"github.com/resourced/resourced-master/libhttp"
 	"github.com/resourced/resourced-master/messagebus"
+	"github.com/resourced/resourced-master/models/cassandra"
 	"github.com/resourced/resourced-master/models/pg"
 )
 
@@ -28,7 +29,7 @@ func ApiMetricStreams(w http.ResponseWriter, r *http.Request) {
 
 	bus := r.Context().Value("bus").(*messagebus.MessageBus)
 
-	accessTokenRow := r.Context().Value("accessToken").(*pg.AccessTokenRow)
+	accessTokenRow := r.Context().Value("accessToken").(*cassandra.AccessTokenRow)
 
 	errLogger, err := contexthelper.GetLogger(r.Context(), "ErrLogger")
 	if err != nil {
@@ -123,7 +124,7 @@ func ApiMetricIDStreams(w http.ResponseWriter, r *http.Request) {
 
 	bus := r.Context().Value("bus").(*messagebus.MessageBus)
 
-	accessTokenRow := r.Context().Value("accessToken").(*pg.AccessTokenRow)
+	accessTokenRow := r.Context().Value("accessToken").(*cassandra.AccessTokenRow)
 
 	metricID, err := getInt64SlugFromPath(w, r, "id")
 	if err != nil {

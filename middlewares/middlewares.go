@@ -6,14 +6,12 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/Sirupsen/logrus"
-	"github.com/didip/stopwatch"
 	"github.com/gorilla/csrf"
 	"github.com/gorilla/sessions"
 	"github.com/pressly/chi"
 
 	"github.com/resourced/resourced-master/libhttp"
-	"github.com/resourced/resourced-master/models/pg"
+	"github.com/resourced/resourced-master/models/cassandra"
 )
 
 // CSRFMiddleware is a constructor that creates github.com/gorilla/csrf.CSRF struct
@@ -53,25 +51,9 @@ func SetClusters(next http.Handler) http.Handler {
 			return
 		}
 
-		userRow := userRowInterface.(*pg.UserRow)
+		userRow := userRowInterface.(*cassandra.UserRow)
 
-		var clusterRows []*pg.ClusterRow
-		var err error
-
-		f := func() {
-			clusterRows, err = pg.NewCluster(r.Context()).AllByUserID(nil, userRow.ID)
-		}
-
-		// Measure the latency of AllByUserID because it is called on every request.
-		latency := stopwatch.Measure(f)
-		logrus.WithFields(logrus.Fields{
-			"Method":       "Cluster.AllByUserID",
-			"UserID":       userRow.ID,
-			"NanoSeconds":  latency,
-			"MicroSeconds": latency / 1000,
-			"MilliSeconds": latency / 1000 / 1000,
-		}).Info("Latency measurement")
-
+		clusterRows, err := cassandra.NewCluster(r.Context()).AllByUserID(userRow.ID)
 		if err != nil {
 			libhttp.HandleErrorJson(w, err)
 			return
@@ -95,7 +77,7 @@ func SetClusters(next http.Handler) http.Handler {
 
 		currentClusterInterface := session.Values["currentCluster"]
 		if currentClusterInterface != nil {
-			currentClusterRow := currentClusterInterface.(*pg.ClusterRow)
+			currentClusterRow := currentClusterInterface.(*cassandra.ClusterRow)
 
 			r = r.WithContext(context.WithValue(r.Context(), "currentCluster", currentClusterRow))
 		}
@@ -113,7 +95,7 @@ func SetAccessTokens(next http.Handler) http.Handler {
 			return
 		}
 
-		accessTokenRows, err := pg.NewAccessToken(r.Context()).AllByClusterID(nil, currentClusterInterface.(*pg.ClusterRow).ID)
+		accessTokenRows, err := cassandra.NewAccessToken(r.Context()).AllByClusterID(currentClusterInterface.(*cassandra.ClusterRow).ID)
 		if err != nil {
 			libhttp.HandleErrorJson(w, err)
 			return
@@ -144,7 +126,7 @@ func MustLogin(next http.Handler) http.Handler {
 			return
 		}
 
-		r = r.WithContext(context.WithValue(r.Context(), "currentUser", userRowInterface.(*pg.UserRow)))
+		r = r.WithContext(context.WithValue(r.Context(), "currentUser", userRowInterface.(*cassandra.UserRow)))
 
 		next.ServeHTTP(w, r)
 	})
@@ -166,7 +148,7 @@ func MustLoginApi(next http.Handler) http.Handler {
 			return
 		}
 
-		accessTokenRow, err := pg.NewAccessToken(r.Context()).GetByAccessToken(nil, accessTokenString)
+		accessTokenRow, err := cassandra.NewAccessToken(r.Context()).GetByAccessToken(accessTokenString)
 		if err != nil {
 			libhttp.BasicAuthUnauthorized(w, nil)
 			return
@@ -216,7 +198,7 @@ func MustLoginApiStream(next http.Handler) http.Handler {
 			return
 		}
 
-		accessTokenRow, err := pg.NewAccessToken(r.Context()).GetByAccessToken(nil, accessTokenString)
+		accessTokenRow, err := cassandra.NewAccessToken(r.Context()).GetByAccessToken(accessTokenString)
 		if err != nil {
 			libhttp.BasicAuthUnauthorized(w, nil)
 			return
@@ -251,8 +233,8 @@ func MustBeMember(next http.Handler) http.Handler {
 			return
 		}
 
-		currentCluster := currentClusterInterface.(*pg.ClusterRow)
-		currentUser := currentUserInterface.(*pg.UserRow)
+		currentCluster := currentClusterInterface.(*cassandra.ClusterRow)
+		currentUser := currentUserInterface.(*cassandra.UserRow)
 		foundCurrentUser := false
 
 		for _, member := range currentCluster.GetMembers() {

@@ -5,19 +5,6 @@
 # But it cannot be longer than the global setting.
 DataRetention = 7
 
-# With metrics timeseries data, users can choose between PostgreSQL or Cassandra.
-# Do not enable both! You must choose one.
-
-# [Metrics.PostgreSQL]
-# DSN = "postgres://localhost:5432/resourced-master-ts-metrics?sslmode=disable"
-# MaxOpenConnections = 2
-
-# Optimization Setting: Enable this option if you want to shard metrics data by cluster_id.
-# Format: key:   cluster id.
-#         value: DSN.
-# [Metrics.PostgreSQL.DSNByClusterID]
-# 1 = "postgres://localhost:5432/resourced-master-metrics-1?sslmode=disable"
-
 [Metrics.Cassandra]
 Hosts = ["127.0.0.1"]
 ProtoVersion = 4

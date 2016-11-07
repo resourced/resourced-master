@@ -9,14 +9,14 @@ import (
 	"strconv"
 
 	"github.com/resourced/resourced-master/libhttp"
-	"github.com/resourced/resourced-master/models/pg"
+	"github.com/resourced/resourced-master/models/cassandra"
 	"github.com/resourced/resourced-master/models/shims"
 )
 
 func GetApiEventsLine(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	accessTokenRow := r.Context().Value("accessToken").(*pg.AccessTokenRow)
+	accessTokenRow := r.Context().Value("accessToken").(*cassandra.AccessTokenRow)
 
 	qParams := r.URL.Query()
 
@@ -35,7 +35,7 @@ func GetApiEventsLine(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	clusterRow, err := pg.NewCluster(r.Context()).GetByID(nil, accessTokenRow.ClusterID)
+	clusterRow, err := cassandra.NewCluster(r.Context()).GetByID(accessTokenRow.ClusterID)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
@@ -64,7 +64,7 @@ func GetApiEventsLine(w http.ResponseWriter, r *http.Request) {
 func GetApiEventsBand(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	accessTokenRow := r.Context().Value("accessToken").(*pg.AccessTokenRow)
+	accessTokenRow := r.Context().Value("accessToken").(*cassandra.AccessTokenRow)
 
 	qParams := r.URL.Query()
 
@@ -83,7 +83,7 @@ func GetApiEventsBand(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	clusterRow, err := pg.NewCluster(r.Context()).GetByID(nil, accessTokenRow.ClusterID)
+	clusterRow, err := cassandra.NewCluster(r.Context()).GetByID(accessTokenRow.ClusterID)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
@@ -107,7 +107,7 @@ func GetApiEventsBand(w http.ResponseWriter, r *http.Request) {
 func PostApiEvents(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	accessTokenRow := r.Context().Value("accessToken").(*pg.AccessTokenRow)
+	accessTokenRow := r.Context().Value("accessToken").(*cassandra.AccessTokenRow)
 
 	dataJSON, err := ioutil.ReadAll(r.Body)
 	if err != nil {
@@ -115,7 +115,7 @@ func PostApiEvents(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	clusterRow, err := pg.NewCluster(r.Context()).GetByID(nil, accessTokenRow.ClusterID)
+	clusterRow, err := cassandra.NewCluster(r.Context()).GetByID(accessTokenRow.ClusterID)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
@@ -145,7 +145,7 @@ func PostApiEvents(w http.ResponseWriter, r *http.Request) {
 func DeleteApiEventsID(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	accessTokenRow := r.Context().Value("accessToken").(*pg.AccessTokenRow)
+	accessTokenRow := r.Context().Value("accessToken").(*cassandra.AccessTokenRow)
 
 	id, err := getInt64SlugFromPath(w, r, "id")
 	if err != nil {
@@ -153,7 +153,7 @@ func DeleteApiEventsID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err = pg.NewTSEvent(r.Context(), accessTokenRow.ClusterID).DeleteByClusterIDAndID(nil, accessTokenRow.ClusterID, id)
+	err = cassandra.NewTSEvent(r.Context()).DeleteByClusterIDAndID(accessTokenRow.ClusterID, id)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return

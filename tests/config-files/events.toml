@@ -6,17 +6,6 @@
 # But it cannot be longer than the global setting.
 DataRetention = 7
 
-[Events.PostgreSQL]
-DSN = "postgres://localhost:5432/resourced-master-ts-events?sslmode=disable"
-
-MaxOpenConnections = 2
-
-# Optimization Setting: Enable this option if you want to shard events data by cluster_id.
-# Format: key:   cluster id.
-#         value: DSN.
-# [Events.PostgreSQL.DSNByClusterID]
-# 1 = "postgres://localhost:5432/resourced-master-events-1?sslmode=disable"
-
 [Events.Cassandra]
 Hosts = ["127.0.0.1"]
 ProtoVersion = 4

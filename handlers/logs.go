@@ -12,6 +12,7 @@ import (
 
 	"github.com/resourced/resourced-master/contexthelper"
 	"github.com/resourced/resourced-master/libhttp"
+	"github.com/resourced/resourced-master/models/cassandra"
 	"github.com/resourced/resourced-master/models/pg"
 	"github.com/resourced/resourced-master/models/shared"
 	"github.com/resourced/resourced-master/models/shims"
@@ -20,9 +21,9 @@ import (
 func GetLogs(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html")
 
-	currentUser := r.Context().Value("currentUser").(*pg.UserRow)
+	currentUser := r.Context().Value("currentUser").(*cassandra.UserRow)
 
-	currentCluster := r.Context().Value("currentCluster").(*pg.ClusterRow)
+	currentCluster := r.Context().Value("currentCluster").(*cassandra.ClusterRow)
 
 	qParams := r.URL.Query()
 
@@ -66,10 +67,10 @@ func GetLogs(w http.ResponseWriter, r *http.Request) {
 	data := struct {
 		CSRFToken      string
 		Addr           string
-		CurrentUser    *pg.UserRow
-		AccessToken    *pg.AccessTokenRow
-		Clusters       []*pg.ClusterRow
-		CurrentCluster *pg.ClusterRow
+		CurrentUser    *cassandra.UserRow
+		AccessToken    *cassandra.AccessTokenRow
+		Clusters       []*cassandra.ClusterRow
+		CurrentCluster *cassandra.ClusterRow
 		SavedQueries   []*pg.SavedQueryRow
 		From           int64
 		To             int64
@@ -78,7 +79,7 @@ func GetLogs(w http.ResponseWriter, r *http.Request) {
 		r.Context().Value("Addr").(string),
 		currentUser,
 		accessToken,
-		r.Context().Value("clusters").([]*pg.ClusterRow),
+		r.Context().Value("clusters").([]*cassandra.ClusterRow),
 		currentCluster,
 		savedQueries,
 		from,
@@ -104,7 +105,7 @@ func GetLogs(w http.ResponseWriter, r *http.Request) {
 func PostApiLogs(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	accessTokenRow := r.Context().Value("accessToken").(*pg.AccessTokenRow)
+	accessTokenRow := r.Context().Value("accessToken").(*cassandra.AccessTokenRow)
 
 	errLogger, err := contexthelper.GetLogger(r.Context(), "ErrLogger")
 	if err != nil {
@@ -139,7 +140,7 @@ func PostApiLogs(w http.ResponseWriter, r *http.Request) {
 func GetApiLogs(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	accessTokenRow := r.Context().Value("accessToken").(*pg.AccessTokenRow)
+	accessTokenRow := r.Context().Value("accessToken").(*cassandra.AccessTokenRow)
 
 	qParams := r.URL.Query()
 

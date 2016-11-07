@@ -7,8 +7,6 @@ import (
 	"time"
 
 	"github.com/Sirupsen/logrus"
-
-	"github.com/resourced/resourced-master/models/shared"
 )
 
 func NewCluster(ctx context.Context) *Cluster {
@@ -60,7 +58,7 @@ func (cr *ClusterRow) GetMembers() []ClusterMember {
 	for _, m := range cr.Members {
 		member := ClusterMember{}
 
-		err := json.Unmarshal([]byte(m), member)
+		err := json.Unmarshal([]byte(m), &member)
 		if err == nil {
 			members = append(members, member)
 		}
@@ -98,7 +96,7 @@ func (c *Cluster) GetByID(id int64) (*ClusterRow, error) {
 	var scannedDataRetention map[string]int
 	var scannedMembers []string
 
-	err = session.Query(query, id).Scan(&scannedID, &scannedName, &scannedCreatorID, &scannedCreatorEmail, &scannedDataRetention, scannedMembers)
+	err = session.Query(query, id).Scan(&scannedID, &scannedName, &scannedCreatorID, &scannedCreatorEmail, &scannedDataRetention, &scannedMembers)
 	if err != nil {
 		return nil, err
 	}
@@ -116,7 +114,7 @@ func (c *Cluster) GetByID(id int64) (*ClusterRow, error) {
 }
 
 // Create a cluster row record with default settings.
-func (c *Cluster) Create(creator *shared.UserRow, name string) (*ClusterRow, error) {
+func (c *Cluster) Create(creator *UserRow, name string) (*ClusterRow, error) {
 	session, err := c.GetCassandraSession()
 	if err != nil {
 		return nil, err
@@ -162,9 +160,7 @@ func (c *Cluster) AllByUserID(userId int64) ([]*ClusterRow, error) {
 	newRows := make([]*ClusterRow, 0)
 
 	for _, row := range rows {
-		members := row.GetMembers()
-
-		for _, member := range members {
+		for _, member := range row.GetMembers() {
 			if member.ID == userId {
 				newRows = append(newRows, row)
 				break
@@ -192,7 +188,7 @@ func (c *Cluster) All() ([]*ClusterRow, error) {
 	var scannedMembers []string
 
 	iter := session.Query(query).Iter()
-	for iter.Scan(&scannedID, &scannedName, &scannedCreatorID, &scannedCreatorEmail, &scannedDataRetention, scannedMembers) {
+	for iter.Scan(&scannedID, &scannedName, &scannedCreatorID, &scannedCreatorEmail, &scannedDataRetention, &scannedMembers) {
 		rows = append(rows, &ClusterRow{
 			ID:            scannedID,
 			Name:          scannedName,
@@ -243,7 +239,7 @@ func (c *Cluster) AllSplitToDaemons(daemons []string) (map[string][]*ClusterRow,
 }
 
 // UpdateMember adds or updates cluster member information.
-func (c *Cluster) UpdateMember(id int64, user *shared.UserRow, level string, enabled bool) error {
+func (c *Cluster) UpdateMember(id int64, user *UserRow, level string, enabled bool) error {
 	clusterRow, err := c.GetByID(id)
 	if err != nil {
 		return err
@@ -297,7 +293,7 @@ func (c *Cluster) UpdateMember(id int64, user *shared.UserRow, level string, ena
 }
 
 // RemoveMember from a cluster.
-func (c *Cluster) RemoveMember(id int64, user *shared.UserRow) error {
+func (c *Cluster) RemoveMember(id int64, user *UserRow) error {
 	clusterRow, err := c.GetByID(id)
 	if err != nil {
 		return err

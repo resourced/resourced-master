@@ -100,7 +100,7 @@ func checkHostExpressionTeardownForTest(t *testing.T, setupRows map[string]inter
 	// DELETE FROM access_tokens WHERE id=...
 	at := pg.NewAccessToken(appContext)
 
-	_, err = at.DeleteByID(nil, setupRows["tokenRow"].(*pg.AccessTokenRow).ID)
+	_, err = at.DeleteByID(nil, setupRows["tokenRow"].(*cassandra.AccessTokenRow).ID)
 	if err != nil {
 		t.Fatalf("Deleting access_tokens by id should not fail. Error: %v", err)
 	}
@@ -130,7 +130,7 @@ func checkHostExpressionTeardownForTest(t *testing.T, setupRows map[string]inter
 	}
 	defer pgdb.Close()
 
-	_, err = u.DeleteByID(nil, setupRows["userRow"].(*pg.UserRow).ID)
+	_, err = u.DeleteByID(nil, setupRows["userRow"].(*cassandra.UserRow).ID)
 	if err != nil {
 		t.Fatalf("Deleting user by id should not fail. Error: %v", err)
 	}

@@ -9,7 +9,6 @@ import (
 	"golang.org/x/crypto/bcrypt"
 
 	"github.com/resourced/resourced-master/libstring"
-	"github.com/resourced/resourced-master/models/shared"
 )
 
 func NewUser(ctx context.Context) *User {
@@ -19,6 +18,14 @@ func NewUser(ctx context.Context) *User {
 	user.hasID = true
 
 	return user
+}
+
+type UserRow struct {
+	ID                     int64  `db:"id"`
+	Email                  string `db:"email"`
+	Password               string `db:"password"`
+	EmailVerificationToken string `db:"email_verification_token"`
+	EmailVerified          bool   `db:"email_verified"`
 }
 
 type User struct {
@@ -35,13 +42,13 @@ type User struct {
 // }
 
 // All returns all user rows.
-func (u *User) All() ([]*shared.UserRow, error) {
+func (u *User) All() ([]*UserRow, error) {
 	session, err := u.GetCassandraSession()
 	if err != nil {
 		return nil, err
 	}
 
-	rows := []*shared.UserRow{}
+	rows := []*UserRow{}
 
 	query := fmt.Sprintf(`SELECT id, email, password, email_verification_token, email_verified FROM %v`, u.table)
 
@@ -51,7 +58,7 @@ func (u *User) All() ([]*shared.UserRow, error) {
 
 	iter := session.Query(query).Iter()
 	for iter.Scan(&scannedID, &scannedEmail, &scannedPassword, &scannedEmailVerificationToken, &scannedEmailVerified) {
-		rows = append(rows, &shared.UserRow{
+		rows = append(rows, &UserRow{
 			ID:                     scannedID,
 			Email:                  scannedEmail,
 			Password:               scannedPassword,
@@ -69,7 +76,7 @@ func (u *User) All() ([]*shared.UserRow, error) {
 }
 
 // GetByID returns record by id.
-func (u *User) GetByID(id int64) (*shared.UserRow, error) {
+func (u *User) GetByID(id int64) (*UserRow, error) {
 	session, err := u.GetCassandraSession()
 	if err != nil {
 		return nil, err
@@ -86,7 +93,7 @@ func (u *User) GetByID(id int64) (*shared.UserRow, error) {
 		return nil, err
 	}
 
-	row := &shared.UserRow{
+	row := &UserRow{
 		ID:                     scannedID,
 		Email:                  scannedEmail,
 		Password:               scannedPassword,
@@ -98,7 +105,7 @@ func (u *User) GetByID(id int64) (*shared.UserRow, error) {
 }
 
 // GetByEmail returns record by email.
-func (u *User) GetByEmail(email string) (*shared.UserRow, error) {
+func (u *User) GetByEmail(email string) (*UserRow, error) {
 	session, err := u.GetCassandraSession()
 	if err != nil {
 		return nil, err
@@ -115,7 +122,7 @@ func (u *User) GetByEmail(email string) (*shared.UserRow, error) {
 		return nil, err
 	}
 
-	user := &shared.UserRow{
+	user := &UserRow{
 		ID:                     scannedID,
 		Email:                  scannedEmail,
 		Password:               scannedPassword,
@@ -127,7 +134,7 @@ func (u *User) GetByEmail(email string) (*shared.UserRow, error) {
 }
 
 // GetByEmailVerificationToken returns record by email_verification_token.
-func (u *User) GetByEmailVerificationToken(emailVerificationToken string) (*shared.UserRow, error) {
+func (u *User) GetByEmailVerificationToken(emailVerificationToken string) (*UserRow, error) {
 	session, err := u.GetCassandraSession()
 	if err != nil {
 		return nil, err
@@ -144,7 +151,7 @@ func (u *User) GetByEmailVerificationToken(emailVerificationToken string) (*shar
 		return nil, err
 	}
 
-	user := &shared.UserRow{
+	user := &UserRow{
 		ID:                     scannedID,
 		Email:                  scannedEmail,
 		Password:               scannedPassword,
@@ -156,7 +163,7 @@ func (u *User) GetByEmailVerificationToken(emailVerificationToken string) (*shar
 }
 
 // GetByEmail returns record by email but checks password first.
-func (u *User) GetUserByEmailAndPassword(email, password string) (*shared.UserRow, error) {
+func (u *User) GetUserByEmailAndPassword(email, password string) (*UserRow, error) {
 	user, err := u.GetByEmail(email)
 	if err != nil {
 		return nil, err
@@ -171,7 +178,7 @@ func (u *User) GetUserByEmailAndPassword(email, password string) (*shared.UserRo
 }
 
 // SignupRandomPassword create a new record of user with random password.
-func (u *User) SignupRandomPassword(email string) (*shared.UserRow, error) {
+func (u *User) SignupRandomPassword(email string) (*UserRow, error) {
 	password, _ := libstring.GeneratePassword(32)
 	passwordAgain := password
 
@@ -179,7 +186,7 @@ func (u *User) SignupRandomPassword(email string) (*shared.UserRow, error) {
 }
 
 // Signup create a new record of user.
-func (u *User) Signup(email, password, passwordAgain string) (*shared.UserRow, error) {
+func (u *User) Signup(email, password, passwordAgain string) (*UserRow, error) {
 	session, err := u.GetCassandraSession()
 	if err != nil {
 		return nil, err
@@ -214,11 +221,17 @@ func (u *User) Signup(email, password, passwordAgain string) (*shared.UserRow, e
 		return nil, err
 	}
 
-	return u.GetByID(id)
+	return &UserRow{
+		ID:                     id,
+		Email:                  email,
+		Password:               string(hashedPassword),
+		EmailVerificationToken: emailVerificationToken,
+		EmailVerified:          false,
+	}, err
 }
 
 // UpdateEmailAndPasswordByID updates user email and password.
-func (u *User) UpdateEmailAndPasswordByID(id int64, email, password, passwordAgain string) (*shared.UserRow, error) {
+func (u *User) UpdateEmailAndPasswordByID(id int64, email, password, passwordAgain string) (*UserRow, error) {
 	session, err := u.GetCassandraSession()
 	if err != nil {
 		return nil, err
@@ -245,7 +258,7 @@ func (u *User) UpdateEmailAndPasswordByID(id int64, email, password, passwordAga
 }
 
 // UpdateEmailVerification acknowledge email verification.
-func (u *User) UpdateEmailVerification(emailVerificationToken string) (*shared.UserRow, error) {
+func (u *User) UpdateEmailVerification(emailVerificationToken string) (*UserRow, error) {
 	session, err := u.GetCassandraSession()
 	if err != nil {
 		return nil, err
