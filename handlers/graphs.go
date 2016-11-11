@@ -11,7 +11,6 @@ import (
 
 	"github.com/resourced/resourced-master/libhttp"
 	"github.com/resourced/resourced-master/models/cassandra"
-	"github.com/resourced/resourced-master/models/pg"
 )
 
 func GetGraphs(w http.ResponseWriter, r *http.Request) {
@@ -21,7 +20,7 @@ func GetGraphs(w http.ResponseWriter, r *http.Request) {
 
 	currentCluster := r.Context().Value("currentCluster").(*cassandra.ClusterRow)
 
-	graphs, err := pg.NewGraph(r.Context()).AllByClusterID(nil, currentCluster.ID)
+	graphs, err := cassandra.NewGraph(r.Context()).AllByClusterID(currentCluster.ID)
 	if err != nil {
 		libhttp.HandleErrorHTML(w, err, 500)
 		return
@@ -33,7 +32,7 @@ func GetGraphs(w http.ResponseWriter, r *http.Request) {
 		CurrentUser    *cassandra.UserRow
 		Clusters       []*cassandra.ClusterRow
 		CurrentCluster *cassandra.ClusterRow
-		Graphs         []*pg.GraphRow
+		Graphs         []*cassandra.GraphRow
 	}{
 		csrf.Token(r),
 		r.Context().Value("Addr").(string),
@@ -73,7 +72,7 @@ func PostGraphs(w http.ResponseWriter, r *http.Request) {
 	data["description"] = description
 	data["range"] = range_
 
-	_, err := pg.NewGraph(r.Context()).Create(nil, currentCluster.ID, data)
+	_, err := cassandra.NewGraph(r.Context()).Create(currentCluster.ID, data)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
@@ -116,24 +115,24 @@ func GetGraphsID(w http.ResponseWriter, r *http.Request) {
 	// -----------------------------------
 	// Create channels to receive SQL rows
 	// -----------------------------------
-	metricsChan := make(chan *pg.MetricRowsWithError)
+	metricsChan := make(chan *cassandra.MetricRowsWithError)
 	defer close(metricsChan)
 
-	graphsChan := make(chan *pg.GraphRowsWithError)
+	graphsChan := make(chan *cassandra.GraphRowsWithError)
 	defer close(graphsChan)
 
 	// --------------------------
 	// Fetch SQL rows in parallel
 	// --------------------------
 	go func(currentCluster *cassandra.ClusterRow, id int64) {
-		graphsWithError := &pg.GraphRowsWithError{}
-		graphsWithError.Graphs, graphsWithError.Error = pg.NewGraph(r.Context()).AllByClusterID(nil, currentCluster.ID)
+		graphsWithError := &cassandra.GraphRowsWithError{}
+		graphsWithError.Graphs, graphsWithError.Error = cassandra.NewGraph(r.Context()).AllByClusterID(currentCluster.ID)
 		graphsChan <- graphsWithError
 	}(currentCluster, id)
 
 	go func(currentCluster *cassandra.ClusterRow) {
-		metricsWithError := &pg.MetricRowsWithError{}
-		metricsWithError.Metrics, metricsWithError.Error = pg.NewMetric(r.Context()).AllByClusterID(nil, currentCluster.ID)
+		metricsWithError := &cassandra.MetricRowsWithError{}
+		metricsWithError.Metrics, metricsWithError.Error = cassandra.NewMetric(r.Context()).AllByClusterID(currentCluster.ID)
 		metricsChan <- metricsWithError
 	}(currentCluster)
 
@@ -148,7 +147,7 @@ func GetGraphsID(w http.ResponseWriter, r *http.Request) {
 		hasError = true
 	}
 
-	var currentGraph *pg.GraphRow
+	var currentGraph *cassandra.GraphRow
 	graphsWithError := <-graphsChan
 	if graphsWithError.Error == nil {
 		for _, graph := range graphsWithError.Graphs {
@@ -173,9 +172,9 @@ func GetGraphsID(w http.ResponseWriter, r *http.Request) {
 		AccessToken    *cassandra.AccessTokenRow
 		Clusters       []*cassandra.ClusterRow
 		CurrentCluster *cassandra.ClusterRow
-		CurrentGraph   *pg.GraphRow
-		Graphs         []*pg.GraphRow
-		Metrics        []*pg.MetricRow
+		CurrentGraph   *cassandra.GraphRow
+		Graphs         []*cassandra.GraphRow
+		Metrics        []*cassandra.MetricRow
 	}{
 		csrf.Token(r),
 		r.Context().Value("Addr").(string),
@@ -221,7 +220,7 @@ func PutGraphsID(w http.ResponseWriter, r *http.Request) {
 	description := r.FormValue("Description")
 	range_ := r.FormValue("Range")
 
-	data := make(map[string]interface{})
+	data := make(map[string]string)
 	if name != "" {
 		data["name"] = name
 	}
@@ -234,13 +233,13 @@ func PutGraphsID(w http.ResponseWriter, r *http.Request) {
 
 	metricsJSON := r.FormValue("MetricsWithOrder")
 	if metricsJSON == "" {
-		data["metrics"] = []byte("[]")
+		data["metrics"] = "[]"
 	} else {
-		data["metrics"] = []byte(metricsJSON)
+		data["metrics"] = metricsJSON
 	}
 
 	if len(data) > 0 {
-		_, err = pg.NewGraph(r.Context()).UpdateByID(nil, data, id)
+		_, err = cassandra.NewGraph(r.Context()).UpdateByID(id, data)
 		if err != nil {
 			libhttp.HandleErrorHTML(w, err, 500)
 			return
@@ -259,7 +258,7 @@ func DeleteGraphsID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err = pg.NewGraph(r.Context()).DeleteByClusterIDAndID(nil, currentCluster.ID, id)
+	err = cassandra.NewGraph(r.Context()).DeleteByClusterIDAndID(currentCluster.ID, id)
 	if err != nil {
 		libhttp.HandleErrorHTML(w, err, 500)
 		return
@@ -285,7 +284,7 @@ func PutApiGraphsIDMetrics(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	row, err := pg.NewGraph(r.Context()).UpdateMetricsByClusterIDAndID(nil, accessTokenRow.ClusterID, id, dataJSON)
+	row, err := cassandra.NewGraph(r.Context()).UpdateMetricsByClusterIDAndID(accessTokenRow.ClusterID, id, dataJSON)
 
 	rowJSON, err := json.Marshal(row)
 	if err != nil {

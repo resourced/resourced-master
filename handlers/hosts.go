@@ -152,7 +152,7 @@ func GetHostsID(w http.ResponseWriter, r *http.Request) {
 	savedQueriesChan := make(chan *cassandra.SavedQueryRowsWithError)
 	defer close(savedQueriesChan)
 
-	metricsMapChan := make(chan *pg.MetricsMapWithError)
+	metricsMapChan := make(chan *cassandra.MetricsMapWithError)
 	defer close(metricsMapChan)
 
 	// --------------------------
@@ -165,8 +165,8 @@ func GetHostsID(w http.ResponseWriter, r *http.Request) {
 	}(currentCluster)
 
 	go func(currentCluster *cassandra.ClusterRow) {
-		metricsMapWithError := &pg.MetricsMapWithError{}
-		metricsMapWithError.MetricsMap, metricsMapWithError.Error = pg.NewMetric(r.Context()).AllByClusterIDAsMap(nil, currentCluster.ID)
+		metricsMapWithError := &cassandra.MetricsMapWithError{}
+		metricsMapWithError.MetricsMap, metricsMapWithError.Error = cassandra.NewMetric(r.Context()).AllByClusterIDAsMap(currentCluster.ID)
 		metricsMapChan <- metricsMapWithError
 	}(currentCluster)
 
@@ -299,7 +299,7 @@ func PostApiHosts(w http.ResponseWriter, r *http.Request) {
 
 	// Asynchronously write timeseries data
 	go func() {
-		metricsMap, err := pg.NewMetric(r.Context()).AllByClusterIDAsMap(nil, hostRow.ClusterID)
+		metricsMap, err := cassandra.NewMetric(r.Context()).AllByClusterIDAsMap(hostRow.ClusterID)
 		if err != nil {
 			errLogger.WithFields(logrus.Fields{
 				"Error": err.Error(),
@@ -309,7 +309,7 @@ func PostApiHosts(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		clusterRow, err := pg.NewCluster(r.Context()).GetByID(nil, hostRow.ClusterID)
+		clusterRow, err := cassandra.NewCluster(r.Context()).GetByID(hostRow.ClusterID)
 		if err != nil {
 			errLogger.WithFields(logrus.Fields{
 				"Error": err.Error(),
