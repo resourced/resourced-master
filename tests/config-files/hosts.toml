@@ -1,13 +1,12 @@
 [Hosts]
 
-[Hosts.PostgreSQL]
-DSN = "postgres://localhost:5432/resourced-master-hosts?sslmode=disable"
-
-MaxOpenConnections = 2
-
-# Optimization Setting: Enable this option if you have clusters with huge number of servers.
-# This setting allows you to store hosts data on a separate PostgreSQL database by cluster_id.
-# Format: key:   cluster id.
-#         value: DSN.
-# [Hosts.PostgreSQL.DSNByClusterID]
-# 1 = "postgres://localhost:5432/resourced-master-hosts-1?sslmode=disable"
+[Hosts.Cassandra]
+Hosts = ["127.0.0.1"]
+ProtoVersion = 4
+Port = 9042
+Keyspace = "resourced_master_hosts"
+NumConns = 2
+Consistency = "one"
+MaxPreparedStmts  = 1000
+MaxRoutingKeyInfo = 1000
+PageSize = 5000

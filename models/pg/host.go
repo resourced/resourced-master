@@ -148,31 +148,6 @@ func (h *Host) AllByClusterID(tx *sqlx.Tx, clusterID int64) ([]*HostRow, error) 
 	return hosts, err
 }
 
-// CountByClusterIDAndUpdatedInterval returns the count of all rows.
-func (h *Host) CountByClusterIDAndUpdatedInterval(tx *sqlx.Tx, clusterID int64, updatedInterval string) (int, error) {
-	pgdb, err := h.GetPGDB()
-	if err != nil {
-		return -1, err
-	}
-
-	query := fmt.Sprintf("SELECT COUNT(*) as count FROM %v WHERE cluster_id=$1 AND updated >= (NOW() at time zone 'utc' - INTERVAL '%v')", h.table, updatedInterval)
-	rows, err := pgdb.Query(query, clusterID)
-	if err != nil {
-		return -1, err
-	}
-
-	var count int
-
-	for rows.Next() {
-		err := rows.Scan(&count)
-		if err != nil {
-			return -1, err
-		}
-	}
-
-	return count, nil
-}
-
 // AllByClusterIDAndUpdatedInterval returns all rows.
 func (h *Host) AllByClusterIDAndUpdatedInterval(tx *sqlx.Tx, clusterID int64, updatedInterval string) ([]*HostRow, error) {
 	pgdb, err := h.GetPGDB()

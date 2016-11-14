@@ -109,7 +109,8 @@ type GeneralConfig struct {
 	Cassandra CassandraConfig `toml:",omitempty"`
 
 	Hosts struct {
-		PostgreSQL PostgreSQLPerClusterConfig
+		PostgreSQL PostgreSQLPerClusterConfig `toml:",omitempty"`
+		Cassandra  CassandraConfig            `toml:",omitempty"`
 	}
 
 	Metrics struct {
