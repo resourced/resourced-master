@@ -1,5 +1,5 @@
 CREATE TABLE IF NOT EXISTS hosts (
-    id bigint,
+    id text,
     cluster_id bigint,
     access_token_id bigint,
     hostname text,

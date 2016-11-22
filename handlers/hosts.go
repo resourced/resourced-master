@@ -291,8 +291,10 @@ func PostApiHosts(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	hostRow, err := pg.NewHost(r.Context(), accessTokenRow.ClusterID).CreateOrUpdate(nil, accessTokenRow, dataJson)
+	hostRow, err := cassandra.NewHost(r.Context()).CreateOrUpdate(accessTokenRow, dataJson)
 	if err != nil {
+		println("Is there an error?")
+		println(err.Error())
 		libhttp.HandleErrorJson(w, err)
 		return
 	}

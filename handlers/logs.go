@@ -119,7 +119,7 @@ func PostApiLogs(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	clusterRow, err := pg.NewCluster(r.Context()).GetByID(nil, accessTokenRow.ClusterID)
+	clusterRow, err := cassandra.NewCluster(r.Context()).GetByID(accessTokenRow.ClusterID)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return

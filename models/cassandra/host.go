@@ -3,11 +3,11 @@ package cassandra
 import (
 	"context"
 	"encoding/json"
-	// "errors"
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
-	// "time"
+	"time"
 
 	"github.com/Sirupsen/logrus"
 	"github.com/gocql/gocql"
@@ -38,7 +38,7 @@ type HostRowsWithError struct {
 }
 
 type HostRow struct {
-	ID            int64             `db:"id" json:"-"`
+	ID            string            `db:"id" json:"-"`
 	AccessTokenID int64             `db:"access_token_id" json:"-"`
 	ClusterID     int64             `db:"cluster_id"`
 	Hostname      string            `db:"hostname"`
@@ -108,8 +108,8 @@ func (h *Host) AllByClusterID(clusterID int64) ([]*HostRow, error) {
 
 	query := fmt.Sprintf(`SELECT id, cluster_id, access_token_id, hostname, updated, tags, master_tags, data FROM %v WHERE cluster_id=? ALLOW FILTERING`, h.table)
 
-	var scannedID, scannedClusterID, scannedAccessTokenID, scannedUpdated int64
-	var scannedHostname string
+	var scannedClusterID, scannedAccessTokenID, scannedUpdated int64
+	var scannedID, scannedHostname string
 	var scannedTags, scannedMasterTags, scannedData map[string]string
 
 	iter := session.Query(query, clusterID).Iter()
@@ -145,8 +145,8 @@ func (h *Host) AllByClusterIDAndUpdatedInterval(clusterID int64, updatedInterval
 
 	query := fmt.Sprintf(`SELECT id, cluster_id, access_token_id, hostname, updated, tags, master_tags, data FROM %v WHERE cluster_id=? AND updated >= ? ALLOW FILTERING`, h.table)
 
-	var scannedID, scannedClusterID, scannedAccessTokenID, scannedUpdated int64
-	var scannedHostname string
+	var scannedClusterID, scannedAccessTokenID, scannedUpdated int64
+	var scannedID, scannedHostname string
 	var scannedTags, scannedMasterTags, scannedData map[string]string
 
 	// TODO: change 1 based on updatedInt
@@ -189,8 +189,8 @@ func (h *Host) AllCompactByClusterIDQueryAndUpdatedInterval(clusterID int64, res
 
 	query := fmt.Sprintf(`SELECT id, cluster_id, access_token_id, hostname, updated, tags, master_tags FROM %v WHERE cluster_id=? AND updated >= ? AND %v ALLOW FILTERING`, h.table, luceneQuery)
 
-	var scannedID, scannedClusterID, scannedAccessTokenID, scannedUpdated int64
-	var scannedHostname string
+	var scannedClusterID, scannedAccessTokenID, scannedUpdated int64
+	var scannedID, scannedHostname string
 	var scannedTags, scannedMasterTags map[string]string
 
 	// TODO: change 1 based on updatedInt
@@ -232,8 +232,8 @@ func (h *Host) AllByClusterIDQueryAndUpdatedInterval(clusterID int64, resourcedQ
 
 	query := fmt.Sprintf(`SELECT id, cluster_id, access_token_id, hostname, updated, tags, master_tags, data FROM %v WHERE cluster_id=? AND updated >= ? AND %v ALLOW FILTERING`, h.table, luceneQuery)
 
-	var scannedID, scannedClusterID, scannedAccessTokenID, scannedUpdated int64
-	var scannedHostname string
+	var scannedClusterID, scannedAccessTokenID, scannedUpdated int64
+	var scannedID, scannedHostname string
 	var scannedTags, scannedMasterTags, scannedData map[string]string
 
 	// TODO: change 1 based on updatedInt
@@ -300,8 +300,8 @@ func (h *Host) GetByID(id int64) (*HostRow, error) {
 
 	query := fmt.Sprintf("SELECT id, cluster_id, access_token_id, hostname, updated, tags, master_tags, data FROM %v WHERE id=?", h.table)
 
-	var scannedID, scannedClusterID, scannedAccessTokenID, scannedUpdated int64
-	var scannedHostname string
+	var scannedClusterID, scannedAccessTokenID, scannedUpdated int64
+	var scannedID, scannedHostname string
 	var scannedTags, scannedMasterTags, scannedData map[string]string
 
 	err = session.Query(query, id).Scan(&scannedID, &scannedClusterID, &scannedAccessTokenID, &scannedHostname, &scannedUpdated, &scannedTags, &scannedMasterTags, &scannedData)
@@ -332,8 +332,8 @@ func (h *Host) GetByHostname(hostname string) (*HostRow, error) {
 
 	query := fmt.Sprintf("SELECT id, cluster_id, access_token_id, hostname, updated, tags, master_tags, data FROM %v WHERE hostname=?", h.table)
 
-	var scannedID, scannedClusterID, scannedAccessTokenID, scannedUpdated int64
-	var scannedHostname string
+	var scannedClusterID, scannedAccessTokenID, scannedUpdated int64
+	var scannedID, scannedHostname string
 	var scannedTags, scannedMasterTags, scannedData map[string]string
 
 	err = session.Query(query, hostname).Scan(&scannedID, &scannedClusterID, &scannedAccessTokenID, &scannedHostname, &scannedUpdated, &scannedTags, &scannedMasterTags, &scannedData)
@@ -355,71 +355,72 @@ func (h *Host) GetByHostname(hostname string) (*HostRow, error) {
 	return row, err
 }
 
-func (h *Host) parseAgentResourcePayload(accessTokenRow *AccessTokenRow, jsonData []byte) (map[string]interface{}, error) {
+func (h *Host) parseAgentResourcePayload(jsonData []byte) (AgentResourcePayload, error) {
 	resourcedPayload := AgentResourcePayload{}
 
 	err := json.Unmarshal(jsonData, &resourcedPayload)
 	if err != nil {
-		return nil, err
+		return resourcedPayload, err
 	}
 
-	data := make(map[string]interface{})
-	data["access_token_id"] = accessTokenRow.ID
-	data["cluster_id"] = accessTokenRow.ClusterID
-	data["hostname"] = resourcedPayload.Host.Name
+	return resourcedPayload, nil
 
-	tagsInJson, err := json.Marshal(resourcedPayload.Host.Tags)
-	if err != nil {
-		return nil, err
-	}
-	data["tags"] = tagsInJson
+	// data := make(map[string]interface{})
+	// data["access_token_id"] = accessTokenRow.ID
+	// data["cluster_id"] = accessTokenRow.ClusterID
+	// data["hostname"] = resourcedPayload.Host.Name
 
-	resourcedPayloadJustJson, err := json.Marshal(resourcedPayload.Data)
-	if err != nil {
-		return nil, err
-	}
+	// tagsInJson, err := json.Marshal(resourcedPayload.Host.Tags)
+	// if err != nil {
+	// 	return nil, err
+	// }
+	// data["tags"] = tagsInJson
 
-	data["data"] = resourcedPayloadJustJson
+	// resourcedPayloadJustJson, err := json.Marshal(resourcedPayload.Data)
+	// if err != nil {
+	// 	return nil, err
+	// }
 
-	return data, nil
+	// data["data"] = resourcedPayloadJustJson
+
+	// return data, nil
 }
 
 // CreateOrUpdate performs insert/update for one host data.
 // TODO finish this
 func (h *Host) CreateOrUpdate(accessTokenRow *AccessTokenRow, jsonData []byte) (*HostRow, error) {
-	// data, err := h.parseAgentResourcePayload(accessTokenRow, jsonData)
-	// if err != nil {
-	// 	return nil, err
-	// }
+	resourcedPayload, err := h.parseAgentResourcePayload(jsonData)
+	if err != nil {
+		return nil, err
+	}
 
-	// if data["hostname"] == nil {
-	// 	return nil, errors.New("Hostname cannot be empty.")
-	// }
+	if resourcedPayload.Host.Name == "" {
+		return nil, errors.New("Hostname cannot be empty.")
+	}
 
-	// hostRow, err := h.GetByHostname(data["hostname"].(string))
+	session, err := h.GetCassandraSession()
+	if err != nil {
+		return nil, err
+	}
 
-	// // Perform INSERT
-	// if hostRow == nil || err != nil {
-	// 	sqlResult, err := h.InsertIntoTable(data)
-	// 	if err != nil {
-	// 		return nil, err
-	// 	}
+	id := resourcedPayload.Host.Name
+	updated := time.Now().UTC().Unix()
 
-	// 	return h.hostRowFromSqlResult(sqlResult)
-	// }
+	query := fmt.Sprintf("INSERT INTO %v (id, cluster_id, access_token_id, hostname, updated, tags, data) VALUES (?, ?, ?, ?, ?, ?, ?)", h.table)
 
-	// if _, ok := data["updated"]; !ok {
-	// 	data["updated"] = time.Now().UTC()
-	// }
+	err = session.Query(query, id, accessTokenRow.ClusterID, accessTokenRow.ID, resourcedPayload.Host.Name, updated, resourcedPayload.Host.Tags, resourcedPayload.Data).Exec()
+	if err != nil {
+		return nil, err
+	}
 
-	// // Perform UPDATE
-	// _, err = h.UpdateByKeyValueString(data, "hostname", data["hostname"].(string))
-	// if err != nil {
-	// 	return nil, err
-	// }
-
-	// return hostRow, nil
-	return nil, nil
+	return &HostRow{
+		ID:            id,
+		ClusterID:     accessTokenRow.ClusterID,
+		AccessTokenID: accessTokenRow.ID,
+		Hostname:      resourcedPayload.Host.Name,
+		Updated:       updated,
+		Tags:          resourcedPayload.Host.Tags,
+	}, nil
 }
 
 // UpdateMasterTagsByID updates master tags by ID.
