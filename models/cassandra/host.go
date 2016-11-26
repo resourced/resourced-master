@@ -106,83 +106,7 @@ func (h *Host) GetCassandraSession() (*gocql.Session, error) {
 	return cassandradbs.HostSession, nil
 }
 
-// AllByClusterID returns all rows by cluster_id.
-func (h *Host) AllByClusterID(clusterID int64) ([]*HostRow, error) {
-	session, err := h.GetCassandraSession()
-	if err != nil {
-		return nil, err
-	}
-
-	rows := []*HostRow{}
-
-	query := fmt.Sprintf(`SELECT id, cluster_id, access_token_id, hostname, updated, tags, master_tags, data FROM %v WHERE cluster_id=? ALLOW FILTERING`, h.table)
-
-	var scannedClusterID, scannedAccessTokenID, scannedUpdated int64
-	var scannedID, scannedHostname string
-	var scannedTags, scannedMasterTags, scannedData map[string]string
-
-	iter := session.Query(query, clusterID).Iter()
-	for iter.Scan(&scannedID, &scannedClusterID, &scannedAccessTokenID, &scannedHostname, &scannedUpdated, &scannedTags, &scannedMasterTags, &scannedData) {
-		rows = append(rows, &HostRow{
-			ID:            scannedID,
-			ClusterID:     scannedClusterID,
-			AccessTokenID: scannedAccessTokenID,
-			Hostname:      scannedHostname,
-			Updated:       scannedUpdated,
-			Tags:          scannedTags,
-			MasterTags:    scannedMasterTags,
-			Data:          scannedData,
-		})
-	}
-	if err := iter.Close(); err != nil {
-		err = fmt.Errorf("%v. Query: %v", err.Error(), query)
-		logrus.WithFields(logrus.Fields{"Method": "Host.AllByClusterID"}).Error(err)
-
-		return nil, err
-	}
-	return rows, err
-}
-
-// AllByClusterIDAndUpdatedInterval returns all rows.
-func (h *Host) AllByClusterIDAndUpdatedInterval(clusterID int64, updatedInterval string) ([]*HostRow, error) {
-	session, err := h.GetCassandraSession()
-	if err != nil {
-		return nil, err
-	}
-
-	rows := []*HostRow{}
-
-	query := fmt.Sprintf(`SELECT id, cluster_id, access_token_id, hostname, updated, tags, master_tags, data FROM %v WHERE cluster_id=? AND updated >= ? ALLOW FILTERING`, h.table)
-
-	var scannedClusterID, scannedAccessTokenID, scannedUpdated int64
-	var scannedID, scannedHostname string
-	var scannedTags, scannedMasterTags, scannedData map[string]string
-
-	// TODO: change 1 based on updatedInt
-	// old: 	query := fmt.Sprintf("SELECT * FROM %v WHERE cluster_id=$1 AND updated >= (NOW() at time zone 'utc' - INTERVAL '%v')", h.table, updatedInterval)
-	iter := session.Query(query, clusterID, 1).Iter()
-	for iter.Scan(&scannedID, &scannedClusterID, &scannedAccessTokenID, &scannedHostname, &scannedUpdated, &scannedTags, &scannedMasterTags, &scannedData) {
-		rows = append(rows, &HostRow{
-			ID:            scannedID,
-			ClusterID:     scannedClusterID,
-			AccessTokenID: scannedAccessTokenID,
-			Hostname:      scannedHostname,
-			Updated:       scannedUpdated,
-			Tags:          scannedTags,
-			MasterTags:    scannedMasterTags,
-			Data:          scannedData,
-		})
-	}
-	if err := iter.Close(); err != nil {
-		err = fmt.Errorf("%v. Query: %v", err.Error(), query)
-		logrus.WithFields(logrus.Fields{"Method": "Host.AllByClusterID"}).Error(err)
-
-		return nil, err
-	}
-	return rows, err
-}
-
-// AllCompactByClusterIDAndUpdatedInterval returns all rows.
+// AllCompactByClusterIDAndUpdatedInterval returns all hosts without metric data by cluster_id and updated duration.
 func (h *Host) AllCompactByClusterIDAndUpdatedInterval(clusterID int64, updatedInterval string) ([]*HostRow, error) {
 	session, err := h.GetCassandraSession()
 	if err != nil {
@@ -199,14 +123,22 @@ func (h *Host) AllCompactByClusterIDAndUpdatedInterval(clusterID int64, updatedI
 
 	rows := []*HostRow{}
 
-	query := fmt.Sprintf(`SELECT id, cluster_id, access_token_id, hostname, updated, tags, master_tags FROM %v WHERE cluster_id=? AND updated >= ? ALLOW FILTERING`, h.table)
+	// old: 	query := fmt.Sprintf("SELECT * FROM %v WHERE cluster_id=$1 AND updated >= (NOW() at time zone 'utc' - INTERVAL '%v')", h.table, updatedInterval)
+	query := fmt.Sprintf(`SELECT id, cluster_id, access_token_id, hostname, updated, tags, master_tags FROM %v WHERE expr(idx_hosts_lucene, '{
+    filter: {
+        type: "boolean",
+        must: [
+            {type: "match", field: "cluster_id", value: %v},
+            {type:"range", field:"updated", lower:%v, include_lower: true}
+        ]
+    }
+}')`, h.table, clusterID, updatedUnix)
 
 	var scannedClusterID, scannedAccessTokenID, scannedUpdated int64
 	var scannedID, scannedHostname string
 	var scannedTags, scannedMasterTags map[string]string
 
-	// old: 	query := fmt.Sprintf("SELECT * FROM %v WHERE cluster_id=$1 AND updated >= (NOW() at time zone 'utc' - INTERVAL '%v')", h.table, updatedInterval)
-	iter := session.Query(query, clusterID, updatedUnix).Iter()
+	iter := session.Query(query).Iter()
 	for iter.Scan(&scannedID, &scannedClusterID, &scannedAccessTokenID, &scannedHostname, &scannedUpdated, &scannedTags, &scannedMasterTags) {
 		rows = append(rows, &HostRow{
 			ID:            scannedID,
@@ -220,7 +152,7 @@ func (h *Host) AllCompactByClusterIDAndUpdatedInterval(clusterID int64, updatedI
 	}
 	if err := iter.Close(); err != nil {
 		err = fmt.Errorf("%v. Query: %v", err.Error(), query)
-		logrus.WithFields(logrus.Fields{"Method": "Host.AllByClusterID"}).Error(err)
+		logrus.WithFields(logrus.Fields{"Method": "Host.AllCompactByClusterIDAndUpdatedInterval"}).Error(err)
 
 		return nil, err
 	}
@@ -250,18 +182,25 @@ func (h *Host) AllCompactByClusterIDQueryAndUpdatedInterval(clusterID int64, res
 
 	rows := []*HostRow{}
 
-	query := fmt.Sprintf(`SELECT id, cluster_id, access_token_id, hostname, updated, tags, master_tags FROM %v WHERE cluster_id=? AND updated >= ? AND lucene='{filter:%v}' ALLOW FILTERING`, h.table, luceneQuery)
+	// old: 	query := fmt.Sprintf("SELECT * FROM %v WHERE cluster_id=$1 AND updated >= (NOW() at time zone 'utc' - INTERVAL '%v')", h.table, updatedInterval)
+	query := fmt.Sprintf(`SELECT id, cluster_id, access_token_id, hostname, updated, tags, master_tags FROM %v WHERE expr(idx_hosts_lucene, '{
+    filter: {
+        type: "boolean",
+        must: [
+            {type: "match", field: "cluster_id", value: %v},
+            {type:"range", field:"updated", lower:%v, include_lower: true},
+            %v
+        ]
+    }
+}')`, h.table, clusterID, updatedUnix, luceneQuery)
 
 	println(query)
-	println(clusterID)
-	println(updatedUnix)
 
 	var scannedClusterID, scannedAccessTokenID, scannedUpdated int64
 	var scannedID, scannedHostname string
 	var scannedTags, scannedMasterTags map[string]string
 
-	// old: 	query := fmt.Sprintf("SELECT * FROM %v WHERE cluster_id=$1 AND updated >= (NOW() at time zone 'utc' - INTERVAL '%v')", h.table, updatedInterval)
-	iter := session.Query(query, clusterID, updatedUnix).Iter()
+	iter := session.Query(query).Iter()
 	for iter.Scan(&scannedID, &scannedClusterID, &scannedAccessTokenID, &scannedHostname, &scannedUpdated, &scannedTags, &scannedMasterTags) {
 		rows = append(rows, &HostRow{
 			ID:            scannedID,
@@ -282,6 +221,61 @@ func (h *Host) AllCompactByClusterIDQueryAndUpdatedInterval(clusterID int64, res
 	return rows, err
 }
 
+// AllCompactByClusterIDAndUpdatedInterval returns all hosts without metric data by cluster_id and updated duration.
+func (h *Host) AllByClusterIDAndUpdatedInterval(clusterID int64, updatedInterval string) ([]*HostRow, error) {
+	session, err := h.GetCassandraSession()
+	if err != nil {
+		return nil, err
+	}
+
+	updatedDuration, err := time.ParseDuration(updatedInterval)
+	if err != nil {
+		return nil, err
+	}
+
+	updated := time.Now().UTC().Add(-1 * updatedDuration)
+	updatedUnix := updated.UTC().Unix()
+
+	rows := []*HostRow{}
+
+	// old: 	query := fmt.Sprintf("SELECT * FROM %v WHERE cluster_id=$1 AND updated >= (NOW() at time zone 'utc' - INTERVAL '%v')", h.table, updatedInterval)
+	query := fmt.Sprintf(`SELECT id, cluster_id, access_token_id, hostname, updated, tags, master_tags, data FROM %v WHERE expr(idx_hosts_lucene, '{
+    filter: {
+        type: "boolean",
+        must: [
+            {type: "match", field: "cluster_id", value: %v},
+            {type:"range", field:"updated", lower:%v, include_lower: true}
+        ]
+    }
+}')`, h.table, clusterID, updatedUnix)
+
+	var scannedClusterID, scannedAccessTokenID, scannedUpdated int64
+	var scannedID, scannedHostname string
+	var scannedTags, scannedMasterTags, scannedData map[string]string
+
+	iter := session.Query(query).Iter()
+	for iter.Scan(&scannedID, &scannedClusterID, &scannedAccessTokenID, &scannedHostname, &scannedUpdated, &scannedTags, &scannedMasterTags) {
+		rows = append(rows, &HostRow{
+			ID:            scannedID,
+			ClusterID:     scannedClusterID,
+			AccessTokenID: scannedAccessTokenID,
+			Hostname:      scannedHostname,
+			Updated:       scannedUpdated,
+			Tags:          scannedTags,
+			MasterTags:    scannedMasterTags,
+			Data:          scannedData,
+		})
+	}
+	if err := iter.Close(); err != nil {
+		err = fmt.Errorf("%v. Query: %v", err.Error(), query)
+		logrus.WithFields(logrus.Fields{"Method": "Host.AllByClusterIDAndUpdatedInterval"}).Error(err)
+
+		return nil, err
+	}
+
+	return rows, err
+}
+
 // AllByClusterIDQueryAndUpdatedInterval returns all rows by resourced query.
 func (h *Host) AllByClusterIDQueryAndUpdatedInterval(clusterID int64, resourcedQuery, updatedInterval string) ([]*HostRow, error) {
 	session, err := h.GetCassandraSession()
@@ -291,20 +285,38 @@ func (h *Host) AllByClusterIDQueryAndUpdatedInterval(clusterID int64, resourcedQ
 
 	luceneQuery := querybuilder.Parse(resourcedQuery, nil)
 	if luceneQuery == "" {
-		return h.AllByClusterID(clusterID)
+		return h.AllByClusterIDAndUpdatedInterval(clusterID, updatedInterval)
 	}
+
+	updatedDuration, err := time.ParseDuration(updatedInterval)
+	if err != nil {
+		return nil, err
+	}
+
+	updated := time.Now().UTC().Add(-1 * updatedDuration)
+	updatedUnix := updated.UTC().Unix()
 
 	rows := []*HostRow{}
 
-	query := fmt.Sprintf(`SELECT id, cluster_id, access_token_id, hostname, updated, tags, master_tags, data FROM %v WHERE cluster_id=? AND updated >= ? AND lucene='{filter:%v}' ALLOW FILTERING`, h.table, luceneQuery)
+	// old: 	query := fmt.Sprintf("SELECT * FROM %v WHERE cluster_id=$1 AND updated >= (NOW() at time zone 'utc' - INTERVAL '%v')", h.table, updatedInterval)
+	query := fmt.Sprintf(`SELECT id, cluster_id, access_token_id, hostname, updated, tags, master_tags, data FROM %v WHERE expr(idx_hosts_lucene, '{
+    filter: {
+        type: "boolean",
+        must: [
+            {type: "match", field: "cluster_id", value: %v},
+            {type:"range", field:"updated", lower:%v, include_lower: true},
+            %v
+        ]
+    }
+}')`, h.table, clusterID, updatedUnix, luceneQuery)
+
+	println(query)
 
 	var scannedClusterID, scannedAccessTokenID, scannedUpdated int64
 	var scannedID, scannedHostname string
 	var scannedTags, scannedMasterTags, scannedData map[string]string
 
-	// TODO: change 1 based on updatedInt
-	// old: 	query := fmt.Sprintf("SELECT * FROM %v WHERE cluster_id=$1 AND updated >= (NOW() at time zone 'utc' - INTERVAL '%v')", h.table, updatedInterval)
-	iter := session.Query(query, clusterID, 1).Iter()
+	iter := session.Query(query).Iter()
 	for iter.Scan(&scannedID, &scannedClusterID, &scannedAccessTokenID, &scannedHostname, &scannedUpdated, &scannedTags, &scannedMasterTags, &scannedData) {
 		rows = append(rows, &HostRow{
 			ID:            scannedID,

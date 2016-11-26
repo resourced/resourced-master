@@ -142,10 +142,10 @@ func (ts *TSLog) LastByClusterID(clusterID int64) (*TSLogRow, error) {
 	var scannedHostname, scannedLogline, scannedFilename string
 	var scannedTags map[string]string
 
-	query := fmt.Sprintf(`SELECT cluster_id, hostname, logline, filename, tags, created FROM %v WHERE lucene='{
+	query := fmt.Sprintf(`SELECT cluster_id, hostname, logline, filename, tags, created FROM %v WHERE expr(idx_ts_logs_lucene, '{
     filter: {type: "match", field: "cluster_id", value: %v},
     sort: {field: "created", reverse: true}
-}' limit 1;`, ts.table, clusterID)
+}') limit 1;`, ts.table, clusterID)
 
 	err = session.Query(query).Scan(&scannedClusterID, &scannedHostname, &scannedLogline, &scannedFilename, &scannedTags, &scannedCreated)
 	if err != nil {
@@ -181,7 +181,7 @@ func (ts *TSLog) AllByClusterIDAndRange(clusterID int64, from, to int64) ([]*TSL
 
 	rows := []*TSLogRow{}
 
-	query := fmt.Sprintf(`SELECT cluster_id, hostname, logline, filename, tags, created FROM %v WHERE lucene='{
+	query := fmt.Sprintf(`SELECT cluster_id, hostname, logline, filename, tags, created FROM %v WHERE expr(idx_ts_logs_lucene, '{
     filter: {
         type: "boolean",
         must: [
@@ -190,7 +190,7 @@ func (ts *TSLog) AllByClusterIDAndRange(clusterID int64, from, to int64) ([]*TSL
         ]
     },
     sort: {field: "created", reverse: true}
-}';`, ts.table, clusterID, from, to)
+}')`, ts.table, clusterID, from, to)
 
 	var scannedClusterID, scannedCreated int64
 	var scannedLogline, scannedHostname, scannedFilename string
@@ -236,7 +236,7 @@ func (ts *TSLog) AllByClusterIDRangeAndQuery(clusterID int64, from, to int64, re
 
 	rows := []*TSLogRow{}
 
-	query := fmt.Sprintf(`SELECT cluster_id, hostname, logline, filename, tags, created FROM %v WHERE lucene='{
+	query := fmt.Sprintf(`SELECT cluster_id, hostname, logline, filename, tags, created FROM %v WHERE expr(idx_ts_logs_lucene, '{
     filter: {
         type: "boolean",
         must: [
@@ -246,7 +246,7 @@ func (ts *TSLog) AllByClusterIDRangeAndQuery(clusterID int64, from, to int64, re
     },
     query: %v,
     sort: {field: "created", reverse: true}
-}';`, ts.table, clusterID, from, to, luceneQuery)
+}')`, ts.table, clusterID, from, to, luceneQuery)
 
 	var scannedClusterID, scannedCreated int64
 	var scannedLogline, scannedHostname, scannedFilename string
@@ -292,7 +292,7 @@ func (ts *TSLog) CountByClusterIDFromTimestampHostAndQuery(clusterID int64, from
 
 	var count int64
 
-	query := fmt.Sprintf(`SELECT count(logline) FROM %v WHERE lucene='{
+	query := fmt.Sprintf(`SELECT count(logline) FROM %v WHERE expr(idx_ts_logs_lucene, '{
     filter: {
         type: "boolean",
         must: [
@@ -302,7 +302,7 @@ func (ts *TSLog) CountByClusterIDFromTimestampHostAndQuery(clusterID int64, from
         ]
     },
     query: %v
-}';`, ts.table, clusterID, hostname, from, luceneQuery)
+}')`, ts.table, clusterID, hostname, from, luceneQuery)
 
 	err = session.Query(query).Scan(&count)
 	if err != nil {
