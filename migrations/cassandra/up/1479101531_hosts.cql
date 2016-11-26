@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS hosts (
     master_tags map<text, text>,
     data map<text, text>,
     lucene text,
-    PRIMARY KEY (cluster_id, id)
+    PRIMARY KEY (id)
 ) WITH caching = {'keys': 'ALL', 'rows_per_partition': 'ALL'}
   AND crc_check_chance = 0
   AND dclocal_read_repair_chance = 0

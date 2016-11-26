@@ -126,11 +126,7 @@ func GetHostsID(w http.ResponseWriter, r *http.Request) {
 
 	currentCluster := r.Context().Value("currentCluster").(*cassandra.ClusterRow)
 
-	id, err := getInt64SlugFromPath(w, r, "id")
-	if err != nil {
-		libhttp.HandleErrorHTML(w, err, 500)
-		return
-	}
+	id := chi.URLParam(r, "id")
 
 	accessToken, err := getAccessToken(w, r, "read")
 	if err != nil {
@@ -230,11 +226,7 @@ func GetHostsID(w http.ResponseWriter, r *http.Request) {
 func PostHostsIDMasterTags(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html")
 
-	id, err := getInt64SlugFromPath(w, r, "id")
-	if err != nil {
-		libhttp.HandleErrorHTML(w, err, 500)
-		return
-	}
+	id := chi.URLParam(r, "id")
 
 	masterTagsKVs := strings.Split(r.FormValue("MasterTags"), "\n")
 
@@ -249,7 +241,7 @@ func PostHostsIDMasterTags(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	err = cassandra.NewHost(r.Context()).UpdateMasterTagsByID(id, masterTags)
+	err := cassandra.NewHost(r.Context()).UpdateMasterTagsByID(id, masterTags)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
@@ -369,28 +361,12 @@ func GetApiHostsID(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	var hostRow *cassandra.HostRow
-	var hostname string
 
-	id, err := getInt64SlugFromPath(w, r, "id")
+	id := chi.URLParam(r, "id")
+
+	hostRow, err := cassandra.NewHost(r.Context()).GetByID(id)
 	if err != nil {
-		hostname = chi.URLParam(r, "id")
-	}
-
-	if hostname != "" {
-		hostRow, err = cassandra.NewHost(r.Context()).GetByHostname(hostname)
-		if err != nil {
-			libhttp.HandleErrorJson(w, err)
-			return
-		}
-
-	} else if id > 0 {
-		hostRow, err = cassandra.NewHost(r.Context()).GetByID(id)
-		if err != nil {
-			libhttp.HandleErrorJson(w, err)
-			return
-		}
-	} else {
-		libhttp.HandleErrorJson(w, fmt.Errorf("Unrecognizable hostname or host ID"))
+		libhttp.HandleErrorJson(w, err)
 		return
 	}
 
@@ -403,7 +379,7 @@ func GetApiHostsID(w http.ResponseWriter, r *http.Request) {
 	w.Write(hostRowJSON)
 }
 
-func PutApiHostsNameOrIDMasterTags(w http.ResponseWriter, r *http.Request) {
+func PutApiHostsIDMasterTags(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html")
 
 	dataJson, err := ioutil.ReadAll(r.Body)
@@ -412,12 +388,7 @@ func PutApiHostsNameOrIDMasterTags(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var hostname string
-
-	id, err := getInt64SlugFromPath(w, r, "id")
-	if err != nil {
-		hostname = chi.URLParam(r, "id")
-	}
+	id := chi.URLParam(r, "id")
 
 	masterTags := make(map[string]string)
 
@@ -427,21 +398,9 @@ func PutApiHostsNameOrIDMasterTags(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if hostname != "" {
-		err = cassandra.NewHost(r.Context()).UpdateMasterTagsByHostname(hostname, masterTags)
-		if err != nil {
-			libhttp.HandleErrorJson(w, err)
-			return
-		}
-
-	} else if id > 0 {
-		err = cassandra.NewHost(r.Context()).UpdateMasterTagsByID(id, masterTags)
-		if err != nil {
-			libhttp.HandleErrorJson(w, err)
-			return
-		}
-	} else {
-		libhttp.HandleErrorJson(w, fmt.Errorf("Unrecognizable hostname or host ID"))
+	err = cassandra.NewHost(r.Context()).UpdateMasterTagsByID(id, masterTags)
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
 		return
 	}
 

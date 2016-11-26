@@ -104,12 +104,6 @@ func TestHostCRUD(t *testing.T) {
 		t.Fatalf("Selecting host by id should not fail. Error: %v", err)
 	}
 
-	// SELECT * FROM hosts WHERE name=...
-	_, err = h.GetByHostname(nil, hostRow.Hostname)
-	if err != nil {
-		t.Fatalf("Selecting host by name should not fail. Error: %v", err)
-	}
-
 	// DELETE FROM hosts WHERE id=...
 	_, err = h.DeleteByID(nil, hostRow.ID)
 	if err != nil {

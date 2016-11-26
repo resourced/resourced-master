@@ -208,7 +208,6 @@ func (h *Host) AllCompactByClusterIDAndUpdatedInterval(clusterID int64, updatedI
 	// old: 	query := fmt.Sprintf("SELECT * FROM %v WHERE cluster_id=$1 AND updated >= (NOW() at time zone 'utc' - INTERVAL '%v')", h.table, updatedInterval)
 	iter := session.Query(query, clusterID, updatedUnix).Iter()
 	for iter.Scan(&scannedID, &scannedClusterID, &scannedAccessTokenID, &scannedHostname, &scannedUpdated, &scannedTags, &scannedMasterTags) {
-		println("is there something?")
 		rows = append(rows, &HostRow{
 			ID:            scannedID,
 			ClusterID:     scannedClusterID,
@@ -355,7 +354,7 @@ func (h *Host) AllByClusterIDAndHostnames(clusterID int64, hostnames []string) (
 }
 
 // GetByID returns record by id.
-func (h *Host) GetByID(id int64) (*HostRow, error) {
+func (h *Host) GetByID(id string) (*HostRow, error) {
 	session, err := h.GetCassandraSession()
 	if err != nil {
 		return nil, err
@@ -368,38 +367,6 @@ func (h *Host) GetByID(id int64) (*HostRow, error) {
 	var scannedTags, scannedMasterTags, scannedData map[string]string
 
 	err = session.Query(query, id).Scan(&scannedID, &scannedClusterID, &scannedAccessTokenID, &scannedHostname, &scannedUpdated, &scannedTags, &scannedMasterTags, &scannedData)
-	if err != nil {
-		return nil, err
-	}
-
-	row := &HostRow{
-		ID:            scannedID,
-		ClusterID:     scannedClusterID,
-		AccessTokenID: scannedAccessTokenID,
-		Hostname:      scannedHostname,
-		Updated:       scannedUpdated,
-		Tags:          scannedTags,
-		MasterTags:    scannedMasterTags,
-		Data:          scannedData,
-	}
-
-	return row, err
-}
-
-// GetByHostname returns record by hostname.
-func (h *Host) GetByHostname(hostname string) (*HostRow, error) {
-	session, err := h.GetCassandraSession()
-	if err != nil {
-		return nil, err
-	}
-
-	query := fmt.Sprintf("SELECT id, cluster_id, access_token_id, hostname, updated, tags, master_tags, data FROM %v WHERE hostname=?", h.table)
-
-	var scannedClusterID, scannedAccessTokenID, scannedUpdated int64
-	var scannedID, scannedHostname string
-	var scannedTags, scannedMasterTags, scannedData map[string]string
-
-	err = session.Query(query, hostname).Scan(&scannedID, &scannedClusterID, &scannedAccessTokenID, &scannedHostname, &scannedUpdated, &scannedTags, &scannedMasterTags, &scannedData)
 	if err != nil {
 		return nil, err
 	}
@@ -487,25 +454,13 @@ func (h *Host) CreateOrUpdate(accessTokenRow *AccessTokenRow, jsonData []byte) (
 }
 
 // UpdateMasterTagsByID updates master tags by ID.
-func (h *Host) UpdateMasterTagsByID(id int64, tags map[string]string) error {
+func (h *Host) UpdateMasterTagsByID(id string, tags map[string]string) error {
 	session, err := h.GetCassandraSession()
 	if err != nil {
 		return err
 	}
 
-	query := fmt.Sprintf("UPDATE %v SET tags=? WHERE id=?", h.table)
+	query := fmt.Sprintf("UPDATE %v SET master_tags=? WHERE id=?", h.table)
 
 	return session.Query(query, tags, id).Exec()
-}
-
-// UpdateMasterTagsByHostname updates master tags by hostname.
-func (h *Host) UpdateMasterTagsByHostname(hostname string, tags map[string]string) error {
-	session, err := h.GetCassandraSession()
-	if err != nil {
-		return err
-	}
-
-	query := fmt.Sprintf("UPDATE %v SET tags=? WHERE hostname=?", h.table)
-
-	return session.Query(query, tags, hostname).Exec()
 }
