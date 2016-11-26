@@ -13,7 +13,7 @@ import (
 	"github.com/gocql/gocql"
 
 	"github.com/resourced/resourced-master/contexthelper"
-	"github.com/resourced/resourced-master/models/pg/querybuilder"
+	"github.com/resourced/resourced-master/models/cassandra/querybuilder"
 )
 
 func NewHost(ctx context.Context) *Host {
@@ -235,7 +235,7 @@ func (h *Host) AllCompactByClusterIDQueryAndUpdatedInterval(clusterID int64, res
 		return nil, err
 	}
 
-	luceneQuery := querybuilder.Parse(resourcedQuery)
+	luceneQuery := querybuilder.Parse(resourcedQuery, nil)
 	if luceneQuery == "" {
 		return h.AllCompactByClusterIDAndUpdatedInterval(clusterID, updatedInterval)
 	}
@@ -250,7 +250,11 @@ func (h *Host) AllCompactByClusterIDQueryAndUpdatedInterval(clusterID int64, res
 
 	rows := []*HostRow{}
 
-	query := fmt.Sprintf(`SELECT id, cluster_id, access_token_id, hostname, updated, tags, master_tags FROM %v WHERE cluster_id=? AND updated >= ? AND %v ALLOW FILTERING`, h.table, luceneQuery)
+	query := fmt.Sprintf(`SELECT id, cluster_id, access_token_id, hostname, updated, tags, master_tags FROM %v WHERE cluster_id=? AND updated >= ? AND lucene='{filter:%v}' ALLOW FILTERING`, h.table, luceneQuery)
+
+	println(query)
+	println(clusterID)
+	println(updatedUnix)
 
 	var scannedClusterID, scannedAccessTokenID, scannedUpdated int64
 	var scannedID, scannedHostname string
@@ -285,14 +289,14 @@ func (h *Host) AllByClusterIDQueryAndUpdatedInterval(clusterID int64, resourcedQ
 		return nil, err
 	}
 
-	luceneQuery := querybuilder.Parse(resourcedQuery)
+	luceneQuery := querybuilder.Parse(resourcedQuery, nil)
 	if luceneQuery == "" {
 		return h.AllByClusterID(clusterID)
 	}
 
 	rows := []*HostRow{}
 
-	query := fmt.Sprintf(`SELECT id, cluster_id, access_token_id, hostname, updated, tags, master_tags, data FROM %v WHERE cluster_id=? AND updated >= ? AND %v ALLOW FILTERING`, h.table, luceneQuery)
+	query := fmt.Sprintf(`SELECT id, cluster_id, access_token_id, hostname, updated, tags, master_tags, data FROM %v WHERE cluster_id=? AND updated >= ? AND lucene='{filter:%v}' ALLOW FILTERING`, h.table, luceneQuery)
 
 	var scannedClusterID, scannedAccessTokenID, scannedUpdated int64
 	var scannedID, scannedHostname string
@@ -394,30 +398,9 @@ func (h *Host) parseAgentResourcePayload(jsonData []byte) (AgentResourcePayload,
 	}
 
 	return resourcedPayload, nil
-
-	// data := make(map[string]interface{})
-	// data["access_token_id"] = accessTokenRow.ID
-	// data["cluster_id"] = accessTokenRow.ClusterID
-	// data["hostname"] = resourcedPayload.Host.Name
-
-	// tagsInJson, err := json.Marshal(resourcedPayload.Host.Tags)
-	// if err != nil {
-	// 	return nil, err
-	// }
-	// data["tags"] = tagsInJson
-
-	// resourcedPayloadJustJson, err := json.Marshal(resourcedPayload.Data)
-	// if err != nil {
-	// 	return nil, err
-	// }
-
-	// data["data"] = resourcedPayloadJustJson
-
-	// return data, nil
 }
 
 // CreateOrUpdate performs insert/update for one host data.
-// TODO finish this
 func (h *Host) CreateOrUpdate(accessTokenRow *AccessTokenRow, jsonData []byte) (*HostRow, error) {
 	resourcedPayload, err := h.parseAgentResourcePayload(jsonData)
 	if err != nil {

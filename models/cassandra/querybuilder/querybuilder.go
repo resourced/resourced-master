@@ -195,6 +195,69 @@ func parseStatement(statement string, skipFields []string) string {
 		}
 	}
 
+	// Querying data.
+	// Operators for floating point data: >=, <=, =, <, >
+	//     Expected output: (data #>> '{/free,Memory.TotalGB}')::float8
+	// Operators for string data:
+	//     "="        : Exact match.
+	//     "^"        : Starts with, case sensitive.
+	//     "~"        : Matches regular expression, case sensitive.
+	//     "contains" : Contains the following values.
+	//     "wildcard" : Perform wildcard search.
+	if strings.HasPrefix(statement, "/") {
+		operator := ""
+
+		for _, op := range []string{">=", "<=", "=", "<", ">", "wildcard", "^", "~"} {
+			if strings.Contains(statement, op) {
+				operator = op
+				break
+			}
+		}
+
+		if operator != "" {
+			parts := strings.Split(statement, operator)
+
+			field := parts[0]
+			field = strings.TrimSpace(field)
+
+			value := parts[len(parts)-1]
+			value = strings.TrimSpace(value)
+			value = libstring.StripChars(value, `"'`)
+
+			if operator == "=" {
+				return fmt.Sprintf(`{type: "%v", field: "%v", value: "%v"}`, "match", "data_string$"+field, value)
+			}
+
+			if operator == ">" {
+				return fmt.Sprintf(`{type: "%v", field: "%v", lower: %v}`, "range", "data_float$"+field, value)
+			}
+			if operator == ">=" {
+				return fmt.Sprintf(`{type: "%v", field: "%v", lower: %v, include_lower: true}`, "range", "data_float$"+field, value)
+			}
+
+			if operator == "<" {
+				return fmt.Sprintf(`{type: "%v", field: "%v", upper: %v}`, "range", "data_float$"+field, value)
+			}
+			if operator == "<=" {
+				return fmt.Sprintf(`{type: "%v", field: "%v", upper: %v, include_upper: true}`, "range", "data_float$"+field, value)
+			}
+
+			if operator == "~" {
+				return fmt.Sprintf(`{type: "%v", field: "%v", value: "%v"}`, "regexp", "data_string$"+field, value)
+			}
+
+			if operator == "^" {
+				return fmt.Sprintf(`{type: "%v", field: "%v", value: "%v"}`, "prefix", "data_string$"+field, value)
+			}
+
+			if operator == "wildcard" {
+				return fmt.Sprintf(`{type: "%v", field: "%v", value: "%v"}`, "wildcard", "data_string$"+field, value)
+			}
+
+			return ""
+		}
+	}
+
 	// Querying logline.
 	// Operators:
 	// "search" : Full text search.
