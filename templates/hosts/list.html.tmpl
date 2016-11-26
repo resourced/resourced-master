@@ -156,7 +156,7 @@ $('form[role="search"]').submit(function(e) {
         <div class="col-xs-12 col-lg-12">
             <div>
                 <div class="pull-right">
-                    <small class="updated-timestamp time-unix-to-local">{{ $host.Updated.Unix }}</small>
+                    <small class="updated-timestamp time-unix-to-local">{{ $host.Updated }}</small>
                     <a href="/hosts/{{ $host.ID }}" class="btn btn-xs btn-success btn-header pull-right">Details</a>
                 </div>
 
@@ -167,16 +167,16 @@ $('form[role="search"]').submit(function(e) {
 
             <div>
                 <div class="pull-right">
-                    <button class="btn btn-xs btn-success btn-header pull-right" data-toggle="modal" data-target="#tags-modal" data-id="{{ $host.ID }}" data-master-tags="{{ $host.MasterTags.String }}">
+                    <button class="btn btn-xs btn-success btn-header pull-right" data-toggle="modal" data-target="#tags-modal" data-id="{{ $host.ID }}" data-master-tags="{{ $host.GetMasterTagsString }}">
                         Edit Tags
                     </button>
                 </div>
 
-                {{ range $tagKey, $tagValue := $host.GetTags }}
+                {{ range $tagKey, $tagValue := $host.Tags }}
                 <a class="label label-default" href="/?q=tags.{{ $tagKey }} %3D {{ $tagValue }}">{{ $tagKey }} : {{ $tagValue }}</a>
                 {{ end }}
 
-                {{ range $tagKey, $tagValue := $host.GetMasterTags }}
+                {{ range $tagKey, $tagValue := $host.MasterTags }}
                 <a class="label label-info" href="/?q=tags.{{ $tagKey }} %3D {{ $tagValue }}">{{ $tagKey }} : {{ $tagValue }}</a>
                 {{ end }}
             </div>

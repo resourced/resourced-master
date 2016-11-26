@@ -6,7 +6,6 @@ import (
 	"html/template"
 	"io/ioutil"
 	"net/http"
-	"strconv"
 	"strings"
 
 	"github.com/Sirupsen/logrus"
@@ -16,7 +15,6 @@ import (
 	"github.com/resourced/resourced-master/contexthelper"
 	"github.com/resourced/resourced-master/libhttp"
 	"github.com/resourced/resourced-master/models/cassandra"
-	"github.com/resourced/resourced-master/models/pg"
 	"github.com/resourced/resourced-master/models/shims"
 )
 
@@ -43,7 +41,7 @@ func GetHosts(w http.ResponseWriter, r *http.Request) {
 	// -----------------------------------
 	// Create channels to receive SQL rows
 	// -----------------------------------
-	hostsChan := make(chan *pg.HostRowsWithError)
+	hostsChan := make(chan *cassandra.HostRowsWithError)
 	defer close(hostsChan)
 
 	savedQueriesChan := make(chan *cassandra.SavedQueryRowsWithError)
@@ -53,8 +51,8 @@ func GetHosts(w http.ResponseWriter, r *http.Request) {
 	// Fetch SQL rows in parallel
 	// --------------------------
 	go func(currentCluster *cassandra.ClusterRow, query string) {
-		hostsWithError := &pg.HostRowsWithError{}
-		hostsWithError.Hosts, hostsWithError.Error = pg.NewHost(r.Context(), currentCluster.ID).AllCompactByClusterIDQueryAndUpdatedInterval(nil, currentCluster.ID, query, interval)
+		hostsWithError := &cassandra.HostRowsWithError{}
+		hostsWithError.Hosts, hostsWithError.Error = cassandra.NewHost(r.Context()).AllCompactByClusterIDQueryAndUpdatedInterval(currentCluster.ID, query, interval)
 		hostsChan <- hostsWithError
 	}(currentCluster, query)
 
@@ -92,7 +90,7 @@ func GetHosts(w http.ResponseWriter, r *http.Request) {
 		AccessToken    *cassandra.AccessTokenRow
 		Clusters       []*cassandra.ClusterRow
 		CurrentCluster *cassandra.ClusterRow
-		Hosts          []*pg.HostRow
+		Hosts          []*cassandra.HostRow
 		SavedQueries   []*cassandra.SavedQueryRow
 	}{
 		csrf.Token(r),
@@ -140,7 +138,7 @@ func GetHostsID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	host, err := pg.NewHost(r.Context(), currentCluster.ID).GetByID(nil, id)
+	host, err := cassandra.NewHost(r.Context()).GetByID(id)
 	if err != nil {
 		libhttp.HandleErrorHTML(w, err, 500)
 		return
@@ -198,7 +196,7 @@ func GetHostsID(w http.ResponseWriter, r *http.Request) {
 		AccessToken    *cassandra.AccessTokenRow
 		Clusters       []*cassandra.ClusterRow
 		CurrentCluster *cassandra.ClusterRow
-		Host           *pg.HostRow
+		Host           *cassandra.HostRow
 		SavedQueries   []*cassandra.SavedQueryRow
 		MetricsMap     map[string]int64
 	}{
@@ -232,8 +230,6 @@ func GetHostsID(w http.ResponseWriter, r *http.Request) {
 func PostHostsIDMasterTags(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html")
 
-	currentCluster := r.Context().Value("currentCluster").(*cassandra.ClusterRow)
-
 	id, err := getInt64SlugFromPath(w, r, "id")
 	if err != nil {
 		libhttp.HandleErrorHTML(w, err, 500)
@@ -242,24 +238,18 @@ func PostHostsIDMasterTags(w http.ResponseWriter, r *http.Request) {
 
 	masterTagsKVs := strings.Split(r.FormValue("MasterTags"), "\n")
 
-	masterTags := make(map[string]interface{})
+	masterTags := make(map[string]string)
 
 	for _, masterTagsKV := range masterTagsKVs {
 		masterTagsKVSlice := strings.Split(masterTagsKV, ":")
 		if len(masterTagsKVSlice) >= 2 {
 			tagKey := strings.Replace(strings.TrimSpace(masterTagsKVSlice[0]), " ", "-", -1)
 			tagValueString := strings.TrimSpace(masterTagsKVSlice[1])
-
-			tagValueFloat, err := strconv.ParseFloat(tagValueString, 64)
-			if err == nil {
-				masterTags[strings.TrimSpace(tagKey)] = tagValueFloat
-			} else {
-				masterTags[strings.TrimSpace(tagKey)] = tagValueString
-			}
+			masterTags[strings.TrimSpace(tagKey)] = tagValueString
 		}
 	}
 
-	err = pg.NewHost(r.Context(), currentCluster.ID).UpdateMasterTagsByID(nil, id, masterTags)
+	err = cassandra.NewHost(r.Context()).UpdateMasterTagsByID(id, masterTags)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
@@ -293,8 +283,9 @@ func PostApiHosts(w http.ResponseWriter, r *http.Request) {
 
 	hostRow, err := cassandra.NewHost(r.Context()).CreateOrUpdate(accessTokenRow, dataJson)
 	if err != nil {
-		println("Is there an error?")
-		println(err.Error())
+		errLogger.WithFields(logrus.Fields{
+			"Error": err.Error(),
+		}).Error("Failed to store Host data in DB")
 		libhttp.HandleErrorJson(w, err)
 		return
 	}
@@ -306,8 +297,6 @@ func PostApiHosts(w http.ResponseWriter, r *http.Request) {
 			errLogger.WithFields(logrus.Fields{
 				"Error": err.Error(),
 			}).Error("Failed to get map of metrics by cluster id")
-
-			libhttp.HandleErrorJson(w, err)
 			return
 		}
 
@@ -356,7 +345,7 @@ func GetApiHosts(w http.ResponseWriter, r *http.Request) {
 		interval = "1h"
 	}
 
-	hosts, err := pg.NewHost(r.Context(), accessTokenRow.ClusterID).AllCompactByClusterIDQueryAndUpdatedInterval(nil, accessTokenRow.ClusterID, query, interval)
+	hosts, err := cassandra.NewHost(r.Context()).AllCompactByClusterIDQueryAndUpdatedInterval(accessTokenRow.ClusterID, query, interval)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
@@ -379,9 +368,7 @@ func GetApiHosts(w http.ResponseWriter, r *http.Request) {
 func GetApiHostsID(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	accessTokenRow := r.Context().Value("accessToken").(*cassandra.AccessTokenRow)
-
-	var hostRow *pg.HostRow
+	var hostRow *cassandra.HostRow
 	var hostname string
 
 	id, err := getInt64SlugFromPath(w, r, "id")
@@ -390,14 +377,14 @@ func GetApiHostsID(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if hostname != "" {
-		hostRow, err = pg.NewHost(r.Context(), accessTokenRow.ClusterID).GetByHostname(nil, hostname)
+		hostRow, err = cassandra.NewHost(r.Context()).GetByHostname(hostname)
 		if err != nil {
 			libhttp.HandleErrorJson(w, err)
 			return
 		}
 
 	} else if id > 0 {
-		hostRow, err = pg.NewHost(r.Context(), accessTokenRow.ClusterID).GetByID(nil, id)
+		hostRow, err = cassandra.NewHost(r.Context()).GetByID(id)
 		if err != nil {
 			libhttp.HandleErrorJson(w, err)
 			return
@@ -419,8 +406,6 @@ func GetApiHostsID(w http.ResponseWriter, r *http.Request) {
 func PutApiHostsNameOrIDMasterTags(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html")
 
-	accessTokenRow := r.Context().Value("accessToken").(*cassandra.AccessTokenRow)
-
 	dataJson, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
@@ -434,7 +419,7 @@ func PutApiHostsNameOrIDMasterTags(w http.ResponseWriter, r *http.Request) {
 		hostname = chi.URLParam(r, "id")
 	}
 
-	masterTags := make(map[string]interface{})
+	masterTags := make(map[string]string)
 
 	err = json.Unmarshal(dataJson, &masterTags)
 	if err != nil {
@@ -443,14 +428,14 @@ func PutApiHostsNameOrIDMasterTags(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if hostname != "" {
-		err = pg.NewHost(r.Context(), accessTokenRow.ClusterID).UpdateMasterTagsByHostname(nil, hostname, masterTags)
+		err = cassandra.NewHost(r.Context()).UpdateMasterTagsByHostname(hostname, masterTags)
 		if err != nil {
 			libhttp.HandleErrorJson(w, err)
 			return
 		}
 
 	} else if id > 0 {
-		err = pg.NewHost(r.Context(), accessTokenRow.ClusterID).UpdateMasterTagsByID(nil, id, masterTags)
+		err = cassandra.NewHost(r.Context()).UpdateMasterTagsByID(id, masterTags)
 		if err != nil {
 			libhttp.HandleErrorJson(w, err)
 			return

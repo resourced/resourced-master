@@ -84,6 +84,15 @@ func (h *HostRow) DataAsFlatKeyValue() map[string]map[string]interface{} {
 	return outputData
 }
 
+func (h *HostRow) GetMasterTagsString() string {
+	inJSON, err := json.Marshal(h.MasterTags)
+	if err != nil {
+		return ""
+	}
+
+	return string(inJSON)
+}
+
 type Host struct {
 	Base
 }
@@ -173,6 +182,53 @@ func (h *Host) AllByClusterIDAndUpdatedInterval(clusterID int64, updatedInterval
 	return rows, err
 }
 
+// AllCompactByClusterIDAndUpdatedInterval returns all rows.
+func (h *Host) AllCompactByClusterIDAndUpdatedInterval(clusterID int64, updatedInterval string) ([]*HostRow, error) {
+	session, err := h.GetCassandraSession()
+	if err != nil {
+		return nil, err
+	}
+
+	updatedDuration, err := time.ParseDuration(updatedInterval)
+	if err != nil {
+		return nil, err
+	}
+
+	updated := time.Now().UTC().Add(-1 * updatedDuration)
+	updatedUnix := updated.UTC().Unix()
+
+	rows := []*HostRow{}
+
+	query := fmt.Sprintf(`SELECT id, cluster_id, access_token_id, hostname, updated, tags, master_tags FROM %v WHERE cluster_id=? AND updated >= ? ALLOW FILTERING`, h.table)
+
+	var scannedClusterID, scannedAccessTokenID, scannedUpdated int64
+	var scannedID, scannedHostname string
+	var scannedTags, scannedMasterTags map[string]string
+
+	// old: 	query := fmt.Sprintf("SELECT * FROM %v WHERE cluster_id=$1 AND updated >= (NOW() at time zone 'utc' - INTERVAL '%v')", h.table, updatedInterval)
+	iter := session.Query(query, clusterID, updatedUnix).Iter()
+	for iter.Scan(&scannedID, &scannedClusterID, &scannedAccessTokenID, &scannedHostname, &scannedUpdated, &scannedTags, &scannedMasterTags) {
+		println("is there something?")
+		rows = append(rows, &HostRow{
+			ID:            scannedID,
+			ClusterID:     scannedClusterID,
+			AccessTokenID: scannedAccessTokenID,
+			Hostname:      scannedHostname,
+			Updated:       scannedUpdated,
+			Tags:          scannedTags,
+			MasterTags:    scannedMasterTags,
+		})
+	}
+	if err := iter.Close(); err != nil {
+		err = fmt.Errorf("%v. Query: %v", err.Error(), query)
+		logrus.WithFields(logrus.Fields{"Method": "Host.AllByClusterID"}).Error(err)
+
+		return nil, err
+	}
+
+	return rows, err
+}
+
 // AllCompactByClusterIDQueryAndUpdatedInterval returns all rows by resourced query.
 func (h *Host) AllCompactByClusterIDQueryAndUpdatedInterval(clusterID int64, resourcedQuery, updatedInterval string) ([]*HostRow, error) {
 	session, err := h.GetCassandraSession()
@@ -182,8 +238,16 @@ func (h *Host) AllCompactByClusterIDQueryAndUpdatedInterval(clusterID int64, res
 
 	luceneQuery := querybuilder.Parse(resourcedQuery)
 	if luceneQuery == "" {
-		return h.AllByClusterID(clusterID)
+		return h.AllCompactByClusterIDAndUpdatedInterval(clusterID, updatedInterval)
 	}
+
+	updatedDuration, err := time.ParseDuration(updatedInterval)
+	if err != nil {
+		return nil, err
+	}
+
+	updated := time.Now().UTC().Add(-1 * updatedDuration)
+	updatedUnix := updated.UTC().Unix()
 
 	rows := []*HostRow{}
 
@@ -193,9 +257,8 @@ func (h *Host) AllCompactByClusterIDQueryAndUpdatedInterval(clusterID int64, res
 	var scannedID, scannedHostname string
 	var scannedTags, scannedMasterTags map[string]string
 
-	// TODO: change 1 based on updatedInt
 	// old: 	query := fmt.Sprintf("SELECT * FROM %v WHERE cluster_id=$1 AND updated >= (NOW() at time zone 'utc' - INTERVAL '%v')", h.table, updatedInterval)
-	iter := session.Query(query, clusterID, 1).Iter()
+	iter := session.Query(query, clusterID, updatedUnix).Iter()
 	for iter.Scan(&scannedID, &scannedClusterID, &scannedAccessTokenID, &scannedHostname, &scannedUpdated, &scannedTags, &scannedMasterTags) {
 		rows = append(rows, &HostRow{
 			ID:            scannedID,
