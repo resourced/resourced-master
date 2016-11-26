@@ -3,6 +3,7 @@ package cassandra
 import (
 	"context"
 	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/Sirupsen/logrus"
@@ -41,35 +42,33 @@ func (ts *TSMetric) CreateByHostRow(hostRow shared.IHostRow, metricsMap map[stri
 
 	// Loop through every host's data and see if they are part of graph metrics.
 	// If they are, insert a record in ts_metrics.
-	for path, data := range hostRow.DataAsFlatKeyValue() {
-		for dataKey, value := range data {
-			metricKey := path + "." + dataKey
+	for metricKey, value := range hostRow.GetData() {
+		if metricID, ok := metricsMap[metricKey]; ok {
 
-			if metricID, ok := metricsMap[metricKey]; ok {
-				// Deserialized JSON number -> interface{} always have float64 as type.
-				if trueValueFloat64, ok := value.(float64); ok {
-					// Ignore error for now, there's no need to break the entire loop when one insert fails.
-					err := session.Query(
-						fmt.Sprintf(`INSERT INTO %v (cluster_id, metric_id, key, host, value, created) VALUES (?, ?, ?, ?, ?, ?) USING TTL ?`, ts.table),
-						hostRow.GetClusterID(),
-						metricID,
-						metricKey,
-						hostRow.GetHostname(),
-						trueValueFloat64,
-						time.Now().UTC().Unix(),
-						ttl,
-					).Exec()
+			// Unfortunately, value is always string because Cassandra map does not support mixed types.
+			value64, err := strconv.ParseFloat(value, 64)
+			if err == nil {
+				// Ignore error for now, there's no need to break the entire loop when one insert fails.
+				err := session.Query(
+					fmt.Sprintf(`INSERT INTO %v (cluster_id, metric_id, key, host, value, created) VALUES (?, ?, ?, ?, ?, ?) USING TTL ?`, ts.table),
+					hostRow.GetClusterID(),
+					metricID,
+					metricKey,
+					hostRow.GetHostname(),
+					value64,
+					time.Now().UTC().Unix(),
+					ttl,
+				).Exec()
 
-					if err != nil {
-						logrus.WithFields(logrus.Fields{
-							"Method":    "TSMetric.CreateByHostRow",
-							"ClusterID": hostRow.GetClusterID(),
-							"MetricID":  metricID,
-							"MetricKey": metricKey,
-							"Hostname":  hostRow.GetHostname(),
-							"Value":     trueValueFloat64,
-						}).Error(err)
-					}
+				if err != nil {
+					logrus.WithFields(logrus.Fields{
+						"Method":    "TSMetric.CreateByHostRow",
+						"ClusterID": hostRow.GetClusterID(),
+						"MetricID":  metricID,
+						"MetricKey": metricKey,
+						"Hostname":  hostRow.GetHostname(),
+						"Value":     value64,
+					}).Error(err)
 				}
 			}
 		}

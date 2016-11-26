@@ -11,7 +11,7 @@ import (
 
 	"github.com/resourced/resourced-master/contexthelper"
 	"github.com/resourced/resourced-master/libhttp"
-	"github.com/resourced/resourced-master/models/pg"
+	"github.com/resourced/resourced-master/models/cassandra"
 	"github.com/resourced/resourced-master/models/shims"
 )
 
@@ -24,7 +24,7 @@ func PostMetrics(w http.ResponseWriter, r *http.Request) {
 
 	key := r.FormValue("Key")
 
-	_, err = pg.NewMetric(r.Context()).CreateOrUpdate(nil, clusterID, key)
+	_, err = cassandra.NewMetric(r.Context()).CreateOrUpdate(clusterID, key)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
@@ -66,13 +66,13 @@ func DeleteMetricID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err = pg.NewMetric(r.Context()).DeleteByClusterIDAndID(nil, clusterID, id)
+	err = cassandra.NewMetric(r.Context()).DeleteByClusterIDAndID(clusterID, id)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
 	}
 
-	err = pg.NewGraph(r.Context()).DeleteMetricFromGraphs(nil, clusterID, id)
+	err = cassandra.NewGraph(r.Context()).DeleteMetricFromGraphs(clusterID, id)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
@@ -120,14 +120,14 @@ func GetApiTSMetricsByHost(w http.ResponseWriter, r *http.Request) {
 
 	host := chi.URLParam(r, "host")
 
-	metricRow, err := pg.NewMetric(r.Context()).GetByID(nil, id)
+	metricRow, err := cassandra.NewMetric(r.Context()).GetByID(id)
 	if err != nil {
 		errLogger.WithFields(logrus.Fields{"Error": err}).Error("Failed to fetch metric row")
 		libhttp.HandleErrorJson(w, err)
 		return
 	}
 
-	clusterRow, err := pg.NewCluster(r.Context()).GetByID(nil, metricRow.ClusterID)
+	clusterRow, err := cassandra.NewCluster(r.Context()).GetByID(metricRow.ClusterID)
 	if err != nil {
 		errLogger.WithFields(logrus.Fields{"Error": err}).Error("Failed to fetch cluster row")
 		libhttp.HandleErrorJson(w, err)
@@ -189,13 +189,13 @@ func GetApiTSMetrics(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	metricRow, err := pg.NewMetric(r.Context()).GetByID(nil, id)
+	metricRow, err := cassandra.NewMetric(r.Context()).GetByID(id)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
 	}
 
-	clusterRow, err := pg.NewCluster(r.Context()).GetByID(nil, metricRow.ClusterID)
+	clusterRow, err := cassandra.NewCluster(r.Context()).GetByID(metricRow.ClusterID)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return

@@ -15,7 +15,6 @@ import (
 	"github.com/resourced/resourced-master/contexthelper"
 	"github.com/resourced/resourced-master/libhttp"
 	"github.com/resourced/resourced-master/models/cassandra"
-	"github.com/resourced/resourced-master/models/shims"
 )
 
 func GetHosts(w http.ResponseWriter, r *http.Request) {
@@ -300,10 +299,7 @@ func PostApiHosts(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		// Create ts_metrics row
-		shimsTSMetric := shims.NewTSMetric(r.Context(), hostRow.ClusterID)
-
-		err = shimsTSMetric.CreateByHostRow(hostRow, metricsMap, clusterRow.GetDeletedFromUNIXTimestampForInsert("ts_metrics"), clusterRow.GetTTLDurationForInsert("ts_metrics"))
+		err = cassandra.NewTSMetric(r.Context()).CreateByHostRow(hostRow, metricsMap, clusterRow.GetTTLDurationForInsert("ts_metrics"))
 		if err != nil {
 			errLogger.Error(err)
 			return

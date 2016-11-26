@@ -25,7 +25,7 @@ func NewHost(ctx context.Context) *Host {
 }
 
 type AgentResourcePayload struct {
-	Data map[string]interface{}
+	Data map[string]string
 	Host struct {
 		Name string
 		Tags map[string]string
@@ -54,6 +54,10 @@ func (h *HostRow) GetClusterID() int64 {
 
 func (h *HostRow) GetHostname() string {
 	return h.Hostname
+}
+
+func (h *HostRow) GetData() map[string]string {
+	return h.Data
 }
 
 func (h *HostRow) DataAsFlatKeyValue() map[string]map[string]interface{} {
@@ -445,6 +449,7 @@ func (h *Host) CreateOrUpdate(accessTokenRow *AccessTokenRow, jsonData []byte) (
 		Hostname:      resourcedPayload.Host.Name,
 		Updated:       updated,
 		Tags:          resourcedPayload.Host.Tags,
+		Data:          resourcedPayload.Data,
 	}, nil
 }
 
