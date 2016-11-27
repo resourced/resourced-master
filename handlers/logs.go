@@ -13,7 +13,6 @@ import (
 	"github.com/resourced/resourced-master/contexthelper"
 	"github.com/resourced/resourced-master/libhttp"
 	"github.com/resourced/resourced-master/models/cassandra"
-	"github.com/resourced/resourced-master/models/pg"
 	"github.com/resourced/resourced-master/models/shared"
 	"github.com/resourced/resourced-master/models/shims"
 )
@@ -52,7 +51,7 @@ func GetLogs(w http.ResponseWriter, r *http.Request) {
 		from = to - 1800 // 30 minutes
 	}
 
-	savedQueries, err := pg.NewSavedQuery(r.Context()).AllByClusterIDAndType(nil, currentCluster.ID, "logs")
+	savedQueries, err := cassandra.NewSavedQuery(r.Context()).AllByClusterIDAndType(currentCluster.ID, "logs")
 	if err != nil && err.Error() != "sql: no rows in result set" {
 		libhttp.HandleErrorHTML(w, err, 500)
 		return
@@ -71,7 +70,7 @@ func GetLogs(w http.ResponseWriter, r *http.Request) {
 		AccessToken    *cassandra.AccessTokenRow
 		Clusters       []*cassandra.ClusterRow
 		CurrentCluster *cassandra.ClusterRow
-		SavedQueries   []*pg.SavedQueryRow
+		SavedQueries   []*cassandra.SavedQueryRow
 		From           int64
 		To             int64
 	}{
@@ -171,7 +170,7 @@ func GetApiLogs(w http.ResponseWriter, r *http.Request) {
 		from = to - 1800 // 30 minutes
 	}
 
-	clusterRow, err := pg.NewCluster(r.Context()).GetByID(nil, accessTokenRow.ClusterID)
+	clusterRow, err := cassandra.NewCluster(r.Context()).GetByID(accessTokenRow.ClusterID)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
