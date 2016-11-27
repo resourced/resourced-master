@@ -12,7 +12,6 @@ import (
 	"github.com/resourced/resourced-master/libhttp"
 	"github.com/resourced/resourced-master/messagebus"
 	"github.com/resourced/resourced-master/models/cassandra"
-	"github.com/resourced/resourced-master/models/pg"
 )
 
 func ApiMetricStreams(w http.ResponseWriter, r *http.Request) {
@@ -132,7 +131,7 @@ func ApiMetricIDStreams(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	metricRow, err := pg.NewMetric(r.Context()).GetByID(nil, metricID)
+	metricRow, err := cassandra.NewMetric(r.Context()).GetByID(metricID)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
