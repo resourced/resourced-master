@@ -220,6 +220,10 @@ func parseStatement(statement string, skipFields []string) string {
 			field := parts[0]
 			field = strings.TrimSpace(field)
 
+			if strings.HasPrefix(field, "/") {
+				field = strings.Replace(field, "/", `\/`, 1)
+			}
+
 			value := parts[len(parts)-1]
 			value = strings.TrimSpace(value)
 			value = libstring.StripChars(value, `"'`)
