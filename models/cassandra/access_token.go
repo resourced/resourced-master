@@ -105,7 +105,7 @@ func (t *AccessToken) GetByUserID(userID int64) (*AccessTokenRow, error) {
 		return nil, err
 	}
 
-	query := fmt.Sprintf("SELECT id, user_id, cluster_id, token_, level, enabled FROM %v WHERE user_id=? LIMIT 1", t.table)
+	query := fmt.Sprintf("SELECT id, user_id, cluster_id, token_, level, enabled FROM %v WHERE user_id=? LIMIT 1 ALLOW FILTERING", t.table)
 
 	var scannedID, scannedUserID, scannedClusterID int64
 	var scannedToken, scannedLevel string
@@ -135,7 +135,7 @@ func (t *AccessToken) GetByClusterID(clusterID int64) (*AccessTokenRow, error) {
 		return nil, err
 	}
 
-	query := fmt.Sprintf("SELECT id, user_id, cluster_id, token_, level, enabled FROM %v WHERE user_id=? LIMIT 1", t.table)
+	query := fmt.Sprintf("SELECT id, user_id, cluster_id, token_, level, enabled FROM %v WHERE user_id=? LIMIT 1 ALLOW FILTERING", t.table)
 
 	var scannedID, scannedUserID, scannedClusterID int64
 	var scannedToken, scannedLevel string

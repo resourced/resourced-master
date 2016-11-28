@@ -133,7 +133,7 @@ func (sq *SavedQuery) GetByAccessTokenAndQuery(clusterID int64, savedQueryType, 
 		return nil, err
 	}
 
-	query := fmt.Sprintf("SELECT id, user_id, cluster_id, type, query FROM %v WHERE cluster_id=? AND type=? AND query=?", sq.table)
+	query := fmt.Sprintf("SELECT id, user_id, cluster_id, type, query FROM %v WHERE cluster_id=? AND type=? AND query=? ALLOW FILTERING", sq.table)
 
 	var scannedID, scannedUserID, scannedClusterID int64
 	var scannedType, scannedQuery string
@@ -157,7 +157,7 @@ func (sq *SavedQuery) GetByAccessTokenAndQuery(clusterID int64, savedQueryType, 
 // CreateOrUpdate performs insert/update for one savedQuery data.
 func (sq *SavedQuery) CreateOrUpdate(accessTokenRow *AccessTokenRow, savedQueryType, savedQuery string) (*SavedQueryRow, error) {
 	savedQueryRow, err := sq.GetByAccessTokenAndQuery(accessTokenRow.ClusterID, savedQueryType, savedQuery)
-	if err != nil {
+	if err != nil && err.Error() != "not found" {
 		return nil, err
 	}
 
@@ -166,26 +166,26 @@ func (sq *SavedQuery) CreateOrUpdate(accessTokenRow *AccessTokenRow, savedQueryT
 		return nil, err
 	}
 
+	var id int64
+
 	if savedQueryRow == nil {
-		id := NewExplicitID()
-
-		query := fmt.Sprintf("INSERT INTO %v (id, user_id, cluster_id, type, query) VALUES (?, ?, ?, ?, ?)", sq.table)
-
-		err = session.Query(query, id, accessTokenRow.UserID, accessTokenRow.ClusterID, savedQueryType, savedQuery).Exec()
-		if err != nil {
-			return nil, err
-		}
-
-		return &SavedQueryRow{
-			ID:        id,
-			UserID:    accessTokenRow.UserID,
-			ClusterID: accessTokenRow.ClusterID,
-			Type:      savedQueryType,
-			Query:     savedQuery,
-		}, nil
+		id = NewExplicitID()
 	} else {
-		// TODO: UPDATE
+		id = savedQueryRow.ID
 	}
 
-	return nil, nil
+	query := fmt.Sprintf("INSERT INTO %v (id, user_id, cluster_id, type, query) VALUES (?, ?, ?, ?, ?)", sq.table)
+
+	err = session.Query(query, id, accessTokenRow.UserID, accessTokenRow.ClusterID, savedQueryType, savedQuery).Exec()
+	if err != nil {
+		return nil, err
+	}
+
+	return &SavedQueryRow{
+		ID:        id,
+		UserID:    accessTokenRow.UserID,
+		ClusterID: accessTokenRow.ClusterID,
+		Type:      savedQueryType,
+		Query:     savedQuery,
+	}, nil
 }

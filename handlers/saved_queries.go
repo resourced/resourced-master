@@ -7,13 +7,12 @@ import (
 
 	"github.com/resourced/resourced-master/libhttp"
 	"github.com/resourced/resourced-master/models/cassandra"
-	"github.com/resourced/resourced-master/models/pg"
 )
 
 func PostSavedQueries(w http.ResponseWriter, r *http.Request) {
 	currentUser := r.Context().Value("currentUser").(*cassandra.UserRow)
 
-	accessTokenRow, err := pg.NewAccessToken(r.Context()).GetByUserID(nil, currentUser.ID)
+	accessTokenRow, err := cassandra.NewAccessToken(r.Context()).GetByUserID(currentUser.ID)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
@@ -22,7 +21,7 @@ func PostSavedQueries(w http.ResponseWriter, r *http.Request) {
 	savedQueryType := r.FormValue("Type")
 	savedQuery := r.FormValue("SavedQuery")
 
-	_, err = pg.NewSavedQuery(r.Context()).CreateOrUpdate(nil, accessTokenRow, savedQueryType, savedQuery)
+	_, err = cassandra.NewSavedQuery(r.Context()).CreateOrUpdate(accessTokenRow, savedQueryType, savedQuery)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
@@ -50,11 +49,11 @@ func DeleteSavedQueriesID(w http.ResponseWriter, r *http.Request) {
 
 	currentUser := r.Context().Value("currentUser").(*cassandra.UserRow)
 
-	currentCluster := r.Context().Value("currentCluster").(*pg.ClusterRow)
+	currentCluster := r.Context().Value("currentCluster").(*cassandra.ClusterRow)
 
-	sq := pg.NewSavedQuery(r.Context())
+	sq := cassandra.NewSavedQuery(r.Context())
 
-	savedQueryRow, err := sq.GetByID(nil, savedQueryID)
+	savedQueryRow, err := sq.GetByID(savedQueryID)
 
 	if currentUser.ID != savedQueryRow.UserID {
 		err := errors.New("Modifying other user's saved query is not allowed.")
@@ -62,7 +61,7 @@ func DeleteSavedQueriesID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err = sq.DeleteByClusterIDAndID(nil, currentCluster.ID, savedQueryID)
+	err = sq.DeleteByClusterIDAndID(currentCluster.ID, savedQueryID)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
