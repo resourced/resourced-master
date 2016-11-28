@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	"github.com/Sirupsen/logrus"
 )
@@ -258,9 +259,38 @@ func (g *Graph) UpdateByID(id int64, data map[string]string) (*GraphRow, error) 
 		return nil, err
 	}
 
-	query := fmt.Sprintf("UPDATE %v SET name=?, description=?, range=?, metrics=? WHERE id=?", g.table)
+	fields := make([]string, 0)
+	fieldValues := make([]interface{}, 0)
 
-	err = session.Query(query, data["name"], data["description"], data["range"], data["metrics"], row.ID).Exec()
+	name, ok := data["name"]
+	if ok {
+		fields = append(fields, "name=?")
+		fieldValues = append(fieldValues, name)
+	}
+
+	description, ok := data["description"]
+	if ok {
+		fields = append(fields, "description=?")
+		fieldValues = append(fieldValues, description)
+	}
+
+	range_, ok := data["range"]
+	if ok {
+		fields = append(fields, "range=?")
+		fieldValues = append(fieldValues, range_)
+	}
+
+	metrics, ok := data["metrics"]
+	if ok {
+		fields = append(fields, "metrics=?")
+		fieldValues = append(fieldValues, metrics)
+	}
+
+	fieldValues = append(fieldValues, row.ID)
+
+	query := fmt.Sprintf("UPDATE %v SET %v WHERE id=?", g.table, strings.Join(fields, ","))
+
+	err = session.Query(query, fieldValues...).Exec()
 	if err != nil {
 		return nil, err
 	}

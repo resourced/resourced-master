@@ -232,9 +232,7 @@ func PutGraphsID(w http.ResponseWriter, r *http.Request) {
 	}
 
 	metricsJSON := r.FormValue("MetricsWithOrder")
-	if metricsJSON == "" {
-		data["metrics"] = "[]"
-	} else {
+	if metricsJSON != "" {
 		data["metrics"] = metricsJSON
 	}
 
