@@ -6,7 +6,7 @@ CREATE TABLE IF NOT EXISTS ts_events (
     description text,
     PRIMARY KEY (cluster_id, created_from, created_to)
 ) WITH CLUSTERING ORDER BY (created_from ASC, created_to ASC)
-  AND compaction = {'compaction_window_unit': 'HOURS', 'compaction_window_size': '24', 'class':'com.jeffjirsa.cassandra.db.compaction.TimeWindowCompactionStrategy'}
+  AND compaction = {'compaction_window_unit': 'HOURS', 'compaction_window_size': '24', 'class':'org.apache.cassandra.db.compaction.TimeWindowCompactionStrategy'}
   AND caching = {'keys': 'NONE', 'rows_per_partition': 'NONE'}
   AND compression = {'sstable_compression': ''}
   AND crc_check_chance = 0

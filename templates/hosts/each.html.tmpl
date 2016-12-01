@@ -359,7 +359,7 @@ $(document).on('submit', '.chart-metric-form', function(event) {
     event.preventDefault();
 
     var form = $(this);
-    var hostID = form.data('host-id');
+    var hostID = form.data('host-id').replace('.', '\\.');
     var key = form.data('key');
 
     $.ajax({

@@ -4,7 +4,7 @@
 Hosts = ["127.0.0.1"]
 ProtoVersion = 4
 Port = 9042
-Keyspace = "resourced_master_hosts"
+Keyspace = "resourced_master"
 NumConns = 2
 Consistency = "one"
 MaxPreparedStmts  = 1000
