@@ -60,20 +60,38 @@ func DeleteMetricID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	errLogger, err := contexthelper.GetLogger(r.Context(), "ErrLogger")
+	if err != nil {
+		libhttp.HandleErrorJson(w, err)
+		return
+	}
+
 	id, err := getInt64SlugFromPath(w, r, "metricID")
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
 	}
 
-	err = cassandra.NewMetric(r.Context()).DeleteByClusterIDAndID(clusterID, id)
+	err = cassandra.NewMetric(r.Context()).DeleteByID(id)
 	if err != nil {
+		errLogger.WithFields(logrus.Fields{
+			"Error":     err,
+			"ClusterID": clusterID,
+			"ID":        id,
+		}).Error("Failed to delete metric row")
+
 		libhttp.HandleErrorJson(w, err)
 		return
 	}
 
 	err = cassandra.NewGraph(r.Context()).DeleteMetricFromGraphs(clusterID, id)
 	if err != nil {
+		errLogger.WithFields(logrus.Fields{
+			"Error":     err,
+			"ClusterID": clusterID,
+			"ID":        id,
+		}).Error("Failed to delete metric from graph")
+
 		libhttp.HandleErrorJson(w, err)
 		return
 	}
