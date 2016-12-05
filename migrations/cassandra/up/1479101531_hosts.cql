@@ -6,9 +6,23 @@ CREATE TABLE IF NOT EXISTS hosts (
     updated bigint,
     tags map<text, text>,
     master_tags map<text, text>,
-    data map<text, text>,
     lucene text,
     PRIMARY KEY (id)
+) WITH caching = {'keys': 'ALL', 'rows_per_partition': 'ALL'}
+  AND crc_check_chance = 0
+  AND dclocal_read_repair_chance = 0
+  AND default_time_to_live = 0
+  AND gc_grace_seconds = 0
+  AND memtable_flush_period_in_ms = 0
+  AND read_repair_chance = 0.0
+  AND speculative_retry = '99PERCENTILE';
+
+CREATE TABLE IF NOT EXISTS hosts_data (
+    id text,
+    key text,
+    value text,
+    lucene text,
+    PRIMARY KEY (id, key)
 ) WITH caching = {'keys': 'ALL', 'rows_per_partition': 'ALL'}
   AND crc_check_chance = 0
   AND dclocal_read_repair_chance = 0

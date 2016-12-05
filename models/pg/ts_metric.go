@@ -81,29 +81,29 @@ func (ts *TSMetric) Create(tx *sqlx.Tx, clusterID, metricID int64, host, key str
 func (ts *TSMetric) CreateByHostRow(tx *sqlx.Tx, hostRow shared.IHostRow, metricsMap map[string]int64, deletedFrom int64) error {
 	// Loop through every host's data and see if they are part of graph metrics.
 	// If they are, insert a record in ts_metrics.
-	for path, data := range hostRow.DataAsFlatKeyValue() {
-		for dataKey, value := range data {
-			metricKey := path + "." + dataKey
+	// for path, data := range hostRow.DataAsFlatKeyValue() {
+	// 	for dataKey, value := range data {
+	// 		metricKey := path + "." + dataKey
 
-			if metricID, ok := metricsMap[metricKey]; ok {
-				// Deserialized JSON number -> interface{} always have float64 as type.
-				if trueValueFloat64, ok := value.(float64); ok {
-					// Ignore error for now, there's no need to break the entire loop when one insert fails.
-					err := ts.Create(tx, hostRow.GetClusterID(), metricID, hostRow.GetHostname(), metricKey, trueValueFloat64, deletedFrom)
-					if err != nil {
-						logrus.WithFields(logrus.Fields{
-							"Method":    "TSMetric.Create",
-							"ClusterID": hostRow.GetClusterID(),
-							"MetricID":  metricID,
-							"MetricKey": metricKey,
-							"Hostname":  hostRow.GetHostname(),
-							"Value":     trueValueFloat64,
-						}).Error(err)
-					}
-				}
-			}
-		}
-	}
+	// 		if metricID, ok := metricsMap[metricKey]; ok {
+	// 			// Deserialized JSON number -> interface{} always have float64 as type.
+	// 			if trueValueFloat64, ok := value.(float64); ok {
+	// 				// Ignore error for now, there's no need to break the entire loop when one insert fails.
+	// 				err := ts.Create(tx, hostRow.GetClusterID(), metricID, hostRow.GetHostname(), metricKey, trueValueFloat64, deletedFrom)
+	// 				if err != nil {
+	// 					logrus.WithFields(logrus.Fields{
+	// 						"Method":    "TSMetric.Create",
+	// 						"ClusterID": hostRow.GetClusterID(),
+	// 						"MetricID":  metricID,
+	// 						"MetricKey": metricKey,
+	// 						"Hostname":  hostRow.GetHostname(),
+	// 						"Value":     trueValueFloat64,
+	// 					}).Error(err)
+	// 				}
+	// 			}
+	// 		}
+	// 	}
+	// }
 	return nil
 }
 

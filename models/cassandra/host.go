@@ -5,8 +5,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"strconv"
-	"strings"
+	// "strconv"
+	// "strings"
 	"time"
 
 	"github.com/Sirupsen/logrus"
@@ -45,7 +45,6 @@ type HostRow struct {
 	Updated       int64             `db:"updated"`
 	Tags          map[string]string `db:"tags" json:",omitempty"`
 	MasterTags    map[string]string `db:"master_tags" json:",omitempty"`
-	Data          map[string]string `db:"data" json:",omitempty"`
 }
 
 func (h *HostRow) GetClusterID() int64 {
@@ -54,38 +53,6 @@ func (h *HostRow) GetClusterID() int64 {
 
 func (h *HostRow) GetHostname() string {
 	return h.Hostname
-}
-
-func (h *HostRow) GetData() map[string]string {
-	return h.Data
-}
-
-func (h *HostRow) DataAsFlatKeyValue() map[string]map[string]interface{} {
-	outputData := make(map[string]map[string]interface{})
-
-	for path, value := range h.Data {
-		pathChunks := strings.Split(path, ".")
-
-		if len(pathChunks) > 0 {
-			innerPath := strings.Replace(path, pathChunks[0]+".", "", 1)
-
-			innerOutputData, ok := outputData[pathChunks[0]]
-			if !ok {
-				innerOutputData = make(map[string]interface{})
-			}
-
-			valueFloat, err := strconv.ParseFloat(value, 64)
-			if err == nil {
-				innerOutputData[innerPath] = valueFloat
-			} else {
-				innerOutputData[innerPath] = value
-			}
-
-			outputData[pathChunks[0]] = innerOutputData
-		}
-	}
-
-	return outputData
 }
 
 func (h *HostRow) GetMasterTagsString() string {
@@ -243,7 +210,7 @@ func (h *Host) AllByClusterIDAndUpdatedInterval(clusterID int64, updatedInterval
 	rows := []*HostRow{}
 
 	// old: 	query := fmt.Sprintf("SELECT * FROM %v WHERE cluster_id=$1 AND updated >= (NOW() at time zone 'utc' - INTERVAL '%v')", h.table, updatedInterval)
-	query := fmt.Sprintf(`SELECT id, cluster_id, access_token_id, hostname, updated, tags, master_tags, data FROM %v WHERE expr(idx_hosts_lucene, '{
+	query := fmt.Sprintf(`SELECT id, cluster_id, access_token_id, hostname, updated, tags, master_tags FROM %v WHERE expr(idx_hosts_lucene, '{
     filter: {
         type: "boolean",
         must: [
@@ -255,7 +222,7 @@ func (h *Host) AllByClusterIDAndUpdatedInterval(clusterID int64, updatedInterval
 
 	var scannedClusterID, scannedAccessTokenID, scannedUpdated int64
 	var scannedID, scannedHostname string
-	var scannedTags, scannedMasterTags, scannedData map[string]string
+	var scannedTags, scannedMasterTags map[string]string
 
 	iter := session.Query(query).Iter()
 	for iter.Scan(&scannedID, &scannedClusterID, &scannedAccessTokenID, &scannedHostname, &scannedUpdated, &scannedTags, &scannedMasterTags) {
@@ -267,7 +234,6 @@ func (h *Host) AllByClusterIDAndUpdatedInterval(clusterID int64, updatedInterval
 			Updated:       scannedUpdated,
 			Tags:          scannedTags,
 			MasterTags:    scannedMasterTags,
-			Data:          scannedData,
 		})
 	}
 	if err := iter.Close(); err != nil {
@@ -303,7 +269,7 @@ func (h *Host) AllByClusterIDQueryAndUpdatedInterval(clusterID int64, resourcedQ
 	rows := []*HostRow{}
 
 	// old: 	query := fmt.Sprintf("SELECT * FROM %v WHERE cluster_id=$1 AND updated >= (NOW() at time zone 'utc' - INTERVAL '%v')", h.table, updatedInterval)
-	query := fmt.Sprintf(`SELECT id, cluster_id, access_token_id, hostname, updated, tags, master_tags, data FROM %v WHERE expr(idx_hosts_lucene, '{
+	query := fmt.Sprintf(`SELECT id, cluster_id, access_token_id, hostname, updated, tags, master_tags FROM %v WHERE expr(idx_hosts_lucene, '{
     filter: {
         type: "boolean",
         must: [
@@ -318,10 +284,10 @@ func (h *Host) AllByClusterIDQueryAndUpdatedInterval(clusterID int64, resourcedQ
 
 	var scannedClusterID, scannedAccessTokenID, scannedUpdated int64
 	var scannedID, scannedHostname string
-	var scannedTags, scannedMasterTags, scannedData map[string]string
+	var scannedTags, scannedMasterTags map[string]string
 
 	iter := session.Query(query).Iter()
-	for iter.Scan(&scannedID, &scannedClusterID, &scannedAccessTokenID, &scannedHostname, &scannedUpdated, &scannedTags, &scannedMasterTags, &scannedData) {
+	for iter.Scan(&scannedID, &scannedClusterID, &scannedAccessTokenID, &scannedHostname, &scannedUpdated, &scannedTags, &scannedMasterTags) {
 		rows = append(rows, &HostRow{
 			ID:            scannedID,
 			ClusterID:     scannedClusterID,
@@ -330,7 +296,6 @@ func (h *Host) AllByClusterIDQueryAndUpdatedInterval(clusterID int64, resourcedQ
 			Updated:       scannedUpdated,
 			Tags:          scannedTags,
 			MasterTags:    scannedMasterTags,
-			Data:          scannedData,
 		})
 	}
 	if err := iter.Close(); err != nil {
@@ -380,13 +345,13 @@ func (h *Host) GetByID(id string) (*HostRow, error) {
 		return nil, err
 	}
 
-	query := fmt.Sprintf("SELECT id, cluster_id, access_token_id, hostname, updated, tags, master_tags, data FROM %v WHERE id=?", h.table)
+	query := fmt.Sprintf("SELECT id, cluster_id, access_token_id, hostname, updated, tags, master_tags FROM %v WHERE id=?", h.table)
 
 	var scannedClusterID, scannedAccessTokenID, scannedUpdated int64
 	var scannedID, scannedHostname string
-	var scannedTags, scannedMasterTags, scannedData map[string]string
+	var scannedTags, scannedMasterTags map[string]string
 
-	err = session.Query(query, id).Scan(&scannedID, &scannedClusterID, &scannedAccessTokenID, &scannedHostname, &scannedUpdated, &scannedTags, &scannedMasterTags, &scannedData)
+	err = session.Query(query, id).Scan(&scannedID, &scannedClusterID, &scannedAccessTokenID, &scannedHostname, &scannedUpdated, &scannedTags, &scannedMasterTags)
 	if err != nil {
 		return nil, err
 	}
@@ -399,7 +364,6 @@ func (h *Host) GetByID(id string) (*HostRow, error) {
 		Updated:       scannedUpdated,
 		Tags:          scannedTags,
 		MasterTags:    scannedMasterTags,
-		Data:          scannedData,
 	}
 
 	return row, err
@@ -435,9 +399,9 @@ func (h *Host) CreateOrUpdate(accessTokenRow *AccessTokenRow, jsonData []byte) (
 	id := resourcedPayload.Host.Name
 	updated := time.Now().UTC().Unix()
 
-	query := fmt.Sprintf("INSERT INTO %v (id, cluster_id, access_token_id, hostname, updated, tags, data) VALUES (?, ?, ?, ?, ?, ?, ?)", h.table)
+	query := fmt.Sprintf("INSERT INTO %v (id, cluster_id, access_token_id, hostname, updated, tags) VALUES (?, ?, ?, ?, ?, ?)", h.table)
 
-	err = session.Query(query, id, accessTokenRow.ClusterID, accessTokenRow.ID, resourcedPayload.Host.Name, updated, resourcedPayload.Host.Tags, resourcedPayload.Data).Exec()
+	err = session.Query(query, id, accessTokenRow.ClusterID, accessTokenRow.ID, resourcedPayload.Host.Name, updated, resourcedPayload.Host.Tags).Exec()
 	if err != nil {
 		return nil, err
 	}
@@ -449,7 +413,6 @@ func (h *Host) CreateOrUpdate(accessTokenRow *AccessTokenRow, jsonData []byte) (
 		Hostname:      resourcedPayload.Host.Name,
 		Updated:       updated,
 		Tags:          resourcedPayload.Host.Tags,
-		Data:          resourcedPayload.Data,
 	}, nil
 }
 
