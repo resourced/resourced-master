@@ -2,6 +2,8 @@ CREATE CUSTOM INDEX IF NOT EXISTS idx_hosts_data_lucene ON hosts_data (lucene) U
     'schema' : '{
         fields : {
             id : { type : "string"},
+            cluster_id: {type : "integer"},
+            updated: {type : "integer"},
             key : { type : "string"},
             value_string : { type : "string", column: "value"},
             value_float : { type : "float", column: "value"}

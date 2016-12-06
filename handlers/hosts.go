@@ -139,6 +139,12 @@ func GetHostsID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	hostData, err := cassandra.NewHostData(r.Context()).AllByID(host.ID)
+	if err != nil {
+		libhttp.HandleErrorHTML(w, err, 500)
+		return
+	}
+
 	// -----------------------------------
 	// Create channels to receive SQL rows
 	// -----------------------------------
@@ -192,6 +198,7 @@ func GetHostsID(w http.ResponseWriter, r *http.Request) {
 		Clusters       []*cassandra.ClusterRow
 		CurrentCluster *cassandra.ClusterRow
 		Host           *cassandra.HostRow
+		HostData       map[string]interface{}
 		SavedQueries   []*cassandra.SavedQueryRow
 		MetricsMap     map[string]int64
 	}{
@@ -202,6 +209,7 @@ func GetHostsID(w http.ResponseWriter, r *http.Request) {
 		r.Context().Value("clusters").([]*cassandra.ClusterRow),
 		currentCluster,
 		host,
+		hostData,
 		savedQueriesWithError.SavedQueries,
 		metricsMapWithError.MetricsMap,
 	}
