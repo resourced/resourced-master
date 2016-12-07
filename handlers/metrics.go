@@ -12,7 +12,7 @@ import (
 	"github.com/resourced/resourced-master/contexthelper"
 	"github.com/resourced/resourced-master/libhttp"
 	"github.com/resourced/resourced-master/models/cassandra"
-	"github.com/resourced/resourced-master/models/shims"
+	"github.com/resourced/resourced-master/models/shared"
 )
 
 func PostMetrics(w http.ResponseWriter, r *http.Request) {
@@ -145,20 +145,15 @@ func GetApiTSMetricsByHost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	clusterRow, err := cassandra.NewCluster(r.Context()).GetByID(metricRow.ClusterID)
-	if err != nil {
-		errLogger.WithFields(logrus.Fields{"Error": err}).Error("Failed to fetch cluster row")
-		libhttp.HandleErrorJson(w, err)
-		return
-	}
-
-	shimsTSMetric := shims.NewTSMetric(r.Context(), metricRow.ClusterID)
-
-	hcMetrics, err := shimsTSMetric.AllByMetricIDHostAndRangeForHighchart(metricRow.ClusterID, id, host, from, to, clusterRow.GetDeletedFromUNIXTimestampForSelect("ts_metrics"), downsample)
+	hcMetrics, err := cassandra.NewTSMetric(r.Context()).AllByMetricIDHostAndRangeForHighchart(metricRow.ClusterID, id, host, from, to)
 	if err != nil {
 		errLogger.WithFields(logrus.Fields{"Error": err}).Error("Failed to fetch metrics rows")
 		libhttp.HandleErrorJson(w, err)
 		return
+	}
+
+	if downsample > 0 {
+		hcMetrics.Data = shared.LTTB(hcMetrics.Data, int(downsample))
 	}
 
 	hcMetricsJSON, err := json.Marshal(hcMetrics)
@@ -213,19 +208,17 @@ func GetApiTSMetrics(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	clusterRow, err := cassandra.NewCluster(r.Context()).GetByID(metricRow.ClusterID)
-	if err != nil {
-		libhttp.HandleErrorJson(w, err)
-		return
-	}
-
-	shimsTSMetric := shims.NewTSMetric(r.Context(), metricRow.ClusterID)
-
-	hcMetrics, err := shimsTSMetric.AllByMetricIDAndRangeForHighchart(metricRow.ClusterID, id, from, to, clusterRow.GetDeletedFromUNIXTimestampForSelect("ts_metrics"), downsample)
+	hcMetrics, err := cassandra.NewTSMetric(r.Context()).AllByMetricIDAndRangeForHighchart(metricRow.ClusterID, id, from, to)
 	if err != nil {
 		errLogger.WithFields(logrus.Fields{"Error": err}).Error("Failed to fetch metrics rows")
 		libhttp.HandleErrorJson(w, err)
 		return
+	}
+
+	if downsample > 0 {
+		for i, hcMetric := range hcMetrics {
+			hcMetrics[i].Data = shared.LTTB(hcMetric.Data, int(downsample))
+		}
 	}
 
 	hcMetricsJSON, err := json.Marshal(hcMetrics)

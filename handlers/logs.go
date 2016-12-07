@@ -14,7 +14,6 @@ import (
 	"github.com/resourced/resourced-master/libhttp"
 	"github.com/resourced/resourced-master/models/cassandra"
 	"github.com/resourced/resourced-master/models/shared"
-	"github.com/resourced/resourced-master/models/shims"
 )
 
 func GetLogs(w http.ResponseWriter, r *http.Request) {
@@ -34,7 +33,7 @@ func GetLogs(w http.ResponseWriter, r *http.Request) {
 	var err error
 
 	if fromString == "" || toString == "" {
-		lastLogRow, err = shims.NewTSLog(r.Context(), currentCluster.ID).LastByClusterID(currentCluster.ID)
+		lastLogRow, err = cassandra.NewTSLog(r.Context()).LastByClusterID(currentCluster.ID)
 		if err != nil && err.Error() != "sql: no rows in result set" {
 			libhttp.HandleErrorHTML(w, err, 500)
 			return
@@ -124,10 +123,8 @@ func PostApiLogs(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	shimsTSLog := shims.NewTSLog(r.Context(), accessTokenRow.ClusterID)
-
 	go func() {
-		err = shimsTSLog.CreateFromJSON(accessTokenRow.ClusterID, dataJson, clusterRow.GetDeletedFromUNIXTimestampForInsert("ts_logs"), clusterRow.GetTTLDurationForInsert("ts_logs"))
+		err = cassandra.NewTSLog(r.Context()).CreateFromJSON(accessTokenRow.ClusterID, dataJson, clusterRow.GetTTLDurationForInsert("ts_logs"))
 		if err != nil {
 			errLogger.Error(err)
 		}
@@ -150,7 +147,7 @@ func GetApiLogs(w http.ResponseWriter, r *http.Request) {
 	var lastLogRow shared.ICreatedUnix
 	var err error
 
-	tsLog := shims.NewTSLog(r.Context(), accessTokenRow.ClusterID)
+	tsLog := cassandra.NewTSLog(r.Context())
 
 	if fromString == "" || toString == "" {
 		lastLogRow, err = tsLog.LastByClusterID(accessTokenRow.ID)
@@ -170,18 +167,11 @@ func GetApiLogs(w http.ResponseWriter, r *http.Request) {
 		from = to - 1800 // 30 minutes
 	}
 
-	clusterRow, err := cassandra.NewCluster(r.Context()).GetByID(accessTokenRow.ClusterID)
-	if err != nil {
-		libhttp.HandleErrorJson(w, err)
-		return
-	}
-
 	tsLogs, err := tsLog.AllByClusterIDRangeAndQuery(
 		accessTokenRow.ClusterID,
 		int64(math.Min(float64(from), float64(to))),
 		int64(math.Max(float64(from), float64(to))),
-		qParams.Get("q"),
-		clusterRow.GetDeletedFromUNIXTimestampForSelect("ts_logs"))
+		qParams.Get("q"))
 
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)

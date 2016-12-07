@@ -35,17 +35,10 @@ func GetApiEventsLine(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	clusterRow, err := cassandra.NewCluster(r.Context()).GetByID(accessTokenRow.ClusterID)
-	if err != nil {
-		libhttp.HandleErrorJson(w, err)
-		return
-	}
-
-	rows, err := shims.NewTSEvent(r.Context(), accessTokenRow.ClusterID).AllLinesByClusterIDAndCreatedFromRangeForHighchart(
+	rows, err := cassandra.NewTSEvent(r.Context()).AllLinesByClusterIDAndCreatedFromRangeForHighchart(
 		accessTokenRow.ClusterID,
 		from,
 		to,
-		clusterRow.GetDeletedFromUNIXTimestampForSelect("ts_events"),
 	)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
@@ -83,13 +76,7 @@ func GetApiEventsBand(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	clusterRow, err := cassandra.NewCluster(r.Context()).GetByID(accessTokenRow.ClusterID)
-	if err != nil {
-		libhttp.HandleErrorJson(w, err)
-		return
-	}
-
-	rows, err := shims.NewTSEvent(r.Context(), accessTokenRow.ClusterID).AllBandsByClusterIDAndCreatedFromRangeForHighchart(accessTokenRow.ClusterID, from, to, clusterRow.GetDeletedFromUNIXTimestampForSelect("ts_events"))
+	rows, err := cassandra.NewTSEvent(r.Context()).AllBandsByClusterIDAndCreatedFromRangeForHighchart(accessTokenRow.ClusterID, from, to)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
@@ -121,11 +108,10 @@ func PostApiEvents(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tsEventRow, err := shims.NewTSEvent(r.Context(), accessTokenRow.ClusterID).CreateFromJSON(
+	tsEventRow, err := cassandra.NewTSEvent(r.Context()).CreateFromJSON(
 		shims.NewExplicitID(),
 		accessTokenRow.ClusterID,
 		dataJSON,
-		clusterRow.GetDeletedFromUNIXTimestampForInsert("ts_events"),
 		clusterRow.GetTTLDurationForInsert("ts_events"),
 	)
 	if err != nil {

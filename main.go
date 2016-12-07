@@ -89,9 +89,6 @@ func main() {
 		// Run all checks
 		// app.CheckAndRunTriggers()
 
-		// Prune old timeseries data
-		// go app.PruneAll()
-
 		// Publish metrics to local agent, which is a graphite endpoint.
 		go func() {
 			statsInterval, err := time.ParseDuration(app.GeneralConfig.LocalAgent.ReportMetricsInterval)
