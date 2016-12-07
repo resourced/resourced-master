@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/Sirupsen/logrus"
@@ -74,6 +75,35 @@ func (h *HostData) AllByID(id string) (map[string]interface{}, error) {
 	}
 
 	return result, nil
+}
+
+// AllByIDNested
+func (h *HostData) AllByIDNested(id string) map[string]map[string]interface{} {
+	outputData := make(map[string]map[string]interface{})
+
+	allDataFlat, err := h.AllByID(id)
+	if err != nil {
+		return outputData
+	}
+
+	for path, value := range allDataFlat {
+		pathChunks := strings.Split(path, ".")
+
+		if len(pathChunks) > 0 {
+			innerPath := strings.Replace(path, pathChunks[0]+".", "", 1)
+
+			innerOutputData, ok := outputData[pathChunks[0]]
+			if !ok {
+				innerOutputData = make(map[string]interface{})
+			}
+
+			innerOutputData[innerPath] = value
+
+			outputData[pathChunks[0]] = innerOutputData
+		}
+	}
+
+	return outputData
 }
 
 func (h *HostData) parseAgentResourcePayload(jsonData []byte) (AgentResourcePayload, error) {
