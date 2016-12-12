@@ -5,14 +5,13 @@ import (
 	"fmt"
 	"net/http"
 	"os/exec"
-	"strconv"
 	"strings"
 	"time"
 
 	"github.com/Sirupsen/logrus"
 
-	"github.com/resourced/resourced-master/models/cassandra"
 	"github.com/resourced/resourced-master/models/pg"
+	"github.com/resourced/resourced-master/models/shims"
 )
 
 type CheckExpressionEvaluator struct {
@@ -24,16 +23,18 @@ type CheckExpressionEvaluator struct {
 // 2nd value: The value of all expressions.
 // 3rd value: Error
 func (evaluator *CheckExpressionEvaluator) EvalExpressions(checkRow *pg.CheckRow) ([]pg.CheckExpression, bool, error) {
-	var hostData map[string][]*cassandra.HostDataRow
+	var hostRows []*pg.HostRow
 	var err error
 
+	host := pg.NewHost(evaluator.AppContext, checkRow.ClusterID)
+
 	if checkRow.HostsQuery != "" {
-		hostData, err = cassandra.NewHostData(evaluator.AppContext).AllByClusterIDQueryAndUpdatedInterval(checkRow.ClusterID, checkRow.HostsQuery, "5m")
+		hostRows, err = host.AllByClusterIDQueryAndUpdatedInterval(nil, checkRow.ClusterID, checkRow.HostsQuery, "5m")
 
 	} else {
 		hostnames, err := checkRow.GetHostsList()
 		if err == nil && len(hostnames) > 0 {
-			hostData, err = cassandra.NewHostData(evaluator.AppContext).AllByClusterIDAndHostnames(checkRow.ClusterID, hostnames)
+			hostRows, err = host.AllByClusterIDAndHostnames(nil, checkRow.ClusterID, hostnames)
 		}
 	}
 
@@ -52,22 +53,22 @@ func (evaluator *CheckExpressionEvaluator) EvalExpressions(checkRow *pg.CheckRow
 
 	for expIndex, expression := range expressions {
 		if expression.Type == "RawHostData" {
-			expression = evaluator.EvalRawHostDataExpression(checkRow, hostData, expression)
+			expression = evaluator.EvalRawHostDataExpression(checkRow, hostRows, expression)
 
 		} else if expression.Type == "RelativeHostData" {
-			expression = evaluator.EvalRelativeHostDataExpression(checkRow, hostData, expression)
+			expression = evaluator.EvalRelativeHostDataExpression(checkRow, hostRows, expression)
 
 		} else if expression.Type == "LogData" {
-			expression = evaluator.EvalLogDataExpression(checkRow, hostData, expression)
+			expression = evaluator.EvalLogDataExpression(checkRow, hostRows, expression)
 
 		} else if expression.Type == "Ping" {
-			expression = evaluator.EvalPingExpression(checkRow, hostData, expression)
+			expression = evaluator.EvalPingExpression(checkRow, hostRows, expression)
 
 		} else if expression.Type == "SSH" {
-			expression = evaluator.EvalSSHExpression(checkRow, hostData, expression)
+			expression = evaluator.EvalSSHExpression(checkRow, hostRows, expression)
 
 		} else if expression.Type == "HTTP" || expression.Type == "HTTPS" {
-			expression = evaluator.EvalHTTPExpression(checkRow, hostData, expression)
+			expression = evaluator.EvalHTTPExpression(checkRow, hostRows, expression)
 
 		} else if expression.Type == "BooleanOperator" {
 			lastExpressionBooleanOperator = expression.Operator
@@ -91,8 +92,8 @@ func (evaluator *CheckExpressionEvaluator) EvalExpressions(checkRow *pg.CheckRow
 	return expressionResults, finalResult, nil
 }
 
-func (evaluator *CheckExpressionEvaluator) EvalRawHostDataExpression(checkRow *pg.CheckRow, hostData map[string][]*cassandra.HostDataRow, expression pg.CheckExpression) pg.CheckExpression {
-	if hostData == nil || len(hostData) <= 0 {
+func (evaluator *CheckExpressionEvaluator) EvalRawHostDataExpression(checkRow *pg.CheckRow, hostRows []*pg.HostRow, expression pg.CheckExpression) pg.CheckExpression {
+	if hostRows == nil || len(hostRows) <= 0 {
 		expression.Result.Value = true
 		expression.Result.Message = "There are no hosts to check"
 		return expression
@@ -104,20 +105,19 @@ func (evaluator *CheckExpressionEvaluator) EvalRawHostDataExpression(checkRow *p
 
 	var perHostResult bool
 
-	for hostname, hostData := range hostData {
+	for _, hostRow := range hostRows {
 		var val float64
 
-		for _, hostDatum := range hostData {
-			if !strings.HasPrefix(expression.Metric, hostDatum.Key) {
+		for prefix, keyAndValue := range hostRow.DataAsFlatKeyValue() {
+			if !strings.HasPrefix(expression.Metric, prefix) {
 				continue
 			}
 
-			if strings.HasSuffix(expression.Metric, hostDatum.Key) {
-				valueFloat64, err := strconv.ParseFloat(hostDatum.Value, 64)
-				if err == nil {
-					val = valueFloat64
+			for key, value := range keyAndValue {
+				if strings.HasSuffix(expression.Metric, key) {
+					val = value.(float64)
+					break
 				}
-				break
 			}
 		}
 
@@ -145,10 +145,10 @@ func (evaluator *CheckExpressionEvaluator) EvalRawHostDataExpression(checkRow *p
 
 		if perHostResult {
 			affectedHosts = affectedHosts + 1
-			badHostnames = append(badHostnames, hostname)
+			badHostnames = append(badHostnames, hostRow.Hostname)
 
 		} else {
-			goodHostnames = append(goodHostnames, hostname)
+			goodHostnames = append(goodHostnames, hostRow.Hostname)
 		}
 	}
 
@@ -159,8 +159,8 @@ func (evaluator *CheckExpressionEvaluator) EvalRawHostDataExpression(checkRow *p
 	return expression
 }
 
-func (evaluator *CheckExpressionEvaluator) EvalRelativeHostDataExpression(checkRow *pg.CheckRow, hostData map[string][]*cassandra.HostDataRow, expression pg.CheckExpression) pg.CheckExpression {
-	if hostData == nil || len(hostData) <= 0 {
+func (evaluator *CheckExpressionEvaluator) EvalRelativeHostDataExpression(checkRow *pg.CheckRow, hostRows []*pg.HostRow, expression pg.CheckExpression) pg.CheckExpression {
+	if hostRows == nil || len(hostRows) <= 0 {
 		expression.Result.Value = true
 		expression.Result.Message = "There are no hosts to check"
 		return expression
@@ -172,8 +172,8 @@ func (evaluator *CheckExpressionEvaluator) EvalRelativeHostDataExpression(checkR
 
 	var perHostResult bool
 
-	for hostname, hostData := range hostData {
-		metric, err := cassandra.NewMetric(evaluator.AppContext).GetByClusterIDAndKey(checkRow.ClusterID, expression.Metric)
+	for _, hostRow := range hostRows {
+		metric, err := pg.NewMetric(evaluator.AppContext).GetByClusterIDAndKey(nil, checkRow.ClusterID, expression.Metric)
 		if err != nil {
 			// If we are unable to pull metric metadata,
 			// We assume that there's something wrong with it.
@@ -184,9 +184,9 @@ func (evaluator *CheckExpressionEvaluator) EvalRelativeHostDataExpression(checkR
 			continue
 		}
 
-		tsMetric := cassandra.NewTSMetric(evaluator.AppContext)
+		shimsTSMetric := shims.NewTSMetric(evaluator.AppContext, hostRow.ClusterID)
 
-		aggregateData, err := tsMetric.GetAggregateXMinutesByMetricIDAndHostname(checkRow.ClusterID, metric.ID, expression.PrevRange, hostname)
+		aggregateData, err := shimsTSMetric.GetAggregateXMinutesByMetricIDAndHostname(checkRow.ClusterID, metric.ID, expression.PrevRange, hostRow.Hostname)
 		if err != nil {
 			// If a Host does not contain historical data of a particular metric,
 			// We assume that there's something wrong with it.
@@ -199,17 +199,16 @@ func (evaluator *CheckExpressionEvaluator) EvalRelativeHostDataExpression(checkR
 
 		var val float64
 
-		for _, hostDatum := range hostData {
-			if !strings.HasPrefix(expression.Metric, hostDatum.Key) {
+		for prefix, keyAndValue := range hostRow.DataAsFlatKeyValue() {
+			if !strings.HasPrefix(expression.Metric, prefix) {
 				continue
 			}
 
-			if strings.HasSuffix(expression.Metric, hostDatum.Key) {
-				valueFloat64, err := strconv.ParseFloat(hostDatum.Value, 64)
-				if err == nil {
-					val = valueFloat64
+			for key, value := range keyAndValue {
+				if strings.HasSuffix(expression.Metric, key) {
+					val = value.(float64)
+					break
 				}
-				break
 			}
 		}
 
@@ -246,9 +245,9 @@ func (evaluator *CheckExpressionEvaluator) EvalRelativeHostDataExpression(checkR
 
 		if perHostResult {
 			affectedHosts = affectedHosts + 1
-			badHostnames = append(badHostnames, hostname)
+			badHostnames = append(badHostnames, hostRow.Hostname)
 		} else {
-			goodHostnames = append(goodHostnames, hostname)
+			goodHostnames = append(goodHostnames, hostRow.Hostname)
 		}
 	}
 
@@ -259,18 +258,18 @@ func (evaluator *CheckExpressionEvaluator) EvalRelativeHostDataExpression(checkR
 	return expression
 }
 
-func (evaluator *CheckExpressionEvaluator) EvalLogDataExpression(checkRow *pg.CheckRow, hostData map[string][]*cassandra.HostDataRow, expression pg.CheckExpression) pg.CheckExpression {
+func (evaluator *CheckExpressionEvaluator) EvalLogDataExpression(checkRow *pg.CheckRow, hostRows []*pg.HostRow, expression pg.CheckExpression) pg.CheckExpression {
 	hostnames, err := checkRow.GetHostsList()
 	if err != nil {
 		expression.Result.Value = false
 		return expression
 	}
 
-	if len(hostnames) == 0 && hostData != nil && len(hostData) > 0 {
-		hostnames = make([]string, len(hostData))
+	if len(hostnames) == 0 && hostRows != nil && len(hostRows) > 0 {
+		hostnames = make([]string, len(hostRows))
 
-		for hostname, _ := range hostData {
-			hostnames = append(hostnames, hostname)
+		for i, hostRow := range hostRows {
+			hostnames[i] = hostRow.Hostname
 		}
 	}
 
@@ -335,18 +334,18 @@ func (evaluator *CheckExpressionEvaluator) CheckPing(hostname string) (outBytes 
 	return exec.Command("ping", "-c", "1", hostname).CombinedOutput()
 }
 
-func (evaluator *CheckExpressionEvaluator) EvalPingExpression(checkRow *pg.CheckRow, hostData map[string][]*cassandra.HostDataRow, expression pg.CheckExpression) pg.CheckExpression {
+func (evaluator *CheckExpressionEvaluator) EvalPingExpression(checkRow *pg.CheckRow, hostRows []*pg.HostRow, expression pg.CheckExpression) pg.CheckExpression {
 	hostnames, err := checkRow.GetHostsList()
 	if err != nil {
 		expression.Result.Value = false
 		return expression
 	}
 
-	if len(hostnames) == 0 && hostData != nil && len(hostData) > 0 {
-		hostnames = make([]string, len(hostData))
+	if len(hostnames) == 0 && hostRows != nil && len(hostRows) > 0 {
+		hostnames = make([]string, len(hostRows))
 
-		for hostname, _ := range hostData {
-			hostnames = append(hostnames, hostname)
+		for i, hostRow := range hostRows {
+			hostnames[i] = hostRow.Hostname
 		}
 	}
 
@@ -394,18 +393,18 @@ func (evaluator *CheckExpressionEvaluator) CheckSSH(hostname, port, user string)
 	return exec.Command("ssh", sshOptions...).CombinedOutput()
 }
 
-func (evaluator *CheckExpressionEvaluator) EvalSSHExpression(checkRow *pg.CheckRow, hostData map[string][]*cassandra.HostDataRow, expression pg.CheckExpression) pg.CheckExpression {
+func (evaluator *CheckExpressionEvaluator) EvalSSHExpression(checkRow *pg.CheckRow, hostRows []*pg.HostRow, expression pg.CheckExpression) pg.CheckExpression {
 	hostnames, err := checkRow.GetHostsList()
 	if err != nil {
 		expression.Result.Value = false
 		return expression
 	}
 
-	if len(hostnames) == 0 && hostData != nil && len(hostData) > 0 {
-		hostnames = make([]string, len(hostData))
+	if len(hostnames) == 0 && hostRows != nil && len(hostRows) > 0 {
+		hostnames = make([]string, len(hostRows))
 
-		for hostname, _ := range hostData {
-			hostnames = append(hostnames, hostname)
+		for i, hostRow := range hostRows {
+			hostnames[i] = hostRow.Hostname
 		}
 	}
 
@@ -491,18 +490,18 @@ func (evaluator *CheckExpressionEvaluator) CheckHTTP(hostname, scheme, port, met
 	return resp, err
 }
 
-func (evaluator *CheckExpressionEvaluator) EvalHTTPExpression(checkRow *pg.CheckRow, hostData map[string][]*cassandra.HostDataRow, expression pg.CheckExpression) pg.CheckExpression {
+func (evaluator *CheckExpressionEvaluator) EvalHTTPExpression(checkRow *pg.CheckRow, hostRows []*pg.HostRow, expression pg.CheckExpression) pg.CheckExpression {
 	hostnames, err := checkRow.GetHostsList()
 	if err != nil {
 		expression.Result.Value = false
 		return expression
 	}
 
-	if len(hostnames) == 0 && hostData != nil && len(hostData) > 0 {
-		hostnames = make([]string, len(hostData))
+	if len(hostnames) == 0 && hostRows != nil && len(hostRows) > 0 {
+		hostnames = make([]string, len(hostRows))
 
-		for hostname, _ := range hostData {
-			hostnames = append(hostnames, hostname)
+		for i, hostRow := range hostRows {
+			hostnames[i] = hostRow.Hostname
 		}
 	}
 

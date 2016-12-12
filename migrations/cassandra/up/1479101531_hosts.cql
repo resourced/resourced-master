@@ -21,8 +21,6 @@ CREATE TABLE IF NOT EXISTS hosts_data (
     id text,
     key text,
     value text,
-    cluster_id bigint,
-    updated bigint,
     lucene text,
     PRIMARY KEY (id, key)
 ) WITH caching = {'keys': 'ALL', 'rows_per_partition': 'ALL'}

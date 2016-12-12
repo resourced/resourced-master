@@ -6,13 +6,11 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
-	"time"
 
 	"github.com/Sirupsen/logrus"
 	"github.com/gocql/gocql"
 
 	"github.com/resourced/resourced-master/contexthelper"
-	"github.com/resourced/resourced-master/models/cassandra/querybuilder"
 )
 
 func NewHostData(ctx context.Context) *HostData {
@@ -21,14 +19,6 @@ func NewHostData(ctx context.Context) *HostData {
 	host.table = "hosts_data"
 
 	return host
-}
-
-type HostDataRow struct {
-	ID        string `db:"id" json:"-"`
-	ClusterID int64  `db:"cluster_id"`
-	Updated   int64  `db:"updated"`
-	Key       string `db:"key"`
-	Value     string `db:"value"`
 }
 
 type HostData struct {
@@ -115,86 +105,4 @@ func (h *HostData) CreateOrUpdate(accessTokenRow *AccessTokenRow, jsonData []byt
 	}
 
 	return resourcedPayload.Data, nil
-}
-
-// AllByClusterIDQueryAndUpdatedInterval returns all rows by resourced query.
-func (h *HostData) AllByClusterIDQueryAndUpdatedInterval(clusterID int64, resourcedQuery, updatedInterval string) (map[string][]*HostDataRow, error) {
-	session, err := h.GetCassandraSession()
-	if err != nil {
-		return nil, err
-	}
-
-	updatedDuration, err := time.ParseDuration(updatedInterval)
-	if err != nil {
-		return nil, err
-	}
-
-	updated := time.Now().UTC().Add(-1 * updatedDuration)
-	updatedUnix := updated.UTC().Unix()
-
-	var query string
-
-	luceneQuery := querybuilder.Parse(resourcedQuery, nil)
-
-	if luceneQuery == "" {
-		query = fmt.Sprintf(`SELECT id, cluster_id, access_token_id, hostname, updated, tags, master_tags FROM %v WHERE expr(idx_hosts_lucene, '{
-    filter: {
-        type: "boolean",
-        must: [
-            {type: "match", field: "cluster_id", value: %v},
-            {type:"range", field:"updated", lower:%v, include_lower: true}
-        ]
-    }
-}')`, h.table, clusterID, updatedUnix)
-
-	} else {
-		query = fmt.Sprintf(`SELECT id, cluster_id, access_token_id, hostname, updated, tags, master_tags FROM %v WHERE expr(idx_hosts_lucene, '{
-    filter: {
-        type: "boolean",
-        must: [
-            {type: "match", field: "cluster_id", value: %v},
-            {type:"range", field:"updated", lower:%v, include_lower: true},
-            %v
-        ]
-    }
-}')`, h.table, clusterID, updatedUnix, luceneQuery)
-
-	}
-
-	println(query)
-
-	result := make(map[string][]*HostDataRow)
-
-	var scannedClusterID, scannedUpdated int64
-	var scannedID, scannedKey, scannedValue string
-
-	iter := session.Query(query).Iter()
-	for iter.Scan(&scannedID, &scannedClusterID, &scannedUpdated, &scannedKey, &scannedValue) {
-		hostData := &HostDataRow{
-			ID:        scannedID,
-			ClusterID: scannedClusterID,
-			Updated:   scannedUpdated,
-			Key:       scannedKey,
-			Value:     scannedValue,
-		}
-
-		_, ok := result[scannedID]
-		if !ok {
-			result[scannedID] = make([]*HostDataRow, 0)
-		}
-
-		result[scannedID] = append(result[scannedID], hostData)
-	}
-	if err := iter.Close(); err != nil {
-		err = fmt.Errorf("%v. Query: %v", err.Error(), query)
-		logrus.WithFields(logrus.Fields{"Method": "HostData.AllByClusterIDQueryAndUpdatedInterval"}).Error(err)
-
-		return nil, err
-	}
-
-	return result, err
-}
-
-func (h *HostData) AllByClusterIDAndHostnames(clusterID int64, hostnames []string) (map[string][]*HostDataRow, error) {
-	return nil, nil
 }
