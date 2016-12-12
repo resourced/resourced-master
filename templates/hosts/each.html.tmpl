@@ -166,7 +166,7 @@ $('form[role="search"]').submit(function(e) {
             {{ end }}
 
             <div class="details">
-                {{ range $path, $data := $.HostDataNested }}
+                {{ range $path, $data := $.Host.DataAsFlatKeyValue }}
                 <div class="detail-header" data-path="{{ $path }}">
                     <div class="pull-right">
                         <input type="checkbox" class="toggler toggler-body pull-right" data-size="mini" data-path="{{ $path }}" checked>
