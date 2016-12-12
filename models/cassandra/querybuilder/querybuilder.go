@@ -197,7 +197,7 @@ func parseStatement(statement string, skipFields []string) string {
 
 	// Querying data.
 	// Operators for floating point data: >=, <=, =, <, >
-	//     Expected output: (data #>> '{/free,Memory.TotalGB}')::float8
+	//     Expected output:
 	// Operators for string data:
 	//     "="        : Exact match.
 	//     "^"        : Starts with, case sensitive.
@@ -229,33 +229,33 @@ func parseStatement(statement string, skipFields []string) string {
 			value = libstring.StripChars(value, `"'`)
 
 			if operator == "=" {
-				return fmt.Sprintf(`{type: "%v", field: "%v", value: "%v"}`, "match", "data_string$"+field, value)
+				return fmt.Sprintf(`{type: "boolean", must: [{type: "match", field: "key", value: "%v"},{type: "match", field: "value_string", value: "%v"}]}`, field, value)
 			}
 
 			if operator == ">" {
-				return fmt.Sprintf(`{type: "%v", field: "%v", lower: %v}`, "range", "data_float$"+field, value)
+				return fmt.Sprintf(`{type: "boolean", must: [{type: "match", field: "key", value: "%v"},{type: "range", field: "value_float", lower: %v}]}`, field, value)
 			}
 			if operator == ">=" {
-				return fmt.Sprintf(`{type: "%v", field: "%v", lower: %v, include_lower: true}`, "range", "data_float$"+field, value)
+				return fmt.Sprintf(`{type: "boolean", must: [{type: "match", field: "key", value: "%v"},{type: "range", field: "value_float", lower: %v, include_lower: true}]}`, field, value)
 			}
 
 			if operator == "<" {
-				return fmt.Sprintf(`{type: "%v", field: "%v", upper: %v}`, "range", "data_float$"+field, value)
+				return fmt.Sprintf(`{type: "boolean", must: [{type: "match", field: "key", value: "%v"},{type: "range", field: "value_float", upper: %v}]}`, field, value)
 			}
 			if operator == "<=" {
-				return fmt.Sprintf(`{type: "%v", field: "%v", upper: %v, include_upper: true}`, "range", "data_float$"+field, value)
+				return fmt.Sprintf(`{type: "boolean", must: [{type: "match", field: "key", value: "%v"},{type: "range", field: "value_float", upper: %v, include_upper: true}]}`, field, value)
 			}
 
 			if operator == "~" {
-				return fmt.Sprintf(`{type: "%v", field: "%v", value: "%v"}`, "regexp", "data_string$"+field, value)
+				return fmt.Sprintf(`{type: "boolean", must: [{type: "match", field: "key", value: "%v"},{type: "regexp", field: "value_string", value: "%v"}]}`, field, value)
 			}
 
 			if operator == "^" {
-				return fmt.Sprintf(`{type: "%v", field: "%v", value: "%v"}`, "prefix", "data_string$"+field, value)
+				return fmt.Sprintf(`{type: "boolean", must: [{type: "match", field: "key", value: "%v"},{type: "prefix", field: "value_string", value: "%v"}]}`, field, value)
 			}
 
 			if operator == "wildcard" {
-				return fmt.Sprintf(`{type: "%v", field: "%v", value: "%v"}`, "wildcard", "data_string$"+field, value)
+				return fmt.Sprintf(`{type: "boolean", must: [{type: "match", field: "key", value: "%v"},{type: "wildcard", field: "value_string", value: "%v"}]}`, field, value)
 			}
 
 			return ""
