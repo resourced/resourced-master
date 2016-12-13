@@ -198,8 +198,6 @@ func (h *Host) AllCompactByClusterIDQueryAndUpdatedInterval(clusterID int64, res
     }
 }')`, h.table, clusterID, updatedUnix, luceneQuery)
 
-	println(query)
-
 	var scannedClusterID, scannedAccessTokenID, scannedUpdated int64
 	var scannedID, scannedHostname string
 	var scannedTags, scannedMasterTags map[string]string

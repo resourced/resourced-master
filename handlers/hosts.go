@@ -67,13 +67,13 @@ func GetHosts(w http.ResponseWriter, r *http.Request) {
 	hasError := false
 
 	hostsWithError := <-hostsChan
-	if hostsWithError.Error != nil && hostsWithError.Error.Error() != "sql: no rows in result set" {
+	if hostsWithError.Error != nil {
 		libhttp.HandleErrorHTML(w, hostsWithError.Error, 500)
 		hasError = true
 	}
 
 	savedQueriesWithError := <-savedQueriesChan
-	if savedQueriesWithError.Error != nil && savedQueriesWithError.Error.Error() != "sql: no rows in result set" {
+	if savedQueriesWithError.Error != nil {
 		libhttp.HandleErrorHTML(w, savedQueriesWithError.Error, 500)
 		hasError = true
 	}
