@@ -2,6 +2,7 @@ package messagebus
 
 import (
 	"encoding/json"
+	"strconv"
 	"strings"
 	"time"
 
@@ -11,15 +12,9 @@ import (
 	"github.com/go-mangos/mangos/transport/ipc"
 	"github.com/go-mangos/mangos/transport/tcp"
 
+	"github.com/resourced/resourced-master/models/shared"
 	resourced_wire "github.com/resourced/resourced-wire"
 )
-
-type IHostRow interface {
-	DataAsFlatKeyValue() map[string]map[string]interface{}
-	GetClusterID() int64
-	GetHostname() string
-	GetData() map[string]string
-}
 
 func New(url string) (*MessageBus, error) {
 	mb := &MessageBus{}
@@ -100,38 +95,34 @@ func (mb *MessageBus) PublishJSON(topic string, jsonBytes []byte) error {
 }
 
 // PublishMetricsByHostRow publish many metrics, based on a single host data payload.
-func (mb *MessageBus) PublishMetricsByHostRow(hostRow IHostRow, metricsMap map[string]int64) {
+func (mb *MessageBus) PublishMetricsByHostRow(hostRow shared.IHostRow, metricsMap map[string]int64) {
 	// Loop through every host's data and see if they are part of graph metrics.
 	// If they are, publish the metric to message bus.
-	for path, data := range hostRow.DataAsFlatKeyValue() {
-		for dataKey, value := range data {
-			metricKey := path + "." + dataKey
+	for metricKey, value := range hostRow.GetData() {
+		if metricID, ok := metricsMap[metricKey]; ok {
+			trueValueFloat64, err := strconv.ParseFloat(value, 64)
+			if err == nil {
+				metricPayload := logrus.Fields{
+					"ClusterID":          hostRow.GetClusterID(),
+					"MetricID":           metricID,
+					"MetricKey":          metricKey,
+					"Hostname":           hostRow.GetHostname(),
+					"Value":              trueValueFloat64,
+					"CreatedMillisecond": time.Now().UTC().UnixNano() / int64(time.Millisecond),
+				}
 
-			if metricID, ok := metricsMap[metricKey]; ok {
-				// Deserialized JSON number -> interface{} always have float64 as type.
-				if trueValueFloat64, ok := value.(float64); ok {
-					metricPayload := logrus.Fields{
-						"ClusterID":          hostRow.GetClusterID(),
-						"MetricID":           metricID,
-						"MetricKey":          metricKey,
-						"Hostname":           hostRow.GetHostname(),
-						"Value":              trueValueFloat64,
-						"CreatedMillisecond": time.Now().UTC().UnixNano() / int64(time.Millisecond),
-					}
+				metricPayloadJSON, err := json.Marshal(metricPayload)
+				if err != nil {
+					metricPayload["Method"] = "PubSub.PublishMetricsByHostRow"
+					metricPayload["Error"] = err
+					logrus.WithFields(metricPayload).Error("Failed to serialize metric for message bus")
+				}
 
-					metricPayloadJSON, err := json.Marshal(metricPayload)
-					if err != nil {
-						metricPayload["Method"] = "PubSub.PublishMetricsByHostRow"
-						metricPayload["Error"] = err
-						logrus.WithFields(metricPayload).Error("Failed to serialize metric for message bus")
-					}
-
-					err = mb.PublishJSON("metric-"+metricKey, metricPayloadJSON)
-					if err != nil {
-						metricPayload["Method"] = "PubSub.PublishMetricsByHostRow"
-						metricPayload["Error"] = err
-						logrus.WithFields(metricPayload).Error("Failed to publish metric to message bus")
-					}
+				err = mb.PublishJSON("metric-"+metricKey, metricPayloadJSON)
+				if err != nil {
+					metricPayload["Method"] = "PubSub.PublishMetricsByHostRow"
+					metricPayload["Error"] = err
+					logrus.WithFields(metricPayload).Error("Failed to publish metric to message bus")
 				}
 			}
 		}
