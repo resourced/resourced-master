@@ -248,15 +248,13 @@ func PutGraphsID(w http.ResponseWriter, r *http.Request) {
 }
 
 func DeleteGraphsID(w http.ResponseWriter, r *http.Request) {
-	currentCluster := r.Context().Value("currentCluster").(*cassandra.ClusterRow)
-
 	id, err := getInt64SlugFromPath(w, r, "id")
 	if err != nil {
 		libhttp.HandleErrorHTML(w, err, 500)
 		return
 	}
 
-	err = cassandra.NewGraph(r.Context()).DeleteByClusterIDAndID(currentCluster.ID, id)
+	err = cassandra.NewGraph(r.Context()).DeleteByID(id)
 	if err != nil {
 		libhttp.HandleErrorHTML(w, err, 500)
 		return

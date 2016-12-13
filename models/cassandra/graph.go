@@ -66,7 +66,7 @@ func (g *Graph) GetByClusterIDAndID(clusterID, id int64) (*GraphRow, error) {
 		return nil, err
 	}
 
-	query := fmt.Sprintf("SELECT id, cluster_id, name, description, range, metrics FROM %v WHERE cluster_id=? AND id=?", g.table)
+	query := fmt.Sprintf("SELECT id, cluster_id, name, description, range, metrics FROM %v WHERE cluster_id=? AND id=? ALLOW FILTERING", g.table)
 
 	var scannedID, scannedClusterID int64
 	var scannedName, scannedDescription, scannedRange, scannedMetrics string

@@ -48,19 +48,7 @@ func (b *Base) DeleteByID(id int64) error {
 		return err
 	}
 
-	query := fmt.Sprintf("DELETE FROM %v WHERE id = ?", b.table)
+	query := fmt.Sprintf("DELETE FROM %v WHERE id=?", b.table)
 
 	return session.Query(query, id).Exec()
-}
-
-// DeleteByClusterIDAndID deletes by cluster_id and id.
-func (b *Base) DeleteByClusterIDAndID(clusterID, id int64) error {
-	session, err := b.GetCassandraSession()
-	if err != nil {
-		return err
-	}
-
-	query := fmt.Sprintf("DELETE FROM %v WHERE cluster_id = ? AND id = ?", b.table)
-
-	return session.Query(query, clusterID, id).Exec()
 }

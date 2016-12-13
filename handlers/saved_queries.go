@@ -49,8 +49,6 @@ func DeleteSavedQueriesID(w http.ResponseWriter, r *http.Request) {
 
 	currentUser := r.Context().Value("currentUser").(*cassandra.UserRow)
 
-	currentCluster := r.Context().Value("currentCluster").(*cassandra.ClusterRow)
-
 	sq := cassandra.NewSavedQuery(r.Context())
 
 	savedQueryRow, err := sq.GetByID(savedQueryID)
@@ -61,7 +59,7 @@ func DeleteSavedQueriesID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = sq.DeleteByClusterIDAndID(currentCluster.ID, savedQueryID)
+	err = sq.DeleteByID(savedQueryID)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
