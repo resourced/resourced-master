@@ -274,17 +274,6 @@ func PostApiHosts(w http.ResponseWriter, r *http.Request) {
 
 	hostRow, err := cassandra.NewHost(r.Context()).CreateOrUpdate(accessTokenRow, dataJson)
 	if err != nil {
-		println("1")
-		errLogger.WithFields(logrus.Fields{
-			"Error": err.Error(),
-		}).Error("Failed to store Host data in DB")
-		libhttp.HandleErrorJson(w, err)
-		return
-	}
-
-	_, err = cassandra.NewHostData(r.Context()).CreateOrUpdate(accessTokenRow, dataJson)
-	if err != nil {
-		println("2")
 		errLogger.WithFields(logrus.Fields{
 			"Error": err.Error(),
 		}).Error("Failed to store Host data in DB")
@@ -318,10 +307,7 @@ func PostApiHosts(w http.ResponseWriter, r *http.Request) {
 
 		go func() {
 			// Publish evey graphed metric to message bus.
-			hostData, err := cassandra.NewHostData(r.Context()).AllByID(hostRow.ID)
-			if err == nil {
-				bus.PublishMetricsByHostRow(hostRow, hostData, metricsMap)
-			}
+			bus.PublishMetricsByHostRow(hostRow, metricsMap)
 		}()
 	}()
 

@@ -3,7 +3,7 @@ package cassandra
 import (
 	"context"
 	"fmt"
-	// "strconv"
+	"strconv"
 	"time"
 
 	"github.com/Sirupsen/logrus"
@@ -35,44 +35,44 @@ func (ts *TSMetric) GetCassandraSession() (*gocql.Session, error) {
 }
 
 func (ts *TSMetric) CreateByHostRow(hostRow shared.IHostRow, metricsMap map[string]int64, ttl time.Duration) error {
-	// session, err := ts.GetCassandraSession()
-	// if err != nil {
-	// 	return err
-	// }
+	session, err := ts.GetCassandraSession()
+	if err != nil {
+		return err
+	}
 
-	// // Loop through every host's data and see if they are part of graph metrics.
-	// // If they are, insert a record in ts_metrics.
-	// for metricKey, value := range hostRow.GetData() {
-	// 	if metricID, ok := metricsMap[metricKey]; ok {
+	// Loop through every host's data and see if they are part of graph metrics.
+	// If they are, insert a record in ts_metrics.
+	for metricKey, value := range hostRow.GetData() {
+		if metricID, ok := metricsMap[metricKey]; ok {
 
-	// 		// Unfortunately, value is always string because Cassandra map does not support mixed types.
-	// 		value64, err := strconv.ParseFloat(value, 64)
-	// 		if err == nil {
-	// 			// Ignore error for now, there's no need to break the entire loop when one insert fails.
-	// 			err := session.Query(
-	// 				fmt.Sprintf(`INSERT INTO %v (cluster_id, metric_id, key, host, value, created) VALUES (?, ?, ?, ?, ?, ?) USING TTL ?`, ts.table),
-	// 				hostRow.GetClusterID(),
-	// 				metricID,
-	// 				metricKey,
-	// 				hostRow.GetHostname(),
-	// 				value64,
-	// 				time.Now().UTC().Unix(),
-	// 				ttl,
-	// 			).Exec()
+			// Unfortunately, value is always string because Cassandra map does not support mixed types.
+			value64, err := strconv.ParseFloat(value, 64)
+			if err == nil {
+				// Ignore error for now, there's no need to break the entire loop when one insert fails.
+				err := session.Query(
+					fmt.Sprintf(`INSERT INTO %v (cluster_id, metric_id, key, host, value, created) VALUES (?, ?, ?, ?, ?, ?) USING TTL ?`, ts.table),
+					hostRow.GetClusterID(),
+					metricID,
+					metricKey,
+					hostRow.GetHostname(),
+					value64,
+					time.Now().UTC().Unix(),
+					ttl,
+				).Exec()
 
-	// 			if err != nil {
-	// 				logrus.WithFields(logrus.Fields{
-	// 					"Method":    "TSMetric.CreateByHostRow",
-	// 					"ClusterID": hostRow.GetClusterID(),
-	// 					"MetricID":  metricID,
-	// 					"MetricKey": metricKey,
-	// 					"Hostname":  hostRow.GetHostname(),
-	// 					"Value":     value64,
-	// 				}).Error(err)
-	// 			}
-	// 		}
-	// 	}
-	// }
+				if err != nil {
+					logrus.WithFields(logrus.Fields{
+						"Method":    "TSMetric.CreateByHostRow",
+						"ClusterID": hostRow.GetClusterID(),
+						"MetricID":  metricID,
+						"MetricKey": metricKey,
+						"Hostname":  hostRow.GetHostname(),
+						"Value":     value64,
+					}).Error(err)
+				}
+			}
+		}
+	}
 	return nil
 }
 

@@ -5,13 +5,14 @@ import (
 	"fmt"
 	"net/http"
 	"os/exec"
+	"strconv"
 	"strings"
 	"time"
 
 	"github.com/Sirupsen/logrus"
 
+	"github.com/resourced/resourced-master/models/cassandra"
 	"github.com/resourced/resourced-master/models/pg"
-	"github.com/resourced/resourced-master/models/shims"
 )
 
 type CheckExpressionEvaluator struct {
@@ -23,18 +24,18 @@ type CheckExpressionEvaluator struct {
 // 2nd value: The value of all expressions.
 // 3rd value: Error
 func (evaluator *CheckExpressionEvaluator) EvalExpressions(checkRow *pg.CheckRow) ([]pg.CheckExpression, bool, error) {
-	var hostRows []*pg.HostRow
+	var hostRows []*cassandra.HostRow
 	var err error
 
-	host := pg.NewHost(evaluator.AppContext, checkRow.ClusterID)
+	host := cassandra.NewHost(evaluator.AppContext)
 
 	if checkRow.HostsQuery != "" {
-		hostRows, err = host.AllByClusterIDQueryAndUpdatedInterval(nil, checkRow.ClusterID, checkRow.HostsQuery, "5m")
+		hostRows, err = host.AllByClusterIDQueryAndUpdatedInterval(checkRow.ClusterID, checkRow.HostsQuery, "5m")
 
 	} else {
 		hostnames, err := checkRow.GetHostsList()
 		if err == nil && len(hostnames) > 0 {
-			hostRows, err = host.AllByClusterIDAndHostnames(nil, checkRow.ClusterID, hostnames)
+			hostRows, err = host.AllByClusterIDAndHostnames(checkRow.ClusterID, hostnames)
 		}
 	}
 
@@ -92,7 +93,7 @@ func (evaluator *CheckExpressionEvaluator) EvalExpressions(checkRow *pg.CheckRow
 	return expressionResults, finalResult, nil
 }
 
-func (evaluator *CheckExpressionEvaluator) EvalRawHostDataExpression(checkRow *pg.CheckRow, hostRows []*pg.HostRow, expression pg.CheckExpression) pg.CheckExpression {
+func (evaluator *CheckExpressionEvaluator) EvalRawHostDataExpression(checkRow *pg.CheckRow, hostRows []*cassandra.HostRow, expression pg.CheckExpression) pg.CheckExpression {
 	if hostRows == nil || len(hostRows) <= 0 {
 		expression.Result.Value = true
 		expression.Result.Message = "There are no hosts to check"
@@ -108,16 +109,17 @@ func (evaluator *CheckExpressionEvaluator) EvalRawHostDataExpression(checkRow *p
 	for _, hostRow := range hostRows {
 		var val float64
 
-		for prefix, keyAndValue := range hostRow.DataAsFlatKeyValue() {
-			if !strings.HasPrefix(expression.Metric, prefix) {
+		for key, value := range hostRow.Data {
+			if !strings.HasPrefix(expression.Metric, key) {
 				continue
 			}
 
-			for key, value := range keyAndValue {
-				if strings.HasSuffix(expression.Metric, key) {
-					val = value.(float64)
-					break
+			if strings.HasSuffix(expression.Metric, key) {
+				valueFloat64, err := strconv.ParseFloat(value, 64)
+				if err == nil {
+					val = valueFloat64
 				}
+				break
 			}
 		}
 
@@ -159,7 +161,7 @@ func (evaluator *CheckExpressionEvaluator) EvalRawHostDataExpression(checkRow *p
 	return expression
 }
 
-func (evaluator *CheckExpressionEvaluator) EvalRelativeHostDataExpression(checkRow *pg.CheckRow, hostRows []*pg.HostRow, expression pg.CheckExpression) pg.CheckExpression {
+func (evaluator *CheckExpressionEvaluator) EvalRelativeHostDataExpression(checkRow *pg.CheckRow, hostRows []*cassandra.HostRow, expression pg.CheckExpression) pg.CheckExpression {
 	if hostRows == nil || len(hostRows) <= 0 {
 		expression.Result.Value = true
 		expression.Result.Message = "There are no hosts to check"
@@ -184,9 +186,7 @@ func (evaluator *CheckExpressionEvaluator) EvalRelativeHostDataExpression(checkR
 			continue
 		}
 
-		shimsTSMetric := shims.NewTSMetric(evaluator.AppContext, hostRow.ClusterID)
-
-		aggregateData, err := shimsTSMetric.GetAggregateXMinutesByMetricIDAndHostname(checkRow.ClusterID, metric.ID, expression.PrevRange, hostRow.Hostname)
+		aggregateData, err := cassandra.NewTSMetric(evaluator.AppContext).GetAggregateXMinutesByMetricIDAndHostname(checkRow.ClusterID, metric.ID, expression.PrevRange, hostRow.Hostname)
 		if err != nil {
 			// If a Host does not contain historical data of a particular metric,
 			// We assume that there's something wrong with it.
@@ -199,16 +199,17 @@ func (evaluator *CheckExpressionEvaluator) EvalRelativeHostDataExpression(checkR
 
 		var val float64
 
-		for prefix, keyAndValue := range hostRow.DataAsFlatKeyValue() {
-			if !strings.HasPrefix(expression.Metric, prefix) {
+		for key, value := range hostRow.Data {
+			if !strings.HasPrefix(expression.Metric, key) {
 				continue
 			}
 
-			for key, value := range keyAndValue {
-				if strings.HasSuffix(expression.Metric, key) {
-					val = value.(float64)
-					break
+			if strings.HasSuffix(expression.Metric, key) {
+				valueFloat64, err := strconv.ParseFloat(value, 64)
+				if err == nil {
+					val = valueFloat64
 				}
+				break
 			}
 		}
 
@@ -258,7 +259,7 @@ func (evaluator *CheckExpressionEvaluator) EvalRelativeHostDataExpression(checkR
 	return expression
 }
 
-func (evaluator *CheckExpressionEvaluator) EvalLogDataExpression(checkRow *pg.CheckRow, hostRows []*pg.HostRow, expression pg.CheckExpression) pg.CheckExpression {
+func (evaluator *CheckExpressionEvaluator) EvalLogDataExpression(checkRow *pg.CheckRow, hostRows []*cassandra.HostRow, expression pg.CheckExpression) pg.CheckExpression {
 	hostnames, err := checkRow.GetHostsList()
 	if err != nil {
 		expression.Result.Value = false
@@ -282,14 +283,6 @@ func (evaluator *CheckExpressionEvaluator) EvalLogDataExpression(checkRow *pg.Ch
 	badHostnames := make([]string, 0)
 	goodHostnames := make([]string, 0)
 
-	clusterRow, err := pg.NewCluster(evaluator.AppContext).GetByID(nil, checkRow.ClusterID)
-	if err != nil {
-		expression.Result.Value = false
-		return expression
-	}
-
-	deletedFrom := clusterRow.GetDeletedFromUNIXTimestampForSelect("ts_logs")
-
 	var perHostResult bool
 
 	for _, hostname := range hostnames {
@@ -297,7 +290,7 @@ func (evaluator *CheckExpressionEvaluator) EvalLogDataExpression(checkRow *pg.Ch
 		from := now.Add(-1 * time.Duration(expression.PrevRange) * time.Minute).UTC().Unix()
 		searchQuery := fmt.Sprintf(`logline search "%v"`, expression.Search)
 
-		valInt64, err := pg.NewTSLog(evaluator.AppContext, checkRow.ClusterID).CountByClusterIDFromTimestampHostAndQuery(nil, checkRow.ClusterID, from, hostname, searchQuery, deletedFrom)
+		valInt64, err := cassandra.NewTSLog(evaluator.AppContext).CountByClusterIDFromTimestampHostAndQuery(checkRow.ClusterID, from, hostname, searchQuery)
 		if err != nil {
 			continue
 		}
@@ -334,7 +327,7 @@ func (evaluator *CheckExpressionEvaluator) CheckPing(hostname string) (outBytes 
 	return exec.Command("ping", "-c", "1", hostname).CombinedOutput()
 }
 
-func (evaluator *CheckExpressionEvaluator) EvalPingExpression(checkRow *pg.CheckRow, hostRows []*pg.HostRow, expression pg.CheckExpression) pg.CheckExpression {
+func (evaluator *CheckExpressionEvaluator) EvalPingExpression(checkRow *pg.CheckRow, hostRows []*cassandra.HostRow, expression pg.CheckExpression) pg.CheckExpression {
 	hostnames, err := checkRow.GetHostsList()
 	if err != nil {
 		expression.Result.Value = false
@@ -393,7 +386,7 @@ func (evaluator *CheckExpressionEvaluator) CheckSSH(hostname, port, user string)
 	return exec.Command("ssh", sshOptions...).CombinedOutput()
 }
 
-func (evaluator *CheckExpressionEvaluator) EvalSSHExpression(checkRow *pg.CheckRow, hostRows []*pg.HostRow, expression pg.CheckExpression) pg.CheckExpression {
+func (evaluator *CheckExpressionEvaluator) EvalSSHExpression(checkRow *pg.CheckRow, hostRows []*cassandra.HostRow, expression pg.CheckExpression) pg.CheckExpression {
 	hostnames, err := checkRow.GetHostsList()
 	if err != nil {
 		expression.Result.Value = false
@@ -490,7 +483,7 @@ func (evaluator *CheckExpressionEvaluator) CheckHTTP(hostname, scheme, port, met
 	return resp, err
 }
 
-func (evaluator *CheckExpressionEvaluator) EvalHTTPExpression(checkRow *pg.CheckRow, hostRows []*pg.HostRow, expression pg.CheckExpression) pg.CheckExpression {
+func (evaluator *CheckExpressionEvaluator) EvalHTTPExpression(checkRow *pg.CheckRow, hostRows []*cassandra.HostRow, expression pg.CheckExpression) pg.CheckExpression {
 	hostnames, err := checkRow.GetHostsList()
 	if err != nil {
 		expression.Result.Value = false
