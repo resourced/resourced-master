@@ -136,7 +136,8 @@ type GeneralConfig struct {
 
 		SMSEmailGateway map[string]string
 
-		PostgreSQL PostgreSQLPerClusterConfig
+		PostgreSQL PostgreSQLPerClusterConfig `toml:",omitempty"`
+		Cassandra  CassandraConfig            `toml:",omitempty"`
 
 		DataRetention int
 	}

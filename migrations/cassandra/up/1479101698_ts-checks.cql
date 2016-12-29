@@ -1,15 +1,12 @@
-CREATE TABLE IF NOT EXISTS ts_logs (
-    id bigint,
+CREATE TABLE IF NOT EXISTS ts_checks (
     cluster_id bigint,
+    check_id bigint,
     created bigint,
-    hostname text,
-    tags map<text, text>,
-    filename text,
-    logline text,
-    lucene text,
-    PRIMARY KEY (id, created)
-) WITH CLUSTERING ORDER BY (created ASC)
-  AND compaction = {'compaction_window_unit': 'HOURS', 'compaction_window_size': '1', 'class':'org.apache.cassandra.db.compaction.TimeWindowCompactionStrategy'}
+    result boolean,
+    expressions text,
+    PRIMARY KEY (cluster_id, check_id, created)
+) WITH CLUSTERING ORDER BY (check_id ASC, created ASC)
+  AND compaction = {'compaction_window_unit': 'HOURS', 'compaction_window_size': '24', 'class':'org.apache.cassandra.db.compaction.TimeWindowCompactionStrategy'}
   AND caching = {'keys': 'NONE', 'rows_per_partition': 'NONE'}
   AND compression = {'sstable_compression' : 'LZ4Compressor'}
   AND crc_check_chance = 0

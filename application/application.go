@@ -277,6 +277,13 @@ func (app *Application) MigrateAllCassandra(direction string) error {
 		sql := string(sqlBytes)
 
 		// -----------------------------------------------
+		// Core
+		err = app.CassandraDBConfig.CoreSession.Query(sql).Exec()
+		if err != nil {
+			return fmt.Errorf("Failed to execute migration file on %v. File: %v, Error: %v", app.GeneralConfig.Cassandra.Keyspace, fullFilename, err)
+		}
+
+		// -----------------------------------------------
 		// Metrics
 		err = app.CassandraDBConfig.TSMetricSession.Query(sql).Exec()
 		if err != nil {
@@ -287,14 +294,21 @@ func (app *Application) MigrateAllCassandra(direction string) error {
 		// Logs
 		err = app.CassandraDBConfig.TSLogSession.Query(sql).Exec()
 		if err != nil {
-			return fmt.Errorf("Failed to execute migration file on %v. File: %v, Error: %v", app.GeneralConfig.Metrics.Cassandra.Keyspace, fullFilename, err)
+			return fmt.Errorf("Failed to execute migration file on %v. File: %v, Error: %v", app.GeneralConfig.Logs.Cassandra.Keyspace, fullFilename, err)
 		}
 
 		// -----------------------------------------------
 		// Events
 		err = app.CassandraDBConfig.TSEventSession.Query(sql).Exec()
 		if err != nil {
-			return fmt.Errorf("Failed to execute migration file on %v. File: %v, Error: %v", app.GeneralConfig.Metrics.Cassandra.Keyspace, fullFilename, err)
+			return fmt.Errorf("Failed to execute migration file on %v. File: %v, Error: %v", app.GeneralConfig.Events.Cassandra.Keyspace, fullFilename, err)
+		}
+
+		// -----------------------------------------------
+		// Checks
+		err = app.CassandraDBConfig.TSCheckSession.Query(sql).Exec()
+		if err != nil {
+			return fmt.Errorf("Failed to execute migration file on %v. File: %v, Error: %v", app.GeneralConfig.Checks.Cassandra.Keyspace, fullFilename, err)
 		}
 	}
 

@@ -17,7 +17,6 @@ import (
 	"github.com/resourced/resourced-master/libslice"
 	"github.com/resourced/resourced-master/messagebus"
 	"github.com/resourced/resourced-master/models/cassandra"
-	"github.com/resourced/resourced-master/models/pg"
 )
 
 func GetChecks(w http.ResponseWriter, r *http.Request) {
@@ -36,24 +35,24 @@ func GetChecks(w http.ResponseWriter, r *http.Request) {
 	// -----------------------------------
 	// Create channels to receive SQL rows
 	// -----------------------------------
-	checksChan := make(chan *pg.CheckRowsWithError)
+	checksChan := make(chan *cassandra.CheckRowsWithError)
 	defer close(checksChan)
 
-	metricsChan := make(chan *pg.MetricRowsWithError)
+	metricsChan := make(chan *cassandra.MetricRowsWithError)
 	defer close(metricsChan)
 
 	// --------------------------
 	// Fetch SQL rows in parallel
 	// --------------------------
 	go func(currentCluster *cassandra.ClusterRow) {
-		checksWithError := &pg.CheckRowsWithError{}
-		checksWithError.Checks, checksWithError.Error = pg.NewCheck(r.Context()).AllByClusterID(nil, currentCluster.ID)
+		checksWithError := &cassandra.CheckRowsWithError{}
+		checksWithError.Checks, checksWithError.Error = cassandra.NewCheck(r.Context()).AllByClusterID(currentCluster.ID)
 		checksChan <- checksWithError
 	}(currentCluster)
 
 	go func(currentCluster *cassandra.ClusterRow) {
-		metricsWithError := &pg.MetricRowsWithError{}
-		metricsWithError.Metrics, metricsWithError.Error = pg.NewMetric(r.Context()).AllByClusterID(nil, currentCluster.ID)
+		metricsWithError := &cassandra.MetricRowsWithError{}
+		metricsWithError.Metrics, metricsWithError.Error = cassandra.NewMetric(r.Context()).AllByClusterID(currentCluster.ID)
 		metricsChan <- metricsWithError
 	}(currentCluster)
 
@@ -63,13 +62,13 @@ func GetChecks(w http.ResponseWriter, r *http.Request) {
 	hasError := false
 
 	checksWithError := <-checksChan
-	if checksWithError.Error != nil && checksWithError.Error.Error() != "sql: no rows in result set" {
+	if checksWithError.Error != nil {
 		libhttp.HandleErrorHTML(w, checksWithError.Error, 500)
 		hasError = true
 	}
 
 	metricsWithError := <-metricsChan
-	if metricsWithError.Error != nil && metricsWithError.Error.Error() != "sql: no rows in result set" {
+	if metricsWithError.Error != nil {
 		libhttp.HandleErrorHTML(w, metricsWithError.Error, 500)
 		hasError = true
 	}
@@ -85,8 +84,8 @@ func GetChecks(w http.ResponseWriter, r *http.Request) {
 		AccessToken    *cassandra.AccessTokenRow
 		Clusters       []*cassandra.ClusterRow
 		CurrentCluster *cassandra.ClusterRow
-		Checks         []*pg.CheckRow
-		Metrics        []*pg.MetricRow
+		Checks         []*cassandra.CheckRow
+		Metrics        []*cassandra.MetricRow
 	}{
 		csrf.Token(r),
 		r.Context().Value("Addr").(string),
@@ -150,7 +149,7 @@ func PostChecks(w http.ResponseWriter, r *http.Request) {
 	data["last_result_hosts"] = []byte("[]")
 	data["last_result_expressions"] = []byte("[]")
 
-	_, err = pg.NewCheck(r.Context()).Create(nil, currentCluster.ID, data)
+	_, err = cassandra.NewCheck(r.Context()).Create(currentCluster.ID, data)
 	if err != nil {
 		libhttp.HandleErrorHTML(w, err, 500)
 		return
@@ -216,14 +215,14 @@ func PutCheckID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	data := make(map[string]interface{})
+	data := make(map[string]string)
 	data["name"] = r.FormValue("Name")
 	data["interval"] = intervalInSeconds + "s"
 	data["hosts_query"] = r.FormValue("HostsQuery")
-	data["hosts_list"] = hostsListJSON
+	data["hosts_list"] = string(hostsListJSON)
 	data["expressions"] = r.FormValue("Expressions")
 
-	_, err = pg.NewCheck(r.Context()).UpdateByID(nil, data, id)
+	_, err = cassandra.NewCheck(r.Context()).UpdateByID(id, data)
 	if err != nil {
 		libhttp.HandleErrorHTML(w, err, 500)
 		return
@@ -241,7 +240,7 @@ func DeleteCheckID(w http.ResponseWriter, r *http.Request) {
 
 	currentCluster := r.Context().Value("currentCluster").(*cassandra.ClusterRow)
 
-	_, err = pg.NewCheck(r.Context()).DeleteByClusterIDAndID(nil, currentCluster.ID, id)
+	err = cassandra.NewCheck(r.Context()).DeleteByClusterIDAndID(currentCluster.ID, id)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
@@ -257,18 +256,15 @@ func PostCheckIDSilence(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	check := pg.NewCheck(r.Context())
+	check := cassandra.NewCheck(r.Context())
 
-	checkRow, err := check.GetByID(nil, id)
+	checkRow, err := check.GetByID(id)
 	if err != nil {
 		libhttp.HandleErrorHTML(w, err, 500)
 		return
 	}
 
-	data := make(map[string]interface{})
-	data["is_silenced"] = !checkRow.IsSilenced
-
-	_, err = check.UpdateByID(nil, data, id)
+	_, err = check.UpdateSilenceByID(id, !checkRow.IsSilenced)
 	if err != nil {
 		libhttp.HandleErrorHTML(w, err, 500)
 		return
@@ -277,11 +273,11 @@ func PostCheckIDSilence(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, r.Referer(), 301)
 }
 
-func newCheckTriggerFromForm(r *http.Request) (pg.CheckTrigger, error) {
+func newCheckTriggerFromForm(r *http.Request) (cassandra.CheckTrigger, error) {
 	lowViolationsCountString := r.FormValue("LowViolationsCount")
 	lowViolationsCount, err := strconv.ParseInt(lowViolationsCountString, 10, 64)
 	if err != nil {
-		return pg.CheckTrigger{}, err
+		return cassandra.CheckTrigger{}, err
 	}
 
 	// Set highViolationsCount arbitrarily high by default.
@@ -291,7 +287,7 @@ func newCheckTriggerFromForm(r *http.Request) (pg.CheckTrigger, error) {
 	if highViolationsCountString != "" {
 		highViolationsCount, err = strconv.ParseInt(highViolationsCountString, 10, 64)
 		if err != nil {
-			return pg.CheckTrigger{}, err
+			return cassandra.CheckTrigger{}, err
 		}
 	}
 
@@ -300,11 +296,11 @@ func newCheckTriggerFromForm(r *http.Request) (pg.CheckTrigger, error) {
 	if createdIntervalMinuteString != "" {
 		createdIntervalMinute, err = strconv.ParseInt(createdIntervalMinuteString, 10, 64)
 		if err != nil {
-			return pg.CheckTrigger{}, err
+			return cassandra.CheckTrigger{}, err
 		}
 	}
 
-	action := pg.CheckTriggerAction{}
+	action := cassandra.CheckTriggerAction{}
 	action.Transport = r.FormValue("ActionTransport")
 	action.Email = r.FormValue("ActionEmail")
 	action.SMSCarrier = r.FormValue("ActionSMSCarrier")
@@ -312,7 +308,7 @@ func newCheckTriggerFromForm(r *http.Request) (pg.CheckTrigger, error) {
 	action.PagerDutyServiceKey = r.FormValue("ActionPagerDutyServiceKey")
 	action.PagerDutyDescription = r.FormValue("ActionPagerDutyDescription")
 
-	trigger := pg.CheckTrigger{}
+	trigger := cassandra.CheckTrigger{}
 	trigger.LowViolationsCount = lowViolationsCount
 	trigger.HighViolationsCount = highViolationsCount
 	trigger.CreatedIntervalMinute = createdIntervalMinute
@@ -348,17 +344,17 @@ func PostChecksTriggers(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	check := pg.NewCheck(r.Context())
+	check := cassandra.NewCheck(r.Context())
 
-	trigger.ID = pg.NewExplicitID()
+	trigger.ID = cassandra.NewExplicitID()
 
-	checkRow, err := check.GetByID(nil, checkID)
+	checkRow, err := check.GetByID(checkID)
 	if err != nil {
 		libhttp.HandleErrorHTML(w, err, 500)
 		return
 	}
 
-	_, err = check.AddTrigger(nil, checkRow, trigger)
+	_, err = check.AddTrigger(checkRow, trigger)
 	if err != nil {
 		libhttp.HandleErrorHTML(w, err, 500)
 		return
@@ -429,15 +425,15 @@ func PutCheckTriggerID(w http.ResponseWriter, r *http.Request) {
 
 	trigger.ID = triggerID
 
-	check := pg.NewCheck(r.Context())
+	check := cassandra.NewCheck(r.Context())
 
-	checkRow, err := check.GetByID(nil, checkID)
+	checkRow, err := check.GetByID(checkID)
 	if err != nil {
 		libhttp.HandleErrorHTML(w, err, 500)
 		return
 	}
 
-	_, err = check.UpdateTrigger(nil, checkRow, trigger)
+	_, err = check.UpdateTrigger(checkRow, trigger)
 	if err != nil {
 		libhttp.HandleErrorHTML(w, err, 500)
 		return
@@ -465,18 +461,18 @@ func DeleteCheckTriggerID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	trigger := pg.CheckTrigger{}
+	trigger := cassandra.CheckTrigger{}
 	trigger.ID = triggerID
 
-	check := pg.NewCheck(r.Context())
+	check := cassandra.NewCheck(r.Context())
 
-	checkRow, err := check.GetByID(nil, checkID)
+	checkRow, err := check.GetByID(checkID)
 	if err != nil {
 		libhttp.HandleErrorHTML(w, err, 500)
 		return
 	}
 
-	_, err = check.DeleteTrigger(nil, checkRow, trigger)
+	_, err = check.DeleteTrigger(checkRow, trigger)
 	if err != nil {
 		libhttp.HandleErrorHTML(w, err, 500)
 		return
@@ -507,7 +503,7 @@ func GetApiCheckIDResults(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	checkRow, err := pg.NewCheck(r.Context()).GetByID(nil, id)
+	checkRow, err := cassandra.NewCheck(r.Context()).GetByID(id)
 	if err != nil {
 		libhttp.HandleErrorJson(w, err)
 		return
@@ -518,7 +514,7 @@ func GetApiCheckIDResults(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tsCheckRows, err := pg.NewTSCheck(r.Context(), checkRow.ClusterID).LastByClusterIDCheckIDAndLimit(nil, checkRow.ClusterID, checkRow.ID, limit)
+	tsCheckRows, err := cassandra.NewTSCheck(r.Context()).LastByClusterIDCheckIDAndLimit(checkRow.ClusterID, checkRow.ID, limit)
 
 	tsCheckRowsJSON, err := json.Marshal(tsCheckRows)
 	if err != nil {

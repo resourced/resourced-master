@@ -5,14 +5,14 @@ import (
 
 	"github.com/Sirupsen/logrus"
 
+	"github.com/resourced/resourced-master/models/cassandra"
 	"github.com/resourced/resourced-master/models/check_expression"
-	"github.com/resourced/resourced-master/models/pg"
 )
 
 // CheckAndRunTriggers pulls list of all checks, distributed evenly across N master daemons,
 // evaluates the checks and run triggers when conditions are met.
 func (app *Application) CheckAndRunTriggers() {
-	checkRowsChan := make(chan []*pg.CheckRow)
+	checkRowsChan := make(chan []*cassandra.CheckRow)
 
 	// Fetch Checks data, split by number of daemons, every time there's a value in app.RefetchChecksChan
 	go func() {
@@ -24,7 +24,7 @@ func (app *Application) CheckAndRunTriggers() {
 					daemons = append(daemons, hostAndPort)
 				}
 
-				groupedCheckRows, _ := pg.NewCheck(app.GetContext()).AllSplitToDaemons(nil, daemons)
+				groupedCheckRows, _ := cassandra.NewCheck(app.GetContext()).AllSplitToDaemons(daemons)
 				checkRowsChan <- groupedCheckRows[app.FullAddr()]
 			}
 		}
@@ -33,7 +33,7 @@ func (app *Application) CheckAndRunTriggers() {
 	go func() {
 		for checkRows := range checkRowsChan {
 			for _, checkRow := range checkRows {
-				go func(checkRow *pg.CheckRow) {
+				go func(checkRow *cassandra.CheckRow) {
 					checkDuration, err := time.ParseDuration(checkRow.Interval)
 					if err != nil {
 						app.ErrLogger.WithFields(logrus.Fields{
@@ -64,7 +64,7 @@ func (app *Application) CheckAndRunTriggers() {
 						}
 
 						// 2. Store the check result.
-						clusterRow, err := pg.NewCluster(app.GetContext()).GetByID(nil, checkRow.ClusterID)
+						clusterRow, err := cassandra.NewCluster(app.GetContext()).GetByID(checkRow.ClusterID)
 						if err != nil {
 							app.ErrLogger.WithFields(logrus.Fields{
 								"Method":    "Cluster.GetByID",
@@ -74,9 +74,9 @@ func (app *Application) CheckAndRunTriggers() {
 							return
 						}
 
-						deletedFrom := clusterRow.GetDeletedFromUNIXTimestampForInsert("ts_checks")
+						ttl := clusterRow.GetTTLDurationForInsert("ts_checks")
 
-						err = pg.NewTSCheck(app.GetContext(), checkRow.ClusterID).Create(nil, checkRow.ClusterID, checkRow.ID, finalResult, expressionResults, deletedFrom)
+						err = cassandra.NewTSCheck(app.GetContext()).Create(checkRow.ClusterID, checkRow.ID, finalResult, expressionResults, ttl)
 						if err != nil {
 							app.ErrLogger.WithFields(logrus.Fields{
 								"Method":    "TSCheck.Create",

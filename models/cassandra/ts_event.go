@@ -275,7 +275,7 @@ func (ts *TSEvent) DeleteByClusterIDAndID(clusterID, id int64) (err error) {
 		return err
 	}
 
-	query := fmt.Sprintf("DELETE FROM %v WHERE id=$1 AND cluster_id=$2", ts.table)
+	query := fmt.Sprintf("DELETE FROM %v WHERE id=? AND cluster_id=?", ts.table)
 
 	logrus.WithFields(logrus.Fields{
 		"Method": "TSEvent.DeleteByClusterIDAndID",

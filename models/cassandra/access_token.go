@@ -68,13 +68,6 @@ func (t *AccessToken) GetByAccessToken(token string) (*AccessTokenRow, error) {
 		return nil, err
 	}
 
-	// id bigint primary key,
-	// user_id bigint,
-	// cluster_id bigint,
-	// token_ text,
-	// level text,
-	// enabled boolean
-
 	query := fmt.Sprintf("SELECT id, user_id, cluster_id, token_, level, enabled FROM %v WHERE token_=? LIMIT 1", t.table)
 
 	var scannedID, scannedUserID, scannedClusterID int64
