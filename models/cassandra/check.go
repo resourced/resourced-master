@@ -133,7 +133,7 @@ func (c *Check) AllByClusterID(clusterID int64) ([]*CheckRow, error) {
 
 	rows := []*CheckRow{}
 
-	query := fmt.Sprintf(`SELECT id, cluster_id, name, interval, is_silenced, hosts_query, hosts_list, expressions, triggers, last_result_hosts, last_result_expressions FROM %v WHERE cluster_id=? ORDER BY id DESC ALLOW FILTERING`, c.table)
+	query := fmt.Sprintf(`SELECT id, cluster_id, name, interval, is_silenced, hosts_query, hosts_list, expressions, triggers, last_result_hosts, last_result_expressions FROM %v WHERE cluster_id=? ALLOW FILTERING`, c.table)
 
 	var scannedID, scannedClusterID int64
 	var scannedIsSilenced bool
@@ -173,7 +173,7 @@ func (c *Check) All() ([]*CheckRow, error) {
 
 	rows := []*CheckRow{}
 
-	query := fmt.Sprintf(`SELECT id, cluster_id, name, interval, is_silenced, hosts_query, hosts_list, expressions, triggers, last_result_hosts, last_result_expressions FROM %v ORDER BY id DESC ALLOW FILTERING`, c.table)
+	query := fmt.Sprintf(`SELECT id, cluster_id, name, interval, is_silenced, hosts_query, hosts_list, expressions, triggers, last_result_hosts, last_result_expressions FROM %v ALLOW FILTERING`, c.table)
 
 	var scannedID, scannedClusterID int64
 	var scannedIsSilenced bool

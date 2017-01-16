@@ -60,7 +60,7 @@ func (ts *TSCheck) LastByClusterIDCheckIDAndLimit(clusterID, checkID, limit int6
 
 	rows := []*TSCheckRow{}
 
-	query := fmt.Sprintf("SELECT cluster_id, check_id, created, result, expressions FROM %v WHERE cluster_id=? AND check_id=? ORDER BY cluster_id,check_id,created DESC LIMIT ? ALLOW FILTERING", ts.table)
+	query := fmt.Sprintf("SELECT cluster_id, check_id, created, result, expressions FROM %v WHERE cluster_id=? AND check_id=? ORDER BY check_id,created DESC LIMIT ? ALLOW FILTERING", ts.table)
 
 	var scannedClusterID, scannedCheckID, scannedCreated int64
 	var scannedResult bool
@@ -79,7 +79,7 @@ func (ts *TSCheck) LastByClusterIDCheckIDAndLimit(clusterID, checkID, limit int6
 	if err := iter.Close(); err != nil {
 		err = fmt.Errorf("%v. Query: %v", err.Error(), query)
 		logrus.WithFields(logrus.Fields{
-			"Method":      "TSEvent.GetByID",
+			"Method":      "TSCheck.LastByClusterIDCheckIDAndLimit",
 			"ClusterID":   scannedClusterID,
 			"CheckID":     scannedCheckID,
 			"Created":     scannedCreated,
@@ -102,7 +102,7 @@ func (ts *TSCheck) LastByClusterIDCheckIDAndResult(clusterID, checkID int64, res
 
 	row := &TSCheckRow{}
 
-	query := fmt.Sprintf("SELECT cluster_id, check_id, created, result, expressions FROM %v WHERE cluster_id=? AND check_id=? AND result=? ORDER BY cluster_id,check_id,created DESC LIMIT 1 ALLOW FILTERING", ts.table)
+	query := fmt.Sprintf("SELECT cluster_id, check_id, created, result, expressions FROM %v WHERE cluster_id=? AND check_id=? AND result=? ORDER BY check_id,created DESC LIMIT 1 ALLOW FILTERING", ts.table)
 
 	var scannedClusterID, scannedCheckID, scannedCreated int64
 	var scannedResult bool
@@ -162,10 +162,10 @@ func (ts *TSCheck) AllViolationsByClusterIDCheckIDAndInterval(clusterID, checkID
 
 	if lastGoodOne != nil {
 		query = fmt.Sprintf(`SELECT cluster_id, check_id, created, result, expressions FROM %v WHERE cluster_id=? AND check_id=? AND created > ? AND result = ?
-ORDER BY cluster_id,check_id,created DESC ALLOW FILTERING`, ts.table)
+ORDER BY check_id,created DESC ALLOW FILTERING`, ts.table)
 
 	} else {
-		query = fmt.Sprintf(`SELECT * FROM %v WHERE cluster_id=? AND check_id=? AND created > ? AND result = ? AND ORDER BY cluster_id,check_id,created DESC ALLOW FILTERING`, ts.table)
+		query = fmt.Sprintf(`SELECT * FROM %v WHERE cluster_id=? AND check_id=? AND created > ? AND result = ? AND ORDER BY check_id,created DESC ALLOW FILTERING`, ts.table)
 
 		from := math.Max(float64(lastGoodOne.Created), float64(from))
 

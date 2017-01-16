@@ -87,7 +87,7 @@ func main() {
 		}()
 
 		// Run all checks
-		// app.CheckAndRunTriggers()
+		app.CheckAndRunTriggers()
 
 		// Publish metrics to local agent, which is a graphite endpoint.
 		go func() {
