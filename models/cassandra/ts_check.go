@@ -208,9 +208,10 @@ func (ts *TSCheck) Create(clusterID, checkID int64, result bool, expressions []C
 	}
 
 	err = session.Query(
-		fmt.Sprintf(`INSERT INTO %v (cluster_id, check_id, result, expressions) VALUES (?, ?, ?, ?) USING TTL ?`, ts.table),
+		fmt.Sprintf(`INSERT INTO %v (cluster_id, check_id, created, result, expressions) VALUES (?, ?, ?, ?, ?) USING TTL ?`, ts.table),
 		clusterID,
 		checkID,
+		time.Now().UTC().Unix(),
 		result,
 		string(expressionsJSON),
 		ttl,
